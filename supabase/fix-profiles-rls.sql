@@ -1,0 +1,21 @@
+-- =====================================================================
+-- FIX: "infinite recursion detected in policy for relation profiles"
+-- (run once in the Supabase SQL editor)
+--
+-- Cause: profiles_owner_all's USING clause ran `exists (select ... from
+-- profiles ...)` — a subquery on the very table the policy guards — which
+-- recurses. Any user-session read of `profiles` (New quote, Team page,
+-- invites) errored, and companies_update inherited it via its own profiles
+-- subquery (breaking Settings save too).
+--
+-- profiles_owner_all is redundant now: owner-level team management runs
+-- server-side through the service role (app/api/team), which bypasses RLS.
+-- Dropping it removes the recursion with zero loss of app functionality.
+-- =====================================================================
+drop policy if exists profiles_owner_all on profiles;
+
+-- After this, `profiles` keeps:
+--   profiles_select        (read teammates)  — uses security-definer my_company_id(), no recursion
+--   profiles_update_self   (edit your own row)
+-- and companies_update's `exists(select from profiles ...)` now resolves under
+-- the non-recursive profiles_select, so Settings save works again.

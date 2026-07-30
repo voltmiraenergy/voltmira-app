@@ -1,0 +1,13 @@
+{
+  "name": "@voltmira/engine",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "engine.js",
+  "exports": {
+    ".": "./engine.js",
+    "./pvgis": "./pvgis.js"
+  },
+  "scripts": {
+    "test": "node --test *.test.js"
+  }
+}

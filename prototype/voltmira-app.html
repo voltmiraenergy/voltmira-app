@@ -1,0 +1,2530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoltMira — Solar quoting that clients can fact-check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F5F0;
+    --paper-2:#FFFFFF;
+    --ink:#142A21;
+    --ink-2:#0D1F18;
+    --green:#1E6B4E;
+    --green-soft:#2A8563;
+    --green-tint:#E4EFE9;
+    --amber:#E89B2D;
+    --amber-soft:#F4B45C;
+    --amber-tint:#FBF0DD;
+    --muted:#66756C;
+    --line:#E3E1D6;
+    --red:#C4543B;
+    --red-tint:#F7E6E1;
+    --blue:#3D6B8E;
+    --blue-tint:#E4EDF4;
+    --white-dim:rgba(255,255,255,.66);
+    --white-faint:rgba(255,255,255,.4);
+    --white-line:rgba(255,255,255,.12);
+    --shadow:0 1px 2px rgba(20,42,33,.05),0 4px 16px rgba(20,42,33,.06);
+    --shadow-lg:0 8px 34px rgba(20,42,33,.16);
+    --radius:14px;
+    --trans:.35s ease;
+    --font-d:'Space Grotesk',system-ui,sans-serif;
+    --font-b:'Inter',system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--font-b);font-size:14.5px;color:var(--ink);
+    background:var(--paper);min-height:100vh;
+    opacity:0;animation:fadeIn .6s ease .05s forwards;
+  }
+  @keyframes fadeIn{to{opacity:1}}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+    body{opacity:1;animation:none}
+  }
+  h1,h2,h3,h4,.font-d{font-family:var(--font-d)}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+  :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  ::selection{background:var(--amber-tint)}
+
+  /* ============ Shell ============ */
+  .app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+  .sidebar{
+    background:var(--ink);color:#fff;
+    display:flex;flex-direction:column;padding:22px 14px 16px;
+    position:sticky;top:0;height:100vh;z-index:40;
+    transition:transform var(--trans),opacity var(--trans);
+  }
+  .logo{display:flex;align-items:center;gap:10px;font-family:var(--font-d);font-weight:700;font-size:20px;letter-spacing:-.02em;padding:0 10px 24px;color:#fff}
+  .nav{display:flex;flex-direction:column;gap:3px}
+  .nav a{
+    display:flex;align-items:center;gap:11px;text-decoration:none;
+    color:var(--white-dim);padding:10.5px 12px;border-radius:10px;
+    font-size:14px;font-weight:500;transition:background .18s,color .18s;
+  }
+  .nav a svg{flex:none;opacity:.85}
+  .nav a:hover{background:var(--white-line);color:#fff}
+  .nav a.active{background:var(--amber);color:var(--ink);font-weight:600}
+  .nav a.active svg{opacity:1}
+  .side-foot{margin-top:auto}
+  .profile{display:flex;align-items:center;gap:11px;padding:12px;border-radius:12px;background:var(--white-line)}
+  .avatar{
+    width:36px;height:36px;border-radius:50%;flex:none;
+    background:var(--amber);color:var(--ink);
+    display:grid;place-items:center;font-family:var(--font-d);font-weight:700;font-size:13.5px;
+  }
+  .avatar.sm{width:30px;height:30px;font-size:12px}
+  .avatar.green{background:var(--green-tint);color:var(--green)}
+  .profile .who{line-height:1.3;min-width:0}
+  .profile .who b{display:block;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .profile .who span{font-size:11.5px;color:var(--white-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+
+  .main{min-width:0;display:flex;flex-direction:column;padding-bottom:64px}
+  .view{padding:26px 30px 40px;max-width:1180px;width:100%;margin:0 auto;animation:viewIn .3s ease}
+  @keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* ============ Shared components ============ */
+  .page-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+  .page-head h1{font-size:24px;font-weight:700;letter-spacing:-.02em}
+  .page-head .sub{font-size:13.5px;color:var(--muted);width:100%;margin-top:-6px}
+  .spacer{flex:1}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    font-size:14px;font-weight:600;font-family:var(--font-b);
+    padding:10.5px 17px;border-radius:11px;border:1px solid transparent;
+    transition:transform .14s,box-shadow .18s,background .18s,border-color .18s,color .18s;
+    white-space:nowrap;user-select:none;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn.primary{background:var(--green);color:#fff;box-shadow:0 3px 12px rgba(30,107,78,.25)}
+  .btn.primary:hover{background:var(--green-soft);transform:translateY(-1px);box-shadow:0 6px 18px rgba(30,107,78,.3)}
+  .btn.amber{background:var(--amber);color:var(--ink);box-shadow:0 3px 12px rgba(232,155,45,.3)}
+  .btn.amber:hover{background:var(--amber-soft);transform:translateY(-1px);box-shadow:0 6px 18px rgba(232,155,45,.4)}
+  .btn.ghost{background:var(--paper-2);border-color:var(--line);color:var(--ink)}
+  .btn.ghost:hover{border-color:var(--green);color:var(--green)}
+  .btn.danger{background:var(--paper-2);border-color:var(--line);color:var(--red)}
+  .btn.danger:hover{border-color:var(--red);background:var(--red-tint)}
+  .btn.sm{padding:7px 12px;font-size:13px;border-radius:9px}
+  .btn.icon{padding:8px;border-radius:9px}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+
+  .card{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+  .card h3{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:15px}
+
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:12px;font-weight:600;padding:5px 11px;border-radius:99px;
+    border:1px solid transparent;cursor:pointer;transition:filter .15s;user-select:none;
+  }
+  .chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .chip:hover{filter:brightness(.94)}
+  .chip.draft{background:var(--paper);border-color:var(--line);color:var(--muted)}
+  .chip.sent{background:var(--blue-tint);color:var(--blue)}
+  .chip.won{background:var(--green-tint);color:var(--green)}
+  .chip.lost{background:var(--red-tint);color:var(--red)}
+  .chip.static{cursor:default}
+  .chip.hot{background:var(--amber-tint);color:#B4700F}
+
+  .field{margin-bottom:15px}
+  .field:last-child{margin-bottom:0}
+  .field label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:500;color:var(--muted);margin-bottom:7px}
+  .field label output{color:var(--green);font-family:var(--font-d);font-weight:700;font-size:15px}
+  .input{
+    width:100%;background:var(--paper-2);border:1px solid var(--line);
+    font-size:14.5px;padding:10px 12px;border-radius:10px;transition:border-color .18s,box-shadow .18s;
+  }
+  .input:hover{border-color:#CFCCBD}
+  .input:focus{border-color:var(--green);outline:none;box-shadow:0 0 0 3px rgba(30,107,78,.12)}
+  select.input{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2366756C' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;
+    background:linear-gradient(90deg,var(--amber) var(--fill,30%),var(--line) var(--fill,30%));
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;
+    background:var(--amber);border:3px solid var(--paper-2);
+    box-shadow:0 0 0 1px var(--amber),0 2px 8px rgba(20,42,33,.25);
+    cursor:grab;transition:transform .14s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.12)}
+  input[type=range]:active::-webkit-slider-thumb{cursor:grabbing;transform:scale(1.16)}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--amber);border:3px solid var(--paper-2);box-shadow:0 0 0 1px var(--amber),0 2px 8px rgba(20,42,33,.25);cursor:grab}
+  input[type=range]::-moz-range-track{height:6px;border-radius:99px;background:var(--line)}
+  input[type=range]::-moz-range-progress{height:6px;border-radius:99px;background:var(--amber)}
+
+  .check{
+    display:flex;align-items:center;gap:12px;cursor:pointer;
+    background:var(--paper-2);border:1px solid var(--line);
+    padding:12px;border-radius:10px;transition:border-color .18s;user-select:none;
+  }
+  .check:hover{border-color:var(--amber)}
+  .check input{position:absolute;opacity:0;pointer-events:none}
+  .toggle-pill{width:42px;height:24px;border-radius:99px;background:var(--line);position:relative;flex:none;transition:background var(--trans)}
+  .toggle-pill::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform var(--trans)}
+  .check input:checked + .toggle-pill{background:var(--green)}
+  .check input:checked + .toggle-pill::after{transform:translateX(18px)}
+  .check input:focus-visible + .toggle-pill{outline:2px solid var(--amber);outline-offset:2px}
+  .check .txt{font-size:13.5px;font-weight:500;line-height:1.35}
+  .check .txt small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+
+  /* Tables */
+  .tbl{width:100%;border-collapse:collapse}
+  .tbl th{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);text-align:left;padding:9px 12px;border-bottom:1px solid var(--line)}
+  .tbl td{padding:12px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+  .tbl tr:last-child td{border-bottom:none}
+  .tbl tbody tr{transition:background .15s}
+  .tbl tbody tr:hover{background:var(--paper)}
+  .tbl .t-title{font-weight:600;font-family:var(--font-d);font-size:14px;cursor:pointer}
+  .tbl .t-title:hover{color:var(--green);text-decoration:underline;text-underline-offset:3px}
+  .tbl .t-sub{color:var(--muted);font-size:12px;margin-top:2px}
+  .row-acts{display:flex;gap:5px;justify-content:flex-end}
+  .row-acts .btn.icon{color:var(--muted)}
+  .row-acts .btn.icon:hover{color:var(--green);background:var(--green-tint)}
+  .row-acts .btn.icon.del:hover{color:var(--red);background:var(--red-tint)}
+
+  /* KPI strip */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px}
+  .kpi{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+  .kpi b{display:block;font-family:var(--font-d);font-size:25px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+  .kpi span{font-size:12px;color:var(--muted)}
+  .kpi .up{color:var(--green)}
+
+  /* Bands */
+  .bands{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .band{
+    border-radius:12px;padding:15px 15px 14px;border:1px solid var(--line);
+    background:var(--paper-2);position:relative;overflow:hidden;
+  }
+  .band::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--band-c)}
+  .band.pess{--band-c:var(--red)}
+  .band.expc{--band-c:var(--amber)}
+  .band.opti{--band-c:var(--green)}
+  .band .tag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--band-c);margin-bottom:8px}
+  .band .yrs{font-family:var(--font-d);font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1}
+  .band .yrs small{font-size:12.5px;font-weight:500;color:var(--muted)}
+  .band .roi{font-size:12px;color:var(--muted);margin-top:6px}
+  .band .roi b{color:var(--ink)}
+
+  /* Chart */
+  .chart-wrap{margin-top:16px}
+  .chart-wrap svg{width:100%;height:auto;display:block}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;color:var(--muted);margin-top:8px}
+  .legend i{display:inline-block;width:14px;height:0;border-top:2.5px solid;margin-right:5px;vertical-align:middle;border-radius:2px}
+  .legend .l-e{border-color:var(--green)}
+  .legend .l-b{border-color:var(--amber);border-top-style:dashed}
+  .legend .l-z{border-color:#B9B5A6;border-top-style:dotted}
+
+  /* Assumptions */
+  .assump-link{color:var(--green);font-size:13px;font-weight:600;padding:4px 0;text-decoration:underline;text-underline-offset:3px}
+  .assump{max-height:0;overflow:hidden;transition:max-height var(--trans);font-size:12.5px;color:var(--muted)}
+  .assump.open{max-height:400px}
+  .assump table{width:100%;border-collapse:collapse;margin-top:10px}
+  .assump td{padding:5.5px 0;border-bottom:1px solid var(--line)}
+  .assump td:last-child{text-align:right;color:var(--ink);font-weight:500}
+  .assump tr:last-child td{border-bottom:none}
+
+  /* Financing */
+  .fin-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  .fin-box{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px;text-align:center}
+  .fin-box .lbl{font-size:12.5px;color:var(--muted);margin-bottom:8px}
+  .fin-box .big{font-family:var(--font-d);font-size:32px;font-weight:700;letter-spacing:-.02em;line-height:1.05}
+  .fin-box .big small{font-size:14px;font-weight:500;color:var(--muted)}
+  .fin-box input{
+    width:104px;background:transparent;border:none;border-bottom:2px solid var(--amber);
+    font-family:var(--font-d);font-size:32px;font-weight:700;text-align:center;padding:0 0 2px;
+  }
+  .fin-box input:focus{outline:none;border-bottom-color:var(--green)}
+  .verdict{text-align:center;font-family:var(--font-d);font-size:16.5px;font-weight:600;padding:13px 16px;border-radius:11px;transition:background .3s,color .3s}
+  .verdict.good{background:var(--green-tint);color:var(--green)}
+  .verdict.bad{background:var(--red-tint);color:var(--red)}
+
+  /* Activity feed */
+  .feed{list-style:none;display:flex;flex-direction:column}
+  .feed li{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:13px;align-items:flex-start}
+  .feed li:last-child{border-bottom:none}
+  .feed .f-ic{
+    width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center;
+    background:var(--green-tint);color:var(--green);
+  }
+  .feed .f-ic.amber{background:var(--amber-tint);color:#B4700F}
+  .feed .f-ic.blue{background:var(--blue-tint);color:var(--blue)}
+  .feed .f-tx{flex:1;line-height:1.45;color:var(--ink)}
+  .feed .f-tx b{font-weight:600}
+  .feed time{color:var(--muted);font-size:11.5px;white-space:nowrap;padding-top:2px}
+  .empty{
+    text-align:center;color:var(--muted);font-size:13.5px;padding:34px 16px;
+    border:1.5px dashed var(--line);border-radius:12px;line-height:1.6;
+  }
+  .empty b{display:block;font-family:var(--font-d);font-size:15px;color:var(--ink);margin-bottom:3px}
+
+  /* Project editor layout */
+  .editor{display:grid;grid-template-columns:minmax(280px,370px) 1fr;gap:20px;align-items:start}
+  .stack{display:flex;flex-direction:column;gap:18px;min-width:0}
+  .ed-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+  .back-link{
+    display:inline-flex;align-items:center;gap:7px;color:var(--muted);
+    font-size:13.5px;font-weight:500;text-decoration:none;padding:7px 12px 7px 8px;
+    border-radius:9px;transition:background .15s,color .15s;
+  }
+  .back-link:hover{background:var(--paper-2);color:var(--ink)}
+  .proj-title{
+    background:transparent;border:1px solid transparent;color:var(--ink);
+    font-family:var(--font-d);font-size:21px;font-weight:700;letter-spacing:-.01em;
+    padding:6px 10px;border-radius:9px;min-width:0;width:250px;transition:border-color .18s,background .18s;
+  }
+  .proj-title:hover{border-color:var(--line)}
+  .proj-title:focus{border-color:var(--green);background:var(--paper-2);outline:none}
+  .cost-line{display:flex;flex-wrap:wrap;gap:24px}
+  .cost-line .k b{display:block;font-family:var(--font-d);font-size:24px;font-weight:700;letter-spacing:-.02em}
+  .cost-line .k span{font-size:12px;color:var(--muted)}
+
+  /* ============ SALES MODE (light, dashboard palette) ============ */
+  body.sales{background:var(--paper)}
+  body.sales .sidebar{transform:translateX(-105%);opacity:0;pointer-events:none;position:fixed}
+  body.sales .app{grid-template-columns:1fr}
+  body.sales .sales-bar{
+    display:flex;align-items:center;gap:14px;padding:15px 26px;
+    background:var(--ink);border-bottom:1px solid var(--white-line);
+    position:sticky;top:0;z-index:30;color:#fff;
+  }
+  body.sales .view{max-width:960px;padding-top:30px}
+  body.sales .ed-head,body.sales .tabbar,body.sales .installer-only{display:none!important}
+  body.sales .sales-only{display:block}
+  body.sales .editor{grid-template-columns:1fr;gap:22px}
+  body.sales .card{padding:26px}
+  body.sales .field label{font-size:15px}
+  body.sales .field label output{font-size:19px}
+  body.sales .band{padding:24px 20px;animation:bandIn .5s ease backwards}
+  body.sales .band.pess{animation-delay:.05s}
+  body.sales .band.expc{animation-delay:.15s;border-color:var(--amber);box-shadow:0 4px 20px rgba(232,155,45,.14)}
+  body.sales .band.opti{animation-delay:.25s}
+  body.sales .band .tag{font-size:12.5px}
+  body.sales .band .yrs{font-size:42px}
+  body.sales .band .yrs small{font-size:16px}
+  body.sales .band .roi{font-size:14px}
+  body.sales .cost-line .k b{font-size:34px}
+  body.sales .cost-line .k span{font-size:13px}
+  body.sales .fin-box .big{font-size:38px}
+  body.sales .fin-box input{font-size:38px}
+  body.sales .verdict{font-size:18px}
+
+  /* ============ Client proposal view ============ */
+  body.client-view{background:var(--paper)}
+  body.client-view .sidebar{display:none}
+  body.client-view .app{grid-template-columns:1fr}
+  .client-bar{
+    display:flex;align-items:center;gap:12px;padding:14px 26px;
+    background:var(--ink);color:#fff;position:sticky;top:0;z-index:30;
+  }
+  .client-bar .logo{padding:0;font-size:17px}
+  .client-bar .tag-preview{
+    font-size:11.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+    background:var(--amber);color:var(--ink);padding:4px 10px;border-radius:99px;
+  }
+  .prop-sheet{max-width:820px;margin:0 auto;padding:34px 26px 80px}
+  .prop-head{margin-bottom:26px}
+  .prop-head .co{font-size:12.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .prop-head h1{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+  .prop-head .addr{color:var(--muted);font-size:14px;margin-top:6px}
+
+  /* ============ Modal ============ */
+  .overlay{
+    position:fixed;inset:0;background:rgba(13,31,24,.5);backdrop-filter:blur(3px);
+    display:grid;place-items:center;padding:20px;z-index:100;
+    opacity:0;pointer-events:none;transition:opacity .22s;
+  }
+  .overlay.show{opacity:1;pointer-events:auto}
+  .modal{
+    background:var(--paper-2);border-radius:16px;box-shadow:var(--shadow-lg);
+    width:min(500px,100%);padding:26px;max-height:88vh;overflow:auto;
+    transform:translateY(14px);transition:transform .22s;
+  }
+  .overlay.show .modal{transform:none}
+  .modal h4{font-size:18px;font-weight:700;margin-bottom:5px}
+  .modal p.sub{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5}
+  .link-row{
+    display:flex;gap:8px;background:var(--paper);border:1px solid var(--line);
+    border-radius:10px;padding:5px 5px 5px 13px;align-items:center;margin-bottom:16px;
+  }
+  .link-row code{font-family:var(--font-d);font-size:13px;color:var(--green);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .track{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+  .track li{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:8px}
+  .track li:last-child{border-bottom:none}
+  .track li b{color:var(--ink);font-weight:600}
+  .modal-acts{display:flex;gap:9px;flex-wrap:wrap}
+  .modal-acts .btn{flex:1}
+
+  /* ============ Toast ============ */
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translate(-50%,90px);
+    background:var(--ink);color:#fff;font-size:13.5px;font-weight:500;
+    padding:13px 18px;border-radius:12px;box-shadow:var(--shadow-lg);
+    z-index:200;transition:transform .32s cubic-bezier(.2,.9,.3,1.2);
+    display:flex;align-items:center;gap:14px;max-width:calc(100vw - 36px);
+  }
+  .toast.show{transform:translate(-50%,0)}
+  .toast button{color:var(--amber);font-weight:700;font-size:13.5px;white-space:nowrap}
+  .toast button:hover{text-decoration:underline}
+
+  /* ============ Footer note ============ */
+  .foot-note{
+    position:fixed;left:0;right:0;bottom:0;z-index:35;
+    background:var(--paper-2);border-top:1px solid var(--line);
+    font-size:11.5px;color:var(--muted);text-align:center;padding:8px 14px;
+  }
+  .foot-note a{color:var(--green);text-decoration:none;font-weight:600}
+
+  /* ============ Grids ============ */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  .dash-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;align-items:start}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .filters .input{width:220px}
+  .fchip{
+    font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:99px;
+    background:var(--paper-2);border:1px solid var(--line);color:var(--muted);
+    transition:all .15s;
+  }
+  .fchip:hover{border-color:var(--green);color:var(--green)}
+  .fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+  /* Team */
+  .member{display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid var(--line)}
+  .member:last-child{border-bottom:none}
+  .member .m-who{flex:1;min-width:0}
+  .member .m-who b{display:block;font-size:14px;font-weight:600}
+  .member .m-who span{font-size:12px;color:var(--muted)}
+  .member .m-count{font-size:12px;color:var(--muted);white-space:nowrap}
+  .seat-note{font-size:12.5px;color:var(--muted);margin-top:14px;padding-top:13px;border-top:1px dashed var(--line)}
+  .seat-note b{color:var(--green)}
+
+  /* Settings */
+  .set-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:13px}
+  .set-note{font-size:12px;color:var(--muted);line-height:1.55;margin-top:12px}
+
+  /* ============ Print proposal ============ */
+  .print-sheet{display:none}
+  @media print{
+    body *{visibility:hidden}
+    .print-sheet,.print-sheet *{visibility:visible}
+    .print-sheet{
+      display:block;position:absolute;left:0;top:0;width:100%;
+      background:#fff;color:#111;font-family:var(--font-b);padding:40px 48px;
+    }
+    .print-sheet h1,.print-sheet h2{font-family:var(--font-d)}
+    .print-sheet .p-co{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#1E6B4E;font-weight:700;margin-bottom:10px}
+    .print-sheet h1{font-size:27px;margin-bottom:4px}
+    .print-sheet .p-sub{color:#555;font-size:13px;margin-bottom:26px}
+    .print-sheet .p-kpis{display:flex;gap:34px;margin-bottom:26px}
+    .print-sheet .p-kpis b{display:block;font-size:22px;font-family:var(--font-d)}
+    .print-sheet .p-kpis span{font-size:11px;color:#666}
+    .print-sheet h2{font-size:15px;margin:22px 0 10px;color:#1E6B4E}
+    .print-sheet table{width:100%;border-collapse:collapse;font-size:12.5px}
+    .print-sheet th{text-align:left;padding:7px 9px;background:#F0EEE6;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+    .print-sheet td{padding:7px 9px;border-bottom:1px solid #E5E2D6}
+    .print-sheet .p-verdict{margin-top:18px;padding:13px;background:#E4EFE9;color:#1E6B4E;font-weight:600;border-radius:8px;font-size:14px}
+    .print-sheet .p-foot{margin-top:30px;font-size:10.5px;color:#888;border-top:1px solid #ddd;padding-top:12px}
+  }
+
+  /* ============ Tabs ============ */
+  .tabbar{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+  .tab{
+    font-size:14px;font-weight:600;font-family:var(--font-d);color:var(--muted);
+    padding:11px 16px;border-bottom:2px solid transparent;margin-bottom:-1px;
+    transition:color .15s,border-color .15s;display:inline-flex;align-items:center;gap:8px;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.on{color:var(--green);border-bottom-color:var(--green)}
+  .tab-count{font-size:11px;background:var(--paper);border:1px solid var(--line);border-radius:99px;padding:1px 7px;color:var(--muted)}
+  .tab.on .tab-count{background:var(--green-tint);border-color:transparent;color:var(--green)}
+
+  /* ============ Monthly grid ============ */
+  .mo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .mo-cell label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px;font-weight:500}
+  .mo-cell .mo-in{padding:7px 8px;font-size:13px;text-align:center}
+  @media (max-width:520px){.mo-grid{grid-template-columns:repeat(3,1fr)}}
+
+  /* ============ Scenarios ============ */
+  .sc-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .sc-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+  .sc-card{background:var(--paper-2);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+  .sc-card.editing{border-color:var(--green);box-shadow:0 0 0 3px rgba(30,107,78,.1)}
+  .sc-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .sc-name{flex:1;min-width:0;background:transparent;border:1px solid transparent;font-family:var(--font-d);font-weight:600;font-size:15px;padding:4px 6px;border-radius:7px}
+  .sc-name:hover{border-color:var(--line)}
+  .sc-name:focus{border-color:var(--green);outline:none;background:var(--paper)}
+  .sc-meta{font-size:12px;color:var(--muted);margin-bottom:12px}
+  .sc-metrics{display:flex;gap:18px}
+  .sc-metrics b{display:block;font-family:var(--font-d);font-size:20px;font-weight:700;letter-spacing:-.01em}
+  .sc-metrics span{font-size:11px;color:var(--muted)}
+  .sc-edit-panel{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+  .cmp-table th,.cmp-table td{white-space:nowrap}
+  .cmp-table td:first-child,.cmp-table th:first-child{font-weight:600;color:var(--ink)}
+
+  /* client-facing scenario cards (sales + proposal) */
+  .sc-client-row,.cmp-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
+  .sc-client-card,.cmp-col{
+    background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px;text-align:center;position:relative;
+  }
+  .sc-client-card.best,.cmp-col.cmp-best{border-color:var(--amber);box-shadow:0 4px 18px rgba(232,155,45,.16)}
+  .best-tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--amber);color:var(--ink);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 10px;border-radius:99px;white-space:nowrap}
+  .scc-name,.cmp-t{font-family:var(--font-d);font-weight:600;font-size:14px;margin-bottom:10px;color:var(--muted)}
+  .scc-pb,.cmp-big{font-family:var(--font-d);font-size:30px;font-weight:700;letter-spacing:-.02em}
+  .scc-pb small,.cmp-big small{font-size:13px;color:var(--muted);font-weight:500}
+  .scc-sub,.cmp-sub{font-size:12.5px;color:var(--muted);margin-top:6px}
+
+  /* ============ Embed code ============ */
+  .embed-code{
+    background:var(--ink);color:#D6E5DE;font-family:var(--font-d);font-size:12px;
+    padding:14px;border-radius:10px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;line-height:1.6;
+  }
+
+  /* ============ Widget page ============ */
+  body.widget-view{background:var(--paper)}
+  body.widget-view .sidebar,body.widget-view .sales-bar,body.widget-view .foot-note{display:none}
+  body.widget-view .app{grid-template-columns:1fr}
+  body.widget-view .main{padding-bottom:0}
+  body.widget-view .view{padding:0;max-width:none}
+  .widget-wrap{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+  .widget-card{
+    background:var(--paper-2);border:1px solid var(--line);border-radius:18px;
+    box-shadow:var(--shadow-lg);width:min(380px,100%);padding:26px;
+  }
+  .widget-head{margin-bottom:18px}
+  .w-title{font-size:21px;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-bottom:6px}
+  .w-sub{font-size:13.5px;color:var(--muted);margin-bottom:18px;line-height:1.5}
+  textarea.input{resize:vertical;min-height:52px}
+
+  /* ============ Stabilisation / polish ============ */
+  .skip-link{
+    position:fixed;top:-60px;left:12px;z-index:300;
+    background:var(--ink);color:#fff;padding:10px 16px;border-radius:0 0 10px 10px;
+    font-size:13.5px;font-weight:600;text-decoration:none;transition:top .2s;
+  }
+  .skip-link:focus{top:0}
+  .reset-link{
+    display:block;width:100%;text-align:center;margin-top:10px;
+    background:transparent;color:var(--white-faint);font-size:12px;font-weight:500;
+    padding:6px;border-radius:8px;transition:color .15s,background .15s;
+  }
+  .reset-link:hover{color:#fff;background:var(--white-line)}
+  @media (max-width:768px){ .reset-link{display:none} }
+  .view-loading{position:relative;min-height:200px;pointer-events:none}
+  .view-loading>*{opacity:.25;transition:opacity .2s}
+  .view-loading::after{
+    content:"";position:absolute;top:70px;left:50%;width:34px;height:34px;margin-left:-17px;
+    border:3px solid var(--line);border-top-color:var(--green);border-radius:50%;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .warn-card{
+    margin-top:12px;padding:11px 13px;border-radius:10px;font-size:12.5px;line-height:1.5;
+    background:var(--amber-tint);color:#8A5A0F;border:1px solid rgba(232,155,45,.4);
+  }
+  .mini-badge{
+    display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:99px;
+    background:var(--green-tint);color:var(--green);margin-left:4px;vertical-align:middle;letter-spacing:.02em;
+  }
+  .created-note{font-size:12px;color:var(--muted);white-space:nowrap}
+  @media (max-width:768px){ .created-note{display:none} }
+
+  /* ============ Mobile ============ */
+  @media (max-width:980px){
+    .editor,.dash-grid,.grid-2{grid-template-columns:1fr}
+  }
+  @media (max-width:768px){
+    .app{grid-template-columns:1fr}
+    .sidebar{
+      position:fixed;inset:auto 0 0 0;height:auto;z-index:60;
+      flex-direction:row;align-items:center;gap:6px;
+      padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+      border-top:1px solid rgba(255,255,255,.16);
+    }
+    .logo,.side-foot{display:none}
+    .nav{flex-direction:row;flex:1;gap:3px}
+    .nav a{flex-direction:column;gap:4px;font-size:10px;padding:7px 4px;flex:1;align-items:center;justify-content:center;border-radius:9px}
+    body.sales .sidebar{transform:translateY(110%)}
+    .view{padding:18px 16px 130px}
+    .main{padding-bottom:0}
+    .bands{grid-template-columns:1fr}
+    .fin-split{grid-template-columns:1fr}
+    .kpis{grid-template-columns:1fr 1fr}
+    .filters .input{width:100%}
+    .tbl th:nth-child(3),.tbl td:nth-child(3){display:none}
+    .foot-note{display:none}
+    body.sales .view{padding-bottom:60px}
+    .proj-title{width:170px;font-size:18px}
+    body.sales .band .yrs{font-size:34px}
+    .prop-sheet{padding:24px 16px 60px}
+  }
+</style>
+</head>
+<body>
+<a href="#view" class="skip-link">Skip to main content</a>
+<div class="app" id="appRoot">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <div class="sales-bar" id="salesBar"></div>
+    <div id="view" class="view"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true"><div class="modal" id="modalBox"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="foot-note">VoltMira — The quoting tool your clients can fact-check. Works offline. Your data stays in this browser. Early access. <a href="mailto:contact@voltmira.com">contact@voltmira.com</a></div>
+<div class="print-sheet" id="printSheet"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ==================================================================
+   Storage
+================================================================== */
+var mem = {};
+var store = {
+  get: function(k){ try { return localStorage.getItem(k); } catch(e){ return mem[k] || null; } },
+  set: function(k,v){ try { localStorage.setItem(k,v); } catch(e){ mem[k]=v; } },
+  del: function(k){ try { localStorage.removeItem(k); } catch(e){ delete mem[k]; } }
+};
+var KEY = "voltmira_v1";
+
+/* ==================================================================
+   i18n
+================================================================== */
+var LANG = {
+  en:{
+    nav_dashboard:"Dashboard", nav_projects:"Projects", nav_team:"Team", nav_settings:"Settings",
+    btn_new_quote:"New quote", btn_sales_mode:"Sales Mode", btn_back:"Back", btn_close:"Close",
+    btn_save:"Save", btn_cancel:"Cancel", btn_delete:"Delete", btn_duplicate:"Duplicate",
+    tab_quote:"Quote", tab_scenarios:"Scenarios",
+    dash_pipeline:"Pipeline (proposals sent)", dash_winrate:"Win rate", dash_avgpb:"Avg. expected payback",
+    dash_total:"Projects total", dash_overdue:"Overdue follow-ups",
+    dash_recent:"Recent projects", dash_leads:"Incoming leads", dash_activity:"Activity", dash_followups:"Follow-ups due",
+    col_project:"Project", col_system:"System", col_payback:"Payback", col_value:"Value", col_status:"Status", col_owner:"Owner",
+    st_draft:"Draft", st_sent:"Sent", st_won:"Won", st_lost:"Lost",
+    f_all:"All",
+    proj_search:"Search projects\u2026",
+    empty_noproj_t:"No projects yet", empty_noproj_s:"Create your first quote to get started.",
+    empty_nomatch_t:"Nothing matches", empty_nomatch_s:"Try a different search or filter \u2014 or create a new quote.",
+    empty_noleads_t:"No open leads", empty_noleads_s:"New requests from your website widget will appear here.",
+    empty_nofeed_t:"Nothing yet", empty_nofeed_s:"Actions you take will show up here.",
+    quote_it:"Quote it", call_today:"Call today?",
+    client_site:"Client & site", client_name:"Client name", address:"Address", owner:"Owner",
+    market:"Market", next_followup:"Next follow-up",
+    system:"System", label_system_size:"System size", elec_price:"Electricity price (\u20AC/kWh)",
+    annual_cons:"Annual consumption (kWh)", inc_battery:"Include battery (10 kWh)", battery_sub:"higher self-consumption",
+    inc_wind:"Include wind turbine", wind_sub:"hybrid generation",
+    wind_rated:"Rated power (kW)", wind_speed:"Average annual wind speed (m/s)", wind_region:"Wind region preset",
+    use_monthly:"Use monthly consumption profile", monthly_sub:"model seasonal use month by month",
+    sysinv:"System & investment", total_inv:"Total investment", prod_year:"Production / year", save_y1:"Savings, year one",
+    self_cons:"Self-consumed", exported:"Exported",
+    payback_title:"Payback \u2014 three honest scenarios",
+    pessimistic:"Pessimistic", expected:"Expected", optimistic:"Optimistic", yr_roi:"-yr ROI", years:"years",
+    lg_expected:"Expected cumulative cash flow", lg_break:"Break-even", lg_band:"Pessimistic / optimistic",
+    assumptions:"Assumptions", assump_full:"Every assumption we used",
+    financing:"Financing \u2014 monthly money, side by side", monthly_loan:"Monthly loan payment", est_savings:"Estimated monthly savings",
+    verdict_save:"You save {v}/month from day one", verdict_cf:"Cash-flow positive immediately", verdict_year:"Payback begins in year {y}",
+    verdict_grow:"Savings grow into the loan over time",
+    actions:"Actions", gen_link:"Generate Proposal Link", proposal_link:"Proposal link", download_pdf:"Download PDF",
+    request_quote:"Request this quote",
+    sc_new:"New scenario", sc_name:"Scenario name", sc_base:"Base (current quote)", sc_edit:"Edit", sc_close:"Close",
+    sc_metric:"Metric", sc_cost:"Total cost", sc_gen:"Annual generation", sc_pb:"Expected payback", sc_ms:"Monthly savings",
+    sc_show:"Show scenarios", sc_best:"Best value", sc_limit:"Up to 3 scenarios",
+    solar_only:"Solar only", solar_wind:"Solar + Wind",
+    team_title:"Team", team_sub:"Everyone who quotes under {co}.", members:"Members", add_member:"Add member",
+    name:"Name", role:"Role", email:"Email", add_to_team:"Add to team", seats_used:"{n} of 5 seats",
+    settings_title:"Settings", settings_sub:"Company identity and the numbers behind every calculation.",
+    company:"Company", company_name:"Company name", your_name:"Your name", default_market:"Default market for new quotes",
+    logo_url:"Logo URL", short_name:"Company short name", language:"Language",
+    co_note:"The company name and logo appear in the sidebar, on client proposals, and on the PDF export.",
+    data:"Data", export_data:"Export data (.json)", import_data:"Import data", reset_demo:"Reset demo",
+    calc_engine:"Calculation engine", scenario_bands:"Scenario bands",
+    save_settings:"Save settings", restore_defaults:"Restore defaults",
+    embed_title:"Website lead widget", embed_note:"Paste this on your own site. Visitors calculate and send you a lead \u2014 it lands on your dashboard.",
+    copy_code:"Copy code", open_widget:"Open widget demo",
+    proposal_prepared:"Solar proposal", prepared_for:"prepared for",
+    your_system:"Your system", see_battery:"See it with a battery", see_battery_sub:"watch how the numbers change",
+    client_preview:"Client preview", back_to_vm:"Back to VoltMira",
+    made_with:"Prepared with VoltMira \u2014 the quoting tool you can fact-check.",
+    t_copied:"Link copied", t_new_quote:"New quote created", t_settings_saved:"Settings saved \u2014 every project now uses these numbers",
+    t_req_sent:"Quote request sent! The installer will be in touch.", t_lead_widget:"Lead received from widget",
+    w_title:"See what solar could save you", w_sub:"Get a free, no-obligation estimate from {co}.",
+    w_name:"Full name", w_addr:"Address", w_bill:"Approximate monthly bill (\u20AC)", w_email:"Email (optional)",
+    w_msg:"Message", w_send:"Get my estimate", w_thanks_t:"Thank you!", w_thanks_s:"{co} has your details and will be in touch shortly with a tailored solar estimate.",
+    w_learn:"Learn more about VoltMira", w_another:"Send another request",
+    w_phone:"Phone number",
+    err_title:"Something went wrong", err_body:"Sorry about that.", err_home:"Return home", err_reset:"Reset all data",
+    reset_app:"Reset app data", reset_app_q:"This will delete all your projects, team, and settings. Are you sure?",
+    reset_everything:"Reset everything",
+    skip_nav:"Skip to main content",
+    currency:"Display currency", cur_eur:"Euro (\u20AC)", cur_ron:"RON (lei)", cur_mdl:"MDL (lei)",
+    afm_subsidy:"Subven\u021bie AFM (Casa Verde)", afm_badge:"cu subven\u021bie", afm_amount:"Subsidie AFM (RON)",
+    subsidy_sub:"reduces the up-front cost", payback_immediate:"immediate",
+    prosumer_warn:"Aten\u021bie: sistemele peste {x} kW pot fi supuse taxei de prosumator.",
+    prosumer_limit:"Prosumer limit (kW)",
+    cost_specific:"Cost specific", accept_quote:"Accept this quote", quote_accepted:"\u2713 Quote accepted",
+    accept_thanks:"Thank you! The installer will be in touch.",
+    created_ago:"Created {t}", status_changed:"Status changed to {s}.", undo:"Undo"
+  },
+  ro:{
+    nav_dashboard:"Panou", nav_projects:"Proiecte", nav_team:"Echip\u0103", nav_settings:"Set\u0103ri",
+    btn_new_quote:"Ofert\u0103 nou\u0103", btn_sales_mode:"Mod Vânzare", btn_back:"Înapoi", btn_close:"Închide",
+    btn_save:"Salveaz\u0103", btn_cancel:"Anuleaz\u0103", btn_delete:"\u0218terge", btn_duplicate:"Duplic\u0103",
+    tab_quote:"Ofert\u0103", tab_scenarios:"Scenarii",
+    dash_pipeline:"Pipeline (oferte trimise)", dash_winrate:"Rat\u0103 câ\u0219tig", dash_avgpb:"Amortizare medie estimat\u0103",
+    dash_total:"Proiecte total", dash_overdue:"Urm\u0103riri restante",
+    dash_recent:"Proiecte recente", dash_leads:"Lead-uri noi", dash_activity:"Activitate", dash_followups:"Urm\u0103riri scadente",
+    col_project:"Proiect", col_system:"Sistem", col_payback:"Amortizare", col_value:"Valoare", col_status:"Status", col_owner:"Responsabil",
+    st_draft:"Ciorn\u0103", st_sent:"Trimis", st_won:"Câ\u0219tigat", st_lost:"Pierdut",
+    f_all:"Toate",
+    proj_search:"Caut\u0103 proiecte\u2026",
+    empty_noproj_t:"Niciun proiect", empty_noproj_s:"Creeaz\u0103 prima ofert\u0103 pentru a începe.",
+    empty_nomatch_t:"Nimic g\u0103sit", empty_nomatch_s:"Încearc\u0103 alt\u0103 c\u0103utare sau filtru \u2014 sau creeaz\u0103 o ofert\u0103.",
+    empty_noleads_t:"Niciun lead deschis", empty_noleads_s:"Cererile de pe widget-ul site-ului apar aici.",
+    empty_nofeed_t:"Nimic înc\u0103", empty_nofeed_s:"Ac\u021biunile tale vor ap\u0103rea aici.",
+    quote_it:"F\u0103 ofert\u0103", call_today:"Sun\u0103 azi?",
+    client_site:"Client & loca\u021bie", client_name:"Nume client", address:"Adres\u0103", owner:"Responsabil",
+    market:"Pia\u021b\u0103", next_followup:"Urm\u0103toarea urm\u0103rire",
+    system:"Sistem", label_system_size:"Putere sistem", elec_price:"Pre\u021b energie (\u20AC/kWh)",
+    annual_cons:"Consum anual (kWh)", inc_battery:"Include baterie (10 kWh)", battery_sub:"autoconsum mai mare",
+    inc_wind:"Include turbin\u0103 eolian\u0103", wind_sub:"generare hibrid\u0103",
+    wind_rated:"Putere nominal\u0103 (kW)", wind_speed:"Vitez\u0103 medie vânt (m/s)", wind_region:"Preset regiune vânt",
+    use_monthly:"Profil de consum lunar", monthly_sub:"modeleaz\u0103 consumul sezonier lun\u0103 cu lun\u0103",
+    sysinv:"Sistem & investi\u021bie", total_inv:"Investi\u021bie total\u0103", prod_year:"Produc\u021bie / an", save_y1:"Economii, primul an",
+    self_cons:"Autoconsum", exported:"Exportat",
+    payback_title:"Amortizare \u2014 trei scenarii oneste",
+    pessimistic:"Pesimist", expected:"A\u0219teptat", optimistic:"Optimist", yr_roi:" ani ROI", years:"ani",
+    lg_expected:"Flux de numerar cumulat a\u0219teptat", lg_break:"Prag de rentabilitate", lg_band:"Pesimist / optimist",
+    assumptions:"Ipoteze", assump_full:"Toate ipotezele folosite",
+    financing:"Finan\u021bare \u2014 bani lunari, comparativ", monthly_loan:"Rat\u0103 lunar\u0103 credit", est_savings:"Economii lunare estimate",
+    verdict_save:"Economise\u0219ti {v}/lun\u0103 din prima zi", verdict_cf:"Flux pozitiv imediat", verdict_year:"Amortizare din anul {y}",
+    verdict_grow:"Economiile cresc peste rat\u0103 în timp",
+    actions:"Ac\u021biuni", gen_link:"Genereaz\u0103 link ofert\u0103", proposal_link:"Link ofert\u0103", download_pdf:"Descarc\u0103 PDF",
+    request_quote:"Solicit\u0103 aceast\u0103 ofert\u0103",
+    sc_new:"Scenariu nou", sc_name:"Nume scenariu", sc_base:"Baz\u0103 (oferta curent\u0103)", sc_edit:"Editeaz\u0103", sc_close:"Închide",
+    sc_metric:"Metric\u0103", sc_cost:"Cost total", sc_gen:"Generare anual\u0103", sc_pb:"Amortizare a\u0219teptat\u0103", sc_ms:"Economii lunare",
+    sc_show:"Arat\u0103 scenarii", sc_best:"Cea mai bun\u0103 op\u021biune", sc_limit:"Pân\u0103 la 3 scenarii",
+    solar_only:"Doar solar", solar_wind:"Solar + Eolian",
+    team_title:"Echip\u0103", team_sub:"To\u021bi cei care ofert\u0103 sub {co}.", members:"Membri", add_member:"Adaug\u0103 membru",
+    name:"Nume", role:"Rol", email:"Email", add_to_team:"Adaug\u0103 în echip\u0103", seats_used:"{n} din 5 locuri",
+    settings_title:"Set\u0103ri", settings_sub:"Identitatea companiei \u0219i cifrele din spatele fiec\u0103rui calcul.",
+    company:"Companie", company_name:"Nume companie", your_name:"Numele t\u0103u", default_market:"Pia\u021ba implicit\u0103 pentru oferte noi",
+    logo_url:"URL logo", short_name:"Nume scurt companie", language:"Limb\u0103",
+    co_note:"Numele \u0219i logo-ul apar în bara lateral\u0103, pe oferte \u0219i pe PDF.",
+    data:"Date", export_data:"Export date (.json)", import_data:"Import date", reset_demo:"Reseteaz\u0103 demo",
+    calc_engine:"Motor de calcul", scenario_bands:"Benzi scenarii",
+    save_settings:"Salveaz\u0103 set\u0103rile", restore_defaults:"Restaureaz\u0103 implicite",
+    embed_title:"Widget lead pentru site", embed_note:"Adaug\u0103-l pe site-ul t\u0103u. Vizitatorii calculeaz\u0103 \u0219i î\u021bi trimit un lead.",
+    copy_code:"Copiaz\u0103 codul", open_widget:"Deschide demo widget",
+    proposal_prepared:"Ofert\u0103 solar\u0103", prepared_for:"preg\u0103tit pentru",
+    your_system:"Sistemul t\u0103u", see_battery:"Vezi cu baterie", see_battery_sub:"vezi cum se schimb\u0103 cifrele",
+    client_preview:"Previzualizare client", back_to_vm:"Înapoi la VoltMira",
+    made_with:"Realizat cu VoltMira \u2014 oferta pe care o po\u021bi verifica.",
+    t_copied:"Link copiat", t_new_quote:"Ofert\u0103 nou\u0103 creat\u0103", t_settings_saved:"Set\u0103ri salvate \u2014 toate proiectele folosesc aceste cifre",
+    t_req_sent:"Cerere trimis\u0103! Instalatorul te va contacta.", t_lead_widget:"Lead primit din widget",
+    w_title:"Vezi cât ai economisi cu solar", w_sub:"Prime\u0219te o estimare gratuit\u0103 de la {co}.",
+    w_name:"Nume complet", w_addr:"Adres\u0103", w_bill:"Factur\u0103 lunar\u0103 aproximativ\u0103 (\u20AC)", w_email:"Email (op\u021bional)",
+    w_msg:"Mesaj", w_send:"Vreau estimarea", w_thanks_t:"Mul\u021bumim!", w_thanks_s:"{co} are datele tale \u0219i te va contacta în curând cu o estimare.",
+    w_learn:"Afl\u0103 mai multe despre VoltMira", w_another:"Trimite alt\u0103 cerere",
+    w_phone:"Num\u0103r de telefon",
+    err_title:"Ceva n-a mers bine", err_body:"Ne pare r\u0103u.", err_home:"Înapoi acas\u0103", err_reset:"Reseteaz\u0103 toate datele",
+    reset_app:"Reseteaz\u0103 datele", reset_app_q:"Aceasta va \u0219terge toate proiectele, echipa \u0219i set\u0103rile. Sigur?",
+    reset_everything:"Reseteaz\u0103 tot",
+    skip_nav:"Sari la con\u021binut",
+    currency:"Moned\u0103 afi\u0219at\u0103", cur_eur:"Euro (\u20AC)", cur_ron:"RON (lei)", cur_mdl:"MDL (lei)",
+    afm_subsidy:"Subven\u021bie AFM (Casa Verde)", afm_badge:"cu subven\u021bie", afm_amount:"Subsidie AFM (RON)",
+    subsidy_sub:"reduce costul ini\u021bial", payback_immediate:"imediat",
+    prosumer_warn:"Aten\u021bie: sistemele peste {x} kW pot fi supuse taxei de prosumator.",
+    prosumer_limit:"Limit\u0103 prosumator (kW)",
+    cost_specific:"Cost specific", accept_quote:"Accept\u0103 oferta", quote_accepted:"\u2713 Ofert\u0103 acceptat\u0103",
+    accept_thanks:"Mul\u021bumim! Instalatorul te va contacta.",
+    created_ago:"Creat {t}", status_changed:"Status schimbat în {s}.", undo:"Anuleaz\u0103"
+  },
+  ru:{
+    nav_dashboard:"\u041F\u0430\u043D\u0435\u043B\u044C", nav_projects:"\u041F\u0440\u043E\u0435\u043A\u0442\u044B", nav_team:"\u041A\u043E\u043C\u0430\u043D\u0434\u0430", nav_settings:"\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
+    btn_new_quote:"\u041D\u043E\u0432\u044B\u0439 \u0440\u0430\u0441\u0447\u0451\u0442", btn_sales_mode:"\u0420\u0435\u0436\u0438\u043C \u043F\u0440\u043E\u0434\u0430\u0436", btn_back:"\u041D\u0430\u0437\u0430\u0434", btn_close:"\u0417\u0430\u043A\u0440\u044B\u0442\u044C",
+    btn_save:"\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C", btn_cancel:"\u041E\u0442\u043C\u0435\u043D\u0430", btn_delete:"\u0423\u0434\u0430\u043B\u0438\u0442\u044C", btn_duplicate:"\u0414\u0443\u0431\u043B\u0438\u0440\u043E\u0432\u0430\u0442\u044C",
+    tab_quote:"\u0420\u0430\u0441\u0447\u0451\u0442", tab_scenarios:"\u0421\u0446\u0435\u043D\u0430\u0440\u0438\u0438",
+    dash_pipeline:"\u0412\u043E\u0440\u043E\u043D\u043A\u0430 (\u043E\u0442\u043F\u0440. \u043F\u0440\u0435\u0434\u043B\u043E\u0436.)", dash_winrate:"\u0414\u043E\u043B\u044F \u043F\u043E\u0431\u0435\u0434", dash_avgpb:"\u0421\u0440. \u043E\u043A\u0443\u043F\u0430\u0435\u043C\u043E\u0441\u0442\u044C",
+    dash_total:"\u0412\u0441\u0435\u0433\u043E \u043F\u0440\u043E\u0435\u043A\u0442\u043E\u0432", dash_overdue:"\u041F\u0440\u043E\u0441\u0440\u043E\u0447. \u043A\u043E\u043D\u0442\u0430\u043A\u0442\u044B",
+    dash_recent:"\u041D\u0435\u0434\u0430\u0432\u043D\u0438\u0435 \u043F\u0440\u043E\u0435\u043A\u0442\u044B", dash_leads:"\u041D\u043E\u0432\u044B\u0435 \u043B\u0438\u0434\u044B", dash_activity:"\u0410\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C", dash_followups:"\u041A\u043E\u043D\u0442\u0430\u043A\u0442\u044B \u043A \u0441\u0440\u043E\u043A\u0443",
+    col_project:"\u041F\u0440\u043E\u0435\u043A\u0442", col_system:"\u0421\u0438\u0441\u0442\u0435\u043C\u0430", col_payback:"\u041E\u043A\u0443\u043F\u0430\u0435\u043C.", col_value:"\u0421\u0442\u043E\u0438\u043C\u043E\u0441\u0442\u044C", col_status:"\u0421\u0442\u0430\u0442\u0443\u0441", col_owner:"\u041E\u0442\u0432\u0435\u0442\u0441\u0442\u0432.",
+    st_draft:"\u0427\u0435\u0440\u043D\u043E\u0432\u0438\u043A", st_sent:"\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D", st_won:"\u0412\u044B\u0438\u0433\u0440\u0430\u043D", st_lost:"\u041F\u0440\u043E\u0438\u0433\u0440\u0430\u043D",
+    f_all:"\u0412\u0441\u0435",
+    proj_search:"\u041F\u043E\u0438\u0441\u043A \u043F\u0440\u043E\u0435\u043A\u0442\u043E\u0432\u2026",
+    empty_noproj_t:"\u041F\u043E\u043A\u0430 \u043D\u0435\u0442 \u043F\u0440\u043E\u0435\u043A\u0442\u043E\u0432", empty_noproj_s:"\u0421\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0432\u044B\u0439 \u0440\u0430\u0441\u0447\u0451\u0442.",
+    empty_nomatch_t:"\u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E", empty_nomatch_s:"\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u0435 \u043F\u043E\u0438\u0441\u043A \u0438\u043B\u0438 \u0444\u0438\u043B\u044C\u0442\u0440.",
+    empty_noleads_t:"\u041D\u0435\u0442 \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u0445 \u043B\u0438\u0434\u043E\u0432", empty_noleads_s:"\u0417\u0430\u044F\u0432\u043A\u0438 \u0441 \u0432\u0438\u0434\u0436\u0435\u0442\u0430 \u043F\u043E\u044F\u0432\u044F\u0442\u0441\u044F \u0437\u0434\u0435\u0441\u044C.",
+    empty_nofeed_t:"\u041F\u043E\u043A\u0430 \u043F\u0443\u0441\u0442\u043E", empty_nofeed_s:"\u0412\u0430\u0448\u0438 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044F \u043F\u043E\u044F\u0432\u044F\u0442\u0441\u044F \u0437\u0434\u0435\u0441\u044C.",
+    quote_it:"\u0421\u0434\u0435\u043B\u0430\u0442\u044C \u0440\u0430\u0441\u0447\u0451\u0442", call_today:"\u041F\u043E\u0437\u0432\u043E\u043D\u0438\u0442\u044C?",
+    client_site:"\u041A\u043B\u0438\u0435\u043D\u0442 \u0438 \u043E\u0431\u044A\u0435\u043A\u0442", client_name:"\u0418\u043C\u044F \u043A\u043B\u0438\u0435\u043D\u0442\u0430", address:"\u0410\u0434\u0440\u0435\u0441", owner:"\u041E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0439",
+    market:"\u0420\u044B\u043D\u043E\u043A", next_followup:"\u0421\u043B\u0435\u0434. \u043A\u043E\u043D\u0442\u0430\u043A\u0442",
+    system:"\u0421\u0438\u0441\u0442\u0435\u043C\u0430", label_system_size:"\u041C\u043E\u0449\u043D\u043E\u0441\u0442\u044C \u0441\u0438\u0441\u0442\u0435\u043C\u044B", elec_price:"\u0426\u0435\u043D\u0430 \u044D\u043B/\u044D\u043D\u0435\u0440\u0433\u0438\u0438 (\u20AC/\u043A\u0412\u0442\u00B7\u0447)",
+    annual_cons:"\u0413\u043E\u0434\u043E\u0432\u043E\u0435 \u043F\u043E\u0442\u0440\u0435\u0431\u043B\u0435\u043D\u0438\u0435 (\u043A\u0412\u0442\u00B7\u0447)", inc_battery:"\u0421 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u043E\u043C (10 \u043A\u0412\u0442\u00B7\u0447)", battery_sub:"\u0431\u043E\u043B\u044C\u0448\u0435 \u0441\u0430\u043C\u043E\u043F\u043E\u0442\u0440\u0435\u0431\u043B\u0435\u043D\u0438\u044F",
+    inc_wind:"\u0421 \u0432\u0435\u0442\u0440\u043E\u0433\u0435\u043D\u0435\u0440\u0430\u0442\u043E\u0440\u043E\u043C", wind_sub:"\u0433\u0438\u0431\u0440\u0438\u0434\u043D\u0430\u044F \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044F",
+    wind_rated:"\u041D\u043E\u043C. \u043C\u043E\u0449\u043D\u043E\u0441\u0442\u044C (\u043A\u0412\u0442)", wind_speed:"\u0421\u0440. \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0432\u0435\u0442\u0440\u0430 (\u043C/\u0441)", wind_region:"\u0420\u0435\u0433\u0438\u043E\u043D \u0432\u0435\u0442\u0440\u0430",
+    use_monthly:"\u041F\u043E\u043C\u0435\u0441\u044F\u0447\u043D\u044B\u0439 \u043F\u0440\u043E\u0444\u0438\u043B\u044C", monthly_sub:"\u0441\u0435\u0437\u043E\u043D\u043D\u043E\u0435 \u043F\u043E\u0442\u0440\u0435\u0431\u043B\u0435\u043D\u0438\u0435 \u043F\u043E \u043C\u0435\u0441\u044F\u0446\u0430\u043C",
+    sysinv:"\u0421\u0438\u0441\u0442\u0435\u043C\u0430 \u0438 \u0438\u043D\u0432\u0435\u0441\u0442\u0438\u0446\u0438\u0438", total_inv:"\u041E\u0431\u0449\u0430\u044F \u0438\u043D\u0432\u0435\u0441\u0442\u0438\u0446\u0438\u044F", prod_year:"\u0412\u044B\u0440\u0430\u0431\u043E\u0442\u043A\u0430 / \u0433\u043E\u0434", save_y1:"\u042D\u043A\u043E\u043D\u043E\u043C\u0438\u044F, 1-\u0439 \u0433\u043E\u0434",
+    self_cons:"\u0421\u0430\u043C\u043E\u043F\u043E\u0442\u0440\u0435\u0431\u043B.", exported:"\u042D\u043A\u0441\u043F\u043E\u0440\u0442",
+    payback_title:"\u041E\u043A\u0443\u043F\u0430\u0435\u043C\u043E\u0441\u0442\u044C \u2014 \u0442\u0440\u0438 \u0447\u0435\u0441\u0442\u043D\u044B\u0445 \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u044F",
+    pessimistic:"\u041F\u0435\u0441\u0441\u0438\u043C.", expected:"\u041E\u0436\u0438\u0434\u0430\u0435\u043C.", optimistic:"\u041E\u043F\u0442\u0438\u043C.", yr_roi:"-\u043B\u0435\u0442 ROI", years:"\u043B\u0435\u0442",
+    lg_expected:"\u041E\u0436\u0438\u0434\u0430\u0435\u043C\u044B\u0439 \u043D\u0430\u043A\u043E\u043F\u043B. \u0434\u0435\u043D. \u043F\u043E\u0442\u043E\u043A", lg_break:"\u0422\u043E\u0447\u043A\u0430 \u043E\u043A\u0443\u043F\u0430\u0435\u043C\u043E\u0441\u0442\u0438", lg_band:"\u041F\u0435\u0441\u0441\u0438\u043C. / \u043E\u043F\u0442\u0438\u043C.",
+    assumptions:"\u0414\u043E\u043F\u0443\u0449\u0435\u043D\u0438\u044F", assump_full:"\u0412\u0441\u0435 \u0434\u043E\u043F\u0443\u0449\u0435\u043D\u0438\u044F",
+    financing:"\u0424\u0438\u043D\u0430\u043D\u0441\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u2014 \u043F\u043E\u043C\u0435\u0441\u044F\u0447\u043D\u043E", monthly_loan:"\u041F\u043B\u0430\u0442\u0451\u0436 \u043F\u043E \u043A\u0440\u0435\u0434\u0438\u0442\u0443", est_savings:"\u041E\u0446\u0435\u043D. \u043C\u0435\u0441. \u044D\u043A\u043E\u043D\u043E\u043C\u0438\u044F",
+    verdict_save:"\u042D\u043A\u043E\u043D\u043E\u043C\u0438\u044F {v}/\u043C\u0435\u0441 \u0441 \u043F\u0435\u0440\u0432\u043E\u0433\u043E \u0434\u043D\u044F", verdict_cf:"\u041F\u043E\u043B\u043E\u0436\u0438\u0442. \u043F\u043E\u0442\u043E\u043A \u0441\u0440\u0430\u0437\u0443", verdict_year:"\u041E\u043A\u0443\u043F\u0430\u0435\u043C\u043E\u0441\u0442\u044C \u0441 {y}-\u0433\u043E \u0433\u043E\u0434\u0430",
+    verdict_grow:"\u042D\u043A\u043E\u043D\u043E\u043C\u0438\u044F \u0440\u0430\u0441\u0442\u0451\u0442 \u0441\u043E \u0432\u0440\u0435\u043C\u0435\u043D\u0435\u043C",
+    actions:"\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044F", gen_link:"\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0441\u044B\u043B\u043A\u0443", proposal_link:"\u0421\u0441\u044B\u043B\u043A\u0430", download_pdf:"\u0421\u043A\u0430\u0447\u0430\u0442\u044C PDF",
+    request_quote:"\u0417\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0440\u0430\u0441\u0447\u0451\u0442",
+    sc_new:"\u041D\u043E\u0432\u044B\u0439 \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u0439", sc_name:"\u0418\u043C\u044F \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u044F", sc_base:"\u0411\u0430\u0437\u0430 (\u0442\u0435\u043A\u0443\u0449\u0438\u0439)", sc_edit:"\u041F\u0440\u0430\u0432\u0438\u0442\u044C", sc_close:"\u0417\u0430\u043A\u0440\u044B\u0442\u044C",
+    sc_metric:"\u041C\u0435\u0442\u0440\u0438\u043A\u0430", sc_cost:"\u041E\u0431\u0449\u0430\u044F \u0441\u0442\u043E\u0438\u043C.", sc_gen:"\u0413\u043E\u0434. \u0432\u044B\u0440\u0430\u0431\u043E\u0442\u043A\u0430", sc_pb:"\u041E\u043A\u0443\u043F\u0430\u0435\u043C\u043E\u0441\u0442\u044C", sc_ms:"\u041C\u0435\u0441. \u044D\u043A\u043E\u043D\u043E\u043C\u0438\u044F",
+    sc_show:"\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u0438", sc_best:"\u041B\u0443\u0447\u0448\u0438\u0439 \u0432\u0430\u0440\u0438\u0430\u043D\u0442", sc_limit:"\u0414\u043E 3 \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u0435\u0432",
+    solar_only:"\u0422\u043E\u043B\u044C\u043A\u043E \u0441\u043E\u043B\u043D\u0446\u0435", solar_wind:"\u0421\u043E\u043B\u043D\u0446\u0435 + \u0432\u0435\u0442\u0435\u0440",
+    team_title:"\u041A\u043E\u043C\u0430\u043D\u0434\u0430", team_sub:"\u0412\u0441\u0435, \u043A\u0442\u043E \u0433\u043E\u0442\u043E\u0432\u0438\u0442 \u0440\u0430\u0441\u0447\u0451\u0442\u044B \u0432 {co}.", members:"\u0423\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0438", add_member:"\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C",
+    name:"\u0418\u043C\u044F", role:"\u0420\u043E\u043B\u044C", email:"Email", add_to_team:"\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0432 \u043A\u043E\u043C\u0430\u043D\u0434\u0443", seats_used:"{n} \u0438\u0437 5 \u043C\u0435\u0441\u0442",
+    settings_title:"\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438", settings_sub:"\u0418\u0434\u0435\u043D\u0442\u0438\u0447\u043D\u043E\u0441\u0442\u044C \u043A\u043E\u043C\u043F\u0430\u043D\u0438\u0438 \u0438 \u0446\u0438\u0444\u0440\u044B \u0440\u0430\u0441\u0447\u0451\u0442\u043E\u0432.",
+    company:"\u041A\u043E\u043C\u043F\u0430\u043D\u0438\u044F", company_name:"\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u043A\u043E\u043C\u043F\u0430\u043D\u0438\u0438", your_name:"\u0412\u0430\u0448\u0435 \u0438\u043C\u044F", default_market:"\u0420\u044B\u043D\u043E\u043A \u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E",
+    logo_url:"URL \u043B\u043E\u0433\u043E\u0442\u0438\u043F\u0430", short_name:"\u041A\u043E\u0440\u043E\u0442\u043A\u043E\u0435 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435", language:"\u042F\u0437\u044B\u043A",
+    co_note:"\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0438 \u043B\u043E\u0433\u043E\u0442\u0438\u043F \u043F\u043E\u044F\u0432\u043B\u044F\u044E\u0442\u0441\u044F \u0432 \u043C\u0435\u043D\u044E, \u043D\u0430 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F\u0445 \u0438 \u0432 PDF.",
+    data:"\u0414\u0430\u043D\u043D\u044B\u0435", export_data:"\u042D\u043A\u0441\u043F\u043E\u0440\u0442 (.json)", import_data:"\u0418\u043C\u043F\u043E\u0440\u0442", reset_demo:"\u0421\u0431\u0440\u043E\u0441 \u0434\u0435\u043C\u043E",
+    calc_engine:"\u041C\u043E\u0442\u043E\u0440 \u0440\u0430\u0441\u0447\u0451\u0442\u0430", scenario_bands:"\u041F\u043E\u043B\u043E\u0441\u044B \u0441\u0446\u0435\u043D\u0430\u0440\u0438\u0435\u0432",
+    save_settings:"\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C", restore_defaults:"\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C",
+    embed_title:"\u0412\u0438\u0434\u0436\u0435\u0442 \u043B\u0438\u0434\u043E\u0432", embed_note:"\u0412\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u043D\u0430 \u0441\u0432\u043E\u0439 \u0441\u0430\u0439\u0442. \u041F\u043E\u0441\u0435\u0442\u0438\u0442\u0435\u043B\u0438 \u0441\u0447\u0438\u0442\u0430\u044E\u0442 \u0438 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0442 \u043B\u0438\u0434.",
+    copy_code:"\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u043A\u043E\u0434", open_widget:"\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0434\u0435\u043C\u043E",
+    proposal_prepared:"\u0421\u043E\u043B\u043D\u0435\u0447\u043D\u043E\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0435", prepared_for:"\u043F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u043B\u0435\u043D\u043E \u0434\u043B\u044F",
+    your_system:"\u0412\u0430\u0448\u0430 \u0441\u0438\u0441\u0442\u0435\u043C\u0430", see_battery:"\u041F\u043E\u0441\u043C\u043E\u0442\u0440\u0435\u0442\u044C \u0441 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u043E\u043C", see_battery_sub:"\u043A\u0430\u043A \u043C\u0435\u043D\u044F\u044E\u0442\u0441\u044F \u0446\u0438\u0444\u0440\u044B",
+    client_preview:"\u041F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440", back_to_vm:"\u041D\u0430\u0437\u0430\u0434 \u0432 VoltMira",
+    made_with:"\u0421\u043E\u0437\u0434\u0430\u043D\u043E \u0432 VoltMira \u2014 \u0440\u0430\u0441\u0447\u0451\u0442, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u043C\u043E\u0436\u043D\u043E \u043F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C.",
+    t_copied:"\u0421\u0441\u044B\u043B\u043A\u0430 \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u0430", t_new_quote:"\u041D\u043E\u0432\u044B\u0439 \u0440\u0430\u0441\u0447\u0451\u0442 \u0441\u043E\u0437\u0434\u0430\u043D", t_settings_saved:"\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u044B",
+    t_req_sent:"\u0417\u0430\u043F\u0440\u043E\u0441 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D! \u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0449\u0438\u043A \u0441\u0432\u044F\u0436\u0435\u0442\u0441\u044F \u0441 \u0432\u0430\u043C\u0438.", t_lead_widget:"\u041B\u0438\u0434 \u043F\u043E\u043B\u0443\u0447\u0435\u043D \u0441 \u0432\u0438\u0434\u0436\u0435\u0442\u0430",
+    w_title:"\u0423\u0437\u043D\u0430\u0439\u0442\u0435, \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u044D\u043A\u043E\u043D\u043E\u043C\u0438\u0442 \u0441\u043E\u043B\u043D\u0446\u0435", w_sub:"\u041F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u0443\u044E \u043E\u0446\u0435\u043D\u043A\u0443 \u043E\u0442 {co}.",
+    w_name:"\u041F\u043E\u043B\u043D\u043E\u0435 \u0438\u043C\u044F", w_addr:"\u0410\u0434\u0440\u0435\u0441", w_bill:"\u041F\u0440\u0438\u043C\u0435\u0440\u043D\u044B\u0439 \u0441\u0447\u0451\u0442 \u0432 \u043C\u0435\u0441\u044F\u0446 (\u20AC)", w_email:"Email (\u043D\u0435\u043E\u0431\u044F\u0437.)",
+    w_msg:"\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435", w_send:"\u041F\u043E\u043B\u0443\u0447\u0438\u0442\u044C \u043E\u0446\u0435\u043D\u043A\u0443", w_thanks_t:"\u0421\u043F\u0430\u0441\u0438\u0431\u043E!", w_thanks_s:"{co} \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u0430 \u0432\u0430\u0448\u0438 \u0434\u0430\u043D\u043D\u044B\u0435 \u0438 \u0441\u043A\u043E\u0440\u043E \u0441\u0432\u044F\u0436\u0435\u0442\u0441\u044F.",
+    w_learn:"\u041F\u043E\u0434\u0440\u043E\u0431\u043D\u0435\u0435 \u043E VoltMira", w_another:"\u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u0435\u0449\u0451",
+    w_phone:"\u041D\u043E\u043C\u0435\u0440 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430",
+    err_title:"\u0427\u0442\u043E-\u0442\u043E \u043F\u043E\u0448\u043B\u043E \u043D\u0435 \u0442\u0430\u043A", err_body:"\u0418\u0437\u0432\u0438\u043D\u0438\u0442\u0435.", err_home:"\u041D\u0430 \u0433\u043B\u0430\u0432\u043D\u0443\u044E", err_reset:"\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u0441\u0435 \u0434\u0430\u043D\u043D\u044B\u0435",
+    reset_app:"\u0421\u0431\u0440\u043E\u0441 \u0434\u0430\u043D\u043D\u044B\u0445", reset_app_q:"\u042D\u0442\u043E \u0443\u0434\u0430\u043B\u0438\u0442 \u0432\u0441\u0435 \u043F\u0440\u043E\u0435\u043A\u0442\u044B, \u043A\u043E\u043C\u0430\u043D\u0434\u0443 \u0438 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438. \u0423\u0432\u0435\u0440\u0435\u043D\u044B?",
+    reset_everything:"\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u0441\u0451",
+    skip_nav:"\u041A \u043E\u0441\u043D\u043E\u0432\u043D\u043E\u043C\u0443 \u0441\u043E\u0434\u0435\u0440\u0436\u0430\u043D\u0438\u044E",
+    currency:"\u0412\u0430\u043B\u044E\u0442\u0430 \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F", cur_eur:"\u0415\u0432\u0440\u043E (\u20AC)", cur_ron:"RON (\u043B\u0435\u0439)", cur_mdl:"MDL (\u043B\u0435\u0439)",
+    afm_subsidy:"\u0421\u0443\u0431\u0441\u0438\u0434\u0438\u044F AFM (Casa Verde)", afm_badge:"\u0441 \u0441\u0443\u0431\u0441\u0438\u0434\u0438\u0435\u0439", afm_amount:"\u0421\u0443\u0431\u0441\u0438\u0434\u0438\u044F AFM (RON)",
+    subsidy_sub:"\u0441\u043D\u0438\u0436\u0430\u0435\u0442 \u043D\u0430\u0447\u0430\u043B\u044C\u043D\u0443\u044E \u0441\u0442\u043E\u0438\u043C\u043E\u0441\u0442\u044C", payback_immediate:"\u0441\u0440\u0430\u0437\u0443",
+    prosumer_warn:"\u0412\u043D\u0438\u043C\u0430\u043D\u0438\u0435: \u0441\u0438\u0441\u0442\u0435\u043C\u044B \u0441\u0432\u044B\u0448\u0435 {x} \u043A\u0412\u0442 \u043C\u043E\u0433\u0443\u0442 \u043E\u0431\u043B\u0430\u0433\u0430\u0442\u044C\u0441\u044F \u043D\u0430\u043B\u043E\u0433\u043E\u043C \u043F\u0440\u043E\u0441\u044C\u044E\u043C\u0435\u0440\u0430.",
+    prosumer_limit:"\u041B\u0438\u043C\u0438\u0442 \u043F\u0440\u043E\u0441\u044C\u044E\u043C\u0435\u0440\u0430 (\u043A\u0412\u0442)",
+    cost_specific:"\u0423\u0434\u0435\u043B\u044C\u043D\u0430\u044F \u0441\u0442\u043E\u0438\u043C\u043E\u0441\u0442\u044C", accept_quote:"\u041F\u0440\u0438\u043D\u044F\u0442\u044C \u0440\u0430\u0441\u0447\u0451\u0442", quote_accepted:"\u2713 \u0420\u0430\u0441\u0447\u0451\u0442 \u043F\u0440\u0438\u043D\u044F\u0442",
+    accept_thanks:"\u0421\u043F\u0430\u0441\u0438\u0431\u043E! \u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0449\u0438\u043A \u0441\u0432\u044F\u0436\u0435\u0442\u0441\u044F \u0441 \u0432\u0430\u043C\u0438.",
+    created_ago:"\u0421\u043E\u0437\u0434\u0430\u043D\u043E {t}", status_changed:"\u0421\u0442\u0430\u0442\u0443\u0441 \u0438\u0437\u043C\u0435\u043D\u0451\u043D \u043D\u0430 {s}.", undo:"\u041E\u0442\u043C\u0435\u043D\u0430"
+  }
+};
+function t(key, lang){
+  var L = lang || (S && S.settings && S.settings.lang) || "en";
+  var pack = LANG[L] || LANG.en;
+  return (pack[key] != null ? pack[key] : (LANG.en[key] != null ? LANG.en[key] : key));
+}
+function tf(key, map){
+  var s = t(key);
+  for (var k in map){ s = s.replace("{"+k+"}", map[k]); }
+  return s;
+}
+
+/* ==================================================================
+   Helpers
+================================================================== */
+function uid(){ return Math.random().toString(36).slice(2,8); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function eur(n){ return "\u20AC" + Math.round(n).toLocaleString("en-IE"); }
+var FX = { EUR:1, RON:4.97, MDL:19.8 };
+function formatMoney(amount, currency){
+  var cur = currency || (S && S.settings && S.settings.currency) || "EUR";
+  if (cur==="RON"){ return "lei " + Math.round(amount*FX.RON).toLocaleString("ro-RO"); }
+  if (cur==="MDL"){ return "lei " + Math.round(amount*FX.MDL).toLocaleString("ro-MD"); }
+  return "\u20AC" + Math.round(amount).toLocaleString("en-IE");
+}
+function kwhF(n){ return Math.round(n).toLocaleString("en-IE") + " kWh"; }
+function pct(n){ return Math.round(n) + "%"; }
+function yrsF(n){ return n === null ? "25+" : (n === 0 ? t("payback_immediate") : n.toFixed(1)); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function ago(ts){
+  var s = Math.max(1,(Date.now()-ts)/1000);
+  if (s<60) return "just now";
+  if (s<3600) return Math.floor(s/60)+"m ago";
+  if (s<86400) return Math.floor(s/3600)+"h ago";
+  if (s<86400*7) return Math.floor(s/86400)+"d ago";
+  return new Date(ts).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+}
+function initialsOf(name){
+  return (name||"?").trim().split(/\s+/).slice(0,2).map(function(w){return w[0]||"";}).join("").toUpperCase() || "?";
+}
+function $(id){ return document.getElementById(id); }
+var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+var SOLAR_SEASON = [0.30,0.40,0.60,0.80,1.00,1.10,1.10,1.00,0.80,0.60,0.40,0.25];
+var WIND_PRESETS = { "Constan\u021ba":6.5, "Chi\u0219in\u0103u":4.8, "Bucure\u0219ti":4.2 };
+
+/* ==================================================================
+   Markets
+================================================================== */
+var MARKETS = {
+  RO: { name:"Romania", scheme:"Net metering 1:1", feed:0.036, oneToOne:true,
+        note:"Exports offset your bill 1:1 up to annual consumption; residual surplus paid at \u20AC0.036/kWh." },
+  MD: { name:"Moldova", scheme:"Net billing", feed:0.02, oneToOne:false,
+        note:"Exports are paid at \u2248\u20AC0.02/kWh \u2014 well below the import price, so self-consumption matters most." },
+  DE: { name:"Germany", scheme:"Feed-in tariff", feed:0.08, oneToOne:false,
+        note:"Exported energy earns a fixed feed-in tariff of \u20AC0.08/kWh." }
+};
+
+/* ==================================================================
+   Default engine + state seed
+================================================================== */
+function defaultEngine(){
+  return {
+    costPerKw:1050, batteryCost:4200, baseYield:1100, opex:0.5, horizon:25,
+    windCostPerKW:2500,
+    bands:{
+      pess:{ ym:0.92, degr:0.8, infl:0 },
+      expc:{ ym:1.00, degr:0.5, infl:3 },
+      opti:{ ym:1.08, degr:0.3, infl:5 }
+    }
+  };
+}
+/* normalize a project so new fields always exist */
+function normProj(p){
+  if (p.batt==null) p.batt=false;
+  if (p.wind==null) p.wind=false;
+  if (p.windKw==null) p.windKw=3;
+  if (p.windSpeed==null) p.windSpeed=5.5;
+  if (p.windPreset==null) p.windPreset="Custom";
+  if (p.useMonthly==null) p.useMonthly=false;
+  if (!Array.isArray(p.consMonthly)) p.consMonthly = null;
+  if (p.nextFollowUp===undefined) p.nextFollowUp=null;
+  if (!Array.isArray(p.scenarios)) p.scenarios=[];
+  if (p.loan==null) p.loan=118;
+  if (p.afmSubsidy==null) p.afmSubsidy=false;
+  return p;
+}
+function seedState(){
+  var now = Date.now(), d = 86400000;
+  var t1={id:uid(),name:"Andrei Ionescu",role:"Owner",email:"andrei@solartech-iasi.ro"};
+  var t2={id:uid(),name:"Maria Dumitru",role:"Sales",email:"maria@solartech-iasi.ro"};
+  var t3={id:uid(),name:"Radu Cernat",role:"Engineer",email:"radu@solartech-iasi.ro"};
+  function proj(o){ return normProj(Object.assign({
+    id:uid(), title:"", client:"", address:"", market:"RO",
+    kw:6, price:0.21, cons:5000, batt:false, loan:118,
+    status:"draft", ownerId:t1.id, created:now, updated:now, proposal:null,
+    nextFollowUp:null, scenarios:[]
+  }, o)); }
+  var p1 = proj({title:"Casa Popescu", client:"Ion Popescu", address:"Strada Lalelelor 12, Bucure\u0219ti",
+    kw:6, batt:false, status:"sent", created:now-6*d, updated:now-2*d, ownerId:t2.id, nextFollowUp:todayISO(),
+    proposal:{ code:uid(), opens:2, seconds:214, battToggles:1, created:now-2*d, lastOpen:now-d }});
+  var p2 = proj({title:"Vila Georgescu", client:"Elena Georgescu", address:"Aleea Nucilor 4, Ia\u0219i",
+    kw:9.5, batt:true, cons:7200, status:"won", created:now-21*d, updated:now-9*d});
+  var p3 = proj({title:"Pensiunea Bradul", client:"Vasile Moraru", address:"Str. Principal\u0103 88, Bra\u0219ov",
+    kw:14, batt:true, wind:true, windKw:5, windSpeed:6.5, windPreset:"Constan\u021ba", cons:16000, price:0.23,
+    status:"sent", created:now-4*d, updated:now-d, ownerId:t3.id,
+    nextFollowUp:new Date(now-2*d).toISOString().slice(0,10)});
+  var p4 = proj({title:"Apartament Iva\u0219cu", client:"Dana Iva\u0219cu", address:"Bd. Dacia 20, Chi\u0219in\u0103u",
+    market:"MD", kw:3.5, cons:2800, price:0.15, status:"draft", created:now-2*d, updated:now-2*d});
+  var p5 = proj({title:"Haus M\u00FCller", client:"Stefan M\u00FCller", address:"Lindenstra\u00DFe 7, Leipzig",
+    market:"DE", kw:8, batt:true, cons:5600, price:0.32, status:"lost", created:now-40*d, updated:now-30*d, ownerId:t2.id});
+  return {
+    v:2,
+    settings:{ company:"SolarTech Ia\u0219i SRL", owner:"Andrei Ionescu", defaultMarket:"RO",
+               logoUrl:"", shortName:"", lang:"en", currency:"EUR",
+               subsidyAmountRon:20000, prosumerLimitKw:10.8, engine:defaultEngine() },
+    team:[t1,t2,t3],
+    projects:[p1,p2,p3,p4,p5],
+    leads:[
+      {id:uid(), name:"C. Antonescu", note:"Asked for a 5 kW quote from the website widget", hot:true, created:now-3600e3*5, projectId:null},
+      {id:uid(), name:"L. Bejan", note:"Wants battery retrofit pricing", hot:false, created:now-2*d, projectId:null}
+    ],
+    activity:[
+      {id:uid(), ts:now-3600e3*2, kind:"open", text:"<b>Ion Popescu</b> opened the proposal for <b>Casa Popescu</b> \u2014 3m 34s, toggled the battery"},
+      {id:uid(), ts:now-3600e3*5, kind:"lead", text:"New lead from the website widget: <b>C. Antonescu</b>"},
+      {id:uid(), ts:now-1*d, kind:"quote", text:"Proposal link sent for <b>Pensiunea Bradul</b>"},
+      {id:uid(), ts:now-9*d, kind:"won", text:"<b>Vila Georgescu</b> marked as Won \u2014 \u20AC14,175"}
+    ],
+    ui:{ sales:false, tab:"quote", salesScenarios:false }
+  };
+}
+
+var CURRENT_VERSION = 2;
+var S;
+function load(){
+  var raw = store.get(KEY);
+  if (raw){
+    try { S = JSON.parse(raw); if (!S || !S.projects) throw 0; }
+    catch(e){ S = seedState(); }
+  } else S = seedState();
+  if (!S.settings.engine) S.settings.engine = defaultEngine();
+  if (S.settings.engine.windCostPerKW==null) S.settings.engine.windCostPerKW=2500;
+  if (S.settings.logoUrl==null) S.settings.logoUrl="";
+  if (S.settings.shortName==null) S.settings.shortName="";
+  if (S.settings.lang==null) S.settings.lang="en";
+  if (S.settings.currency==null) S.settings.currency="EUR";
+  if (S.settings.subsidyAmountRon==null) S.settings.subsidyAmountRon=20000;
+  if (S.settings.prosumerLimitKw==null) S.settings.prosumerLimitKw=10.8;
+  if (!S.ui) S.ui={};
+  if (S.ui.tab==null) S.ui.tab="quote";
+  if (S.ui.salesScenarios==null) S.ui.salesScenarios=false;
+  /* ---- Version migration ---- */
+  if ((S.v||0) < CURRENT_VERSION){
+    try {
+      S.projects.forEach(normProj);
+      S.v = CURRENT_VERSION;
+      save();
+    } catch(e){
+      S = seedState(); S.v = CURRENT_VERSION; save();
+    }
+  }
+  S.projects.forEach(normProj);
+}
+var saveTimer = null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){ store.set(KEY, JSON.stringify(S)); }, 500);
+}
+function saveNow(){ clearTimeout(saveTimer); store.set(KEY, JSON.stringify(S)); }
+
+function logAct(kind, text){
+  S.activity.unshift({id:uid(), ts:Date.now(), kind:kind, text:text});
+  if (S.activity.length > 40) S.activity.length = 40;
+}
+/* ==================================================================
+   Wind energy
+================================================================== */
+function windKwhYear(p){
+  if (!p.wind) return 0;
+  var cutIn=2.5, rated=10, ws=p.windSpeed, rp=p.windKw;
+  if (ws < cutIn) return 0;
+  var cf;
+  if (ws >= rated) cf = 0.25;
+  else { cf = ((ws - cutIn)/(rated - cutIn)) * 0.3; cf = Math.max(0, Math.min(1, cf)); }
+  return rp * 8760 * cf;
+}
+function windCost(p){
+  if (!p.wind) return 0;
+  var per = (S.settings.engine.windCostPerKW!=null) ? S.settings.engine.windCostPerKW : 2500;
+  return p.windKw * per;
+}
+function effectiveCons(p){
+  if (p.useMonthly && Array.isArray(p.consMonthly)){
+    return p.consMonthly.reduce(function(a,b){ return a + (parseFloat(b)||0); }, 0);
+  }
+  return p.cons;
+}
+
+/* ==================================================================
+   Engine
+   Returns per-band result. Self-consumption computed either by the
+   simple ratio model, or (if monthly profile active) month-by-month
+   using seasonal solar factors.
+================================================================== */
+function simulate(p, bandKey){
+  var E = S.settings.engine;
+  var b = E.bands[bandKey];
+  var mkt = MARKETS[p.market] || MARKETS.RO;
+  var cost = p.kw * E.costPerKw + (p.batt ? E.batteryCost : 0) + windCost(p);
+  if (p.afmSubsidy){
+    var subsidyEur = (S.settings.subsidyAmountRon||0) / FX.RON;
+    cost = Math.max(0, cost - subsidyEur);
+  }
+  var solar0 = p.kw * E.baseYield * b.ym;      // annual solar production, band-adjusted
+  var wind0  = windKwhYear(p);                  // wind is treated as flat across the year
+  var prod0  = solar0 + wind0;
+  var cons   = effectiveCons(p);
+  var opexEur = cost * (E.opex/100);
+  var horizon = E.horizon || 25;
+  var batteryBoost = p.batt ? 0.30 : 0;
+
+  /* ---- Year-1 self-consumption ratio (for display + donut) ---- */
+  var selfRatio;
+  if (p.useMonthly && Array.isArray(p.consMonthly)){
+    var seasonSum = SOLAR_SEASON.reduce(function(a,b){return a+b;},0);
+    var selfSum=0, prodSum=0;
+    for (var m=0;m<12;m++){
+      var solM = solar0 * (SOLAR_SEASON[m]/seasonSum);
+      var windM = wind0/12;
+      var prodM = solM + windM;
+      var consM = parseFloat(p.consMonthly[m])||0;
+      var baseSelf = Math.min(0.85, Math.max(0.2, (consM/Math.max(prodM,1))*0.55));
+      var selfM = Math.min(0.95, baseSelf + batteryBoost);
+      var selfKwhM = Math.min(prodM, prodM*selfM, consM);
+      selfSum += selfKwhM; prodSum += prodM;
+    }
+    selfRatio = prodSum>0 ? selfSum/prodSum : 0;
+  } else {
+    var baseSelf = Math.min(0.85, Math.max(0.2, (cons/Math.max(prod0,1))*0.55));
+    selfRatio = Math.min(0.95, baseSelf + batteryBoost);
+  }
+
+  var cum = -cost, payback = null, total = 0, rows = [], year1 = 0;
+  for (var y=1; y<=horizon; y++){
+    var degr = Math.pow(1 - b.degr/100, y-1);         // degradation applies to solar
+    var solarY = solar0 * degr;
+    var prod = solarY + wind0;                          // wind assumed non-degrading here
+    var priceY = p.price * Math.pow(1 + b.infl/100, y-1);
+    var selfK = prod * selfRatio, expK = prod - selfK, val;
+    if (mkt.oneToOne){
+      var imports = Math.max(0, cons - selfK);
+      var credited = Math.min(expK, imports);
+      val = selfK*priceY + credited*priceY + (expK-credited)*mkt.feed;
+    } else {
+      val = selfK*priceY + expK*mkt.feed;
+    }
+    var net = val - opexEur;
+    if (y===1) year1 = net;
+    total += net;
+    var prev = cum; cum += net;
+    if (payback===null && cum>=0) payback = (prev===cum)?0:(y-1) + (0-prev)/(cum-prev);
+    rows.push(cum);
+  }
+  var immediate = cost <= 0;
+  if (immediate) payback = 0;
+  return { cost:cost, prod0:prod0, solar0:solar0, wind0:wind0, year1:year1, payback:payback,
+           roi: cost>0 ? (total-cost)/cost*100 : 999, self:selfRatio, rows:rows, horizon:horizon,
+           immediate:immediate };
+}
+function quote(p){
+  return { p:simulate(p,"pess"), e:simulate(p,"expc"), o:simulate(p,"opti") };
+}
+/* quote with wind forced off — for the Sales Mode solar-vs-hybrid card */
+function quoteSolarOnly(p){
+  var clone = Object.assign({}, p, { wind:false });
+  return quote(clone);
+}
+
+/* ==================================================================
+   Cash-flow chart
+================================================================== */
+function chartSVG(q){
+  var W=560, H=180, PAD=8;
+  var years = q.e.horizon;
+  var all = q.p.rows.concat(q.e.rows, q.o.rows, [0, -q.e.cost]);
+  var min = Math.min.apply(null,all), max = Math.max.apply(null,all);
+  var span = (max-min)||1;
+  function X(i){ return PAD + (i/(years-1))*(W-2*PAD); }
+  function Y(v){ return PAD + (1-(v-min)/span)*(H-2*PAD); }
+  function line(rows){ return rows.map(function(v,i){ return (i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1); }).join(" "); }
+  var zero = Y(0), be = q.e.payback, beMark = "";
+  if (be !== null){
+    var bx = PAD + ((be-1)/(years-1))*(W-2*PAD);
+    if (bx>=PAD && bx<=W-PAD)
+      beMark = '<line x1="'+bx.toFixed(1)+'" y1="'+PAD+'" x2="'+bx.toFixed(1)+'" y2="'+(H-PAD)+'" stroke="var(--amber)" stroke-width="2" stroke-dasharray="4 4"/>'+
+               '<circle cx="'+bx.toFixed(1)+'" cy="'+zero.toFixed(1)+'" r="4.5" fill="var(--amber)"/>';
+  }
+  return '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Cumulative cash flow over '+years+' years">'+
+    '<line x1="'+PAD+'" y1="'+zero.toFixed(1)+'" x2="'+(W-PAD)+'" y2="'+zero.toFixed(1)+'" stroke="#B9B5A6" stroke-width="1.5" stroke-dasharray="2 4"/>'+
+    '<path d="'+line(q.p.rows)+'" fill="none" stroke="var(--red)" stroke-width="1.6" stroke-dasharray="5 4" opacity=".55"/>'+
+    '<path d="'+line(q.o.rows)+'" fill="none" stroke="var(--green)" stroke-width="1.6" stroke-dasharray="5 4" opacity=".55"/>'+
+    '<path d="'+line(q.e.rows)+'" fill="none" stroke="var(--green)" stroke-width="2.8" stroke-linecap="round"/>'+
+    beMark+'</svg>';
+}
+
+/* ==================================================================
+   Self-consumption donut
+================================================================== */
+function donutSVG(selfRatio, size){
+  size = size||120;
+  var r=42, c=2*Math.PI*r, cx=60, cy=60;
+  var selfPct = Math.max(0,Math.min(1,selfRatio));
+  var selfLen = c*selfPct, expLen = c*(1-selfPct);
+  return '<svg viewBox="0 0 120 120" width="'+size+'" height="'+size+'" role="img" aria-label="Self-consumption '+Math.round(selfPct*100)+'%">'+
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="var(--line)" stroke-width="15"/>'+
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="var(--amber)" stroke-width="15" '+
+      'stroke-dasharray="'+expLen.toFixed(1)+' '+c.toFixed(1)+'" stroke-dashoffset="'+(-selfLen).toFixed(1)+'" transform="rotate(-90 60 60)"/>'+
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="var(--green)" stroke-width="15" '+
+      'stroke-dasharray="'+selfLen.toFixed(1)+' '+c.toFixed(1)+'" transform="rotate(-90 60 60)"/>'+
+    '<text x="60" y="56" text-anchor="middle" font-family="var(--font-d)" font-size="21" font-weight="700" fill="currentColor">'+Math.round(selfPct*100)+'%</text>'+
+    '<text x="60" y="74" text-anchor="middle" font-size="10" fill="var(--muted)">'+esc(t("self_cons"))+'</text>'+
+  '</svg>';
+}
+function donutBlock(q, big){
+  var s = q.e.self;
+  return '<div style="display:flex;align-items:center;gap:16px'+(big?';justify-content:center':'')+'">'+
+    '<div style="color:var(--ink)">'+donutSVG(s, big?150:110)+'</div>'+
+    '<div style="font-size:13px;line-height:1.9">'+
+      '<div><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--green);margin-right:7px"></span>'+esc(t("self_cons"))+' <b>'+Math.round(s*100)+'%</b></div>'+
+      '<div><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--amber);margin-right:7px"></span>'+esc(t("exported"))+' <b>'+Math.round((1-s)*100)+'%</b></div>'+
+    '</div>'+
+  '</div>';
+}
+
+/* ==================================================================
+   Toast + modal
+================================================================== */
+var toastTimer=null, toastAction=null;
+function toast(msg, actionLabel, actionFn){
+  var el=$("toast");
+  toastAction = actionFn || null;
+  el.innerHTML = esc(msg) + (actionLabel ? ' <button id="toastAct">'+esc(actionLabel)+'</button>' : '');
+  el.classList.add("show");
+  if (actionLabel) $("toastAct").addEventListener("click", function(){ if(toastAction) toastAction(); el.classList.remove("show"); });
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){ el.classList.remove("show"); toastAction=null; }, 5000);
+}
+function openModal(html){ $("modalBox").innerHTML = html; $("overlay").classList.add("show"); }
+function closeModal(){ $("overlay").classList.remove("show"); }
+$("overlay").addEventListener("click", function(e){ if(e.target===this) closeModal(); });
+document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeModal(); });
+/* ==================================================================
+   Icons
+================================================================== */
+var IC = {
+  dash:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+  proj:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+  team:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M2.8 20c.7-3.4 3.2-5.2 6.2-5.2s5.5 1.8 6.2 5.2"/><circle cx="17.4" cy="9.4" r="2.6"/><path d="M15.5 14.9c2.8-.4 5.2 1.2 5.8 4.3"/></svg>',
+  cog:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.14-1.4l2-1.55-2-3.46-2.35.95A7 7 0 0 0 14.1 5.1L13.75 2.6h-3.5L9.9 5.1a7 7 0 0 0-2.41 1.44l-2.35-.95-2 3.46 2 1.55A7 7 0 0 0 5 12c0 .48.05.94.14 1.4l-2 1.55 2 3.46 2.35-.95c.7.63 1.52 1.12 2.41 1.44l.35 2.5h3.5l.35-2.5a7 7 0 0 0 2.41-1.44l2.35.95 2-3.46-2-1.55c.09-.46.14-.92.14-1.4Z"/></svg>',
+  bolt:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H13L13 2z"/></svg>',
+  link:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a5 5 0 0 0 7.1 0l3-3a5 5 0 0 0-7.1-7.1L11.5 5.4"/><path d="M14 10a5 5 0 0 0-7.1 0l-3 3a5 5 0 0 0 7.1 7.1l1.5-1.5"/></svg>',
+  pdf:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M4 20h16"/></svg>',
+  dup:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  del:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg>',
+  open:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>',
+  back:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg>',
+  plus:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+  eye:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>',
+  wind:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9a2.5 2.5 0 1 0-2.5-2.5"/><path d="M3 12h14a2.5 2.5 0 1 1-2.5 2.5"/><path d="M3 16h7a2.5 2.5 0 1 1-2.5 2.5"/></svg>',
+  clock:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  fire:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4.4 0 7-2.8 7-6.6C19 10 14.5 7.6 13.6 2c-.3 3.4-2 5-3.8 6.8C8 10.6 5 12.4 5 15.7 5 19.3 7.6 22 12 22Z"/></svg>',
+  sun:'<svg width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="13" cy="13" r="5.2" fill="#E89B2D"/><g stroke="#E89B2D" stroke-width="2" stroke-linecap="round"><line x1="13" y1="1.5" x2="13" y2="4.5"/><line x1="13" y1="21.5" x2="13" y2="24.5"/><line x1="1.5" y1="13" x2="4.5" y2="13"/><line x1="21.5" y1="13" x2="24.5" y2="13"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="19" y1="19" x2="21.1" y2="21.1"/><line x1="4.9" y1="21.1" x2="7" y2="19"/><line x1="19" y1="7" x2="21.1" y2="4.9"/></g></svg>'
+};
+var FEED_IC = { open:['blue',IC.eye], lead:['amber',IC.fire], quote:['blue',IC.link], won:['',IC.bolt], sys:['',IC.cog] };
+
+/* Logo: white-label image if valid, else SVG sun. `where` scales it. */
+function logoMark(px){
+  px = px||26;
+  var url = S.settings.logoUrl;
+  if (url && /^https?:\/\//i.test(url)){
+    return '<img src="'+esc(url)+'" alt="logo" style="height:'+px+'px;max-width:120px;object-fit:contain;display:block" '+
+           'onerror="this.replaceWith((function(){var s=document.createElement(\'span\');s.innerHTML=window.__vmSun;return s.firstChild;})())">';
+  }
+  return IC.sun;
+}
+function brandName(){
+  return S.settings.shortName && S.settings.shortName.trim() ? S.settings.shortName.trim() : "VoltMira";
+}
+window.__vmSun = IC.sun;
+
+/* ==================================================================
+   Status helpers
+================================================================== */
+function statusCycle(s){ return {draft:"sent",sent:"won",won:"lost",lost:"draft"}[s]; }
+function statusLabel(s){ return {draft:t("st_draft"),sent:t("st_sent"),won:t("st_won"),lost:t("st_lost")}[s]; }
+
+/* ==================================================================
+   Sidebar
+================================================================== */
+function renderSidebar(route){
+  var who = S.settings.owner || "\u2014";
+  $("sidebar").innerHTML =
+    '<div class="logo">'+logoMark(24)+' '+esc(brandName())+'</div>'+
+    '<nav class="nav" aria-label="Main">'+
+      '<a href="#dashboard" class="'+(route==="dashboard"?"active":"")+'">'+IC.dash+' '+esc(t("nav_dashboard"))+'</a>'+
+      '<a href="#projects" class="'+(route==="projects"||route==="project"?"active":"")+'">'+IC.proj+' '+esc(t("nav_projects"))+'</a>'+
+      '<a href="#team" class="'+(route==="team"?"active":"")+'">'+IC.team+' '+esc(t("nav_team"))+'</a>'+
+      '<a href="#settings" class="'+(route==="settings"?"active":"")+'">'+IC.cog+' '+esc(t("nav_settings"))+'</a>'+
+    '</nav>'+
+    '<div class="side-foot"><div class="profile">'+
+      '<div class="avatar">'+esc(initialsOf(who))+'</div>'+
+      '<div class="who"><b>'+esc(who)+'</b><span>'+esc(S.settings.company||"")+'</span></div>'+
+    '</div>'+
+    '<button class="reset-link" data-act="reset-app">'+esc(t("reset_app"))+'</button>'+
+    '</div>';
+}
+
+/* ==================================================================
+   Router
+================================================================== */
+var current = { route:null, id:null };
+var propTimer = null, propStart = null, propWatchedId = null;
+
+function parseHash(){
+  var h = (location.hash||"#dashboard").slice(1);
+  var qIdx = h.indexOf("?");
+  var query = "";
+  if (qIdx>=0){ query = h.slice(qIdx+1); h = h.slice(0,qIdx); }
+  var parts = h.split("/");
+  return { route: parts[0]||"dashboard", id: parts[1]||null, query:query };
+}
+function nav(h){ location.hash = h; }
+
+function flushProposalTimer(){
+  if (propTimer){ clearInterval(propTimer); propTimer = null; }
+  if (propStart && propWatchedId){
+    var p = S.projects.find(function(x){return x.id===propWatchedId;});
+    if (p && p.proposal){ p.proposal.seconds += Math.round((Date.now()-propStart)/1000); save(); }
+  }
+  propStart = null; propWatchedId = null;
+}
+
+function renderRoute(r, v){
+  if (r.route==="dashboard") v.innerHTML = pageDashboard();
+  else if (r.route==="projects") v.innerHTML = pageProjects();
+  else if (r.route==="project") v.innerHTML = pageEditor(r.id);
+  else if (r.route==="team") v.innerHTML = pageTeam();
+  else if (r.route==="settings") v.innerHTML = pageSettings();
+  else if (r.route==="proposal") v.innerHTML = pageProposal(r.id);
+  else { nav("dashboard"); return false; }
+  return true;
+}
+function route(){
+  flushProposalTimer();
+  var r = parseHash();
+  current = r;
+  document.body.classList.remove("client-view","widget-view");
+  var v = $("view");
+
+  /* brief loading state for perceived responsiveness */
+  v.classList.add("view-loading");
+
+  try {
+    /* widget route: no chrome */
+    if (r.route==="widget"){
+      setSales(false,true);
+      document.body.classList.add("widget-view");
+      $("sidebar").innerHTML=""; $("salesBar").innerHTML="";
+      v.innerHTML = pageWidget();
+      v.classList.remove("view-loading");
+      afterRender(r); window.scrollTo(0,0); return;
+    }
+
+    /* dashboard lead capture from widget */
+    if (r.route==="dashboard" && r.query.indexOf("lead=1")>=0){
+      ingestWidgetLead();
+      history.replaceState(null,"","#dashboard");
+      r.query="";
+    }
+
+    if (r.route!=="project") setSales(false, true);
+    renderSidebar(r.route);
+    $("salesBar").innerHTML = "";
+    if (!renderRoute(r, v)) return;
+    v.classList.remove("view-loading");
+    afterRender(r);
+    window.scrollTo(0,0);
+  } catch(err){
+    if (window.console && console.error) console.error("Render error:", err);
+    v.classList.remove("view-loading");
+    try { renderSidebar(r.route); } catch(e2){}
+    v.innerHTML = '<div class="empty" style="margin-top:40px"><b>'+esc(t("err_title"))+'</b>'+
+      '<p>'+esc(t("err_body"))+' <a href="#dashboard">'+esc(t("err_home"))+'</a></p>'+
+      '<button class="btn danger" data-act="reset-demo" style="margin-top:14px">'+esc(t("err_reset"))+'</button></div>';
+  }
+}
+window.addEventListener("hashchange", route);
+
+/* ==================================================================
+   Sales Mode
+================================================================== */
+function setSales(on, silent){
+  document.body.classList.toggle("sales", on);
+  S.ui.sales = on; if (!silent) save();
+  var salesBtn = document.querySelector('[data-act="sales-on"]');
+  if (salesBtn) salesBtn.setAttribute("aria-pressed", on ? "true" : "false");
+  var bar = $("salesBar");
+  if (on){
+    var scToggle = "";
+    var pr = current && current.route==="project" ? S.projects.find(function(x){return x.id===current.id;}) : null;
+    if (pr && pr.scenarios && pr.scenarios.length>0){
+      scToggle = '<label class="check sales-sc-toggle" style="width:auto;padding:8px 12px;background:transparent;border-color:var(--white-line)">'+
+        '<input type="checkbox" id="salesScChk"'+(S.ui.salesScenarios?" checked":"")+' data-act="toggle-sales-sc">'+
+        '<span class="toggle-pill" aria-hidden="true"></span>'+
+        '<span class="txt" style="color:#fff">'+esc(t("sc_show"))+'</span></label>';
+    }
+    bar.innerHTML = '<button class="back-btn" data-act="sales-off">'+IC.back+' '+esc(t("btn_back"))+'</button>'+
+      '<span class="spacer"></span><div class="logo">'+logoMark(22)+' '+esc(brandName())+'</div>'+
+      '<span class="spacer"></span>'+scToggle;
+  } else bar.innerHTML = "";
+}
+/* ==================================================================
+   PAGE: Dashboard
+================================================================== */
+function isOverdue(p){ return p.nextFollowUp && p.nextFollowUp < todayISO() && p.status!=="won" && p.status!=="lost"; }
+
+function computeStats(){
+  var won=0, lost=0, pipeline=0, pbSum=0, pbN=0, overdue=0;
+  S.projects.forEach(function(p){
+    var q = simulate(p,"expc");
+    if (p.status==="sent") pipeline += q.cost;
+    if (p.status==="won") won++;
+    if (p.status==="lost") lost++;
+    if (q.payback!==null){ pbSum+=q.payback; pbN++; }
+    if (isOverdue(p)) overdue++;
+  });
+  return {
+    pipeline:pipeline,
+    winRate:(won+lost)?Math.round(won/(won+lost)*100)+"%":"\u2014",
+    avgPb:pbN?(pbSum/pbN).toFixed(1)+" "+t("years"):"\u2014",
+    count:S.projects.length, overdue:overdue
+  };
+}
+function pageDashboard(){
+  var st = computeStats();
+  var recent = S.projects.slice().sort(function(a,b){return b.updated-a.updated;}).slice(0,5);
+  var rows = recent.map(function(p){
+    var q = simulate(p,"expc");
+    var badge = isOverdue(p) ? ' <span class="chip hot static" style="padding:2px 8px;font-size:10.5px">'+esc(t("call_today"))+'</span>' : '';
+    return '<tr>'+
+      '<td><div class="t-title" data-act="open-proj" data-id="'+p.id+'">'+esc(p.title||"Untitled")+badge+'</div>'+
+      '<div class="t-sub">'+esc(p.client||"\u2014")+'</div></td>'+
+      '<td>'+p.kw.toFixed(1)+' kW'+(p.batt?' + batt':'')+(p.wind?' + wind':'')+'</td>'+
+      '<td>'+yrsF(q.payback)+' '+esc(t("years"))+'</td>'+
+      '<td>'+formatMoney(q.cost)+'</td>'+
+      '<td><button class="chip '+p.status+'" data-act="cycle-status" data-id="'+p.id+'" title="Click to change status">'+statusLabel(p.status)+'</button></td>'+
+    '</tr>';
+  }).join("");
+
+  var overdueList = S.projects.filter(isOverdue).sort(function(a,b){return (a.nextFollowUp<b.nextFollowUp)?-1:1;});
+  var overdueHtml = overdueList.length ? '<section class="card"><h3>'+esc(t("dash_followups"))+'</h3><ul class="feed">'+
+    overdueList.map(function(p){
+      return '<li><div class="f-ic amber">'+IC.clock+'</div>'+
+        '<div class="f-tx"><b>'+esc(p.title)+'</b><br><span style="color:var(--muted)">'+esc(p.client||"")+' \u00B7 due '+esc(p.nextFollowUp)+'</span></div>'+
+        '<button class="btn sm primary" data-act="open-proj" data-id="'+p.id+'">'+esc(t("quote_it"))+'</button></li>';
+    }).join("")+'</ul></section>' : '';
+
+  var leads = S.leads.filter(function(l){return !l.projectId;});
+  var leadHtml = leads.length ? leads.map(function(l){
+    return '<li><div class="f-ic amber">'+IC.fire+'</div>'+
+      '<div class="f-tx"><b>'+esc(l.name)+'</b>'+(l.hot?' <span class="chip hot static" style="padding:2px 8px;font-size:10.5px">Hot</span>':'')+
+      '<br><span style="color:var(--muted)">'+esc(l.note)+'</span></div>'+
+      '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+
+      '<time>'+ago(l.created)+'</time>'+
+      '<button class="btn sm primary" data-act="quote-lead" data-id="'+l.id+'">'+esc(t("quote_it"))+'</button></div></li>';
+  }).join("") : '<div class="empty"><b>'+esc(t("empty_noleads_t"))+'</b>'+esc(t("empty_noleads_s"))+'</div>';
+
+  var feed = S.activity.slice(0,7).map(function(a){
+    var m = FEED_IC[a.kind]||FEED_IC.sys;
+    return '<li><div class="f-ic '+m[0]+'">'+m[1]+'</div><div class="f-tx">'+a.text+'</div><time>'+ago(a.ts)+'</time></li>';
+  }).join("") || '<div class="empty"><b>'+esc(t("empty_nofeed_t"))+'</b>'+esc(t("empty_nofeed_s"))+'</div>';
+
+  var overdueKpi = st.overdue>0 ? '<div class="kpi" style="border-color:var(--amber)"><b style="color:#B4700F">'+st.overdue+'</b><span>'+esc(t("dash_overdue"))+'</span></div>' : '';
+
+  return '<div class="page-head"><h1>'+esc(t("nav_dashboard"))+'</h1><span class="spacer"></span>'+
+    '<button class="btn primary" data-act="new-proj">'+IC.plus+' '+esc(t("btn_new_quote"))+'</button></div>'+
+    '<div class="kpis">'+
+      '<div class="kpi"><b>'+formatMoney(st.pipeline)+'</b><span>'+esc(t("dash_pipeline"))+'</span></div>'+
+      '<div class="kpi"><b>'+st.winRate+'</b><span>'+esc(t("dash_winrate"))+'</span></div>'+
+      '<div class="kpi"><b>'+st.avgPb+'</b><span>'+esc(t("dash_avgpb"))+'</span></div>'+
+      '<div class="kpi"><b>'+st.count+'</b><span>'+esc(t("dash_total"))+'</span></div>'+
+      overdueKpi+
+    '</div>'+
+    '<div class="dash-grid">'+
+      '<div class="stack">'+
+        '<section class="card"><h3>'+esc(t("dash_recent"))+'</h3>'+
+          (rows?'<table class="tbl"><thead><tr><th>'+esc(t("col_project"))+'</th><th>'+esc(t("col_system"))+'</th><th>'+esc(t("col_payback"))+'</th><th>'+esc(t("col_value"))+'</th><th>'+esc(t("col_status"))+'</th></tr></thead><tbody>'+rows+'</tbody></table>'
+               :'<div class="empty"><b>'+esc(t("empty_noproj_t"))+'</b>'+esc(t("empty_noproj_s"))+'</div>')+
+        '</section>'+
+        overdueHtml+
+        '<section class="card"><h3>'+esc(t("dash_leads"))+'</h3><ul class="feed">'+leadHtml+'</ul></section>'+
+      '</div>'+
+      '<section class="card"><h3>'+esc(t("dash_activity"))+'</h3><ul class="feed">'+feed+'</ul></section>'+
+    '</div>';
+}
+
+function ingestWidgetLead(){
+  var raw = store.get("voltmira_widget_lead");
+  if (!raw) return;
+  try{
+    var d = JSON.parse(raw);
+    S.leads.unshift({id:uid(), name:d.name||"Website visitor",
+      note:(d.phone?("Phone: "+d.phone+" \u00B7 "):"")+(d.bill?("~\u20AC"+d.bill+"/mo bill \u00B7 "):"")+(d.message||"Requested an estimate")+(d.address?(" \u00B7 "+d.address):""),
+      hot:true, created:Date.now(), projectId:null, email:d.email||"", phone:d.phone||""});
+    logAct("lead","New lead from the website widget: <b>"+esc(d.name||"Website visitor")+"</b>");
+    saveNow();
+    toast(t("t_lead_widget"));
+  }catch(e){}
+  store.del("voltmira_widget_lead");
+}
+
+/* ==================================================================
+   PAGE: Projects
+================================================================== */
+var projFilter = { q:"", status:"all" };
+function pageProjects(){
+  var list = S.projects.slice().sort(function(a,b){return b.updated-a.updated;});
+  if (projFilter.status!=="all") list = list.filter(function(p){return p.status===projFilter.status;});
+  if (projFilter.q){
+    var qq = projFilter.q.toLowerCase();
+    list = list.filter(function(p){ return (p.title+" "+p.client+" "+p.address).toLowerCase().indexOf(qq)>=0; });
+  }
+  var rows = list.map(function(p){
+    var q = simulate(p,"expc");
+    var owner = S.team.find(function(tm){return tm.id===p.ownerId;});
+    return '<tr>'+
+      '<td><div class="t-title" data-act="open-proj" data-id="'+p.id+'">'+esc(p.title||"Untitled")+'</div>'+
+      '<div class="t-sub">'+esc(p.client||"\u2014")+' \u00B7 '+esc(MARKETS[p.market].name)+'</div></td>'+
+      '<td>'+p.kw.toFixed(1)+' kW'+(p.batt?' + batt':'')+(p.wind?' + wind':'')+'</td>'+
+      '<td>'+yrsF(q.payback)+' '+esc(t("years"))+'</td>'+
+      '<td>'+formatMoney(q.cost)+'</td>'+
+      '<td><button class="chip '+p.status+'" data-act="cycle-status" data-id="'+p.id+'" title="Click to change status">'+statusLabel(p.status)+'</button></td>'+
+      '<td>'+(owner?'<span class="avatar sm green" title="'+esc(owner.name)+'">'+esc(initialsOf(owner.name))+'</span>':'\u2014')+'</td>'+
+      '<td><div class="row-acts">'+
+        '<button class="btn icon" data-act="open-proj" data-id="'+p.id+'" title="Open">'+IC.open+'</button>'+
+        '<button class="btn icon" data-act="dup-proj" data-id="'+p.id+'" title="Duplicate">'+IC.dup+'</button>'+
+        '<button class="btn icon del" data-act="del-proj" data-id="'+p.id+'" title="Delete">'+IC.del+'</button>'+
+      '</div></td>'+
+    '</tr>';
+  }).join("");
+  function fc(v,l){ return '<button class="fchip'+(projFilter.status===v?" on":"")+'" data-act="filter-status" data-v="'+v+'">'+esc(l)+'</button>'; }
+  return '<div class="page-head"><h1>'+esc(t("nav_projects"))+'</h1><span class="spacer"></span>'+
+    '<button class="btn primary" data-act="new-proj">'+IC.plus+' '+esc(t("btn_new_quote"))+'</button></div>'+
+    '<div class="filters">'+
+      '<input class="input" id="projSearch" placeholder="'+esc(t("proj_search"))+'" value="'+esc(projFilter.q)+'">'+
+      fc("all",t("f_all"))+fc("draft",t("st_draft"))+fc("sent",t("st_sent"))+fc("won",t("st_won"))+fc("lost",t("st_lost"))+
+    '</div>'+
+    '<section class="card" style="padding:6px 6px 2px">'+
+      (rows?'<table class="tbl"><thead><tr><th>'+esc(t("col_project"))+'</th><th>'+esc(t("col_system"))+'</th><th>'+esc(t("col_payback"))+'</th><th>'+esc(t("col_value"))+'</th><th>'+esc(t("col_status"))+'</th><th>'+esc(t("col_owner"))+'</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
+           :'<div class="empty" style="margin:14px"><b>'+esc(t("empty_nomatch_t"))+'</b>'+esc(t("empty_nomatch_s"))+'</div>')+
+    '</section>';
+}
+
+/* ==================================================================
+   PAGE: Widget (public lead capture, no chrome)
+================================================================== */
+function pageWidget(){
+  var co = S.settings.company;
+  return '<div class="widget-wrap"><div class="widget-card">'+
+    '<div class="widget-head"><div class="logo" style="color:var(--ink);font-size:19px">'+logoMark(22)+' '+esc(brandName())+'</div></div>'+
+    '<div id="widgetBody">'+
+      '<h2 class="w-title">'+esc(t("w_title"))+'</h2>'+
+      '<p class="w-sub">'+esc(tf("w_sub",{co:co}))+'</p>'+
+      '<div class="field"><label for="wName">'+esc(t("w_name"))+'</label><input class="input" id="wName" placeholder="'+esc(t("w_name"))+'"></div>'+
+      '<div class="field"><label for="wAddr">'+esc(t("w_addr"))+'</label><input class="input" id="wAddr" placeholder="'+esc(t("w_addr"))+'"></div>'+
+      '<div class="field"><label for="wBill">'+esc(t("w_bill"))+'</label><input class="input" id="wBill" type="number" min="0" step="5" placeholder="120"></div>'+
+      '<div class="field"><label for="wMail">'+esc(t("w_email"))+'</label><input class="input" id="wMail" type="email" placeholder="you@email.com"></div>'+
+      '<div class="field"><label for="wPhone">'+esc(t("w_phone"))+'</label><input class="input" id="wPhone" type="tel" placeholder="07xx xxx xxx"></div>'+
+      '<div class="field"><label for="wMsg">'+esc(t("w_msg"))+'</label><textarea class="input" id="wMsg" rows="2" placeholder="\u2026"></textarea></div>'+
+      '<button class="btn amber" data-act="widget-submit" style="width:100%;padding:14px;font-size:15px">'+esc(t("w_send"))+'</button>'+
+    '</div>'+
+    '<p style="text-align:center;color:var(--muted);font-size:11.5px;margin-top:16px">'+esc(t("made_with"))+'</p>'+
+  '</div></div>';
+}
+/* ==================================================================
+   PAGE: Editor
+================================================================== */
+function findProj(id){ return S.projects.find(function(p){return p.id===id;}); }
+
+function pageEditor(id){
+  var p = findProj(id);
+  if (!p) return '<div class="empty" style="margin-top:40px"><b>Project not found</b>It may have been deleted. <a href="#projects">Back to projects</a></div>';
+
+  var tab = S.ui.tab || "quote";
+  var head = '<div class="ed-head installer-only">'+
+      '<a href="#projects" class="back-link">'+IC.back+' '+esc(t("nav_projects"))+'</a>'+
+      '<input class="proj-title" id="fTitle" value="'+esc(p.title)+'" aria-label="Project title" spellcheck="false">'+
+      '<span class="created-note">'+esc(tf("created_ago",{t:ago(p.created)}))+'</span>'+
+      '<button class="chip '+p.status+'" data-act="cycle-status" data-id="'+p.id+'" data-stay="1">'+statusLabel(p.status)+'</button>'+
+      '<span class="spacer"></span>'+
+      '<button class="btn amber" data-act="sales-on" aria-pressed="false">'+IC.bolt+' '+esc(t("btn_sales_mode"))+'</button>'+
+    '</div>'+
+    '<div class="tabbar installer-only">'+
+      '<button class="tab'+(tab==="quote"?" on":"")+'" data-act="set-tab" data-v="quote">'+esc(t("tab_quote"))+'</button>'+
+      '<button class="tab'+(tab==="scenarios"?" on":"")+'" data-act="set-tab" data-v="scenarios">'+esc(t("tab_scenarios"))+' <span class="tab-count">'+p.scenarios.length+'</span></button>'+
+    '</div>';
+
+  var body;
+  if (tab==="scenarios" && !S.ui.sales) body = editorScenarios(p);
+  else body = editorQuote(p);
+
+  return head + body;
+}
+
+/* ---- controls column (shared by base editor) ---- */
+function windControls(p){
+  var presets = ["Custom"].concat(Object.keys(WIND_PRESETS));
+  var opts = presets.map(function(k){
+    var label = k==="Custom" ? "Custom" : k+" ("+WIND_PRESETS[k]+" m/s)";
+    return '<option value="'+esc(k)+'"'+(k===p.windPreset?" selected":"")+'>'+esc(label)+'</option>';
+  }).join("");
+  return '<div id="windFields" style="'+(p.wind?"":"display:none")+';margin-top:4px;padding-top:14px;border-top:1px dashed var(--line)">'+
+    '<div class="field"><label for="fWindKw">'+esc(t("wind_rated"))+'</label>'+
+      '<input type="number" class="input" id="fWindKw" value="'+p.windKw+'" step="0.5" min="1" max="20"></div>'+
+    '<div class="field"><label for="fWindRegion">'+esc(t("wind_region"))+'</label>'+
+      '<select class="input" id="fWindRegion">'+opts+'</select></div>'+
+    '<div class="field"><label for="fWindSpeed">'+esc(t("wind_speed"))+'</label>'+
+      '<input type="number" class="input" id="fWindSpeed" value="'+p.windSpeed+'" step="0.1" min="2" max="12"></div>'+
+  '</div>';
+}
+function monthlyGrid(p){
+  if (!p.consMonthly){ var per = Math.round(p.cons/12); p.consMonthly = MONTHS.map(function(){return per;}); }
+  var cells = MONTHS.map(function(mn,i){
+    return '<div class="mo-cell"><label>'+esc(mn)+'</label>'+
+      '<input type="number" class="input mo-in" data-m="'+i+'" value="'+(p.consMonthly[i]||0)+'" step="10" min="0"></div>';
+  }).join("");
+  return '<div id="monthlyGrid" style="'+(p.useMonthly?"":"display:none")+';margin-top:4px;padding-top:14px;border-top:1px dashed var(--line)">'+
+    '<div class="mo-grid">'+cells+'</div>'+
+    '<div class="set-note" id="moSum">Total: '+kwhF(effectiveCons(p))+'/yr</div></div>';
+}
+
+function prosumerWarnHtml(p){
+  var lim = S.settings.prosumerLimitKw||10.8;
+  if (p.market==="RO" && p.kw > lim){
+    return '<div class="warn-card">'+esc(tf("prosumer_warn",{x:lim}))+'</div>';
+  }
+  return "";
+}
+function leiWattLine(sim, p){
+  var ron = sim.cost * FX.RON;
+  var watts = p.kw * 1000;
+  var val = watts>0 ? (ron/watts) : 0;
+  return esc(t("cost_specific"))+": <b>"+val.toLocaleString("ro-RO",{maximumFractionDigits:2})+" lei/W</b>";
+}
+function editorQuote(p){
+  var q = quote(p);
+  var mkt = MARKETS[p.market];
+  var ownerOpts = S.team.map(function(tm){ return '<option value="'+tm.id+'"'+(tm.id===p.ownerId?" selected":"")+'>'+esc(tm.name)+'</option>'; }).join("");
+  var mktOpts = Object.keys(MARKETS).map(function(k){ return '<option value="'+k+'"'+(k===p.market?" selected":"")+'>'+esc(MARKETS[k].name)+' \u2014 '+esc(MARKETS[k].scheme)+'</option>'; }).join("");
+  var E = S.settings.engine;
+  var prop = p.proposal;
+
+  var salesScBlock = "";
+  if (S.ui.sales && S.ui.salesScenarios && p.scenarios.length>0){
+    salesScBlock = '<section class="card sales-only" style="grid-column:1/-1">'+salesScenarioInner(p)+'</section>';
+  }
+
+  return '<div class="editor">'+
+      salesScBlock+
+      '<div class="stack">'+
+        '<section class="card">'+
+          '<h3>'+esc(t("client_site"))+'</h3>'+
+          '<div class="field installer-only"><label for="fClient">'+esc(t("client_name"))+'</label>'+
+            '<input class="input" id="fClient" value="'+esc(p.client)+'" placeholder="e.g. Ion Popescu"></div>'+
+          '<div class="field installer-only"><label for="fAddr">'+esc(t("address"))+'</label>'+
+            '<input class="input" id="fAddr" value="'+esc(p.address)+'" placeholder="Street, city"></div>'+
+          '<div class="field installer-only"><label for="fOwner">'+esc(t("owner"))+'</label>'+
+            '<select class="input" id="fOwner">'+ownerOpts+'</select></div>'+
+          '<div class="field installer-only"><label for="fFollow">'+esc(t("next_followup"))+'</label>'+
+            '<input class="input" id="fFollow" type="date" value="'+esc(p.nextFollowUp||"")+'"></div>'+
+          '<div class="field"><label for="fMarket">'+esc(t("market"))+'</label>'+
+            '<select class="input" id="fMarket">'+mktOpts+'</select>'+
+            '<div class="set-note" id="mktNote">'+esc(mkt.note)+'</div></div>'+
+          '<div id="prosumerWarn">'+prosumerWarnHtml(p)+'</div>'+
+        '</section>'+
+        '<section class="card">'+
+          '<h3>'+esc(t("system"))+'</h3>'+
+          '<div class="field"><label for="fKw">'+esc(t("label_system_size"))+' <output id="kwOut">'+p.kw.toFixed(1)+' kW</output></label>'+
+            '<input type="range" id="fKw" min="2" max="15" step="0.5" value="'+p.kw+'" aria-label="'+esc(t("label_system_size"))+'" aria-valuemin="2" aria-valuemax="15" aria-valuenow="'+p.kw+'"></div>'+
+          '<div class="field installer-only"><label for="fPrice">'+esc(t("elec_price"))+'</label>'+
+            '<input type="number" class="input" id="fPrice" value="'+p.price+'" step="0.01" min="0.05" max="1"></div>'+
+          '<div class="field installer-only"><label class="check" for="fMonthly">'+
+            '<input type="checkbox" id="fMonthly"'+(p.useMonthly?" checked":"")+'>'+
+            '<span class="toggle-pill" aria-hidden="true"></span>'+
+            '<span class="txt">'+esc(t("use_monthly"))+'<small>'+esc(t("monthly_sub"))+'</small></span></label>'+
+            monthlyGrid(p)+'</div>'+
+          '<div class="field installer-only" id="consField"'+(p.useMonthly?' style="display:none"':'')+'><label for="fCons">'+esc(t("annual_cons"))+'</label>'+
+            '<input type="number" class="input" id="fCons" value="'+p.cons+'" step="100" min="500"></div>'+
+          '<div class="field"><label class="check" for="fBatt">'+
+            '<input type="checkbox" id="fBatt"'+(p.batt?" checked":"")+'>'+
+            '<span class="toggle-pill" aria-hidden="true"></span>'+
+            '<span class="txt">'+esc(t("inc_battery"))+'<small>+'+formatMoney(E.batteryCost)+' \u00B7 '+esc(t("battery_sub"))+'</small></span></label></div>'+
+          '<div class="field"><label class="check" for="fWind">'+
+            '<input type="checkbox" id="fWind"'+(p.wind?" checked":"")+'>'+
+            '<span class="toggle-pill" aria-hidden="true"></span>'+
+            '<span class="txt">'+esc(t("inc_wind"))+'<small>'+esc(t("wind_sub"))+'</small></span></label>'+
+            windControls(p)+'</div>'+
+          '<div class="field"><label class="check" for="fAfm">'+
+            '<input type="checkbox" id="fAfm"'+(p.afmSubsidy?" checked":"")+'>'+
+            '<span class="toggle-pill" aria-hidden="true"></span>'+
+            '<span class="txt">'+esc(t("afm_subsidy"))+'<small>\u2212'+formatMoney((S.settings.subsidyAmountRon||0)/FX.RON)+' \u00B7 '+esc(t("subsidy_sub"))+'</small></span></label></div>'+
+        '</section>'+
+      '</div>'+
+
+      '<div class="stack">'+
+        '<section class="card"><h3>'+esc(t("sysinv"))+'</h3>'+
+          '<div class="cost-line">'+
+            '<div class="k"><b id="kCost">'+formatMoney(q.e.cost)+'</b><span>'+esc(t("total_inv"))+' <span id="afmBadge">'+(p.afmSubsidy?'<span class="mini-badge">'+esc(t("afm_badge"))+'</span>':'')+'</span></span></div>'+
+            '<div class="k"><b id="kProd">'+kwhF(q.e.prod0)+'</b><span>'+esc(t("prod_year"))+'</span></div>'+
+            '<div class="k"><b id="kSave">'+formatMoney(q.e.year1)+'</b><span>'+esc(t("save_y1"))+'</span></div>'+
+          '</div>'+
+          '<div class="set-note" id="leiWatt" style="margin-top:10px">'+leiWattLine(q.e,p)+'</div>'+
+          '<div style="margin-top:14px" id="donutBox">'+donutBlock(q)+'</div>'+
+        '</section>'+
+        '<section class="card"><h3>'+esc(t("payback_title"))+'</h3>'+
+          bandsHtml(q,E)+
+          '<div class="chart-wrap" id="chart">'+chartSVG(q)+'</div>'+
+          '<div class="legend"><span><i class="l-e"></i>'+esc(t("lg_expected"))+'</span><span><i class="l-b"></i>'+esc(t("lg_break"))+'</span><span><i class="l-z"></i>'+esc(t("lg_band"))+'</span></div>'+
+          '<div style="margin-top:13px">'+
+            '<button class="assump-link" data-act="toggle-assump" aria-expanded="false">'+esc(t("assumptions"))+' \u25BE</button>'+
+            '<div class="assump" id="assump">'+assumpTable(p,q)+'</div>'+
+          '</div>'+
+        '</section>'+
+        salesCompareCard(p)+
+        '<section class="card"><h3>'+esc(t("financing"))+'</h3>'+
+          '<div class="fin-split">'+
+            '<div class="fin-box"><div class="lbl">'+esc(t("monthly_loan"))+'</div>'+
+              '<div class="big">\u20AC<input type="number" id="fLoan" value="'+p.loan+'" min="0" step="1" aria-label="Monthly loan payment in euro"></div></div>'+
+            '<div class="fin-box"><div class="lbl">'+esc(t("est_savings"))+'</div>'+
+              '<div class="big" id="mSave"></div></div>'+
+          '</div>'+
+          '<div class="verdict good" id="verdict"></div>'+
+        '</section>'+
+        '<section class="card"><h3>'+esc(t("actions"))+'</h3>'+
+          '<div class="modal-acts installer-only" style="justify-content:flex-start">'+
+            '<button class="btn primary" data-act="gen-link" data-id="'+p.id+'" style="flex:none">'+IC.link+' '+esc(prop?t("proposal_link"):t("gen_link"))+'</button>'+
+            '<button class="btn ghost" data-act="pdf" data-id="'+p.id+'" style="flex:none">'+IC.pdf+' '+esc(t("download_pdf"))+'</button>'+
+            '<button class="btn ghost" data-act="dup-proj" data-id="'+p.id+'" style="flex:none">'+IC.dup+' '+esc(t("btn_duplicate"))+'</button>'+
+            '<button class="btn danger" data-act="del-proj" data-id="'+p.id+'" style="flex:none">'+IC.del+' '+esc(t("btn_delete"))+'</button>'+
+          '</div>'+
+          '<div class="sales-only">'+
+            '<button class="btn amber" data-act="request-quote" data-id="'+p.id+'" style="width:100%;padding:16px;font-size:16px">'+esc(t("request_quote"))+'</button>'+
+          '</div>'+
+        '</section>'+
+      '</div>'+
+    '</div>';
+}
+
+function salesScenarioInner(p){
+  var cols = [{name:t("sc_base"), q:quote(p).e}];
+  p.scenarios.forEach(function(sc){ cols.push({name:sc.name, q:scEval(sc).e}); });
+  var best=0, bestPb=cols[0].q.payback||99;
+  cols.forEach(function(c,i){ if((c.q.payback||99)<bestPb){ bestPb=c.q.payback||99; best=i; } });
+  return '<h3>'+esc(t("tab_scenarios"))+'</h3><div class="sc-client-row">'+
+    cols.map(function(c,i){
+      return '<div class="sc-client-card'+(i===best?" best":"")+'">'+(i===best?'<div class="best-tag">'+esc(t("sc_best"))+'</div>':'')+
+        '<div class="scc-name">'+esc(c.name)+'</div>'+
+        '<div class="scc-pb">'+yrsF(c.q.payback)+' <small>'+esc(t("years"))+'</small></div>'+
+        '<div class="scc-sub">'+formatMoney(c.q.year1/12)+'/mo \u00B7 '+formatMoney(c.q.cost)+'</div></div>';
+    }).join("")+'</div>';
+}
+function bandsHtml(q,E){
+  return '<div class="bands">'+
+    '<div class="band pess"><div class="tag">'+esc(t("pessimistic"))+'</div><div class="yrs"><span id="pYrs">'+yrsF(q.p.payback)+'</span> <small>'+esc(t("years"))+'</small></div><div class="roi">'+E.horizon+esc(t("yr_roi"))+' <b id="pRoi">'+pct(q.p.roi)+'</b></div></div>'+
+    '<div class="band expc"><div class="tag">'+esc(t("expected"))+'</div><div class="yrs"><span id="eYrs">'+yrsF(q.e.payback)+'</span> <small>'+esc(t("years"))+'</small></div><div class="roi">'+E.horizon+esc(t("yr_roi"))+' <b id="eRoi">'+pct(q.e.roi)+'</b></div></div>'+
+    '<div class="band opti"><div class="tag">'+esc(t("optimistic"))+'</div><div class="yrs"><span id="oYrs">'+yrsF(q.o.payback)+'</span> <small>'+esc(t("years"))+'</small></div><div class="roi">'+E.horizon+esc(t("yr_roi"))+' <b id="oRoi">'+pct(q.o.roi)+'</b></div></div>'+
+  '</div>';
+}
+
+/* Sales-mode solar-vs-hybrid comparison (only shows if wind on) */
+function salesCompareCard(p){
+  if (!p.wind) return '<div class="sales-only" id="cmpCard"></div>';
+  return '<section class="card sales-only" id="cmpCard">'+compareInner(p)+'</section>';
+}
+function compareInner(p){
+  var hybrid = quote(p).e, solo = quoteSolarOnly(p).e;
+  function col(title,qq,accent){
+    return '<div class="cmp-col'+(accent?" cmp-best":"")+'"><div class="cmp-t">'+esc(title)+'</div>'+
+      '<div class="cmp-big">'+yrsF(qq.payback)+' <small>'+esc(t("years"))+'</small></div>'+
+      '<div class="cmp-sub">'+formatMoney(qq.year1/12)+'/mo \u00B7 '+kwhF(qq.prod0)+'</div></div>';
+  }
+  var hybBetter = (hybrid.payback||99) <= (solo.payback||99);
+  return '<h3>'+esc(t("solar_only"))+' vs '+esc(t("solar_wind"))+'</h3>'+
+    '<div class="cmp-row">'+col(t("solar_only"),solo,!hybBetter)+col(t("solar_wind"),hybrid,hybBetter)+'</div>';
+}
+
+function assumpTable(p,q){
+  var E = S.settings.engine, mkt = MARKETS[p.market];
+  var windRow = p.wind ? '<tr><td>Wind turbine</td><td>'+p.windKw+' kW @ '+p.windSpeed+' m/s \u2192 '+kwhF(q.e.wind0)+'/yr</td></tr>' : '';
+  var monthlyRow = p.useMonthly ? '<tr><td>Consumption model</td><td>Monthly profiling active</td></tr>' : '';
+  return '<table>'+
+    '<tr><td>Specific yield (expected)</td><td>'+E.baseYield.toLocaleString("en-IE")+' kWh/kWp\u00B7yr</td></tr>'+
+    windRow+ monthlyRow+
+    '<tr><td>Yield range (pess / opt)</td><td>'+Math.round((E.bands.pess.ym-1)*100)+'% / +'+Math.round((E.bands.opti.ym-1)*100)+'%</td></tr>'+
+    '<tr><td>Degradation (pess / exp / opt)</td><td>'+E.bands.pess.degr+'% / '+E.bands.expc.degr+'% / '+E.bands.opti.degr+'% per yr</td></tr>'+
+    '<tr><td>Price inflation (pess / exp / opt)</td><td>'+E.bands.pess.infl+'% / '+E.bands.expc.infl+'% / '+E.bands.opti.infl+'% per yr</td></tr>'+
+    '<tr><td>Export scheme</td><td>'+esc(mkt.scheme)+' ('+esc(mkt.name)+')</td></tr>'+
+    '<tr><td>Surplus export rate</td><td>\u20AC'+mkt.feed+'/kWh</td></tr>'+
+    '<tr><td>Self-consumption</td><td>'+Math.round(q.e.self*100)+'% '+(p.batt?"(with battery)":"(no battery)")+'</td></tr>'+
+    '<tr><td>System cost basis</td><td>\u20AC'+E.costPerKw.toLocaleString("en-IE")+'/kW'+(p.wind?" + \u20AC"+E.windCostPerKW+"/kW wind":"")+' + \u20AC'+E.batteryCost.toLocaleString("en-IE")+' battery</td></tr>'+
+    '<tr><td>O&amp;M reserve</td><td>'+E.opex+'% of capex / yr</td></tr>'+
+    '<tr><td>Analysis horizon</td><td>'+E.horizon+' years</td></tr>'+
+  '</table>';
+}
+
+/* live refresh of the quote editor */
+function refreshEditor(p){
+  var q = quote(p);
+  var set = function(id,v){ var el=$(id); if(el) el.textContent=v; };
+  set("kwOut", p.kw.toFixed(1)+" kW");
+  var r = $("fKw"); if (r) r.style.setProperty("--fill", ((p.kw-2)/13*100)+"%");
+  set("kCost", formatMoney(q.e.cost)); set("kProd", kwhF(q.e.prod0)); set("kSave", formatMoney(q.e.year1));
+  set("pYrs", yrsF(q.p.payback)); set("pRoi", pct(q.p.roi));
+  set("eYrs", yrsF(q.e.payback)); set("eRoi", pct(q.e.roi));
+  set("oYrs", yrsF(q.o.payback)); set("oRoi", pct(q.o.roi));
+  var ch = $("chart"); if (ch) ch.innerHTML = chartSVG(q);
+  var as = $("assump"); if (as) as.innerHTML = assumpTable(p,q);
+  var mn = $("mktNote"); if (mn) mn.textContent = MARKETS[p.market].note;
+  var db = $("donutBox"); if (db) db.innerHTML = donutBlock(q);
+  var ms2 = $("moSum"); if (ms2) ms2.textContent = "Total: "+kwhF(effectiveCons(p))+"/yr";
+  var lw = $("leiWatt"); if (lw) lw.innerHTML = leiWattLine(q.e,p);
+  var ab = $("afmBadge"); if (ab) ab.innerHTML = p.afmSubsidy?'<span class="mini-badge">'+esc(t("afm_badge"))+'</span>':'';
+  var pw = $("prosumerWarn"); if (pw) pw.innerHTML = prosumerWarnHtml(p);
+  var cmp = $("cmpCard"); if (cmp){ if (p.wind){ cmp.className="card sales-only"; cmp.innerHTML=compareInner(p); } else { cmp.className="sales-only"; cmp.innerHTML=""; } }
+  var mSave = q.e.year1/12, net = mSave - (p.loan||0);
+  var ms = $("mSave"); if (ms) ms.innerHTML = formatMoney(mSave)+"<small>/mo</small>";
+  var v = $("verdict");
+  if (v){
+    if (net>=0){ v.className="verdict good";
+      v.textContent = net>=1 ? tf("verdict_save",{v:formatMoney(net)}) : t("verdict_cf");
+    } else {
+      var y=1, s=mSave, infl=1+S.settings.engine.bands.expc.infl/100;
+      while (s<(p.loan||0) && y<S.settings.engine.horizon){ s*=infl; y++; }
+      v.className="verdict bad"; v.textContent=tf("verdict_year",{y:y});
+    }
+  }
+}
+
+/* ==================================================================
+   Scenarios (tab)
+================================================================== */
+function blankScenarioFrom(p, name){
+  return { id:uid(), name:name, kw:p.kw, price:p.price, cons:p.cons, market:p.market,
+           batt:p.batt, wind:p.wind, windKw:p.windKw, windSpeed:p.windSpeed, windPreset:p.windPreset,
+           useMonthly:false, consMonthly:null, loan:p.loan };
+}
+/* a scenario is shaped like a project for the engine */
+function scEval(sc){ return quote(normProj(Object.assign({}, sc))); }
+
+function scenarioSummary(sc, editing){
+  var e = scEval(sc).e;
+  return '<div class="sc-card'+(editing?" editing":"")+'" data-sc="'+sc.id+'">'+
+    '<div class="sc-top">'+
+      '<input class="sc-name" data-sc-name="'+sc.id+'" value="'+esc(sc.name)+'">'+
+      '<div class="row-acts">'+
+        '<button class="btn icon" data-act="sc-edit" data-sc="'+sc.id+'" title="Edit">'+IC.cog+'</button>'+
+        '<button class="btn icon del" data-act="sc-del" data-sc="'+sc.id+'" title="Delete">'+IC.del+'</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="sc-meta">'+sc.kw.toFixed(1)+' kW \u00B7 '+(sc.batt?"battery":"no battery")+(sc.wind?" \u00B7 wind "+sc.windKw+"kW":"")+'</div>'+
+    '<div class="sc-metrics">'+
+      '<div><b>'+yrsF(e.payback)+'</b><span>'+esc(t("sc_pb"))+'</span></div>'+
+      '<div><b>'+formatMoney(e.year1/12)+'</b><span>'+esc(t("sc_ms"))+'</span></div>'+
+    '</div>'+
+    (editing?scenarioEditor(sc):'')+
+  '</div>';
+}
+function scenarioEditor(sc){
+  var mktOpts = Object.keys(MARKETS).map(function(k){ return '<option value="'+k+'"'+(k===sc.market?" selected":"")+'>'+esc(MARKETS[k].name)+'</option>'; }).join("");
+  return '<div class="sc-edit-panel">'+
+    '<div class="field"><label>'+esc(t("label_system_size"))+' <output data-sc-kwout="'+sc.id+'">'+sc.kw.toFixed(1)+' kW</output></label>'+
+      '<input type="range" data-sc-kw="'+sc.id+'" min="2" max="15" step="0.5" value="'+sc.kw+'"></div>'+
+    '<div class="field"><label>'+esc(t("elec_price"))+'</label><input type="number" class="input" data-sc-price="'+sc.id+'" value="'+sc.price+'" step="0.01" min="0.05"></div>'+
+    '<div class="field"><label>'+esc(t("annual_cons"))+'</label><input type="number" class="input" data-sc-cons="'+sc.id+'" value="'+sc.cons+'" step="100" min="500"></div>'+
+    '<div class="field"><label>'+esc(t("market"))+'</label><select class="input" data-sc-market="'+sc.id+'">'+mktOpts+'</select></div>'+
+    '<div class="field"><label class="check"><input type="checkbox" data-sc-batt="'+sc.id+'"'+(sc.batt?" checked":"")+'><span class="toggle-pill"></span><span class="txt">'+esc(t("inc_battery"))+'</span></label></div>'+
+    '<div class="field"><label class="check"><input type="checkbox" data-sc-wind="'+sc.id+'"'+(sc.wind?" checked":"")+'><span class="toggle-pill"></span><span class="txt">'+esc(t("inc_wind"))+'</span></label></div>'+
+    '<div data-sc-windwrap="'+sc.id+'" style="'+(sc.wind?"":"display:none")+'">'+
+      '<div class="field"><label>'+esc(t("wind_rated"))+'</label><input type="number" class="input" data-sc-windkw="'+sc.id+'" value="'+sc.windKw+'" step="0.5" min="1" max="20"></div>'+
+      '<div class="field"><label>'+esc(t("wind_speed"))+'</label><input type="number" class="input" data-sc-windspeed="'+sc.id+'" value="'+sc.windSpeed+'" step="0.1" min="2" max="12"></div>'+
+    '</div>'+
+    '<button class="btn ghost sm" data-act="sc-edit" data-sc="'+sc.id+'">'+esc(t("sc_close"))+'</button>'+
+  '</div>';
+}
+
+var scEditing = null;
+function editorScenarios(p){
+  var E = S.settings.engine;
+  var cards = p.scenarios.map(function(sc){ return scenarioSummary(sc, scEditing===sc.id); }).join("");
+  var addBtn = p.scenarios.length<3 ? '<button class="btn primary" data-act="sc-new" data-id="'+p.id+'">'+IC.plus+' '+esc(t("sc_new"))+'</button>' : '<span class="set-note">'+esc(t("sc_limit"))+'</span>';
+
+  /* comparison table: Base + up to 3 scenarios */
+  var cols = [{name:t("sc_base"), q:quote(p).e}];
+  p.scenarios.forEach(function(sc){ cols.push({name:sc.name, q:scEval(sc).e}); });
+  function trow(label, fn){
+    return '<tr><td>'+esc(label)+'</td>'+cols.map(function(c){return '<td>'+fn(c.q)+'</td>';}).join("")+'</tr>';
+  }
+  var table = '<table class="tbl cmp-table"><thead><tr><th>'+esc(t("sc_metric"))+'</th>'+cols.map(function(c){return '<th>'+esc(c.name)+'</th>';}).join("")+'</tr></thead><tbody>'+
+    trow(t("sc_cost"), function(q){return formatMoney(q.cost);})+
+    trow(t("sc_gen"), function(q){return kwhF(q.prod0);})+
+    trow(t("sc_pb"), function(q){return yrsF(q.payback)+" "+t("years");})+
+    trow(t("sc_ms"), function(q){return formatMoney(q.year1/12)+"/mo";})+
+  '</tbody></table>';
+
+  return '<div class="sc-wrap">'+
+    '<div class="sc-head"><h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em">'+esc(t("tab_scenarios"))+'</h3><span class="spacer"></span>'+addBtn+'</div>'+
+    (p.scenarios.length? '<div class="sc-cards">'+cards+'</div>' : '<div class="empty"><b>'+esc(t("tab_scenarios"))+'</b>'+esc(t("sc_new"))+' \u2014 '+esc(t("sc_limit"))+'</div>')+
+    '<section class="card" style="margin-top:18px;overflow-x:auto"><h3>'+esc(t("tab_scenarios"))+'</h3>'+table+'</section>'+
+  '</div>';
+}
+/* ==================================================================
+   PAGE: Client proposal
+================================================================== */
+function pageProposal(code){
+  var p = S.projects.find(function(x){ return x.proposal && x.proposal.code===code; });
+  if (!p) return '<div class="empty" style="margin-top:40px"><b>Proposal not found</b><a href="#dashboard">Back to VoltMira</a></div>';
+  document.body.classList.add("client-view");
+  p.proposal.opens += 1;
+  p.proposal.lastOpen = Date.now();
+  logAct("open","<b>"+esc(p.client||"Your client")+"</b> opened the proposal for <b>"+esc(p.title)+"</b>");
+  save();
+  propWatchedId = p.id; propStart = Date.now();
+
+  var q = quote(p);
+  var E = S.settings.engine;
+  var showSc = S.ui.salesScenarios && p.scenarios.length>0;
+
+  var scBlock = "";
+  if (showSc){
+    var cols = [{name:t("sc_base"), q:q.e, best:false}];
+    p.scenarios.forEach(function(sc){ cols.push({name:sc.name, q:scEval(sc).e}); });
+    var best = 0, bestPb = cols[0].q.payback||99;
+    cols.forEach(function(c,i){ if ((c.q.payback||99)<bestPb){ bestPb=c.q.payback||99; best=i; } });
+    scBlock = '<section class="card" style="margin-bottom:16px"><h3>'+esc(t("tab_scenarios"))+'</h3><div class="sc-client-row">'+
+      cols.map(function(c,i){
+        return '<div class="sc-client-card'+(i===best?" best":"")+'">'+(i===best?'<div class="best-tag">'+esc(t("sc_best"))+'</div>':'')+
+          '<div class="scc-name">'+esc(c.name)+'</div>'+
+          '<div class="scc-pb">'+yrsF(c.q.payback)+' <small>'+esc(t("years"))+'</small></div>'+
+          '<div class="scc-sub">'+formatMoney(c.q.year1/12)+'/mo \u00B7 '+formatMoney(c.q.cost)+'</div></div>';
+      }).join("")+'</div></section>';
+  }
+
+  return '<div class="client-bar"><div class="logo">'+logoMark(20)+' '+esc(brandName())+'</div>'+
+    '<span class="tag-preview">'+esc(t("client_preview"))+'</span><span class="spacer"></span>'+
+    '<button class="back-btn" data-act="back-to-proj" data-id="'+p.id+'">'+IC.back+' '+esc(t("back_to_vm"))+'</button></div>'+
+    '<div class="prop-sheet">'+
+      '<div class="prop-head">'+
+        '<div class="co">'+esc(S.settings.company)+' \u00B7 '+esc(t("proposal_prepared"))+'</div>'+
+        '<h1>'+esc(p.title)+'</h1>'+
+        '<div class="addr">'+esc(p.address||"")+' \u00B7 '+esc(t("prepared_for"))+' '+esc(p.client||"you")+'</div>'+
+      '</div>'+
+      '<section class="card" style="margin-bottom:16px"><h3>'+esc(t("your_system"))+'</h3>'+
+        '<div class="cost-line">'+
+          '<div class="k"><b>'+p.kw.toFixed(1)+' kW</b><span>'+(p.batt?"+ battery":"solar")+(p.wind?" + wind":"")+'</span></div>'+
+          '<div class="k"><b id="cCost">'+formatMoney(q.e.cost)+'</b><span>'+esc(t("total_inv"))+'</span></div>'+
+          '<div class="k"><b id="cProd">'+kwhF(q.e.prod0)+'</b><span>'+esc(t("prod_year"))+'</span></div>'+
+        '</div>'+
+        '<div style="margin-top:18px" id="cDonut">'+donutBlock(q,true)+'</div>'+
+        '<div class="field" style="margin-top:18px"><label class="check" for="cBatt">'+
+          '<input type="checkbox" id="cBatt"'+(p.batt?" checked":"")+'>'+
+          '<span class="toggle-pill" aria-hidden="true"></span>'+
+          '<span class="txt">'+esc(t("see_battery"))+'<small>+'+formatMoney(E.batteryCost)+' \u2014 '+esc(t("see_battery_sub"))+'</small></span>'+
+        '</label></div>'+
+      '</section>'+
+      scBlock+
+      '<section class="card" style="margin-bottom:16px"><h3>'+esc(t("payback_title"))+'</h3>'+
+        '<div class="bands">'+
+          '<div class="band pess"><div class="tag">'+esc(t("pessimistic"))+'</div><div class="yrs"><span id="cpY">'+yrsF(q.p.payback)+'</span> <small>'+esc(t("years"))+'</small></div><div class="roi">'+E.horizon+esc(t("yr_roi"))+' <b id="cpR">'+pct(q.p.roi)+'</b></div></div>'+
+          '<div class="band expc"><div class="tag">'+esc(t("expected"))+'</div><div class="yrs"><span id="ceY">'+yrsF(q.e.payback)+'</span> <small>'+esc(t("years"))+'</small></div><div class="roi">'+E.horizon+esc(t("yr_roi"))+' <b id="ceR">'+pct(q.e.roi)+'</b></div></div>'+
+          '<div class="band opti"><div class="tag">'+esc(t("optimistic"))+'</div><div class="yrs"><span id="coY">'+yrsF(q.o.payback)+'</span> <small>'+esc(t("years"))+'</small></div><div class="roi">'+E.horizon+esc(t("yr_roi"))+' <b id="coR">'+pct(q.o.roi)+'</b></div></div>'+
+        '</div>'+
+        '<div class="chart-wrap" id="cChart">'+chartSVG(q)+'</div>'+
+        '<div class="legend"><span><i class="l-e"></i>'+esc(t("lg_expected"))+'</span><span><i class="l-b"></i>'+esc(t("lg_break"))+'</span><span><i class="l-z"></i>'+esc(t("lg_band"))+'</span></div>'+
+        '<div style="margin-top:13px"><button class="assump-link" data-act="toggle-assump" aria-expanded="false">'+esc(t("assump_full"))+' \u25BE</button>'+
+        '<div class="assump" id="assump">'+assumpTable(p,q)+'</div></div>'+
+      '</section>'+
+      '<section class="card" style="margin-bottom:20px"><h3>'+esc(t("financing"))+'</h3>'+
+        '<div class="fin-split">'+
+          '<div class="fin-box"><div class="lbl">'+esc(t("monthly_loan"))+'</div><div class="big">'+formatMoney(p.loan||0)+'<small>/mo</small></div></div>'+
+          '<div class="fin-box"><div class="lbl">'+esc(t("est_savings"))+'</div><div class="big" id="cSave">'+formatMoney(q.e.year1/12)+'<small>/mo</small></div></div>'+
+        '</div>'+
+        '<div class="verdict" id="cVerdict"></div>'+
+      '</section>'+
+      '<button class="btn amber" data-act="request-quote" data-id="'+p.id+'" style="width:100%;padding:17px;font-size:16px">'+esc(t("request_quote"))+'</button>'+
+      acceptBtnHtml(p)+
+      '<p style="text-align:center;color:var(--muted);font-size:12px;margin-top:14px">'+esc(t("made_with"))+'</p>'+
+    '</div>';
+}
+function acceptBtnHtml(p){
+  if (p.status==="won" || p.status==="lost"){
+    if (p.status==="won") return '<button class="btn primary" disabled style="width:100%;padding:17px;font-size:16px;margin-top:10px;opacity:.7">'+esc(t("quote_accepted"))+'</button>';
+    return "";
+  }
+  return '<button class="btn primary" data-act="accept-quote" data-id="'+p.id+'" style="width:100%;padding:17px;font-size:16px;margin-top:10px">'+esc(t("accept_quote"))+'</button>';
+}
+function refreshClient(p){
+  var q = quote(p);
+  var set = function(id,v){ var el=$(id); if(el) el.textContent=v; };
+  set("cCost", formatMoney(q.e.cost)); set("cProd", kwhF(q.e.prod0));
+  set("cpY", yrsF(q.p.payback)); set("cpR", pct(q.p.roi));
+  set("ceY", yrsF(q.e.payback)); set("ceR", pct(q.e.roi));
+  set("coY", yrsF(q.o.payback)); set("coR", pct(q.o.roi));
+  var ch=$("cChart"); if(ch) ch.innerHTML=chartSVG(q);
+  var as=$("assump"); if(as) as.innerHTML=assumpTable(p,q);
+  var cd=$("cDonut"); if(cd) cd.innerHTML=donutBlock(q,true);
+  var cs=$("cSave"); if(cs) cs.innerHTML=formatMoney(q.e.year1/12)+"<small>/mo</small>";
+  var net = q.e.year1/12-(p.loan||0), v=$("cVerdict");
+  if (v){
+    if (net>=0){ v.className="verdict good"; v.textContent = net>=1?tf("verdict_save",{v:formatMoney(net)}):t("verdict_cf"); }
+    else { v.className="verdict bad"; v.textContent=t("verdict_grow"); }
+  }
+}
+
+/* ==================================================================
+   PAGE: Team
+================================================================== */
+function pageTeam(){
+  var rows = S.team.map(function(tm){
+    var n = S.projects.filter(function(p){return p.ownerId===tm.id;}).length;
+    return '<div class="member">'+
+      '<div class="avatar green">'+esc(initialsOf(tm.name))+'</div>'+
+      '<div class="m-who"><b>'+esc(tm.name)+'</b><span>'+esc(tm.role)+' \u00B7 '+esc(tm.email)+'</span></div>'+
+      '<span class="m-count">'+n+' project'+(n===1?"":"s")+'</span>'+
+      '<button class="btn icon del" data-act="del-member" data-id="'+tm.id+'" title="Remove">'+IC.del+'</button>'+
+    '</div>';
+  }).join("");
+  return '<div class="page-head"><h1>'+esc(t("team_title"))+'</h1><div class="sub">'+esc(tf("team_sub",{co:S.settings.company}))+'</div></div>'+
+    '<div class="grid-2">'+
+      '<section class="card"><h3>'+esc(t("members"))+'</h3>'+rows+
+        '<div class="seat-note"><b>'+esc(tf("seats_used",{n:S.team.length}))+'</b> \u00B7 Team plan \u00B7 \u20AC99/mo</div></section>'+
+      '<section class="card"><h3>'+esc(t("add_member"))+'</h3>'+
+        '<div class="field"><label for="tmName">'+esc(t("name"))+'</label><input class="input" id="tmName" placeholder="Full name"></div>'+
+        '<div class="field"><label for="tmRole">'+esc(t("role"))+'</label><select class="input" id="tmRole"><option>Sales</option><option>Engineer</option><option>Manager</option><option>Owner</option></select></div>'+
+        '<div class="field"><label for="tmMail">'+esc(t("email"))+'</label><input class="input" id="tmMail" type="email" placeholder="name@company.com"></div>'+
+        '<button class="btn primary" data-act="add-member" style="width:100%">'+IC.plus+' '+esc(t("add_to_team"))+'</button>'+
+      '</section>'+
+    '</div>';
+}
+
+/* ==================================================================
+   PAGE: Settings
+================================================================== */
+function pageSettings(){
+  var E = S.settings.engine;
+  function num(id,label,val,step,suffix){
+    return '<div class="field"><label for="'+id+'">'+label+(suffix?' <span style="font-weight:400">('+suffix+')</span>':'')+'</label>'+
+      '<input type="number" class="input" id="'+id+'" value="'+val+'" step="'+step+'"></div>';
+  }
+  var mktOpts = Object.keys(MARKETS).map(function(k){ return '<option value="'+k+'"'+(k===S.settings.defaultMarket?" selected":"")+'>'+MARKETS[k].name+'</option>'; }).join("");
+  var langOpts = [["en","English"],["ro","Rom\u00E2n\u0103"],["ru","\u0420\u0443\u0441\u0441\u043A\u0438\u0439"]].map(function(o){
+    return '<option value="'+o[0]+'"'+(o[0]===S.settings.lang?" selected":"")+'>'+o[1]+'</option>';
+  }).join("");
+  var embed = '<iframe src="https://app.voltmira.com#widget" width="380" height="520" style="border:none"></iframe>';
+
+  return '<div class="page-head"><h1>'+esc(t("settings_title"))+'</h1><div class="sub">'+esc(t("settings_sub"))+'</div></div>'+
+    '<div class="grid-2">'+
+      '<div class="stack">'+
+        '<section class="card"><h3>'+esc(t("company"))+'</h3>'+
+          '<div class="field"><label for="sCo">'+esc(t("company_name"))+'</label><input class="input" id="sCo" value="'+esc(S.settings.company)+'"></div>'+
+          '<div class="field"><label for="sOwner">'+esc(t("your_name"))+'</label><input class="input" id="sOwner" value="'+esc(S.settings.owner)+'"></div>'+
+          '<div class="field"><label for="sShort">'+esc(t("short_name"))+'</label><input class="input" id="sShort" value="'+esc(S.settings.shortName||"")+'" placeholder="VoltMira"></div>'+
+          '<div class="field"><label for="sLogo">'+esc(t("logo_url"))+'</label><input class="input" id="sLogo" value="'+esc(S.settings.logoUrl||"")+'" placeholder="https://\u2026/logo.png"></div>'+
+          '<div class="field"><label for="sMkt">'+esc(t("default_market"))+'</label><select class="input" id="sMkt">'+mktOpts+'</select></div>'+
+          '<div class="field"><label for="sLang">'+esc(t("language"))+'</label><select class="input" id="sLang" data-act="change-lang">'+langOpts+'</select></div>'+
+          '<div class="field"><label for="sCurrency">'+esc(t("currency"))+'</label><select class="input" id="sCurrency" data-act="change-currency">'+
+            '<option value="EUR"'+(S.settings.currency==="EUR"?" selected":"")+'>'+esc(t("cur_eur"))+'</option>'+
+            '<option value="RON"'+(S.settings.currency==="RON"?" selected":"")+'>'+esc(t("cur_ron"))+'</option>'+
+            '<option value="MDL"'+(S.settings.currency==="MDL"?" selected":"")+'>'+esc(t("cur_mdl"))+'</option>'+
+          '</select></div>'+
+          '<div class="set-note">'+esc(t("co_note"))+'</div>'+
+        '</section>'+
+        '<section class="card"><h3>'+esc(t("embed_title"))+'</h3>'+
+          '<div class="set-note" style="margin-bottom:10px">'+esc(t("embed_note"))+'</div>'+
+          '<pre class="embed-code" id="embedCode">'+esc(embed)+'</pre>'+
+          '<div class="modal-acts" style="margin-top:10px">'+
+            '<button class="btn primary" data-act="copy-embed">'+esc(t("copy_code"))+'</button>'+
+            '<a class="btn ghost" href="#widget" target="_blank" rel="noopener">'+IC.open+' '+esc(t("open_widget"))+'</a>'+
+          '</div>'+
+        '</section>'+
+        '<section class="card"><h3>'+esc(t("data"))+'</h3>'+
+          '<div class="modal-acts">'+
+            '<button class="btn ghost" data-act="export-data">'+esc(t("export_data"))+'</button>'+
+            '<button class="btn ghost" data-act="import-data">'+esc(t("import_data"))+'</button>'+
+            '<button class="btn danger" data-act="reset-demo">'+esc(t("reset_demo"))+'</button>'+
+          '</div>'+
+          '<input type="file" id="importFile" accept="application/json" style="display:none">'+
+        '</section>'+
+      '</div>'+
+      '<section class="card"><h3>'+esc(t("calc_engine"))+'</h3>'+
+        '<div class="set-grid">'+
+          num("eCost","System cost",E.costPerKw,10,"\u20AC/kW")+
+          num("eBatt","Battery cost",E.batteryCost,50,"\u20AC")+
+          num("eWind","Wind cost",E.windCostPerKW,50,"\u20AC/kW")+
+          num("eYield","Base yield",E.baseYield,10,"kWh/kWp\u00B7yr")+
+          num("eOpex","O&amp;M reserve",E.opex,0.1,"%/yr")+
+          num("eHorizon","Horizon",E.horizon,1,"years")+
+          num("eSubsidy",esc(t("afm_amount")),S.settings.subsidyAmountRon,500,"RON")+
+          num("eProsumer",esc(t("prosumer_limit")),S.settings.prosumerLimitKw,0.1,"kW")+
+        '</div>'+
+        '<h3 style="margin-top:20px">'+esc(t("scenario_bands"))+'</h3>'+
+        '<div class="set-grid">'+
+          num("ePym","Pess. yield \u00D7",E.bands.pess.ym,0.01)+
+          num("ePdg","Pess. degradation",E.bands.pess.degr,0.1,"%/yr")+
+          num("ePin","Pess. inflation",E.bands.pess.infl,0.5,"%/yr")+
+          num("eOym","Opt. yield \u00D7",E.bands.opti.ym,0.01)+
+          num("eOdg","Opt. degradation",E.bands.opti.degr,0.1,"%/yr")+
+          num("eOin","Opt. inflation",E.bands.opti.infl,0.5,"%/yr")+
+          num("eEdg","Expected degradation",E.bands.expc.degr,0.1,"%/yr")+
+          num("eEin","Expected inflation",E.bands.expc.infl,0.5,"%/yr")+
+        '</div>'+
+        '<div class="modal-acts" style="margin-top:16px">'+
+          '<button class="btn primary" data-act="save-settings">'+esc(t("save_settings"))+'</button>'+
+          '<button class="btn ghost" data-act="restore-engine">'+esc(t("restore_defaults"))+'</button>'+
+        '</div>'+
+      '</section>'+
+    '</div>';
+}
+
+/* ==================================================================
+   Print / PDF
+================================================================== */
+function printProposal(p){
+  var q = quote(p), E = S.settings.engine, mkt = MARKETS[p.market];
+  var net = q.e.year1/12-(p.loan||0);
+  var logoImg = (S.settings.logoUrl && /^https?:\/\//i.test(S.settings.logoUrl))
+    ? '<img src="'+esc(S.settings.logoUrl)+'" style="height:26px;margin-bottom:10px">' : '';
+  $("printSheet").innerHTML =
+    logoImg+
+    '<div class="p-co">'+esc(S.settings.company)+' \u00B7 Solar proposal \u00B7 '+new Date().toLocaleDateString("en-GB")+'</div>'+
+    '<h1>'+esc(p.title)+'</h1>'+
+    '<div class="p-sub">'+esc(p.address||"")+' \u2014 prepared for '+esc(p.client||"the client")+'</div>'+
+    '<div class="p-kpis">'+
+      '<div><b>'+p.kw.toFixed(1)+' kW'+(p.batt?" + battery":"")+(p.wind?" + wind":"")+'</b><span>System</span></div>'+
+      '<div><b>'+formatMoney(q.e.cost)+'</b><span>Total investment</span></div>'+
+      '<div><b>'+kwhF(q.e.prod0)+'</b><span>Production / year</span></div>'+
+      '<div><b>'+formatMoney(q.e.year1)+'</b><span>Savings, year one</span></div>'+
+    '</div>'+
+    '<h2>Payback \u2014 three honest scenarios</h2>'+
+    '<table><tr><th>Scenario</th><th>Payback</th><th>'+E.horizon+'-yr ROI</th><th>Key inputs</th></tr>'+
+    '<tr><td>Pessimistic</td><td>'+yrsF(q.p.payback)+' yrs</td><td>'+pct(q.p.roi)+'</td><td>'+Math.round((E.bands.pess.ym-1)*100)+'% yield, '+E.bands.pess.degr+'%/yr degr., '+E.bands.pess.infl+'% inflation</td></tr>'+
+    '<tr><td><b>Expected</b></td><td><b>'+yrsF(q.e.payback)+' yrs</b></td><td><b>'+pct(q.e.roi)+'</b></td><td>base yield, '+E.bands.expc.degr+'%/yr degr., '+E.bands.expc.infl+'% inflation</td></tr>'+
+    '<tr><td>Optimistic</td><td>'+yrsF(q.o.payback)+' yrs</td><td>'+pct(q.o.roi)+'</td><td>+'+Math.round((E.bands.opti.ym-1)*100)+'% yield, '+E.bands.opti.degr+'%/yr degr., '+E.bands.opti.infl+'% inflation</td></tr></table>'+
+    '<h2>Monthly money</h2>'+
+    '<table><tr><th>Monthly loan payment</th><th>Estimated monthly savings</th><th>Net</th></tr>'+
+    '<tr><td>'+formatMoney(p.loan||0)+'</td><td>'+formatMoney(q.e.year1/12)+'</td><td>'+(net>=0?"+":"")+formatMoney(net)+'/mo</td></tr></table>'+
+    (net>=0?'<div class="p-verdict">Cash-flow positive from day one \u2014 the system pays its own loan.</div>':'')+
+    '<h2>Assumptions \u2014 in full</h2>'+
+    '<table>'+
+    '<tr><td>Specific yield (expected)</td><td>'+E.baseYield+' kWh/kWp\u00B7yr</td></tr>'+
+    (p.wind?'<tr><td>Wind turbine</td><td>'+p.windKw+' kW @ '+p.windSpeed+' m/s \u2192 '+kwhF(q.e.wind0)+'/yr</td></tr>':'')+
+    (p.useMonthly?'<tr><td>Consumption model</td><td>Monthly profiling active</td></tr>':'')+
+    '<tr><td>Export scheme</td><td>'+esc(mkt.scheme)+' ('+esc(mkt.name)+') \u2014 \u20AC'+mkt.feed+'/kWh surplus</td></tr>'+
+    '<tr><td>Self-consumption</td><td>'+Math.round(q.e.self*100)+'%'+(p.batt?" with battery":"")+'</td></tr>'+
+    '<tr><td>System cost basis</td><td>\u20AC'+E.costPerKw+'/kW + \u20AC'+E.batteryCost+' battery'+(p.wind?" + \u20AC"+E.windCostPerKW+"/kW wind":"")+' \u00B7 O&amp;M '+E.opex+'%/yr</td></tr>'+
+    '<tr><td>Horizon</td><td>'+E.horizon+' years</td></tr></table>'+
+    '<div class="p-foot">'+esc(S.settings.company)+' \u00B7 Every number above can be recomputed from the stated assumptions \u2014 that\u2019s the VoltMira standard. \u00B7 voltmira.com</div>';
+  window.print();
+}
+/* ==================================================================
+   Actions (event delegation)
+================================================================== */
+var lastDeleted = null;
+
+function createProject(over){
+  var p = normProj(Object.assign({
+    id:uid(), title:"New quote", client:"", address:"",
+    market:S.settings.defaultMarket||"RO",
+    kw:6, price:0.21, cons:5000, batt:false, loan:118,
+    status:"draft", ownerId:(S.team[0]||{}).id||null,
+    created:Date.now(), updated:Date.now(), proposal:null, nextFollowUp:null, scenarios:[]
+  }, over||{}));
+  S.projects.unshift(p);
+  logAct("quote","New quote created: <b>"+esc(p.title)+"</b>");
+  save();
+  return p;
+}
+
+document.addEventListener("click", function(e){
+  var el = e.target.closest("[data-act]");
+  if (!el) return;
+  var act = el.getAttribute("data-act"), id = el.getAttribute("data-id");
+
+  if (act==="new-proj"){ var np=createProject(); S.ui.tab="quote"; save(); nav("project/"+np.id); toast(t("t_new_quote")); }
+  else if (act==="open-proj"){ S.ui.tab="quote"; scEditing=null; save(); nav("project/"+id); }
+  else if (act==="set-tab"){ S.ui.tab=el.getAttribute("data-v"); scEditing=null; save(); route(); }
+
+  else if (act==="cycle-status"){
+    var pr = findProj(id); if (!pr) return;
+    var prevStatus = pr.status;
+    pr.status = statusCycle(pr.status); pr.updated = Date.now();
+    if (pr.status==="won") logAct("won","<b>"+esc(pr.title)+"</b> marked as Won \u2014 "+eur(simulate(pr,"expc").cost));
+    save();
+    el.className = "chip "+pr.status; el.textContent = statusLabel(pr.status);
+    var wasStay = el.getAttribute("data-stay");
+    if (!wasStay && current.route==="dashboard") route();
+    toast(tf("status_changed",{s:statusLabel(pr.status)}), t("undo"), function(){
+      pr.status = prevStatus; pr.updated = Date.now(); save();
+      if (current.route==="dashboard" || current.route==="projects") route();
+      else { el.className="chip "+pr.status; el.textContent=statusLabel(pr.status); }
+    });
+  }
+
+  else if (act==="dup-proj"){
+    var src = findProj(id); if (!src) return;
+    var copy = JSON.parse(JSON.stringify(src));
+    copy.id = uid(); copy.title = src.title+" (copy)"; copy.status="draft";
+    copy.proposal = null; copy.created = copy.updated = Date.now();
+    S.projects.unshift(copy); logAct("quote","Duplicated <b>"+esc(src.title)+"</b>"); save();
+    if (current.route==="project"){ S.ui.tab="quote"; nav("project/"+copy.id); } else route();
+    toast("Duplicated as \u201C"+copy.title+"\u201D");
+  }
+
+  else if (act==="del-proj"){
+    var idx = S.projects.findIndex(function(x){return x.id===id;});
+    if (idx<0) return;
+    lastDeleted = { item:S.projects[idx], index:idx };
+    var title = S.projects[idx].title;
+    S.projects.splice(idx,1); save();
+    if (current.route==="project") nav("projects"); else route();
+    toast("Deleted \u201C"+title+"\u201D","Undo",function(){
+      if (!lastDeleted) return;
+      S.projects.splice(Math.min(lastDeleted.index,S.projects.length),0,lastDeleted.item);
+      lastDeleted=null; save(); route(); toast("Restored");
+    });
+  }
+
+  else if (act==="filter-status"){ projFilter.status = el.getAttribute("data-v"); route(); }
+
+  else if (act==="toggle-assump"){
+    var a=$("assump"); if(!a) return;
+    var open=a.classList.toggle("open");
+    el.setAttribute("aria-expanded",open);
+    el.textContent = el.textContent.replace(/[\u25BE\u25B4]/, open?"\u25B4":"\u25BE");
+  }
+
+  else if (act==="sales-on"){ setSales(true); route(); window.scrollTo(0,0); }
+  else if (act==="sales-off"){ setSales(false); route(); }
+  else if (act==="toggle-sales-sc"){ S.ui.salesScenarios = el.checked; save(); route(); }
+
+  else if (act==="gen-link"){
+    var pj = findProj(id); if(!pj) return;
+    if (!pj.proposal){
+      pj.proposal = { code:uid(), opens:0, seconds:0, battToggles:0, created:Date.now(), lastOpen:null };
+      if (pj.status==="draft") pj.status="sent";
+      pj.updated=Date.now();
+      logAct("quote","Proposal link created for <b>"+esc(pj.title)+"</b>");
+      save();
+    }
+    showLinkModal(pj);
+  }
+
+  else if (act==="copy-link"){
+    var url = el.getAttribute("data-url");
+    var done=function(){ toast(t("t_copied")); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done,done); else done();
+  }
+
+  else if (act==="copy-embed"){
+    var code = $("embedCode").textContent;
+    var done=function(){ toast(t("t_copied")); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done,done); else done();
+  }
+
+  else if (act==="preview-client"){ closeModal(); nav("proposal/"+el.getAttribute("data-code")); }
+  else if (act==="back-to-proj"){ S.ui.tab="quote"; save(); nav("project/"+id); }
+  else if (act==="close-modal"){ closeModal(); }
+  else if (act==="pdf"){ var pp=findProj(id); if(pp) printProposal(pp); }
+
+  else if (act==="request-quote"){
+    var pq=findProj(id); if(!pq) return;
+    S.leads.unshift({id:uid(), name:pq.client||"Client via proposal", note:"Requested the quote for \u201C"+pq.title+"\u201D", hot:true, created:Date.now(), projectId:pq.id});
+    logAct("lead","<b>"+esc(pq.client||"A client")+"</b> requested the quote for <b>"+esc(pq.title)+"</b>");
+    saveNow();
+    toast(t("t_req_sent"));
+  }
+
+  else if (act==="accept-quote"){
+    var pa=findProj(id); if(!pa) return;
+    if (pa.status==="sent" || pa.status==="draft"){ pa.status="won"; pa.updated=Date.now(); }
+    logAct("won","<b>"+esc(pa.client||"Client")+"</b> accepted the quote for <b>"+esc(pa.title)+"</b>");
+    saveNow();
+    el.textContent = t("quote_accepted");
+    el.setAttribute("disabled","disabled");
+    el.style.opacity=".7";
+    toast(t("accept_thanks"));
+  }
+
+  else if (act==="quote-lead"){
+    var ld = S.leads.find(function(l){return l.id===id;}); if(!ld) return;
+    var lp = createProject({title:"Quote for "+ld.name, client:ld.name});
+    ld.projectId = lp.id; S.ui.tab="quote"; save();
+    nav("project/"+lp.id);
+    toast("Lead converted to a quote");
+  }
+
+  /* ---- scenarios ---- */
+  else if (act==="sc-new"){
+    var base = findProj(id); if(!base) return;
+    if (base.scenarios.length>=3){ toast(t("sc_limit")); return; }
+    var name = "Scenario "+(base.scenarios.length+1);
+    base.scenarios.push(blankScenarioFrom(base, name));
+    base.updated=Date.now(); save(); route();
+  }
+  else if (act==="sc-edit"){
+    var scId = el.getAttribute("data-sc");
+    scEditing = (scEditing===scId) ? null : scId;
+    route();
+  }
+  else if (act==="sc-del"){
+    var scId2 = el.getAttribute("data-sc");
+    var pr2 = findProj(current.id); if(!pr2) return;
+    pr2.scenarios = pr2.scenarios.filter(function(s){return s.id!==scId2;});
+    if (scEditing===scId2) scEditing=null;
+    pr2.updated=Date.now(); save(); route();
+  }
+
+  else if (act==="add-member"){
+    var name=$("tmName").value.trim(), role=$("tmRole").value, mail=$("tmMail").value.trim();
+    if (!name){ toast("Add a name first"); $("tmName").focus(); return; }
+    if (S.team.length>=5){ toast("All 5 seats are used \u2014 remove someone first"); return; }
+    S.team.push({id:uid(),name:name,role:role,email:mail});
+    logAct("sys","<b>"+esc(name)+"</b> joined the team");
+    save(); route(); toast(name+" added");
+  }
+  else if (act==="del-member"){
+    if (S.team.length<=1){ toast("You need at least one member"); return; }
+    var ti = S.team.findIndex(function(tm){return tm.id===id;}); if(ti<0) return;
+    var gone = S.team.splice(ti,1)[0];
+    var fallback = S.team[0].id;
+    S.projects.forEach(function(p){ if(p.ownerId===id) p.ownerId=fallback; });
+    save(); route(); toast(gone.name+" removed \u2014 projects moved to "+S.team[0].name);
+  }
+
+  else if (act==="save-settings"){
+    S.settings.company = $("sCo").value.trim()||S.settings.company;
+    S.settings.owner = $("sOwner").value.trim()||S.settings.owner;
+    S.settings.shortName = $("sShort").value.trim();
+    S.settings.logoUrl = $("sLogo").value.trim();
+    S.settings.defaultMarket = $("sMkt").value;
+    var E=S.settings.engine, gv=function(i,f){var x=parseFloat($(i).value);return isNaN(x)?f:x;};
+    E.costPerKw=gv("eCost",E.costPerKw); E.batteryCost=gv("eBatt",E.batteryCost); E.windCostPerKW=gv("eWind",E.windCostPerKW);
+    E.baseYield=gv("eYield",E.baseYield); E.opex=gv("eOpex",E.opex);
+    E.horizon=Math.max(5,Math.min(40,Math.round(gv("eHorizon",E.horizon))));
+    E.bands.pess.ym=gv("ePym",E.bands.pess.ym); E.bands.pess.degr=gv("ePdg",E.bands.pess.degr); E.bands.pess.infl=gv("ePin",E.bands.pess.infl);
+    E.bands.opti.ym=gv("eOym",E.bands.opti.ym); E.bands.opti.degr=gv("eOdg",E.bands.opti.degr); E.bands.opti.infl=gv("eOin",E.bands.opti.infl);
+    E.bands.expc.degr=gv("eEdg",E.bands.expc.degr); E.bands.expc.infl=gv("eEin",E.bands.expc.infl);
+    S.settings.subsidyAmountRon=gv("eSubsidy",S.settings.subsidyAmountRon);
+    S.settings.prosumerLimitKw=gv("eProsumer",S.settings.prosumerLimitKw);
+    var scur=$("sCurrency"); if(scur) S.settings.currency=scur.value;
+    saveNow(); route(); toast(t("t_settings_saved"));
+  }
+  else if (act==="restore-engine"){
+    var keepWind = S.settings.engine.windCostPerKW;
+    S.settings.engine = defaultEngine(); S.settings.engine.windCostPerKW=keepWind; save(); route(); toast("Engine restored to defaults");
+  }
+
+  else if (act==="export-data"){
+    var blob = new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+    var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="voltmira-data.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},4000); toast("Backup downloaded");
+  }
+  else if (act==="import-data"){ $("importFile").click(); }
+  else if (act==="reset-demo"){
+    openModal('<h4>'+esc(t("reset_demo"))+'?</h4><p class="sub">This replaces all projects, team members, leads and settings with the original demo. There\u2019s no undo.</p>'+
+      '<div class="modal-acts"><button class="btn ghost" data-act="close-modal">'+esc(t("btn_cancel"))+'</button>'+
+      '<button class="btn danger" data-act="confirm-reset">'+esc(t("reset_demo"))+'</button></div>');
+  }
+  else if (act==="reset-app"){
+    openModal('<h4>'+esc(t("reset_app"))+'?</h4><p class="sub">'+esc(t("reset_app_q"))+'</p>'+
+      '<div class="modal-acts"><button class="btn ghost" data-act="close-modal">'+esc(t("btn_cancel"))+'</button>'+
+      '<button class="btn danger" data-act="confirm-reset">'+esc(t("reset_everything"))+'</button></div>');
+  }
+  else if (act==="confirm-reset"){ S = seedState(); S.v=CURRENT_VERSION; saveNow(); closeModal(); nav("dashboard"); route(); toast("Demo data restored"); }
+
+  else if (act==="widget-submit"){
+    var d = {
+      name:($("wName").value||"").trim(), address:($("wAddr").value||"").trim(),
+      bill:($("wBill").value||"").trim(), email:($("wMail").value||"").trim(),
+      phone:(($("wPhone")||{}).value||"").trim(), message:($("wMsg").value||"").trim()
+    };
+    if (!d.name){ toast("Please add your name"); $("wName").focus(); return; }
+    store.set("voltmira_widget_lead", JSON.stringify(d));
+    $("widgetBody").innerHTML = '<div style="text-align:center;padding:20px 0">'+
+      '<div style="width:56px;height:56px;border-radius:50%;background:var(--green-tint);color:var(--green);display:grid;place-items:center;margin:0 auto 16px">'+
+      '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>'+
+      '<h2 class="w-title" style="text-align:center">'+esc(t("w_thanks_t"))+'</h2>'+
+      '<p class="w-sub" style="text-align:center">'+esc(tf("w_thanks_s",{co:S.settings.company}))+'</p>'+
+      '<a class="btn primary" href="#dashboard?lead=1" style="margin-top:8px">'+esc(t("w_learn"))+'</a>'+
+      '<button class="btn ghost" data-act="widget-again" style="margin-top:10px;width:100%">'+esc(t("w_another"))+'</button>'+
+    '</div>';
+    toast("Sent \u2713");
+  }
+  else if (act==="widget-again"){ route(); }
+});
+
+/* select change delegation (language) */
+document.addEventListener("change", function(e){
+  var el = e.target;
+  if (el.id==="sLang"){
+    S.settings.lang = el.value; saveNow();
+    renderSidebar(current.route); route();
+    return;
+  }
+  if (el.id==="sCurrency"){
+    S.settings.currency = el.value; saveNow(); route();
+    return;
+  }
+  if (el.id==="importFile"){
+    var f = el.files[0]; if(!f) return;
+    var r = new FileReader();
+    r.onload = function(){
+      try{
+        var data = JSON.parse(r.result);
+        if (!data || !Array.isArray(data.projects) || !data.settings) throw 0;
+        S = data; if(!S.settings.engine) S.settings.engine=defaultEngine();
+        if(S.settings.currency==null) S.settings.currency="EUR";
+        if(S.settings.subsidyAmountRon==null) S.settings.subsidyAmountRon=20000;
+        if(S.settings.prosumerLimitKw==null) S.settings.prosumerLimitKw=10.8;
+        S.v=CURRENT_VERSION;
+        S.projects.forEach(normProj); saveNow(); route(); toast("Data imported");
+      } catch(err){ toast("That file isn\u2019t a VoltMira backup"); }
+    };
+    r.readAsText(f); el.value="";
+  }
+});
+
+/* ==================================================================
+   Link modal
+================================================================== */
+function fmtSec(s){ if(!s) return "\u2014"; var m=Math.floor(s/60); return (m?m+"m ":"")+(s%60)+"s"; }
+function showLinkModal(p){
+  var url = "https://app.voltmira.com/proposal/"+p.proposal.code;
+  openModal('<h4>Live proposal link</h4>'+
+    '<p class="sub">Send this to '+esc(p.client||"your client")+'. Every open, second spent and battery toggle is tracked back to this project. \u201CPreview as client\u201D opens the exact page they would see \u2014 and the tracking below is real.</p>'+
+    '<div class="link-row"><code>'+url+'</code><button class="btn sm amber" data-act="copy-link" data-url="'+url+'">Copy</button></div>'+
+    '<ul class="track">'+
+      '<li>Proposal opened <b>'+p.proposal.opens+' time'+(p.proposal.opens===1?"":"s")+'</b></li>'+
+      '<li>Time spent <b>'+fmtSec(p.proposal.seconds)+'</b></li>'+
+      '<li>Battery toggled <b>'+(p.proposal.battToggles?p.proposal.battToggles+"\u00D7":"no")+'</b></li>'+
+      '<li>Last opened <b>'+(p.proposal.lastOpen?ago(p.proposal.lastOpen):"\u2014")+'</b></li>'+
+    '</ul>'+
+    '<div class="modal-acts">'+
+      '<button class="btn ghost" data-act="close-modal">'+esc(t("btn_close"))+'</button>'+
+      '<button class="btn primary" data-act="preview-client" data-code="'+p.proposal.code+'">'+IC.eye+' Preview as client</button>'+
+    '</div>');
+}
+
+/* ==================================================================
+   Per-page bindings
+================================================================== */
+function afterRender(r){
+  if (r.route==="project"){
+    var p = findProj(r.id); if(!p) return;
+    if (S.ui.sales) setSales(true, true);
+    if (S.ui.tab==="scenarios" && !S.ui.sales){ bindScenarios(p); return; }
+    refreshEditor(p);
+    function bind(id, fn, ev){
+      var el=$(id); if(!el) return;
+      el.addEventListener(ev||"input", function(){ fn(el); p.updated=Date.now(); save(); refreshEditor(p); });
+    }
+    bind("fTitle", function(el){ p.title=el.value; });
+    bind("fClient", function(el){ p.client=el.value; });
+    bind("fAddr", function(el){ p.address=el.value; });
+    bind("fOwner", function(el){ p.ownerId=el.value; }, "change");
+    bind("fFollow", function(el){ p.nextFollowUp=el.value||null; }, "change");
+    bind("fMarket", function(el){ p.market=el.value; }, "change");
+    bind("fKw", function(el){ p.kw=parseFloat(el.value)||6; el.setAttribute("aria-valuenow", p.kw); });
+    bind("fPrice", function(el){ p.price=parseFloat(el.value)||0.21; });
+    bind("fCons", function(el){ p.cons=parseFloat(el.value)||5000; });
+    bind("fLoan", function(el){ p.loan=parseFloat(el.value)||0; });
+    /* battery */
+    var fb=$("fBatt"); if(fb) fb.addEventListener("change",function(){ p.batt=fb.checked; p.updated=Date.now(); save(); refreshEditor(p); });
+    /* AFM subsidy */
+    var fa=$("fAfm"); if(fa) fa.addEventListener("change",function(){ p.afmSubsidy=fa.checked; p.updated=Date.now(); save(); refreshEditor(p); });
+    /* wind toggle + fields */
+    var fw=$("fWind"); if(fw) fw.addEventListener("change",function(){
+      p.wind=fw.checked; var wf=$("windFields"); if(wf) wf.style.display=p.wind?"":"none";
+      p.updated=Date.now(); save(); refreshEditor(p);
+    });
+    var fwk=$("fWindKw"); if(fwk) fwk.addEventListener("input",function(){ p.windKw=parseFloat(fwk.value)||3; p.updated=Date.now(); save(); refreshEditor(p); });
+    var fws=$("fWindSpeed"); if(fws) fws.addEventListener("input",function(){ p.windSpeed=parseFloat(fws.value)||5.5; p.windPreset="Custom"; var sel=$("fWindRegion"); if(sel) sel.value="Custom"; p.updated=Date.now(); save(); refreshEditor(p); });
+    var fwr=$("fWindRegion"); if(fwr) fwr.addEventListener("change",function(){
+      p.windPreset=fwr.value;
+      if (WIND_PRESETS[fwr.value]!=null){ p.windSpeed=WIND_PRESETS[fwr.value]; var si=$("fWindSpeed"); if(si) si.value=p.windSpeed; }
+      p.updated=Date.now(); save(); refreshEditor(p);
+    });
+    /* monthly */
+    var fm=$("fMonthly"); if(fm) fm.addEventListener("change",function(){
+      p.useMonthly=fm.checked;
+      if (p.useMonthly && !p.consMonthly){ var per=Math.round(p.cons/12); p.consMonthly=MONTHS.map(function(){return per;}); }
+      var g=$("monthlyGrid"); if(g) g.style.display=p.useMonthly?"":"none";
+      var cf=$("consField"); if(cf) cf.style.display=p.useMonthly?"none":"";
+      p.updated=Date.now(); save(); refreshEditor(p);
+    });
+    document.querySelectorAll(".mo-in").forEach(function(inp){
+      inp.addEventListener("input",function(){
+        var m=parseInt(inp.getAttribute("data-m"),10);
+        if(!p.consMonthly){ var per=Math.round(p.cons/12); p.consMonthly=MONTHS.map(function(){return per;}); }
+        p.consMonthly[m]=parseFloat(inp.value)||0;
+        p.updated=Date.now(); save(); refreshEditor(p);
+      });
+    });
+  }
+  else if (r.route==="proposal"){
+    var pp = S.projects.find(function(x){ return x.proposal && x.proposal.code===r.id; });
+    if (!pp) return;
+    refreshClient(pp);
+    var cb = $("cBatt");
+    if (cb) cb.addEventListener("change", function(){
+      pp.batt = cb.checked; pp.proposal.battToggles += 1;
+      logAct("open","<b>"+esc(pp.client||"Your client")+"</b> toggled the battery on <b>"+esc(pp.title)+"</b>");
+      save(); refreshClient(pp);
+    });
+    propTimer = setInterval(function(){}, 10000);
+  }
+  else if (r.route==="projects"){
+    var s = $("projSearch");
+    if (s){
+      s.addEventListener("input", function(){
+        projFilter.q = s.value;
+        var scroll = window.scrollY; route(); window.scrollTo(0,scroll);
+        var s2=$("projSearch"); if(s2){ s2.focus(); s2.setSelectionRange(s2.value.length,s2.value.length); }
+      });
+    }
+  }
+}
+
+/* scenario editor bindings (live) */
+function bindScenarios(p){
+  function reEval(sc){
+    var card = document.querySelector('.sc-card[data-sc="'+sc.id+'"]');
+    var e = scEval(sc).e;
+    if (card){
+      var metrics = card.querySelectorAll('.sc-metrics b');
+      if (metrics[0]) metrics[0].textContent = yrsF(e.payback);
+      if (metrics[1]) metrics[1].textContent = formatMoney(e.year1/12);
+      var meta = card.querySelector('.sc-meta');
+      if (meta) meta.textContent = sc.kw.toFixed(1)+' kW \u00B7 '+(sc.batt?"battery":"no battery")+(sc.wind?" \u00B7 wind "+sc.windKw+"kW":"");
+    }
+    refreshCompareTable(p);
+  }
+  p.scenarios.forEach(function(sc){
+    var q = function(sel){ return document.querySelector(sel); };
+    var nm = q('[data-sc-name="'+sc.id+'"]'); if(nm) nm.addEventListener("input",function(){ sc.name=nm.value; p.updated=Date.now(); save(); refreshCompareTable(p); var th=document.querySelectorAll('.cmp-table thead th'); });
+    var kw = q('[data-sc-kw="'+sc.id+'"]'); if(kw) kw.addEventListener("input",function(){ sc.kw=parseFloat(kw.value)||6; var o=q('[data-sc-kwout="'+sc.id+'"]'); if(o)o.textContent=sc.kw.toFixed(1)+" kW"; p.updated=Date.now(); save(); reEval(sc); });
+    var pr = q('[data-sc-price="'+sc.id+'"]'); if(pr) pr.addEventListener("input",function(){ sc.price=parseFloat(pr.value)||0.21; p.updated=Date.now(); save(); reEval(sc); });
+    var cn = q('[data-sc-cons="'+sc.id+'"]'); if(cn) cn.addEventListener("input",function(){ sc.cons=parseFloat(cn.value)||5000; p.updated=Date.now(); save(); reEval(sc); });
+    var mk = q('[data-sc-market="'+sc.id+'"]'); if(mk) mk.addEventListener("change",function(){ sc.market=mk.value; p.updated=Date.now(); save(); reEval(sc); });
+    var bt = q('[data-sc-batt="'+sc.id+'"]'); if(bt) bt.addEventListener("change",function(){ sc.batt=bt.checked; p.updated=Date.now(); save(); reEval(sc); });
+    var wd = q('[data-sc-wind="'+sc.id+'"]'); if(wd) wd.addEventListener("change",function(){ sc.wind=wd.checked; var w=q('[data-sc-windwrap="'+sc.id+'"]'); if(w)w.style.display=sc.wind?"":"none"; p.updated=Date.now(); save(); reEval(sc); });
+    var wk = q('[data-sc-windkw="'+sc.id+'"]'); if(wk) wk.addEventListener("input",function(){ sc.windKw=parseFloat(wk.value)||3; p.updated=Date.now(); save(); reEval(sc); });
+    var wsp = q('[data-sc-windspeed="'+sc.id+'"]'); if(wsp) wsp.addEventListener("input",function(){ sc.windSpeed=parseFloat(wsp.value)||5.5; p.updated=Date.now(); save(); reEval(sc); });
+  });
+}
+function refreshCompareTable(p){
+  /* rebuild only the comparison table + names, cheap enough */
+  var host = document.querySelector(".cmp-table");
+  if (!host) return;
+  var cols = [{name:t("sc_base"), q:quote(p).e}];
+  p.scenarios.forEach(function(sc){ cols.push({name:sc.name, q:scEval(sc).e}); });
+  function trow(label, fn){ return '<tr><td>'+esc(label)+'</td>'+cols.map(function(c){return '<td>'+fn(c.q)+'</td>';}).join("")+'</tr>'; }
+  host.innerHTML = '<thead><tr><th>'+esc(t("sc_metric"))+'</th>'+cols.map(function(c){return '<th>'+esc(c.name)+'</th>';}).join("")+'</tr></thead><tbody>'+
+    trow(t("sc_cost"), function(q){return formatMoney(q.cost);})+
+    trow(t("sc_gen"), function(q){return kwhF(q.prod0);})+
+    trow(t("sc_pb"), function(q){return yrsF(q.payback)+" "+t("years");})+
+    trow(t("sc_ms"), function(q){return formatMoney(q.year1/12)+"/mo";})+
+  '</tbody>';
+}
+
+/* timer flush on leave */
+window.addEventListener("beforeunload", function(){ flushProposalTimer(); saveNow(); });
+document.addEventListener("visibilitychange", function(){
+  if (document.hidden){ var w=propWatchedId; flushProposalTimer(); if(w){ propWatchedId=w; propStart=Date.now(); } }
+});
+
+/* ==================================================================
+   Sales-mode scenarios toggle (rendered into salesBar area? -> add control on editor)
+   We expose it via a floating control appended in sales mode.
+================================================================== */
+function ensureSalesScenarioToggle(){
+  /* handled inside editorQuote via body class; toggle button added in sales bar */
+}
+
+/* ==================================================================
+   Boot
+================================================================== */
+load();
+saveNow(); /* establish a persisted baseline immediately */
+if (!location.hash) location.hash = "#dashboard";
+route();
+
+})();
+
+</script>
+</body>
+</html>
