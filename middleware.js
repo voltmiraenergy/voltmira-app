@@ -15,7 +15,7 @@ export async function middleware(req) {
   // crawlers get a real 404 rather than a 307 redirect.
   const isProtected = path.startsWith("/dashboard") || path.startsWith("/projects")
     || path.startsWith("/settings") || path.startsWith("/team") || path.startsWith("/leads")
-    || path.startsWith("/guide");
+    || path.startsWith("/guide") || path.startsWith("/catalog");
 
   if (!isProtected) return res;
 
