@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
 import { createProposal, saveQuoteTemplate } from "../../../../lib/actions.js";
+import InstallChecklist from "./InstallChecklist.jsx";
 import { quote, MARKETS, FX } from "@voltmira/engine";
 import { t } from "../../../../lib/i18n.js";
 
@@ -403,6 +404,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               {net >= 0 ? tr("save_pos", { x: fmt(net) }) : tr("save_neg")}
             </div>
           </section>
+
+          {p.status === "won" && (
+            <InstallChecklist projectId={initial.id} initial={initial.install_progress} lang={lang} />
+          )}
         </div>
       </div>
 
