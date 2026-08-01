@@ -71,6 +71,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     market: initial.market, status: initial.status,
     kw: +initial.kw, price: +initial.price, cons: +initial.cons,
     batt: initial.batt, battKwh: initial.batt_kwh != null ? +initial.batt_kwh : 10,
+    options: Array.isArray(initial.options) ? initial.options : [],
     afmSubsidy: initial.afm_subsidy, loan: +initial.loan_monthly,
     yieldOverride: initial.yield_per_kwp ? +initial.yield_per_kwp : undefined,
     monthlyYieldShape: initial.monthly_yield_shape || undefined,
@@ -129,8 +130,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       // batt_kwh is written separately + best-effort so a workspace that hasn't
       // run add-battery-kwh.sql yet still autosaves everything else (the column
       // may not exist; swallow that error rather than fail the whole save).
-      else sb.from("projects").update({ batt_kwh: next.battKwh }).eq("id", initial.id)
-        .then(({ error: e2 }) => { if (e2) console.warn("batt_kwh not stored (run add-battery-kwh.sql?):", e2.message); });
+      else {
+        sb.from("projects").update({ batt_kwh: next.battKwh }).eq("id", initial.id)
+          .then(({ error: e2 }) => { if (e2) console.warn("batt_kwh not stored (run add-battery-kwh.sql?):", e2.message); });
+        sb.from("projects").update({ options: next.options }).eq("id", initial.id)
+          .then(({ error: e3 }) => { if (e3) console.warn("options not stored (run add-quote-options.sql?):", e3.message); });
+      }
     } catch (e) {
       setSaved("error");
       console.error("autosave threw:", e?.message || e);
@@ -142,6 +147,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     clearTimeout(timer.current);
     timer.current = setTimeout(() => persist(next), 600);
   }
+  // side-by-side comparison options (max 2 alternatives beyond the base quote)
+  const setOption = (i, patch) => update({ options: p.options.map((o, j) => j === i ? { ...o, ...patch } : o) });
+  const addOption = () => { if (p.options.length < 2) update({ options: [...p.options, { label: "", kw: p.kw, battKwh: 0 }] }); };
+  const removeOption = (i) => update({ options: p.options.filter((_, j) => j !== i) });
   useEffect(() => () => clearTimeout(timer.current), []);
 
   async function fetchPVGIS() {
@@ -355,6 +364,29 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               check(p.afmSubsidy, subLabel,
                 subAmountEur > 0 ? tr("afm_sub", { x: fmt(subAmountEur) }) : tr("afm_sub_unset"),
                 v => update({ afmSubsidy: v }))}
+          </section>
+
+          <section className="card">
+            <h3>{tr("opt_title")}</h3>
+            <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--muted)" }}>{tr("opt_sub")}</p>
+            {p.options.map((o, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-end", marginBottom: 10, flexWrap: "wrap" }}>
+                <div className="field" style={{ flex: "1 1 120px" }}><label>{tr("opt_label")}</label>
+                  <input className="input" value={o.label} maxLength={40} placeholder={`${tr("pp_option")} ${i + 2}`}
+                    onChange={e => setOption(i, { label: e.target.value })} /></div>
+                <div className="field" style={{ width: 74 }}><label>kW</label>
+                  <input className="input" type="number" min="0" step="0.5" value={o.kw}
+                    onChange={e => setOption(i, { kw: +e.target.value || 0 })} /></div>
+                <div className="field" style={{ width: 84 }}><label>{tr("opt_batt")}</label>
+                  <input className="input" type="number" min="0" step="0.5" value={o.battKwh}
+                    onChange={e => setOption(i, { battKwh: +e.target.value || 0 })} /></div>
+                <button className="btn ghost" style={{ padding: "9px 12px" }} onClick={() => removeOption(i)}
+                  aria-label={tr("opt_remove")}>✕</button>
+              </div>
+            ))}
+            {p.options.length < 2 && (
+              <button className="btn ghost" onClick={addOption}>+ {tr("opt_add")}</button>
+            )}
           </section>
         </div>
 

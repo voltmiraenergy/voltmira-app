@@ -25,7 +25,7 @@ export default async function ProposalPage({ params, searchParams }) {
     return <main style={S.wrap}><h1 style={S.h1}>{t("pp_not_found", "en")}</h1>
       <p style={S.muted}>{t("pp_expired", "en")}</p></main>;
   }
-  const { company, inputs, quote: q, accepted, sentAt } = data;
+  const { company, inputs, quote: q, accepted, sentAt, options = [] } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
 
@@ -105,6 +105,28 @@ export default async function ProposalPage({ params, searchParams }) {
         </details>
       </section>
 
+      {options.length > 0 && (
+        <section style={S.card}>
+          <h2 style={S.h2}>{t("pp_compare_h", lang)}</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(148px,1fr))", gap: 12 }}>
+            <div style={{ ...S.optCard, borderColor: "#1E6B4E" }}>
+              <div style={{ ...S.optBadge, background: "#E4EFE9", color: "#1E6B4E" }}>{t("pp_recommended", lang)}</div>
+              <div style={S.optSys}>{inputs.kw.toFixed(1)} kW{inputs.batt ? " + 🔋" : ""}</div>
+              <div style={S.optPay}>{yrs(q.bands.expc.payback)} <small style={S.muted}>{t("pp_years", lang)}</small></div>
+              <div style={S.kpiLbl}>{fmt(q.cost)} · {fmt(q.year1 / 12)}{t("pp_mo", lang)}</div>
+            </div>
+            {options.map((o, i) => (
+              <div key={i} style={S.optCard}>
+                <div style={S.optBadge}>{o.label || `${t("pp_option", lang)} ${i + 2}`}</div>
+                <div style={S.optSys}>{o.kw.toFixed(1)} kW{o.battKwh > 0 ? " + 🔋" : ""}</div>
+                <div style={S.optPay}>{yrs(o.payback)} <small style={S.muted}>{t("pp_years", lang)}</small></div>
+                <div style={S.kpiLbl}>{fmt(o.cost)} · {fmt(o.year1 / 12)}{t("pp_mo", lang)}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <ClientAudit inputs={inputs} assumptions={q.assumptions} lang={lang} />
 
       <section style={S.card}>
@@ -174,4 +196,9 @@ const S = {
   atbl: { width: "100%", marginTop: 10, borderCollapse: "collapse", fontSize: 13 },
   atK: { padding: "6px 10px 6px 0", color: "#66756C", verticalAlign: "top" },
   atV: { padding: "6px 0", color: "#142A21", fontWeight: 600 },
+  optCard: { background: "#F6F5F0", border: "1.5px solid #E3E1D6", borderRadius: 12, padding: "13px 14px" },
+  optBadge: { display: "inline-block", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em",
+    background: "#EDEBE2", color: "#66756C", borderRadius: 99, padding: "3px 9px", marginBottom: 9 },
+  optSys: { fontSize: 15, fontWeight: 700, fontFamily: "Space Grotesk, sans-serif", marginBottom: 2 },
+  optPay: { fontSize: 21, fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, lineHeight: 1.1 },
 };

@@ -79,6 +79,19 @@ export async function GET(req, { params }) {
   const E = { ...defaultEngineSettings(), ...(prop.snapshot.engine || co?.engine || {}) };
   const q = quote(prop.snapshot, E);
 
+  // Side-by-side options: extra configs the installer attached (base snapshot with
+  // kw / battery overridden). We return only what the comparison cards need; the
+  // primary quote above stays the recommended one.
+  const options = (Array.isArray(prop.snapshot.options) ? prop.snapshot.options : [])
+    .slice(0, 3)
+    .filter(o => Number(o?.kw) > 0)
+    .map(o => {
+      const kw = Number(o.kw), battKwh = Math.max(0, Number(o.battKwh) || 0);
+      const oq = quote({ ...prop.snapshot, kw, batt: battKwh > 0, battKwh }, E).e;
+      return { label: String(o.label || "").slice(0, 40), kw, battKwh,
+        cost: oq.cost, payback: oq.payback, year1: oq.year1 };
+    });
+
   return NextResponse.json({
     code: prop.code,
     accepted: !!prop.accepted_at,
@@ -114,6 +127,7 @@ export async function GET(req, { params }) {
       yieldPerKwp: prop.snapshot.yieldOverride || E.baseYield,
       afmSubsidy: !!prop.snapshot.afmSubsidy,
     },
+    options,
   });
 }
 

@@ -12,6 +12,7 @@ import { quote, defaultEngineSettings } from "@voltmira/engine";
 import { escapeHtml } from "../../../lib/safe.js";
 import { t, normLang } from "../../../lib/i18n.js";
 import { proposalStatsByProject, daysSince, needsFollowUp } from "../../../lib/proposalStats.js";
+import FollowUpStrip from "./FollowUpStrip.jsx";
 
 // Activity text may contain ONLY <b>…</b> for emphasis. Escape everything, then
 // re-allow the bold tags. Defense in depth even if a bad value was stored.
@@ -145,9 +146,12 @@ export default async function Dashboard() {
   const CW = 560, CH = 150, cBase = CH - 24, cPlot = cBase - 16, cGroup = CW / 6, cBar = 18;
 
   // "Needs follow-up": cold sent quotes worth chasing now (top 4 by age).
+  // Dismissed (snoozed) reminders are hidden for a week so they don't pile up.
+  const SNOOZE_MS = 7 * 24 * 3600 * 1000;
+  const isSnoozed = (r) => r.followup_snoozed_at && (Date.now() - new Date(r.followup_snoozed_at).getTime()) < SNOOZE_MS;
   const followUps = list
-    .filter(r => r.status === "sent" && needsFollowUp(stats.get(r.id)))
-    .map(r => ({ r, st: stats.get(r.id), age: daysSince(stats.get(r.id)?.sentAt) }))
+    .filter(r => r.status === "sent" && !isSnoozed(r) && needsFollowUp(stats.get(r.id)))
+    .map(r => ({ id: r.id, title: r.title, client: r.client_name, age: daysSince(stats.get(r.id)?.sentAt) }))
     .sort((a, b) => b.age - a.age)
     .slice(0, 4);
 
@@ -176,21 +180,7 @@ export default async function Dashboard() {
         <div className="kpi"><b>{list.length}</b><span>{t("kpi_projects", lang)}</span></div>
       </div>
 
-      {followUps.length > 0 && (
-        <section className="followup-strip">
-          <h3>⚠ {t("fu_title", lang)}</h3>
-          <div className="fu-sub">{t("fu_sub", lang, { n: followUps.length })}</div>
-          {followUps.map(({ r, age }) => (
-            <div className="fu-row" key={r.id}>
-              <div className="fu-who">
-                <b>{r.title || t("untitled", lang)}</b>
-                <span>{r.client_name || "—"} · {t("aged_days", lang, { n: age })}</span>
-              </div>
-              <Link className="btn sm amber" href={`/projects/${r.id}`}>{t("ttl_open", lang)}</Link>
-            </div>
-          ))}
-        </section>
-      )}
+      <FollowUpStrip items={followUps} lang={lang} />
 
       <div className="grid-2" style={{ marginBottom: 18 }}>
         <section className="card">
