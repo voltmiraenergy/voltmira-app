@@ -20,12 +20,12 @@ export default function NotFound() {
           </svg>
         </div>
         <p style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5,
+          fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12.5,
           letterSpacing: ".14em", textTransform: "uppercase",
           color: "var(--app-muted)", margin: "0 0 12px",
         }}>Error 404</p>
         <h1 style={{
-          fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700,
+          fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700,
           fontSize: "clamp(30px, 5vw, 44px)", letterSpacing: "-.03em",
           lineHeight: 1.05, margin: "0 0 14px",
         }}>This roof isn&apos;t in our database.</h1>

@@ -31,12 +31,12 @@ export default function ClientAudit({ inputs, assumptions: E, lang }) {
   const bands = [["pp_pess", q.p, "#C4543B"], ["pp_expc", q.e, "#E89B2D"], ["pp_opti", q.o, "#1E6B4E"]];
   const slider = { width: "100%", accentColor: "#E89B2D", height: 6, cursor: "pointer" };
   const lbl = { display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13, color: "#66756C", marginBottom: 8, fontWeight: 500 };
-  const val = { fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, color: "#1E6B4E", fontSize: 15 };
+  const val = { fontFamily: "Inter, system-ui, sans-serif", fontWeight: 700, color: "#1E6B4E", fontSize: 15 };
 
   return (
     <section style={{ background: "#fff", border: "1px solid #E89B2D", borderRadius: 14, padding: 20, margin: "16px 0",
       boxShadow: "0 2px 14px rgba(232,155,45,.1)" }}>
-      <h2 style={{ fontSize: 15, margin: "0 0 4px", fontFamily: "Space Grotesk, sans-serif", color: "#B4700F" }}>{t("audit_title", lang)}</h2>
+      <h2 style={{ fontSize: 15, margin: "0 0 4px", fontFamily: "Inter, system-ui, sans-serif", color: "#B4700F" }}>{t("audit_title", lang)}</h2>
       <p style={{ fontSize: 13, color: "#66756C", margin: "0 0 18px", lineHeight: 1.5 }}>{t("audit_sub", lang)}</p>
 
       <div style={{ display: "grid", gap: 18, marginBottom: 18 }}>
@@ -56,7 +56,7 @@ export default function ClientAudit({ inputs, assumptions: E, lang }) {
         {bands.map(([key, b, c]) => (
           <div key={key} style={{ background: "#F6F5F0", borderLeft: `4px solid ${c}`, borderRadius: 10, padding: "12px 12px" }}>
             <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: c }}>{t(key, lang)}</div>
-            <div style={{ fontSize: 22, fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, lineHeight: 1.1 }}>
+            <div style={{ fontSize: 22, fontFamily: "Inter, system-ui, sans-serif", fontWeight: 700, lineHeight: 1.1 }}>
               {yrs(b.payback)} <small style={{ fontSize: 12, color: "#66756C", fontWeight: 500 }}>{t("pp_years", lang)}</small></div>
           </div>
         ))}

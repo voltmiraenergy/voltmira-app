@@ -24,7 +24,7 @@ export default function Logo({ size = 28, dark = false, markOnly = false }) {
     <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
       <LogoMark size={size} />
       {!markOnly && (
-        <span style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700,
+        <span style={{ fontFamily: "Inter, system-ui, sans-serif", fontWeight: 700,
           fontSize: Math.round(size * 0.72), letterSpacing: "-0.02em", lineHeight: 1 }}>
           <span style={{ color: volt }}>Volt</span><span style={{ color: mira }}>Mira</span>
         </span>

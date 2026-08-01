@@ -56,7 +56,7 @@ function Donut({ self, lang }) {
       <circle cx="50" cy="50" r={r} fill="none" stroke="#1E6B4E" strokeWidth="12"
         strokeDasharray={`${c * sc} ${c}`} strokeDashoffset={-(c * (1 - sc))}
         transform="rotate(-90 50 50)" strokeLinecap="round" />
-      <text x="50" y="47" textAnchor="middle" fontFamily="Space Grotesk" fontSize="17" fontWeight="700" fill="var(--ink)">
+      <text x="50" y="47" textAnchor="middle" fontFamily="Inter" fontSize="17" fontWeight="700" fill="var(--ink)">
         {Math.round(sc * 100)}%</text>
       <text x="50" y="60" textAnchor="middle" fontFamily="Inter" fontSize="7.5" fill="var(--muted)">{t("self_consumed", lang)}</text>
     </svg>

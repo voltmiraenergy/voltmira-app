@@ -51,7 +51,7 @@ export default function ResetPassword() {
       fontFamily: "Inter, system-ui, sans-serif", padding: 18 }}>
       <div style={{ width: "100%", maxWidth: 400, background: "var(--app-surface)", border: "1px solid var(--app-line)",
         borderRadius: 16, padding: "30px 26px", color: "var(--app-text)" }}>
-        <h1 style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 6px" }}>
+        <h1 style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 6px" }}>
           Set a new password</h1>
 
         {done ? (

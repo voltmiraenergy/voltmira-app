@@ -11,7 +11,7 @@ export default function LegalLayout({ children }) {
         rel="stylesheet"
       />
       <style>{`
-        .legal-body h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;
+        .legal-body h2{font-family:'Inter',system-ui,sans-serif;font-weight:700;font-size:22px;
           letter-spacing:-.02em;margin:38px 0 12px;color:var(--app-text)}
         .legal-body h2:first-child{margin-top:0}
         .legal-body p{margin:0 0 15px;color:var(--app-text);opacity:.86;font-size:15.5px}

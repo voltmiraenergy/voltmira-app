@@ -26,7 +26,7 @@ export default function LegalShell({ title, updated, children }) {
               <path d="M21 25 L27 6.5" stroke="#3FAE6A" strokeWidth="2.6" strokeLinecap="round" />
               <circle cx="20.5" cy="9" r="2.1" fill="#E89B2D" />
             </svg>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 20 }}>
+            <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 20 }}>
               <span style={{ color: "var(--app-text)" }}>Volt</span><span style={{ color: "#1E6B4E" }}>Mira</span>
             </span>
           </Link>
@@ -39,12 +39,12 @@ export default function LegalShell({ title, updated, children }) {
 
       <main style={{ ...wrap, padding: "56px 24px 96px" }}>
         <h1 style={{
-          fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700,
+          fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700,
           fontSize: "clamp(30px,5vw,46px)", letterSpacing: "-.03em",
           lineHeight: 1.05, marginBottom: 10,
         }}>{title}</h1>
         <p style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5,
+          fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12.5,
           letterSpacing: ".08em", textTransform: "uppercase", color: "var(--app-muted)",
           marginBottom: 40,
         }}>Last updated: {updated}</p>

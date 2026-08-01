@@ -31,14 +31,14 @@ export default function WidgetForm({ companyId, lang }) {
     <div style={{ textAlign: "center", padding: "30px 10px" }}>
       <div style={{ width: 54, height: 54, borderRadius: "50%", background: "#E4EFE9", color: "#1E6B4E",
         display: "grid", placeItems: "center", margin: "0 auto 14px", fontSize: 26 }}>✓</div>
-      <h2 style={{ fontFamily: "Space Grotesk", margin: "0 0 6px" }}>{t("wg_thanks", lang)}</h2>
+      <h2 style={{ fontFamily: "Inter", margin: "0 0 6px" }}>{t("wg_thanks", lang)}</h2>
       <p style={{ color: "#66756C", fontSize: 14 }}>{t("wg_thanks_sub", lang)}</p>
     </div>
   );
 
   return (
     <form onSubmit={submit}>
-      <h2 style={{ fontFamily: "Space Grotesk", letterSpacing: "-0.02em", margin: "0 0 4px" }}>
+      <h2 style={{ fontFamily: "Inter", letterSpacing: "-0.02em", margin: "0 0 4px" }}>
         {t("wg_title", lang)}</h2>
       <p style={{ color: "#66756C", fontSize: 13.5, margin: "0 0 16px" }}>
         {t("wg_sub", lang)}</p>

@@ -24,8 +24,9 @@ const CSS = `
     --shadow:0 1px 2px rgba(20,42,33,.05),0 4px 16px rgba(20,42,33,.06);
     --shadow-lg:0 8px 34px rgba(20,42,33,.16);
     --radius:14px; --trans:.35s ease;
-    --font-d:'Space Grotesk',system-ui,sans-serif;
+    --font-d:'Inter',system-ui,sans-serif;
     --font-b:'Inter',system-ui,sans-serif;
+    --font-m:'Inter',system-ui,sans-serif;
   }
   html[data-theme="dark"]{
     --paper:#0F1310; --paper-2:#171B16; --ink:#EEF1EA; --ink-2:#F1EFE8;

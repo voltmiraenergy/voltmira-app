@@ -44,12 +44,12 @@ const CSS = `
   body{background:#fff!important}
   .print-sheet{max-width:820px;margin:0 auto;background:#fff;color:#111;
     font-family:Inter,system-ui,sans-serif;font-size:13.5px;padding:38px 46px;line-height:1.5}
-  .print-sheet h1,.print-sheet h2{font-family:'Space Grotesk',system-ui,sans-serif}
+  .print-sheet h1,.print-sheet h2{font-family:'Inter',system-ui,sans-serif}
   .print-sheet .p-co{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#1E6B4E;font-weight:700;margin-bottom:10px}
   .print-sheet h1{font-size:27px;margin:0 0 4px;letter-spacing:-.02em}
   .print-sheet .p-sub{color:#555;font-size:13px;margin-bottom:26px}
   .print-sheet .p-kpis{display:flex;gap:34px;margin-bottom:26px;flex-wrap:wrap}
-  .print-sheet .p-kpis b{display:block;font-size:22px;font-family:'Space Grotesk',sans-serif}
+  .print-sheet .p-kpis b{display:block;font-size:22px;font-family:'Inter',system-ui,sans-serif}
   .print-sheet .p-kpis span{font-size:11px;color:#666}
   .print-sheet .p-kpis .hl{color:#C97F14}
   .print-sheet h2{font-size:15px;margin:22px 0 10px;color:#1E6B4E}
@@ -64,7 +64,7 @@ const CSS = `
   .print-sheet .p-legend i{display:inline-block;width:15px;height:0;border-top:2px solid #1E6B4E;margin-right:5px;vertical-align:middle}
   .print-sheet .p-note{font-size:11.5px;color:#555;line-height:1.5;margin:2px 0 0}
   .print-sheet .p-eco{display:flex;gap:30px;margin:6px 0 2px;flex-wrap:wrap}
-  .print-sheet .p-eco b{display:block;font-size:19px;font-family:'Space Grotesk',sans-serif;color:#1E6B4E}
+  .print-sheet .p-eco b{display:block;font-size:19px;font-family:'Inter',system-ui,sans-serif;color:#1E6B4E}
   .print-sheet .p-eco span{font-size:10.5px;color:#666}
   .print-sheet .p-steps{margin:4px 0 0;padding-left:18px;font-size:12.5px;color:#333}
   .print-sheet .p-steps li{margin-bottom:5px}

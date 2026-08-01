@@ -35,7 +35,7 @@ const CSS = `
     --green:#1E6B4E; --green-deep:#0E4633; --green-tint:#E4EFE9; --mint:#7FDCA4;
     --amber:#E89B2D; --amber-deep:#C97F14; --amber-tint:#FBF0DD;
     --red:#C4543B; --muted:#66756C; --line:#E3E1D6;
-    --d:'Space Grotesk',sans-serif; --b:'Inter',system-ui,sans-serif;
+    --d:'Inter',system-ui,sans-serif; --b:'Inter',system-ui,sans-serif;
     --ease:cubic-bezier(.22,.9,.28,1); --spring:cubic-bezier(.34,1.56,.64,1);
   }
   html[data-theme="dark"]{

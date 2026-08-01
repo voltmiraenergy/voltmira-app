@@ -50,7 +50,6 @@ const CSS = `
 
 const HTML = `
 <div class="g-sun"></div>
-<div class="g-kick">Installer guide</div>
 <h1>Everything you need — no phone call required.</h1>
 <p class="g-sub">How to capture leads, build an honest quote, and send a proposal your client can trust. Keep it open in a tab.</p>
 

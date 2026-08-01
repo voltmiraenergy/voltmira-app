@@ -149,7 +149,7 @@ export default async function ProposalPage({ params, searchParams }) {
       {company.plan === "free" ? (
         <a href="https://voltmira.com" target="_blank" rel="noopener noreferrer"
           style={{ display: "block", textAlign: "center", marginTop: 22, textDecoration: "none" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 700, color: "#142A21", fontFamily: "Space Grotesk, sans-serif" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 700, color: "#142A21", fontFamily: "Inter, system-ui, sans-serif" }}>
             <span style={{ display: "inline-grid", placeItems: "center", width: 22, height: 22, borderRadius: 6, background: "#142A21", color: "#E89B2D", fontSize: 13 }}>⚡</span>
             {t("powered_by", lang)}
           </div>
@@ -172,20 +172,20 @@ const S = {
   wrap: { maxWidth: 780, margin: "0 auto", padding: "28px 18px 70px",
     fontFamily: "Inter, system-ui, sans-serif", color: "#142A21", background: "#F6F5F0", minHeight: "100vh" },
   head: { display: "flex", alignItems: "center", gap: 12, marginBottom: 22 },
-  brand: { fontWeight: 700, fontSize: 18, fontFamily: "Space Grotesk, sans-serif" },
+  brand: { fontWeight: 700, fontSize: 18, fontFamily: "Inter, system-ui, sans-serif" },
   tag: { fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em",
     background: "#E4EFE9", color: "#1E6B4E", padding: "4px 10px", borderRadius: 99 },
-  h1: { fontSize: 28, fontFamily: "Space Grotesk, sans-serif", letterSpacing: "-0.02em", margin: "0 0 4px" },
+  h1: { fontSize: 28, fontFamily: "Inter, system-ui, sans-serif", letterSpacing: "-0.02em", margin: "0 0 4px" },
   h2: { fontSize: 13, textTransform: "uppercase", letterSpacing: ".08em", color: "#66756C", margin: "0 0 14px" },
   muted: { color: "#66756C", fontSize: 13.5 },
   card: { background: "#fff", border: "1px solid #E3E1D6", borderRadius: 14, padding: 20, margin: "16px 0" },
   kpis: { display: "flex", gap: 28, flexWrap: "wrap" },
-  big: { display: "block", fontSize: 24, fontFamily: "Space Grotesk, sans-serif", letterSpacing: "-0.02em" },
+  big: { display: "block", fontSize: 24, fontFamily: "Inter, system-ui, sans-serif", letterSpacing: "-0.02em" },
   kpiLbl: { fontSize: 12, color: "#66756C" },
   bands: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 },
   band: { background: "#F6F5F0", borderRadius: 10, padding: "14px 14px" },
   bandTag: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", marginBottom: 6 },
-  bandYrs: { fontSize: 24, fontFamily: "Space Grotesk, sans-serif", fontWeight: 700 },
+  bandYrs: { fontSize: 24, fontFamily: "Inter, system-ui, sans-serif", fontWeight: 700 },
   fin: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 },
   finBox: { background: "#F6F5F0", borderRadius: 10, padding: 16, textAlign: "center" },
   verdict: { textAlign: "center", fontWeight: 600, padding: "12px 14px", borderRadius: 10, fontSize: 15 },
@@ -199,6 +199,6 @@ const S = {
   optCard: { background: "#F6F5F0", border: "1.5px solid #E3E1D6", borderRadius: 12, padding: "13px 14px" },
   optBadge: { display: "inline-block", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em",
     background: "#EDEBE2", color: "#66756C", borderRadius: 99, padding: "3px 9px", marginBottom: 9 },
-  optSys: { fontSize: 15, fontWeight: 700, fontFamily: "Space Grotesk, sans-serif", marginBottom: 2 },
-  optPay: { fontSize: 21, fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, lineHeight: 1.1 },
+  optSys: { fontSize: 15, fontWeight: 700, fontFamily: "Inter, system-ui, sans-serif", marginBottom: 2 },
+  optPay: { fontSize: 21, fontFamily: "Inter, system-ui, sans-serif", fontWeight: 700, lineHeight: 1.1 },
 };
