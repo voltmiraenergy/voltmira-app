@@ -5,6 +5,7 @@ import { supabaseServer } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
 import { t, normLang } from "../../../lib/i18n.js";
 import LeadCard from "./LeadCard.jsx";
+import LeadAttribution from "./LeadAttribution.jsx";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Leads — VoltMira" };
@@ -42,6 +43,8 @@ export default async function LeadsPage({ searchParams }) {
           {t("lead_count", lang, { n: leads.filter(l => l.status === "new").length })}
         </span>
       </div>
+
+      <LeadAttribution leads={leads} lang={lang} />
 
       <div className="filters" style={{ marginBottom: 18 }}>
         {chip("all", t("lead_all", lang))}

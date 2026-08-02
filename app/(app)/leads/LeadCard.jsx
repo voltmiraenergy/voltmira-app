@@ -2,13 +2,11 @@
 // app/(app)/leads/LeadCard.jsx — one lead row. Displays the contact + status, and
 // flips to an inline editor (name / phone / email) when you hit Edit — no pop-ups.
 import { useState, useTransition } from "react";
-import { updateLead } from "../../../lib/actions.js";
+import { updateLead, setLeadChannel } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
+import { CHANNEL_ORDER, CHANNEL_DOT, leadChannel } from "../../../lib/leadChannels.js";
 import LeadActions from "./LeadActions.jsx";
 
-const SOURCE = (lang) => ({
-  widget: t("lead_src_widget", lang), proposal: t("lead_src_proposal", lang), manual: t("lead_src_manual", lang),
-});
 const STATUS_STYLE = {
   new:       { bg: "var(--green-tint,#E4EFE9)", fg: "var(--green,#1E6B4E)" },
   contacted: { bg: "var(--amber-tint,#FBF0DD)", fg: "var(--amber-deep,#C97F14)" },
@@ -30,6 +28,8 @@ export default function LeadCard({ lead, lang }) {
 
   const status = lead.status || "new";
   const ss = STATUS_STYLE[status] || STATUS_STYLE.new;
+  const ch = leadChannel(lead);
+  const setChannel = (v) => start(() => setLeadChannel(lead.id, v));
 
   function open() { setName(lead.name || ""); setPhone(lead.phone || ""); setEmail(lead.email || ""); setEditing(true); }
   function save() { start(() => updateLead(lead.id, { name, phone, email }).then(() => setEditing(false))); }
@@ -70,9 +70,19 @@ export default function LeadCard({ lead, lang }) {
             <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
               <b style={{ fontSize: 16 }}>{lead.name || "—"}</b>
               {lead.hot && <span title={t("lead_hot", lang)} aria-label={t("lead_hot", lang)}>🔥</span>}
-              <span style={{ fontSize: 10.5, fontFamily: "var(--font-m,monospace)", textTransform: "uppercase",
-                letterSpacing: ".06em", color: "var(--muted)", border: "1px solid var(--line)", borderRadius: 5, padding: "2px 7px" }}>
-                {SOURCE(lang)[lead.source] || lead.source}
+              <span title={t("lead_set_channel", lang)}
+                style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid var(--line)",
+                  borderRadius: 99, padding: "3px 9px 3px 10px", background: "var(--paper-2)", position: "relative" }}>
+                <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", flex: "none",
+                  background: CHANNEL_DOT[ch], boxShadow: `0 0 0 3px ${CHANNEL_DOT[ch]}22` }} />
+                <select value={ch} disabled={pending} onChange={e => setChannel(e.target.value)}
+                  aria-label={t("lead_channel", lang)}
+                  style={{ appearance: "none", WebkitAppearance: "none", MozAppearance: "none", border: "none",
+                    background: "transparent", color: "var(--ink)", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                    fontFamily: "inherit", paddingRight: 13, outline: "none" }}>
+                  {CHANNEL_ORDER.map(k => <option key={k} value={k}>{t("lead_ch_" + k, lang)}</option>)}
+                </select>
+                <span aria-hidden="true" style={{ position: "absolute", right: 9, fontSize: 9, color: "var(--muted)", pointerEvents: "none" }}>▾</span>
               </span>
               <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".05em",
                 background: ss.bg, color: ss.fg, borderRadius: 99, padding: "3px 9px" }}>
