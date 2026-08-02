@@ -128,6 +128,7 @@ export async function GET(req, { params }) {
       afmSubsidy: !!prop.snapshot.afmSubsidy,
     },
     options,
+    bom: Array.isArray(prop.snapshot.bom) ? prop.snapshot.bom : [],
   });
 }
 

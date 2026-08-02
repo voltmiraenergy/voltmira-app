@@ -254,3 +254,13 @@ test("battery: legacy batt=true with no capacity falls back to 10 kWh", () => {
   assert.equal(legacy.cost, explicit.cost);
   assert.ok(Math.abs(legacy.self - explicit.self) < 1e-9);
 });
+
+test("costOverride: a BOM total replaces the kW x rate + battery cost when present", () => {
+  const base = simulate({ ...BASE, batt: true }, E, "expc");   // kw*rate + battery
+  const over = simulate({ ...BASE, batt: true, costOverride: 9999 }, E, "expc");
+  assert.equal(over.cost, 9999);                                // override wins
+  assert.notEqual(base.cost, 9999);
+  // zero / missing override falls back to the estimate (backward compatible)
+  assert.equal(simulate({ ...BASE, costOverride: 0 }, E, "expc").cost,
+               simulate({ ...BASE }, E, "expc").cost);
+});

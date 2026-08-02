@@ -79,7 +79,11 @@ export function simulate(p, E, bandKey) {
   const battKwh = p.batt ? Math.max(0, Number(p.battKwh) || 10) : 0;
   const batteryCost = battKwh > 0 ? battKwh * (Number(E.batteryCostPerKwh) || 500) : 0;
 
-  const grossCost = kw * E.costPerKw + batteryCost;
+  // A bill of materials from the catalog drives the real cost when present;
+  // otherwise fall back to the kW x EUR/kW estimate (+ battery). costOverride is
+  // the BOM total, already including any battery line, so it replaces both.
+  const override = Math.max(0, Number(p.costOverride) || 0);
+  const grossCost = override > 0 ? override : (kw * E.costPerKw + batteryCost);
   let cost = grossCost;
   // Local grant, market-aware: RO subtracts the AFM/Casa Verde amount (RON),
   // MD subtracts the Moldovan prosumer grant (MDL). The `afmSubsidy` flag is the

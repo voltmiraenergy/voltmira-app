@@ -25,7 +25,7 @@ export default async function ProposalPage({ params, searchParams }) {
     return <main style={S.wrap}><h1 style={S.h1}>{t("pp_not_found", "en")}</h1>
       <p style={S.muted}>{t("pp_expired", "en")}</p></main>;
   }
-  const { company, inputs, quote: q, accepted, sentAt, options = [] } = data;
+  const { company, inputs, quote: q, accepted, sentAt, options = [], bom = [] } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
 
@@ -124,6 +124,22 @@ export default async function ProposalPage({ params, searchParams }) {
               </div>
             ))}
           </div>
+        </section>
+      )}
+
+      {bom.length > 0 && (
+        <section style={S.card}>
+          <h2 style={S.h2}>{t("pp_equipment_h", lang)}</h2>
+          <table style={S.atbl}><tbody>
+            {bom.map((l, i) => (
+              <tr key={i}>
+                <td style={{ ...S.atK, color: "#142A21", fontWeight: 600 }}>
+                  {l.label}{l.spec ? <span style={{ color: "#66756C", fontWeight: 400 }}> · {l.spec}</span> : null}
+                </td>
+                <td style={{ ...S.atV, textAlign: "right", whiteSpace: "nowrap" }}>× {l.qty}</td>
+              </tr>
+            ))}
+          </tbody></table>
         </section>
       )}
 

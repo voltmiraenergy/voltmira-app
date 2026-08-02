@@ -64,7 +64,7 @@ function Donut({ self, lang }) {
 }
 
 /* ---------- editor ---------- */
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], proposalSentAt = null, companyName = "VoltMira" }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira" }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, address: initial.address,
@@ -72,6 +72,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     kw: +initial.kw, price: +initial.price, cons: +initial.cons,
     batt: initial.batt, battKwh: initial.batt_kwh != null ? +initial.batt_kwh : 10,
     options: Array.isArray(initial.options) ? initial.options : [],
+    bom: Array.isArray(initial.bom) ? initial.bom : [],
     afmSubsidy: initial.afm_subsidy, loan: +initial.loan_monthly,
     yieldOverride: initial.yield_per_kwp ? +initial.yield_per_kwp : undefined,
     monthlyYieldShape: initial.monthly_yield_shape || undefined,
@@ -101,7 +102,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     } catch { /* non-fatal */ } finally { setTplBusy(false); }
   }
 
-  const q = useMemo(() => quote(p, E), [p, E]);
+  const bomTotal = useMemo(
+    () => (p.bom || []).reduce((s, l) => s + (Number(l.unitPrice) || 0) * (Number(l.qty) || 0), 0),
+    [p.bom]);
+  const q = useMemo(() => quote({ ...p, costOverride: bomTotal }, E), [p, E, bomTotal]);
   const fmt = n => "€" + Math.round(n).toLocaleString("en-IE");
   const yrs = n => n === null ? "25+" : n === 0 ? tr("pp_immediate") : n.toFixed(1);
 
@@ -135,6 +139,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           .then(({ error: e2 }) => { if (e2) console.warn("batt_kwh not stored (run add-battery-kwh.sql?):", e2.message); });
         sb.from("projects").update({ options: next.options }).eq("id", initial.id)
           .then(({ error: e3 }) => { if (e3) console.warn("options not stored (run add-quote-options.sql?):", e3.message); });
+        sb.from("projects").update({ bom: next.bom }).eq("id", initial.id)
+          .then(({ error: e4 }) => { if (e4) console.warn("bom not stored (run add-quote-bom.sql?):", e4.message); });
       }
     } catch (e) {
       setSaved("error");
@@ -151,6 +157,17 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const setOption = (i, patch) => update({ options: p.options.map((o, j) => j === i ? { ...o, ...patch } : o) });
   const addOption = () => { if (p.options.length < 2) update({ options: [...p.options, { label: "", kw: p.kw, battKwh: 0 }] }); };
   const removeOption = (i) => update({ options: p.options.filter((_, j) => j !== i) });
+  // bill of materials from the catalog (drives the real cost when it has lines)
+  const addBomLine = (prod) => update({ bom: [...(p.bom || []), {
+    productId: prod.id, kind: prod.kind, label: [prod.brand, prod.model].filter(Boolean).join(" ") || prod.spec || "—",
+    spec: prod.spec, unitPrice: Number(prod.unit_price) || 0, qty: 1 }] });
+  const setBomQty = (i, qty) => update({ bom: p.bom.map((l, j) => j === i ? { ...l, qty: Math.max(0, +qty || 0) } : l) });
+  const removeBomLine = (i) => update({ bom: p.bom.filter((_, j) => j !== i) });
+  const kwFromPanels = () => {
+    const watts = (p.bom || []).filter(l => l.kind === "panel").reduce((s, l) =>
+      s + (parseFloat(String(l.spec).replace(/[^0-9.]/g, "")) || 0) * (Number(l.qty) || 0), 0);
+    if (watts > 0) update({ kw: Math.round(watts / 1000 * 10) / 10 });
+  };
   useEffect(() => () => clearTimeout(timer.current), []);
 
   async function fetchPVGIS() {
@@ -386,6 +403,55 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             ))}
             {p.options.length < 2 && (
               <button className="btn ghost" onClick={addOption}>+ {tr("opt_add")}</button>
+            )}
+          </section>
+
+          <section className="card">
+            <h3>{tr("bom_title")}</h3>
+            <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--muted)" }}>{tr("bom_sub")}</p>
+            {catalog.length === 0 ? (
+              <p style={{ fontSize: 13.5, color: "var(--ink-soft,#2B4438)" }}>
+                {tr("bom_no_catalog")} <a href="/catalog" style={{ color: "var(--green)", fontWeight: 600 }}>{tr("nav_catalog")} →</a>
+              </p>
+            ) : (
+              <>
+                {(p.bom || []).map((l, i) => (
+                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <b style={{ fontSize: 14 }}>{l.label}</b>
+                      {l.spec && <span style={{ marginLeft: 7, fontSize: 12, color: "var(--muted)" }}>{l.spec}</span>}
+                    </div>
+                    <input className="input" type="number" min="0" step="1" value={l.qty}
+                      onChange={e => setBomQty(i, e.target.value)} style={{ width: 62 }} aria-label="qty" />
+                    <span style={{ width: 76, textAlign: "right", fontVariantNumeric: "tabular-nums", fontSize: 13.5 }}>
+                      {fmt((Number(l.unitPrice) || 0) * (Number(l.qty) || 0))}</span>
+                    <button className="btn sm ghost" onClick={() => removeBomLine(i)}
+                      aria-label={tr("bom_remove")} style={{ color: "var(--muted)" }}>✕</button>
+                  </div>
+                ))}
+                <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 12, flexWrap: "wrap" }}>
+                  <select className="input" style={{ flex: "1 1 170px" }} value=""
+                    onChange={e => { const prod = catalog.find(c => c.id === e.target.value); if (prod) addBomLine(prod); e.target.value = ""; }}>
+                    <option value="">+ {tr("bom_add")}</option>
+                    {catalog.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {[c.brand, c.model].filter(Boolean).join(" ") || "—"}{c.spec ? ` · ${c.spec}` : ""} — {fmt(c.unit_price)}
+                      </option>
+                    ))}
+                  </select>
+                  {(p.bom || []).some(l => l.kind === "panel") && (
+                    <button className="btn ghost" onClick={kwFromPanels}>{tr("bom_set_kw")}</button>
+                  )}
+                </div>
+                {bomTotal > 0 && (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "2px solid var(--ink)", fontWeight: 700 }}>
+                      <span>{tr("bom_total")}</span><span style={{ fontSize: 17 }}>{fmt(bomTotal)}</span>
+                    </div>
+                    <p style={{ fontSize: 12, color: "var(--green)", margin: "8px 0 0" }}>✓ {tr("bom_drives")}</p>
+                  </>
+                )}
+              </>
             )}
           </section>
         </div>

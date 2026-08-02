@@ -12,10 +12,11 @@ export default async function ProjectPage({ params }) {
   const sb = supabaseServer();
   // The project fetch is RLS-scoped to the caller's company (projects_all uses
   // the security-definer my_company_id(), no recursion).
-  const [{ data: p }, { data: co }, { data: prop }] = await Promise.all([
+  const [{ data: p }, { data: co }, { data: prop }, { data: catalog }] = await Promise.all([
     sb.from("projects").select("*").eq("id", params.id).single(),
     sb.from("companies").select("name, engine, currency, prosumer_limit_kw, subsidy_amount_ron, lang").single(),
     sb.from("proposals").select("created_at").eq("project_id", params.id).limit(1).maybeSingle(),
+    sb.from("products").select("*").order("created_at"),   // catalog for the bill of materials
   ]);
   if (!p) return (
     <div className="empty" style={{ maxWidth: 460, margin: "40px auto" }}>
@@ -34,7 +35,7 @@ export default async function ProjectPage({ params }) {
     ...(co?.engine || {}),
     subsidyAmountRon: Number(co?.subsidy_amount_ron ?? 20000),
   };
-  return <Editor initial={p} engineSettings={E} team={team || []}
+  return <Editor initial={p} engineSettings={E} team={team || []} catalog={catalog || []}
     prosumerLimitKw={Number(co?.prosumer_limit_kw ?? 10.8)} lang={normLang(co?.lang)}
     proposalSentAt={prop?.created_at || null} companyName={co?.name || "VoltMira"} />;
 }
