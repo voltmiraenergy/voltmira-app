@@ -10,6 +10,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../lib/supabase.js";
 import { escapeHtml } from "../../../../lib/safe.js";
+import { logActivity } from "../../../../lib/activity.js";
 import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
 import { sendEmail, proposalOpenedEmail, emailConfigured } from "../../../../lib/email.js";
 import { quote, defaultEngineSettings } from "@voltmira/engine";
@@ -173,13 +174,15 @@ export async function POST(req, { params }) {
       db.from("projects").select("title, client_name").eq("id", prop.project_id).single(),
     ]);
     const n = pr?.opens || 1;
-    const who = escapeHtml(proj?.client_name || "The client");
-    const title = escapeHtml(proj?.title || prop.code);
-    let text, actKind = "open";
-    if (n <= 1) text = `<b>${who}</b> opened “${title}”`;
-    else if (n >= 3) { text = `🔥 <b>${who}</b> opened “${title}” again — ${n}× total. Worth a call now.`; actKind = "lead"; }
-    else text = `<b>${who}</b> opened “${title}” again (${n}×)`;
-    await db.from("activity").insert({ company_id: prop.company_id, kind: actKind, text });
+    const rawWho = proj?.client_name || "The client";
+    const rawTitle = proj?.title || prop.code;
+    const who = escapeHtml(rawWho);
+    const title = escapeHtml(rawTitle);
+    let text, actKind = "open", key;
+    if (n <= 1) { text = `<b>${who}</b> opened “${title}”`; key = "act_opened"; }
+    else if (n >= 3) { text = `🔥 <b>${who}</b> opened “${title}” again — ${n}× total. Worth a call now.`; actKind = "lead"; key = "act_opened_hot"; }
+    else { text = `<b>${who}</b> opened “${title}” again (${n}×)`; key = "act_opened_again"; }
+    await logActivity(db, { companyId: prop.company_id, kind: actKind, key, params: { b: rawWho, title: rawTitle, n }, text });
     // Retention feature: tell the installer while the client is still reading.
     await notifyProposalOpened(db, prop);
   }
@@ -192,8 +195,9 @@ export async function POST(req, { params }) {
   if (kind === "accept" && !prop.accepted_at) {
     await db.from("proposals").update({ accepted_at: new Date().toISOString() }).eq("code", prop.code);
     await db.from("projects").update({ status: "won" }).eq("id", prop.project_id).eq("status", "sent");
-    await db.from("activity").insert({
-      company_id: prop.company_id, kind: "won",
+    await logActivity(db, {
+      companyId: prop.company_id, kind: "won", key: "act_proposal_accepted",
+      params: { b: prop.code },
       text: `Client accepted proposal <b>${escapeHtml(prop.code)}</b>`,
     });
   }
@@ -205,9 +209,11 @@ export async function POST(req, { params }) {
       note: `Requested the quote for \u201C${(proj?.title || prop.code).slice(0, 200)}\u201D`,
       hot: true, source: "proposal",
     });
-    await db.from("activity").insert({
-      company_id: prop.company_id, kind: "lead",
-      text: `Client requested the quote for <b>${escapeHtml((proj?.title || prop.code).slice(0, 200))}</b>`,
+    const rawReqTitle = (proj?.title || prop.code).slice(0, 200);
+    await logActivity(db, {
+      companyId: prop.company_id, kind: "lead", key: "act_quote_requested",
+      params: { b: rawReqTitle },
+      text: `Client requested the quote for <b>${escapeHtml(rawReqTitle)}</b>`,
     });
   }
 

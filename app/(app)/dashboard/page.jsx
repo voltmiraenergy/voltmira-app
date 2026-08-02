@@ -9,16 +9,10 @@ import { supabaseServer } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
 import { createProject, cycleProjectStatus } from "../../../lib/actions.js";
 import { quote, defaultEngineSettings } from "@voltmira/engine";
-import { escapeHtml } from "../../../lib/safe.js";
 import { t, normLang } from "../../../lib/i18n.js";
 import { proposalStatsByProject, daysSince, needsFollowUp } from "../../../lib/proposalStats.js";
+import { activityHtml } from "../../../lib/activity.js";
 import FollowUpStrip from "./FollowUpStrip.jsx";
-
-// Activity text may contain ONLY <b>…</b> for emphasis. Escape everything, then
-// re-allow the bold tags. Defense in depth even if a bad value was stored.
-function renderActivity(text) {
-  return escapeHtml(text).replace(/&lt;b&gt;/g, "<b>").replace(/&lt;\/b&gt;/g, "</b>");
-}
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dashboard — VoltMira" };
@@ -309,7 +303,7 @@ export default async function Dashboard() {
                     {head}
                     <li>
                       <div className={`f-ic ${ic.cls}`}>{ic.svg}</div>
-                      <div className="f-tx" dangerouslySetInnerHTML={{ __html: renderActivity(a.text) }} />
+                      <div className="f-tx" dangerouslySetInnerHTML={{ __html: activityHtml(a, lang) }} />
                       <time>{ago(a.created_at, lang)}</time>
                     </li>
                   </Fragment>

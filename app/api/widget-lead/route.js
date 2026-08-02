@@ -4,6 +4,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabase.js";
 import { escapeHtml } from "../../../lib/safe.js";
+import { logActivity } from "../../../lib/activity.js";
 import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
 
 export async function POST(req) {
@@ -34,8 +35,8 @@ export async function POST(req) {
     company_id: companyId, name, note, hot: true, source: "widget",
     email: String(b.email || "").trim().slice(0, 120), phone,
   });
-  await db.from("activity").insert({
-    company_id: companyId, kind: "lead",
+  await logActivity(db, {
+    companyId, kind: "lead", key: "act_lead_widget", params: { b: name },
     text: `New lead from the website widget: <b>${escapeHtml(name)}</b>`,
   });
   return NextResponse.json({ ok: true });
