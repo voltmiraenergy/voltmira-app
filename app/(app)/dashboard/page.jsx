@@ -252,7 +252,7 @@ export default async function Dashboard() {
                           <Link className="t-title" href={`/projects/${p.id}`}>{p.title || t("untitled", lang)}</Link>
                           <div className="t-sub">{p.client_name || "—"}</div>
                         </td>
-                        <td>{Number(p.kw).toFixed(1)} kW{p.batt ? " + batt" : ""}</td>
+                        <td>{Number(p.kw).toFixed(1)} kW{p.batt ? t("pp_plus_batt", lang) : ""}</td>
                         <td>{yrsF(q.payback)} {t("yrs", lang)}</td>
                         <td>{fmt(q.cost)}</td>
                         <td>

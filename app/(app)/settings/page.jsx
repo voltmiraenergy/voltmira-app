@@ -1,6 +1,7 @@
 "use client";
 // app/(app)/settings/page.jsx — company identity, engine numbers, billing.
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "../../../lib/supabase-browser.js";
 import { openCheckout } from "../../../lib/paddle.js";
 import { saveCompany } from "../../../lib/actions.js";
@@ -26,6 +27,7 @@ function WidgetEmbed({ companyId, lang }) {
 
 export default function Settings() {
   const sb = supabaseBrowser();
+  const router = useRouter();
   const [co, setCo] = useState(null);
   const [msg, setMsg] = useState("");
 
@@ -62,6 +64,10 @@ export default function Settings() {
         engine: eng,
       });
       setMsg(t("s_saved", lang));
+      // Re-render the shared layout (sidebar nav) and clear the client Router
+      // Cache so a language change is reflected on every tab immediately, not
+      // just here. Pairs with revalidatePath("/","layout") in saveCompany.
+      router.refresh();
     } catch (e) {
       setMsg(e.message || "Error");
     }
@@ -120,7 +126,7 @@ export default function Settings() {
               <input className="input" value={co.logo_url || ""} onChange={set("logo_url")} placeholder="https://…/logo.png" /></div>
             <div className="field"><label>{t("s_default_mkt", lang)}</label>
               <select className="input" value={co.default_market} onChange={set("default_market")}>
-                <option value="RO">{t("market_ro", lang)}</option><option value="MD">{t("market_md", lang)}</option><option value="DE">{t("market_de", lang)}</option>
+                <option value="MD">{t("market_md", lang)}</option><option value="RO">{t("market_ro", lang)}</option>
               </select></div>
             <div className="field"><label>{t("s_language", lang)}</label>
               <select className="input" value={normLang(co.lang)} onChange={set("lang")}>
