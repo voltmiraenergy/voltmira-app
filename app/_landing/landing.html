@@ -358,6 +358,14 @@ h1,h2,h3,.font-d{font-family:var(--d);letter-spacing:-.03em}
   padding:6px 14px;border:none;background:transparent;border-radius:8px;cursor:pointer;transition:background .15s,color .15s}
 .cur-btn:hover{color:var(--ink)}
 .cur-btn.on{background:var(--green);color:#fff}
+.bill-btn{font-family:var(--m);font-size:12.5px;font-weight:500;color:var(--muted);
+  padding:6px 14px;border:none;background:transparent;border-radius:8px;cursor:pointer;transition:background .15s,color .15s}
+.bill-btn:hover{color:var(--ink)}
+.bill-btn.on{background:var(--ink);color:#fff}
+.pr-toggles{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center;margin:2px 0 8px}
+.pr-roi{font-size:15px;font-weight:600;color:var(--green);margin:0 0 16px}
+.save-note{font-size:12.5px;color:var(--green);font-weight:600;margin:0 0 16px}
+.md-note{font-size:12.5px;color:var(--muted);margin:0 0 18px}
 .cur-note{font-size:12px;color:var(--muted);margin:0 0 18px}
 
 /* ---------- PVGIS capability pills ---------- */
@@ -1281,20 +1289,29 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
   <div class="wrap">
     <span class="sec-eyebrow rv" data-i18n="pr_eyebrow">Pricing</span>
     <h2 class="rv" data-i18n="pr_h2">Costs less than the coffee<br>at one lost deal.</h2>
-    <p class="sec-lead rv" data-i18n="pr_lead">Early-access pilots lock founder pricing — <b>€25/mo for Pro, forever</b> — in exchange for honest feedback.</p>
+    <p class="sec-lead rv" data-i18n="pr_lead">Free 21-day trial — no card. Early pilots lock founder pricing (first 50): <b>€25/mo Pro, forever</b>, for honest feedback.</p>
+    <p class="pr-roi rv" data-i18n="pr_roi">One extra deal a year pays for VoltMira for ~20 years.</p>
 
-    <div class="cur-toggle rv" role="group" aria-label="Display currency">
-      <button type="button" class="cur-btn on" data-cur="EUR" aria-pressed="true">€ EUR</button>
-      <button type="button" class="cur-btn" data-cur="RON" aria-pressed="false">RON</button>
-      <button type="button" class="cur-btn" data-cur="MDL" aria-pressed="false">MDL</button>
+    <div class="pr-toggles rv">
+      <div class="cur-toggle" role="group" aria-label="Display currency">
+        <button type="button" class="cur-btn on" data-cur="EUR" aria-pressed="true">€ EUR</button>
+        <button type="button" class="cur-btn" data-cur="RON" aria-pressed="false">RON</button>
+        <button type="button" class="cur-btn" data-cur="MDL" aria-pressed="false">MDL</button>
+      </div>
+      <div class="cur-toggle" role="group" aria-label="Billing period">
+        <button type="button" class="bill-btn on" data-bill="mo" aria-pressed="true" data-i18n="bill_monthly">Monthly</button>
+        <button type="button" class="bill-btn" data-bill="yr" aria-pressed="false" data-i18n="bill_annual">Annual</button>
+      </div>
     </div>
+    <p class="save-note rv" data-i18n="pr_save" hidden>✓ 2 months free on annual billing</p>
+    <p class="md-note rv" data-i18n="pr_md_note" hidden>🇲🇩 Moldova installers get regional pricing — just mention it when you start.</p>
     <p class="cur-note rv" data-i18n="cur_note" hidden>Approximate — billing is in EUR. Rates for guidance only.</p>
 
     <div class="prices">
       <div class="price hot rv" style="transition-delay:.08s">
         <span class="pop" data-i18n="pr_pop">Founder price — first 50</span>
         <h3 data-i18n="plan_pro">Pro</h3>
-        <div class="amt"><span class="cur-amt" data-eur="25">€25</span><small>/mo</small> <s class="was cur-amt" data-eur="49">€49</s></div>
+        <div class="amt"><span class="cur-amt" data-eur-mo="25" data-eur-yr="250">€25</span><small class="per">/mo</small> <s class="was cur-amt" data-eur-mo="49" data-eur-yr="490">€49</s></div>
         <div class="for" data-i18n="pr_pro_for">For the installer who sells</div>
         <ul>
           <li data-i18n="f_pro1">Your logo on every proposal & PDF</li>
@@ -1306,7 +1323,7 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
       </div>
       <div class="price rv" style="transition-delay:.16s">
         <h3 data-i18n="plan_team">Team</h3>
-        <div class="amt"><span class="cur-amt" data-eur="99">€99</span><small>/mo</small></div>
+        <div class="amt"><span class="cur-amt" data-eur-mo="99" data-eur-yr="990">€99</span><small class="per">/mo</small></div>
         <div class="for" data-i18n="pr_team_for">Up to 5 people, one pipeline</div>
         <ul>
           <li data-i18n="f_team1">Everything in Pro</li>
@@ -1318,7 +1335,7 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
       </div>
       <div class="price rv" style="transition-delay:.24s">
         <h3 data-i18n="plan_ent">Enterprise</h3>
-        <div class="amt"><span class="cur-amt" data-eur="299">€299</span><small>/mo</small></div>
+        <div class="amt"><span class="cur-amt" data-eur-mo="299" data-eur-yr="2990">€299</span><small class="per">/mo</small></div>
         <div class="for" data-i18n="pr_ent_for">For multi-branch installers</div>
         <ul>
           <li data-i18n="f_ent1">Everything in Team, unlimited seats</li>
@@ -1453,7 +1470,11 @@ var I18N = {
     pvg_p2:"<b>Monthly consumption profiling</b> — not a flat yearly average",
     pvg_p3:"<b>Three-band cumulative cash flow</b> — worst, expected and best, charted",
     pr_eyebrow:"Pricing", pr_h2:"Costs less than the coffee<br>at one lost deal.",
-    pr_lead:"Early-access pilots lock founder pricing — <b>€25/mo for Pro, forever</b> — in exchange for honest feedback.",
+    pr_lead:"Free 21-day trial — no card. Early pilots lock founder pricing (first 50): <b>€25/mo Pro, forever</b>, for honest feedback.",
+    pr_roi:"One extra deal a year pays for VoltMira for ~20 years.",
+    bill_monthly:"Monthly", bill_annual:"Annual", per_mo:"/mo", per_yr:"/yr",
+    pr_save:"✓ 2 months free on annual billing",
+    pr_md_note:"🇲🇩 Moldova installers get regional pricing — just mention it when you start.",
     plan_pro:"Pro", plan_team:"Team", plan_ent:"Enterprise",
     pr_pro_for:"For the installer who sells", pr_team_for:"Up to 5 people, one pipeline", pr_ent_for:"For multi-branch installers",
     pr_pop:"Founder price — first 50", pr_pro_cta:"Start free trial", pr_ent_cta:"Talk to us",
@@ -1572,7 +1593,11 @@ var I18N = {
     pvg_p2:"<b>Profil lunar de consum</b> — nu o medie anuală plată",
     pvg_p3:"<b>Flux de numerar cumulat pe trei benzi</b> — pesimist, așteptat și optimist, în grafic",
     pr_eyebrow:"Prețuri", pr_h2:"Costă mai puțin decât cafeaua<br>la un contract pierdut.",
-    pr_lead:"Piloții din accesul anticipat blochează prețul de fondator — <b>€25/lună pentru Pro, pe viață</b> — în schimbul feedbackului onest.",
+    pr_lead:"Probă gratuită 21 de zile — fără card. Piloții timpurii blochează prețul de fondator (primii 50): <b>€25/lună Pro, pe viață</b>, pentru feedback onest.",
+    pr_roi:"O singură vânzare în plus pe an acoperă VoltMira ~20 de ani.",
+    bill_monthly:"Lunar", bill_annual:"Anual", per_mo:"/lună", per_yr:"/an",
+    pr_save:"✓ 2 luni gratis la plata anuală",
+    pr_md_note:"🇲🇩 Instalatorii din Moldova primesc preț regional — spune-ne când începi.",
     plan_pro:"Pro", plan_team:"Echipă", plan_ent:"Enterprise",
     pr_pro_for:"Pentru instalatorul care vinde", pr_team_for:"Până la 5 persoane, un pipeline", pr_ent_for:"Pentru instalatori cu mai multe filiale",
     pr_pop:"Preț fondator — primii 50", pr_pro_cta:"Începe gratuit", pr_ent_cta:"Hai să vorbim",
@@ -1691,7 +1716,11 @@ var I18N = {
     pvg_eyebrow:"Реальные солнечные данные", pvg_h2:"Конкуренты угадывают.<br>Вы ссылаетесь на спутники ЕС.",
     pvg_lead:"Введите адрес клиента, и VoltMira возьмёт реальную инсоляцию для этой крыши из PVGIS — солнечной базы Еврокомиссии. Бухарест — не Берлин, а южный склон — не северный. Ваши цифры знают разницу.",
     pr_eyebrow:"Цены", pr_h2:"Дешевле кофе<br>при одной потерянной сделке.",
-    pr_lead:"Пилоты раннего доступа фиксируют цену основателя — <b>€25/мес за Pro, навсегда</b> — в обмен на честный отзыв.",
+    pr_lead:"Бесплатный 21-дневный период — без карты. Ранние пилоты фиксируют цену основателя (первые 50): <b>€25/мес Pro, навсегда</b>, за честный отзыв.",
+    pr_roi:"Одна дополнительная сделка в год окупает VoltMira на ~20 лет.",
+    bill_monthly:"Помесячно", bill_annual:"Годовая", per_mo:"/мес", per_yr:"/год",
+    pr_save:"✓ 2 месяца бесплатно при годовой оплате",
+    pr_md_note:"🇲🇩 Установщики из Молдовы получают региональную цену — просто скажите при старте.",
     plan_pro:"Pro", plan_team:"Команда", plan_ent:"Enterprise",
     pr_pro_for:"Для установщика, который продаёт", pr_team_for:"До 5 человек, один pipeline", pr_ent_for:"Для сетей с несколькими филиалами",
     pr_pop:"Цена основателя — первые 50", pr_pro_cta:"Начать бесплатно", pr_ent_cta:"Связаться с нами",
@@ -1796,6 +1825,7 @@ function setLang(lang){
   if (md && dict.meta_desc) md.setAttribute("content", dict.meta_desc);
   window.__UNIT_YR = dict.unit_yr || " yr";
   if (typeof window.__refreshBands === "function") window.__refreshBands();
+  if (typeof window.__renderPrices === "function") window.__renderPrices();
   document.documentElement.setAttribute("lang", lang);
   document.querySelectorAll(".lang-btn").forEach(function(b){
     var on = b.getAttribute("data-lang") === lang;
@@ -1829,30 +1859,43 @@ document.querySelectorAll(".lang-btn").forEach(function(b){
   if (!I18N[initial]) initial = "en";
   if (initial !== "en") setLang(initial); else setLang("en");
 })();
-/* ---------------- pricing currency toggle (display only; billing is EUR) ---------------- */
+/* ------------- pricing toggles: display currency + billing period ------------- */
 (function(){
-  // indicative rates — clearly labelled as approximate next to the toggle
-  // Keep these in sync with FX in engine/engine.js — the app converts proposal money
-  // with those rates, so the marketing price toggle must not quote a different one.
+  // indicative rates — clearly labelled as approximate next to the toggle.
+  // Keep in sync with FX in engine/engine.js so the marketing toggle and the app
+  // quote the same rate. Annual price = 10× monthly (two months free), read from
+  // data-eur-mo / data-eur-yr on each amount.
   var RATES = { EUR:{ rate:1, symbol:"€", pre:true }, RON:{ rate:4.97, symbol:" lei", pre:false }, MDL:{ rate:19.8, symbol:" lei", pre:false } };
-  var btns = document.querySelectorAll(".cur-btn");
-  if (!btns.length) return;
-  var note = document.querySelector(".cur-note");
-  function apply(cur){
-    var r = RATES[cur] || RATES.EUR;
+  var curBtns  = document.querySelectorAll(".cur-btn");
+  var billBtns = document.querySelectorAll(".bill-btn");
+  if (!curBtns.length) return;
+  var curNote  = document.querySelector(".cur-note");
+  var mdNote   = document.querySelector(".md-note");
+  var saveNote = document.querySelector(".save-note");
+  var state = { cur:"EUR", period:"mo" };
+  function dict(){ return (typeof I18N !== "undefined" && I18N[window.__LANG || "en"]) || {}; }
+  function render(){
+    var r = RATES[state.cur] || RATES.EUR, D = dict();
+    var attr = state.period === "yr" ? "data-eur-yr" : "data-eur-mo";
     document.querySelectorAll(".cur-amt").forEach(function(el){
-      var eur = parseFloat(el.getAttribute("data-eur")) || 0;
-      var v = eur * r.rate;
-      var num = cur === "EUR" ? String(Math.round(v)) : Math.round(v).toLocaleString("ro-RO");
+      var eur = parseFloat(el.getAttribute(attr)) || 0;
+      var v = Math.round(eur * r.rate);
+      var num = state.cur === "EUR" ? String(v) : v.toLocaleString("ro-RO");
       el.textContent = r.pre ? (r.symbol + num) : (num + r.symbol);
     });
-    btns.forEach(function(b){
-      var on = b.getAttribute("data-cur") === cur;
-      b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false");
+    document.querySelectorAll(".per").forEach(function(el){
+      el.textContent = state.period === "yr" ? (D.per_yr || "/yr") : (D.per_mo || "/mo");
     });
-    if (note) note.hidden = (cur === "EUR");
+    curBtns.forEach(function(b){ var on = b.getAttribute("data-cur") === state.cur; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+    billBtns.forEach(function(b){ var on = b.getAttribute("data-bill") === state.period; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+    if (curNote)  curNote.hidden  = (state.cur === "EUR");
+    if (mdNote)   mdNote.hidden   = (state.cur !== "MDL");
+    if (saveNote) saveNote.hidden = (state.period !== "yr");
   }
-  btns.forEach(function(b){ b.addEventListener("click", function(){ apply(b.getAttribute("data-cur")); }); });
+  curBtns.forEach(function(b){ b.addEventListener("click", function(){ state.cur = b.getAttribute("data-cur"); render(); }); });
+  billBtns.forEach(function(b){ b.addEventListener("click", function(){ state.period = b.getAttribute("data-bill"); render(); }); });
+  window.__renderPrices = render;  // re-run after a language switch so suffixes re-localize
+  render();
 })();
 
 var mm = typeof window.matchMedia === "function" ? window.matchMedia.bind(window)
