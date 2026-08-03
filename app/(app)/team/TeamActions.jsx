@@ -56,6 +56,9 @@ export default function TeamActions({ lang, meId, me, members, counts = {} }) {
     : (m.title && KNOWN.includes(m.title)) ? t("role_" + m.title, lang)
     : m.title ? m.title
     : t("tm_role_member", lang);
+  // A distinct dot colour per role so the list is scannable at a glance.
+  const ROLE_DOT = { owner: "#E89B2D", manager: "var(--green)", engineer: "#378ADD", sales: "#7F77DD" };
+  const roleColor = (m) => m.role === "owner" ? ROLE_DOT.owner : (ROLE_DOT[m.title] || "var(--muted)");
   const projCount = (id) => {
     const n = counts[id] || 0;
     return n === 1 ? t("n_project", lang) : t("n_projects", lang, { n });
@@ -70,9 +73,16 @@ export default function TeamActions({ lang, meId, me, members, counts = {} }) {
             <div className="avatar green">{(m.name || m.email || "?").trim()[0]?.toUpperCase() || "?"}</div>
             <div className="m-who">
               <b>{m.name || m.email}{m.id === meId && <span style={{ color: "var(--muted)", fontWeight: 400 }}> · {t("tm_you", lang)}</span>}</b>
-              <span>{roleLabel(m)} · {m.email}</span>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.email}</span>
             </div>
-            <span className="m-count">{projCount(m.id)}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap" }}>
+              <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", flex: "none", background: roleColor(m) }} />
+              {roleLabel(m)}
+            </span>
+            <span className="m-count" title={projCount(m.id)} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" /><path d="M9 13h6M9 17h4" /></svg>
+              {counts[m.id] || 0}
+            </span>
             {isOwner && m.id !== meId && (
               <button className="btn icon del" onClick={() => remove(m.id)} disabled={busy} title={t("tm_remove", lang)} aria-label={t("tm_remove", lang)}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 7h16" /><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" /></svg>
