@@ -226,8 +226,13 @@ const CSS = `
   .tpl-item:hover{background:var(--paper)}
 
   /* Bulk action bar (projects) */
-  .bulkbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px 14px;background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
-  .bulkbar .bb-lbl{font-size:12.5px;color:var(--muted);font-weight:600}
+  .bulkbar{display:none;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px 14px;background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  /* The bulk editor only appears once at least one quote is ticked, so it reads as
+     "act on selected", never as a filter that does nothing. */
+  .bulk-form:has(input.bulk-id:checked) .bulkbar{display:flex;animation:viewIn .2s ease}
+  .bulkbar .bb-lbl{font-size:12.5px;color:var(--ink);font-weight:600}
+  .bulkbar .bb-clear{font-size:12.5px;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+  .bulkbar .bb-clear:hover{color:var(--ink)}
   .bulkbar .chip{cursor:pointer}
   .tbl .col-sel{width:34px;padding-right:2px}
   .tbl .col-sel input{width:15px;height:15px;accent-color:var(--green);cursor:pointer;vertical-align:middle}

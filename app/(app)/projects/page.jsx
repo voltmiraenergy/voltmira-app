@@ -16,6 +16,7 @@ import RowActions from "./RowActions.jsx";
 import StatusChip from "./StatusChip.jsx";
 import NewQuoteMenu from "./NewQuoteMenu.jsx";
 import TemplateBar from "./TemplateBar.jsx";
+import BulkBar from "./BulkBar.jsx";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Projects — VoltMira" };
@@ -159,23 +160,16 @@ export default async function Projects({ searchParams }) {
       </div>
 
       {pageRows.length ? (
-        <form action={bulkStatus}>
-          {/* Bulk cleanup: tick rows, then apply a status to all at once. Buttons
-              submit this form; RowActions/StatusChip are type="button" so they
-              never trip it. With nothing ticked, the action is a safe no-op. */}
-          <div className="bulkbar">
-            <span className="bb-lbl">{t("bulk_with", lang)}</span>
-            <button className="chip won" name="op" value="won" type="submit">{t("st_won", lang)}</button>
-            <button className="chip lost" name="op" value="lost" type="submit">{t("st_lost", lang)}</button>
-            <button className="chip sent" name="op" value="sent" type="submit">{t("st_sent", lang)}</button>
-            <button className="chip draft" name="op" value="draft" type="submit">{t("st_draft", lang)}</button>
-            <span className="spacer" />
-            <button className="btn sm danger" name="op" value="delete" type="submit">{t("bulk_delete", lang)}</button>
-          </div>
+        <form action={bulkStatus} className="bulk-form">
+          {/* Bulk editor: tick rows, then apply a status (or delete) to all at once.
+              The bar stays hidden (CSS :has) until at least one row is ticked, so it
+              never looks like a filter. RowActions/StatusChip are type="button" so
+              they never submit this form. */}
+          <BulkBar lang={lang} />
           <section className="card" style={{ padding: "6px 6px 2px" }}>
             <div className="tbl-wrap"><table className="tbl">
               <thead><tr>
-                <th className="col-sel" />
+                <th className="col-sel"><input type="checkbox" className="sel-all" aria-label={t("bulk_select_all", lang)} /></th>
                 {sh("title", t("col_project", lang))}
                 {sh("kw", t("col_system", lang))}
                 {sh("payback", t("col_payback", lang))}
@@ -191,7 +185,7 @@ export default async function Projects({ searchParams }) {
                   const stale = sent && isStale(sentOf(p), validityDays);
                   return (
                     <tr key={p.id}>
-                      <td className="col-sel"><input type="checkbox" name="ids" value={p.id} aria-label={p.title || t("untitled", lang)} /></td>
+                      <td className="col-sel"><input type="checkbox" className="bulk-id" name="ids" value={p.id} aria-label={p.title || t("untitled", lang)} /></td>
                       <td>
                         <Link className="t-title" href={`/projects/${p.id}`}>{p.title || t("untitled", lang)}</Link>
                         {p.notes ? <span className="note-dot" title={p.notes} aria-label={t("has_notes", lang)}>📝</span> : null}
