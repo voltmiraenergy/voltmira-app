@@ -145,6 +145,32 @@ export default function Settings() {
     finally { setDemoBusy(false); }
   }
 
+  // Logo upload: read the chosen image, downscale to 256px, and store it inline
+  // as a data URL in logo_url — no storage bucket needed, works everywhere the
+  // logo renders (CSP allows data: images).
+  function onLogoFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setMsg(t("s_logo_bad", lang)); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new window.Image();
+      img.onload = () => {
+        const max = 256;
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        setCo(c => ({ ...c, logo_url: canvas.toDataURL("image/png") })); touch();
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
   // Any edit marks the form dirty (drives the save bar) and clears a stale
   // "Saved" message so the two indicators never contradict each other.
   const touch = () => { setDirty(true); if (msg) setMsg(""); };
@@ -166,7 +192,8 @@ export default function Settings() {
     </div>
   );
 
-  const hasLogo = /^https:\/\//i.test(co.logo_url || "");
+  const isDataLogo = /^data:image\//i.test(co.logo_url || "");
+  const hasLogo = /^(https:\/\/|data:image\/)/i.test(co.logo_url || "");
   const bandInput = (band, k, step) => (
     <input className="input" type="number" step={step} value={eng.bands[band][k]} onChange={setBand(band, k)} />
   );
@@ -190,12 +217,20 @@ export default function Settings() {
             <input className="input" value={co.short_name || ""} onChange={set("short_name")} placeholder="VoltMira" /></div>
         </div>
         <div className="field"><label>{t("s_logo", lang)}</label>
-          <div style={{ display: "flex", gap: 11, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 11, alignItems: "center", flexWrap: "wrap" }}>
             {hasLogo
               ? <img className="st-logo" src={co.logo_url} alt="" />
               : <span className="st-logo st-logo-ph">{(co.short_name || co.name || "?").trim()[0]?.toUpperCase() || "?"}</span>}
-            <input className="input" style={{ flex: 1 }} value={co.logo_url || ""} onChange={set("logo_url")} placeholder="https://…/logo.png" />
+            {isDataLogo
+              ? <span style={{ flex: 1, minWidth: 140, fontSize: 13, color: "var(--muted)" }}>{t("s_logo_uploaded", lang)}</span>
+              : <input className="input" style={{ flex: 1, minWidth: 160 }} value={co.logo_url || ""} onChange={set("logo_url")} placeholder="https://…/logo.png" />}
+            <label className="btn ghost" style={{ cursor: "pointer" }}>
+              {t("s_logo_upload", lang)}
+              <input type="file" accept="image/*" onChange={onLogoFile} style={{ display: "none" }} />
+            </label>
+            {hasLogo && <button type="button" className="btn ghost" onClick={() => { setCo(c => ({ ...c, logo_url: "" })); touch(); }}>{t("s_logo_remove", lang)}</button>}
           </div>
+          <div className="set-note">{t("s_logo_hint", lang)}</div>
         </div>
         <div className="set-grid">
           <div className="field"><label>{t("s_default_mkt", lang)}</label>

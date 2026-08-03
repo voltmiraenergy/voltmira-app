@@ -10,9 +10,8 @@ import { currentCompany } from "../../../lib/session.js";
 import { createProject, cycleProjectStatus } from "../../../lib/actions.js";
 import { quote, defaultEngineSettings } from "@voltmira/engine";
 import { t, normLang } from "../../../lib/i18n.js";
-import { proposalStatsByProject, daysSince, needsFollowUp } from "../../../lib/proposalStats.js";
+import { proposalStatsByProject, daysSince } from "../../../lib/proposalStats.js";
 import { activityHtml } from "../../../lib/activity.js";
-import FollowUpStrip from "./FollowUpStrip.jsx";
 import OnboardingChecklist from "./OnboardingChecklist.jsx";
 
 export const dynamic = "force-dynamic";
@@ -140,30 +139,6 @@ export default async function Dashboard() {
   const mMax = Math.max(1, ...months.map(m => Math.max(m.sent, m.won)));
   const CW = 560, CH = 150, cBase = CH - 24, cPlot = cBase - 16, cGroup = CW / 6, cBar = 18;
 
-  // "Today" — the moves worth making right now, in priority order: a client who
-  // keeps reopening (call now), a scheduled follow-up that's due, then quotes
-  // going cold in Sent. Snoozed reminders are hidden for a week. Top 4.
-  const SNOOZE_MS = 7 * 24 * 3600 * 1000;
-  const isSnoozed = (r) => r.followup_snoozed_at && (Date.now() - new Date(r.followup_snoozed_at).getTime()) < SNOOZE_MS;
-  const dueBy = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() + 86400000;
-  const seen = new Set();
-  const today = [];
-  const pushToday = (r, reason) => { seen.add(r.id); today.push({ id: r.id, title: r.title, client: r.client_name, reason }); };
-  for (const r of list) {
-    if (r.status !== "sent" || isSnoozed(r) || seen.has(r.id)) continue;
-    const st = stats.get(r.id);
-    if (st && st.opens >= 3) pushToday(r, t("today_hot", lang, { n: st.opens }));
-  }
-  for (const r of list) {
-    if (seen.has(r.id) || r.status === "won" || r.status === "lost") continue;
-    if (r.next_follow_up && new Date(r.next_follow_up).getTime() < dueBy) pushToday(r, t("today_due", lang));
-  }
-  for (const r of list) {
-    if (seen.has(r.id) || r.status !== "sent" || isSnoozed(r)) continue;
-    if (needsFollowUp(stats.get(r.id))) pushToday(r, t("today_cold", lang, { n: daysSince(stats.get(r.id)?.sentAt) }));
-  }
-  const todayList = today.slice(0, 4);
-
   // Onboarding checklist — hides once the installer has hit the core aha.
   const hasProposal = [...stats.values()].some(s => s.sentAt);
   const onboardSteps = [
@@ -192,15 +167,12 @@ export default async function Dashboard() {
       </div>
 
       <OnboardingChecklist steps={onboardSteps} allDone={onboardDone} lang={lang} />
-
       <div className="kpis">
         <div className="kpi"><b>{fmt(pipeline)}</b><span>{t("kpi_pipeline", lang)}</span></div>
         <div className="kpi"><b>{winRate}</b><span>{t("kpi_winrate", lang)}</span></div>
         <div className="kpi"><b>{avgPb}</b><span>{t("kpi_payback", lang)}</span></div>
         <div className="kpi"><b>{list.length}</b><span>{t("kpi_projects", lang)}</span></div>
       </div>
-
-      <FollowUpStrip items={todayList} lang={lang} />
 
       <div className="grid-2" style={{ marginBottom: 18 }}>
         <section className="card">

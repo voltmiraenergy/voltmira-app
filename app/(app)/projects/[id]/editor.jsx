@@ -8,6 +8,7 @@ import Link from "next/link";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
 import { createProposal, saveQuoteTemplate } from "../../../../lib/actions.js";
 import InstallChecklist from "./InstallChecklist.jsx";
+import ShareCard from "./ShareCard.jsx";
 import { quote, MARKETS, FX } from "@voltmira/engine";
 import { t } from "../../../../lib/i18n.js";
 
@@ -64,7 +65,7 @@ function Donut({ self, lang }) {
 }
 
 /* ---------- editor ---------- */
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira" }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "" }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, address: initial.address,
@@ -529,6 +530,16 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.38a9.9 9.9 0 0 0 4.73 1.2h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.64-1.03-5.13-2.9-7A9.82 9.82 0 0 0 12.04 2Zm0 18.15h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.1.81.83-3.02-.2-.31a8.22 8.22 0 0 1-1.26-4.4c0-4.54 3.7-8.23 8.24-8.23 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.69 8.24-8.22 8.24Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.4-.42-.56-.43h-.48c-.16 0-.42.06-.64.31-.22.25-.84.83-.84 2.02 0 1.19.86 2.34.98 2.5.12.16 1.69 2.58 4.1 3.62.57.25 1.02.4 1.37.5.57.19 1.1.16 1.51.1.46-.07 1.47-.6 1.68-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.28Z" /></svg>
               {tr("wa_share")}
             </a>
+            <ShareCard lang={lang} companyName={companyName} companyLogo={companyLogo}
+              client={p.client || tr("your_client")}
+              systemLabel={`${p.kw.toFixed(1)} kW${p.batt ? " + " + (p.battKwh || 10) + " kWh" : ""}`}
+              bands={[
+                { label: tr("pessimistic"), years: yrs(q.p.payback) + " " + tr("yrs") },
+                { label: tr("expected"), years: yrs(q.e.payback) + " " + tr("yrs") },
+                { label: tr("optimistic"), years: yrs(q.o.payback) + " " + tr("yrs") },
+              ]}
+              savings={fmt(q.e.rows[q.e.rows.length - 1])}
+              waText={tr("wa_message", { client: p.client || tr("your_client"), company: companyName, url: propUrl })} />
             <div className="modal-acts">
               <button className="btn ghost" onClick={() => setPropUrl(null)}>{tr("close")}</button>
               <a className="btn primary" href={propUrl} target="_blank" rel="noopener noreferrer">{tr("open_as_client")}</a>

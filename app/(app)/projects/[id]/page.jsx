@@ -14,7 +14,7 @@ export default async function ProjectPage({ params }) {
   // the security-definer my_company_id(), no recursion).
   const [{ data: p }, { data: co }, { data: prop }, { data: catalog }] = await Promise.all([
     sb.from("projects").select("*").eq("id", params.id).single(),
-    sb.from("companies").select("name, engine, currency, prosumer_limit_kw, subsidy_amount_ron, lang").single(),
+    sb.from("companies").select("name, logo_url, engine, currency, prosumer_limit_kw, subsidy_amount_ron, lang").single(),
     sb.from("proposals").select("created_at").eq("project_id", params.id).limit(1).maybeSingle(),
     sb.from("products").select("*").order("created_at"),   // catalog for the bill of materials
   ]);
@@ -37,5 +37,5 @@ export default async function ProjectPage({ params }) {
   };
   return <Editor initial={p} engineSettings={E} team={team || []} catalog={catalog || []}
     prosumerLimitKw={Number(co?.prosumer_limit_kw ?? 10.8)} lang={normLang(co?.lang)}
-    proposalSentAt={prop?.created_at || null} companyName={co?.name || "VoltMira"} />;
+    proposalSentAt={prop?.created_at || null} companyName={co?.name || "VoltMira"} companyLogo={co?.logo_url || ""} />;
 }
