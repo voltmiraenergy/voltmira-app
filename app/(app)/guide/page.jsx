@@ -56,7 +56,7 @@ const CSS = `
 const HTML = {
   en: `
 <div class="g-sun"></div>
-<h1>Everything you need — no phone call required.</h1>
+<h1>Everything you need to quote and close.</h1>
 <p class="g-sub">How to capture leads, build an honest quote, and send a proposal your client can trust. Keep it open in a tab.</p>
 
 <section>
@@ -166,7 +166,7 @@ const HTML = {
 
   ro: `
 <div class="g-sun"></div>
-<h1>Tot ce-ți trebuie — fără niciun telefon.</h1>
+<h1>Tot ce-ți trebuie ca să ofertezi și să câștigi.</h1>
 <p class="g-sub">Cum prinzi contacte, faci o ofertă onestă și trimiți o propunere în care clientul are încredere. Ține-l deschis într-un tab.</p>
 
 <section>
@@ -276,7 +276,7 @@ const HTML = {
 
   ru: `
 <div class="g-sun"></div>
-<h1>Всё, что нужно — без единого звонка.</h1>
+<h1>Всё, что нужно, чтобы считать и закрывать сделки.</h1>
 <p class="g-sub">Как собирать заявки, составлять честный расчёт и отправлять предложение, которому клиент доверяет. Держите вкладку открытой.</p>
 
 <section>
