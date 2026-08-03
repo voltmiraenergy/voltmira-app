@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "../../../lib/supabase-browser.js";
 import { openCheckout } from "../../../lib/paddle.js";
-import { saveCompany } from "../../../lib/actions.js";
+import { saveCompany, seedSampleData, clearSampleData } from "../../../lib/actions.js";
 import { defaultEngineSettings } from "@voltmira/engine";
 import { t, normLang, LANGS, LANG_NAMES } from "../../../lib/i18n.js";
 
@@ -40,6 +40,7 @@ const ICONS = {
   code: <path d="M8 9l-3 3 3 3M16 9l3 3-3 3M13.5 6l-3 12" />,
   sliders: <><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h13M21 18h-1" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="19" cy="18" r="2" /></>,
   chart: <path d="M4 20V4M4 20h16M9 20v-7M14 20V9M19 20v-4" />,
+  demo: <path d="M12 3l1.7 4.9L19 9.5l-5.3 1.6L12 16l-1.7-4.9L5 9.5l5.3-1.6L12 3z" />,
 };
 function SecIcon({ name, color = "var(--green)" }) {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ color }} aria-hidden="true">{ICONS[name]}</svg>;
@@ -68,6 +69,8 @@ export default function Settings() {
   const [co, setCo] = useState(null);
   const [msg, setMsg] = useState("");
   const [dirty, setDirty] = useState(false);
+  const [demoBusy, setDemoBusy] = useState(false);
+  const [demoMsg, setDemoMsg] = useState("");
 
   useEffect(() => {
     document.title = "Settings — VoltMira";
@@ -126,6 +129,20 @@ export default function Settings() {
     } catch (e) {
       setMsg(e.message || t("checkout_failed", lang));
     }
+  }
+
+  async function loadDemo() {
+    setDemoBusy(true); setDemoMsg(t("dd_loading", lang));
+    try { await seedSampleData(); setDemoMsg(t("dd_loaded", lang)); router.refresh(); }
+    catch (e) { setDemoMsg(e.message || "Error"); }
+    finally { setDemoBusy(false); }
+  }
+  async function clearDemo() {
+    if (!confirm(t("dd_clear_confirm", lang))) return;
+    setDemoBusy(true);
+    try { await clearSampleData(); setDemoMsg(t("dd_cleared", lang)); router.refresh(); }
+    catch (e) { setDemoMsg(e.message || "Error"); }
+    finally { setDemoBusy(false); }
   }
 
   // Any edit marks the form dirty (drives the save bar) and clears a stale
@@ -287,6 +304,17 @@ export default function Settings() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      {/* Demo data */}
+      <section className="card st-sec">
+        <div className="st-head"><SecIcon name="demo" color="var(--amber)" /><h3>{t("dd_title", lang)}</h3></div>
+        <p className="st-desc">{t("dd_desc", lang)}</p>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button className="btn primary" disabled={demoBusy} onClick={loadDemo}>{t("dd_load", lang)}</button>
+          <button className="btn ghost" disabled={demoBusy} onClick={clearDemo}>{t("dd_clear", lang)}</button>
+        </div>
+        {demoMsg && <p className="set-note" style={{ marginTop: 12 }}>{demoMsg}</p>}
       </section>
 
       {/* Sticky save bar */}

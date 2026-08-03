@@ -19,7 +19,7 @@ import TemplateBar from "./TemplateBar.jsx";
 import BulkBar from "./BulkBar.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Projects — VoltMira" };
+export const metadata = { title: "Quotes — VoltMira" };
 
 const PAGE_SIZE = 10;
 const STATUSES = ["all", "draft", "sent", "won", "lost"];

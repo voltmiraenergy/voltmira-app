@@ -25,9 +25,9 @@ export default function FollowUpStrip({ items: initial, lang }) {
 
   return (
     <section className="followup-strip">
-      <h3>⚠ {t("fu_title", lang)}</h3>
-      <div className="fu-sub">{t("fu_sub", lang, { n: items.length })}</div>
-      {items.map(({ id, title, client, age }) => (
+      <h3>☀ {t("today_title", lang)}</h3>
+      <div className="fu-sub">{t("today_sub", lang)}</div>
+      {items.map(({ id, title, client, reason }) => (
         <div className="fu-row" key={id}
           style={{
             maxHeight: closing[id] ? 0 : 84, opacity: closing[id] ? 0 : 1,
@@ -39,7 +39,7 @@ export default function FollowUpStrip({ items: initial, lang }) {
           }}>
           <div className="fu-who">
             <b>{title || t("untitled", lang)}</b>
-            <span>{client || "—"} · {t("aged_days", lang, { n: age })}</span>
+            <span>{client || "—"} · {reason}</span>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <Link className="btn sm amber" href={`/projects/${id}`}>{t("ttl_open", lang)}</Link>
