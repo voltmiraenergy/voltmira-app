@@ -104,7 +104,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   return (
     <div className="print-sheet">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      {company.logoUrl && /^https?:\/\//i.test(company.logoUrl) && (
+      {company.logoUrl && /^(https?:\/\/|data:image\/)/i.test(company.logoUrl) && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={company.logoUrl} alt="" style={{ height: 26, marginBottom: 10 }} />
       )}

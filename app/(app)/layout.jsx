@@ -47,7 +47,9 @@ export default async function AppLayout({ children }) {
         <SideNav items={items} />
         <div className="side-foot">
           <div className="profile">
-            <div className="avatar">{initialsOf(who)}</div>
+            {co?.logo_url
+              ? <img className="avatar" src={co.logo_url} alt="" style={{ objectFit: "contain", background: "var(--paper-2)" }} />
+              : <div className="avatar">{initialsOf(who)}</div>}
             <div className="who"><b>{who}</b><span>{co?.name}</span></div>
           </div>
           <div className="side-plan">{(co?.plan || "free") + " " + t("plan_suffix", lang)}</div>
