@@ -25,7 +25,7 @@ export default async function ProposalPage({ params, searchParams }) {
     return <main style={S.wrap}><h1 style={S.h1}>{t("pp_not_found", "en")}</h1>
       <p style={S.muted}>{t("pp_expired", "en")}</p></main>;
   }
-  const { company, inputs, quote: q, accepted, sentAt, options = [], bom = [] } = data;
+  const { company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [] } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
 
@@ -34,7 +34,7 @@ export default async function ProposalPage({ params, searchParams }) {
   if (printMode) {
     return (
       <main lang={lang} style={{ background: "#fff", minHeight: "100vh" }}>
-        <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} />
+        <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} />
         <AutoPrint />
       </main>
     );
@@ -157,6 +157,14 @@ export default async function ProposalPage({ params, searchParams }) {
           {net >= 0 ? t("pp_good", lang, { v: fmt(net) }) : t("pp_bad", lang)}
         </div>
       </section>
+
+      {preparedBy?.name ? (
+        <p style={{ ...S.muted, textAlign: "center", marginTop: 20, fontSize: 13.5 }}>
+          {t("pp_prepared_by", lang)} <b style={{ color: "#142A21" }}>{preparedBy.name}</b>
+          {preparedBy.phone ? <> · <a href={`tel:${preparedBy.phone}`} style={{ color: "#1E6B4E", textDecoration: "none" }}>{preparedBy.phone}</a></> : null}
+          {" · " + company.name}
+        </p>
+      ) : null}
 
       <Tracker code={params.code} accepted={accepted} lang={lang} />
 

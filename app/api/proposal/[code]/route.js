@@ -65,13 +65,25 @@ export async function GET(req, { params }) {
 
   const db = supabaseAdmin();
   const { data: prop } = await db.from("proposals")
-    .select("code, snapshot, accepted_at, company_id, created_at")
+    .select("code, snapshot, accepted_at, company_id, created_at, project_id")
     .eq("code", params.code).single();
   if (!prop) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   const { data: co } = await db.from("companies")
     .select("name, short_name, logo_url, engine, currency, lang, plan")
     .eq("id", prop.company_id).single();
+
+  // "Prepared by": the rep who owns the quote, so the client can reach the actual
+  // person. Live lookup via the service role (no RLS recursion). Falls back to the
+  // frozen snapshot value for very old proposals if present.
+  let preparedBy = prop.snapshot?.preparedBy || null;
+  if (!preparedBy && prop.project_id) {
+    const { data: proj } = await db.from("projects").select("owner_id").eq("id", prop.project_id).maybeSingle();
+    if (proj?.owner_id) {
+      const { data: pf } = await db.from("profiles").select("*").eq("id", proj.owner_id).maybeSingle();
+      if (pf?.name) preparedBy = { name: pf.name, phone: pf.phone || "" };
+    }
+  }
 
   // Frozen-snapshot integrity: proposals created after 2026-07 carry the engine
   // settings they were computed with, so later Settings changes can never alter
@@ -100,6 +112,7 @@ export async function GET(req, { params }) {
     // lang drives the client-facing proposal copy — the client reads it in the
     // installer's chosen language, not always English.
     company: { name: co?.name, shortName: co?.short_name, logoUrl: co?.logo_url, currency: co?.currency, lang: co?.lang, plan: co?.plan || "free" },
+    preparedBy,
     inputs: {
       title: prop.snapshot.title, client: prop.snapshot.client, address: prop.snapshot.address,
       kw: prop.snapshot.kw, batt: prop.snapshot.batt, battKwh: prop.snapshot.battKwh ?? 10,

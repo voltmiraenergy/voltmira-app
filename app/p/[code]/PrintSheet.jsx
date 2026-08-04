@@ -72,7 +72,7 @@ const CSS = `
   @media print{ .print-sheet{padding:0} }
 `;
 
-export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null }) {
+export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null }) {
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-IE";
   const fmt = (n) => "€" + Math.round(n).toLocaleString(loc);
   const yrsF = (n) => n === null ? "25+" : n === 0 ? t("pp_immediate", lang) : n.toFixed(1);
@@ -201,6 +201,11 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         <div className="p-valid">{tr("pdf_valid", { d: validUntil })}</div>
       </section>
 
+      {preparedBy?.name && (
+        <div className="p-foot" style={{ borderTop: "none", marginTop: 18, paddingTop: 0 }}>
+          {tr("pp_prepared_by")} {preparedBy.name}{preparedBy.phone ? " · " + preparedBy.phone : ""} · {company.name}
+        </div>
+      )}
       <div className="p-foot">{company.name}{company.plan === "free" ? <> · {tr("pdf_foot")} · voltmira.com</> : null}</div>
     </div>
   );
