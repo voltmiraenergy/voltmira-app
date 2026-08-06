@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "../../../lib/supabase-browser.js";
 import { openCheckout } from "../../../lib/paddle.js";
-import { saveCompany, seedSampleData, clearSampleData } from "../../../lib/actions.js";
+import { saveCompany, seedSampleData, clearSampleData, getMyRole } from "../../../lib/actions.js";
 import { defaultEngineSettings } from "@voltmira/engine";
 import { t, normLang, LANGS, LANG_NAMES } from "../../../lib/i18n.js";
 
@@ -71,10 +71,12 @@ export default function Settings() {
   const [dirty, setDirty] = useState(false);
   const [demoBusy, setDemoBusy] = useState(false);
   const [demoMsg, setDemoMsg] = useState("");
+  const [isOwner, setIsOwner] = useState(true);   // default true so owners see no flash
 
   useEffect(() => {
     document.title = "Settings — VoltMira";
     sb.from("companies").select("*").single().then(({ data }) => setCo(data));
+    getMyRole().then(r => setIsOwner(r === "owner")).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -274,7 +276,8 @@ export default function Settings() {
         <WidgetEmbed companyId={co.id} lang={lang} />
       </section>
 
-      {/* Calculation engine */}
+      {isOwner ? (<>
+      {/* Calculation engine — owner only */}
       <section className="card st-sec">
         <div className="st-head"><SecIcon name="sliders" /><h3>{t("calc_engine", lang)}</h3></div>
         <p className="st-desc">{t("st_engine_desc", lang)}</p>
@@ -351,6 +354,13 @@ export default function Settings() {
         </div>
         {demoMsg && <p className="set-note" style={{ marginTop: 12 }}>{demoMsg}</p>}
       </section>
+
+      </>) : (
+        <section className="card st-sec">
+          <div className="st-head"><SecIcon name="sliders" /><h3>{t("calc_engine", lang)}</h3></div>
+          <p className="st-desc" style={{ margin: 0 }}>🔒 {t("s_owner_only", lang)}</p>
+        </section>
+      )}
 
       {/* Sticky save bar */}
       <div className="st-savebar">

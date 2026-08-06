@@ -29,6 +29,9 @@ export async function middleware(req) {
   }
 
   const supabase = createServerClient(url_, anon, {
+    // Persistent auth cookies (~400 days) so users stay signed in across browser
+    // restarts; getSession() below refreshes the token as needed.
+    cookieOptions: { maxAge: 60 * 60 * 24 * 400 },
     cookies: {
       getAll: () => req.cookies.getAll(),
       setAll: (list) => list.forEach(({ name, value, options }) =>
