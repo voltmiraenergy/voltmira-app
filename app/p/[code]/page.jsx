@@ -159,11 +159,14 @@ export default async function ProposalPage({ params, searchParams }) {
       </section>
 
       {preparedBy?.name ? (
-        <p style={{ ...S.muted, textAlign: "center", marginTop: 20, fontSize: 13.5 }}>
-          {t("pp_prepared_by", lang)} <b style={{ color: "#142A21" }}>{preparedBy.name}</b>
-          {preparedBy.phone ? <> · <a href={`tel:${preparedBy.phone}`} style={{ color: "#1E6B4E", textDecoration: "none" }}>{preparedBy.phone}</a></> : null}
-          {" · " + company.name}
-        </p>
+        <section style={{ ...S.card, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap", textAlign: "center" }}>
+          <span style={{ color: "#66756C", fontSize: 13 }}>{t("pp_prepared_by", lang)}</span>
+          <b style={{ fontSize: 15.5, color: "#142A21" }}>{preparedBy.name}</b>
+          {preparedBy.phone ? (
+            <a href={`tel:${preparedBy.phone}`} style={{ color: "#1E6B4E", fontWeight: 600, textDecoration: "none", fontSize: 14.5 }}>{preparedBy.phone}</a>
+          ) : null}
+          <span style={{ color: "#66756C", fontSize: 13 }}>· {company.name}</span>
+        </section>
       ) : null}
 
       <Tracker code={params.code} accepted={accepted} lang={lang} />
