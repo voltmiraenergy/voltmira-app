@@ -195,7 +195,7 @@ export async function POST(req, { params }) {
     if (n <= 1) { text = `<b>${who}</b> opened “${title}”`; key = "act_opened"; }
     else if (n >= 3) { text = `🔥 <b>${who}</b> opened “${title}” again — ${n}× total. Worth a call now.`; actKind = "lead"; key = "act_opened_hot"; }
     else { text = `<b>${who}</b> opened “${title}” again (${n}×)`; key = "act_opened_again"; }
-    await logActivity(db, { companyId: prop.company_id, kind: actKind, key, params: { b: rawWho, title: rawTitle, n }, text });
+    await logActivity(db, { companyId: prop.company_id, kind: actKind, key, params: { b: rawWho, title: rawTitle, n }, text, link: `/projects/${prop.project_id}` });
     // Retention feature: tell the installer while the client is still reading.
     await notifyProposalOpened(db, prop);
   }
@@ -216,6 +216,7 @@ export async function POST(req, { params }) {
       companyId: prop.company_id, kind: "won", key: "act_proposal_accepted",
       params: { b: who },
       text: `<b>${escapeHtml(who)}</b> accepted your proposal`,
+      link: `/projects/${prop.project_id}`,
     });
   }
   if (kind === "request") {
@@ -231,6 +232,7 @@ export async function POST(req, { params }) {
       companyId: prop.company_id, kind: "lead", key: "act_quote_requested",
       params: { b: rawReqTitle },
       text: `Client requested the quote for <b>${escapeHtml(rawReqTitle)}</b>`,
+      link: `/projects/${prop.project_id}`,
     });
   }
 

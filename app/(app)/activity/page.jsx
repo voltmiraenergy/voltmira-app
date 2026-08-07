@@ -87,6 +87,7 @@ export default async function ActivityPage({ searchParams }) {
 
   return (
     <div style={{ maxWidth: 860, margin: "0 auto" }}>
+      <style dangerouslySetInnerHTML={{ __html: ".act-clickable{transition:box-shadow .15s;cursor:pointer}.act-clickable:hover{box-shadow:inset 0 0 0 999px rgba(20,42,33,.035)}" }} />
       <div className="page-head">
         <h1>{t("activity_title", lang)}</h1>
         <span className="sub">{t("activity_sub", lang)}</span>
@@ -103,22 +104,26 @@ export default async function ActivityPage({ searchParams }) {
                 {g.rows.map((r, i) => {
                   const meta = TYPE_META[r.kind] || TYPE_META.quote;
                   const isSettings = r.kind === "sys";
-                  return (
-                    <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 15px",
-                      borderTop: i ? "1px solid var(--line)" : "none", background: isSettings ? "var(--amber-tint)" : "transparent" }}>
-                      <span className="avatar sm" style={r.actor_name
-                        ? { background: "var(--green-tint)", color: "var(--green)" }
-                        : { background: "var(--paper)", color: "var(--muted)" }}>
-                        {r.actor_name ? initials(r.actor_name) : "•"}
-                      </span>
-                      <div style={{ flex: 1, minWidth: 0, fontSize: 14, lineHeight: 1.4 }}>
-                        {r.actor_name ? <><b style={{ fontWeight: 600 }}>{r.actor_name}</b><span style={{ color: "var(--muted)" }}> · </span></> : null}
-                        <span dangerouslySetInnerHTML={{ __html: activityHtml(r, lang) }} />
-                      </div>
-                      <span style={{ fontSize: 11, fontWeight: 500, color: meta.c, border: "1px solid var(--line)", borderRadius: 99, padding: "2px 9px", whiteSpace: "nowrap" }}>{t(meta.key, lang)}</span>
-                      <span style={{ fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{time(r.created_at)}</span>
+                  const rowStyle = { display: "flex", alignItems: "center", gap: 12, padding: "12px 15px",
+                    borderTop: i ? "1px solid var(--line)" : "none", background: isSettings ? "var(--amber-tint)" : "transparent",
+                    textDecoration: "none", color: "inherit" };
+                  const inner = (<>
+                    <span className="avatar sm" style={r.actor_name
+                      ? { background: "var(--green-tint)", color: "var(--green)" }
+                      : { background: "var(--paper)", color: "var(--muted)" }}>
+                      {r.actor_name ? initials(r.actor_name) : "•"}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0, fontSize: 14, lineHeight: 1.4 }}>
+                      {r.actor_name ? <><b style={{ fontWeight: 600 }}>{r.actor_name}</b><span style={{ color: "var(--muted)" }}> · </span></> : null}
+                      <span dangerouslySetInnerHTML={{ __html: activityHtml(r, lang) }} />
                     </div>
-                  );
+                    <span style={{ fontSize: 11, fontWeight: 500, color: meta.c, border: "1px solid var(--line)", borderRadius: 99, padding: "2px 9px", whiteSpace: "nowrap" }}>{t(meta.key, lang)}</span>
+                    <span style={{ fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{time(r.created_at)}</span>
+                    {r.link ? <span aria-hidden="true" style={{ color: "var(--muted)", fontSize: 15, marginLeft: 2 }}>›</span> : null}
+                  </>);
+                  return r.link
+                    ? <Link key={r.id} href={r.link} className="act-clickable" style={rowStyle}>{inner}</Link>
+                    : <div key={r.id} style={rowStyle}>{inner}</div>;
                 })}
               </div>
             </section>

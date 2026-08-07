@@ -38,6 +38,7 @@ export async function POST(req) {
   await logActivity(db, {
     companyId, kind: "lead", key: "act_lead_widget", params: { b: name },
     text: `New lead from the website widget: <b>${escapeHtml(name)}</b>`,
+    link: "/leads",
   });
   return NextResponse.json({ ok: true });
 }

@@ -7,6 +7,9 @@
 
 alter table activity add column if not exists actor_id   uuid;
 alter table activity add column if not exists actor_name text not null default '';
+-- Where a feed row links to (e.g. /projects/<id>, /leads, /settings) so the
+-- Activity Log rows are clickable and jump straight to the thing that changed.
+alter table activity add column if not exists link       text not null default '';
 
 create index if not exists activity_actor_idx on activity(company_id, actor_id, created_at desc);
 
