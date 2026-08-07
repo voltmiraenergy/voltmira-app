@@ -208,10 +208,14 @@ export async function POST(req, { params }) {
   if (kind === "accept" && !prop.accepted_at) {
     await db.from("proposals").update({ accepted_at: new Date().toISOString() }).eq("code", prop.code);
     await db.from("projects").update({ status: "won" }).eq("id", prop.project_id).eq("status", "sent");
+    // Name the human, not the URL slug — "Casa Popescu accepted…" reads far better
+    // than "…proposal crppgt6x".
+    const { data: proj } = await db.from("projects").select("title, client_name").eq("id", prop.project_id).maybeSingle();
+    const who = proj?.client_name || proj?.title || prop.code;
     await logActivity(db, {
       companyId: prop.company_id, kind: "won", key: "act_proposal_accepted",
-      params: { b: prop.code },
-      text: `Client accepted proposal <b>${escapeHtml(prop.code)}</b>`,
+      params: { b: who },
+      text: `<b>${escapeHtml(who)}</b> accepted your proposal`,
     });
   }
   if (kind === "request") {
