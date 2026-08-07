@@ -288,7 +288,11 @@ export default async function Dashboard() {
         </div>
 
         <section className="card">
-          <h3>{t("activity", lang)}</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <h3 style={{ margin: 0 }}>{t("activity", lang)}</h3>
+            <span className="spacer" />
+            <Link href="/activity" style={{ fontSize: 12.5, color: "var(--green)", fontWeight: 600, textDecoration: "none" }}>{t("act_view_all", lang)} →</Link>
+          </div>
           {(acts || []).length ? (
             <div className="feed-scroll"><ul className="feed">
               {(acts || []).map(a => {
