@@ -9,9 +9,11 @@ import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
 import { bulkUpdateStatus } from "../../../lib/actions.js";
 import { revalidatePath } from "next/cache";
-import { quote, defaultEngineSettings } from "@voltmira/engine";
+import { quote } from "@voltmira/engine";
+import { companyEngine } from "../../../lib/engineSettings.js";
 import { t, normLang } from "../../../lib/i18n.js";
 import { proposalStatsByProject, daysSince, agingLabel, agingTier, isStale } from "../../../lib/proposalStats.js";
+import { rowToQuoteInput } from "../../../lib/quoteInput.js";
 import RowActions from "./RowActions.jsx";
 import StatusChip from "./StatusChip.jsx";
 import NewQuoteMenu from "./NewQuoteMenu.jsx";
@@ -56,7 +58,7 @@ export default async function Projects({ searchParams }) {
     co ? supabaseAdmin().from("profiles").select("id, name, email").eq("company_id", co.id) : Promise.resolve({ data: [] }),
     proposalStatsByProject(sb),
   ]);
-  const E = { ...defaultEngineSettings(), ...(co?.engine || {}) };
+  const E = await companyEngine(co);
   const validityDays = E.quoteValidityDays || 30;
   const lang = normLang(co?.lang);
   const fmt = (n) => "€" + Math.round(n).toLocaleString("en-IE");
@@ -73,12 +75,7 @@ export default async function Projects({ searchParams }) {
   }
 
   const enriched = rows.map(p => ({
-    p, st: stats.get(p.id) || null, q: quote({
-      kw: +p.kw, price: +p.price, cons: +p.cons, batt: p.batt, market: p.market,
-      useMonthly: p.use_monthly, consMonthly: p.cons_monthly, afmSubsidy: p.afm_subsidy,
-      yieldOverride: p.yield_per_kwp ? +p.yield_per_kwp : undefined,
-      monthlyYieldShape: p.monthly_yield_shape || undefined,
-    }, E).e,
+    p, st: stats.get(p.id) || null, q: quote(rowToQuoteInput(p), E).e,
   }));
   enriched.sort((a, b) => {
     let va, vb;
@@ -86,7 +83,7 @@ export default async function Projects({ searchParams }) {
     if (sort === "status") { va = a.p.status; vb = b.p.status; return va < vb ? -sgn : va > vb ? sgn : 0; }
     if (sort === "kw") { va = +a.p.kw; vb = +b.p.kw; }
     else if (sort === "payback") { va = a.q.payback == null ? Infinity : a.q.payback; vb = b.q.payback == null ? Infinity : b.q.payback; }
-    else if (sort === "value") { va = a.q.cost; vb = b.q.cost; }
+    else if (sort === "value") { va = a.q.grossCost; vb = b.q.grossCost; }
     else if (sort === "opens") { va = a.st?.opens || 0; vb = b.st?.opens || 0; }
     else { va = new Date(a.p.updated_at).getTime(); vb = new Date(b.p.updated_at).getTime(); }
     return (va - vb) * sgn;
@@ -127,7 +124,7 @@ export default async function Projects({ searchParams }) {
     if (n === 0) return <span style={{ color: "var(--muted)", fontSize: 12.5 }}>{t("opens_never", lang)}</span>;
     return (
       <span>
-        <b className={"opens" + (n >= 3 ? " hot" : "")}>{n >= 3 ? "🔥 " : ""}{n}×</b>
+        <b className={"opens" + (n >= 3 ? " hot" : "")}>{n}×</b>
         {st.lastOpen && <div className="t-sub">{agingLabelOpen(st.lastOpen)}</div>}
       </span>
     );
@@ -188,12 +185,14 @@ export default async function Projects({ searchParams }) {
                       <td className="col-sel"><input type="checkbox" className="bulk-id" name="ids" value={p.id} aria-label={p.title || t("untitled", lang)} /></td>
                       <td>
                         <Link className="t-title" href={`/projects/${p.id}`}>{p.title || t("untitled", lang)}</Link>
-                        {p.notes ? <span className="note-dot" title={p.notes} aria-label={t("has_notes", lang)}>📝</span> : null}
+                        {p.notes ? <span className="note-dot" title={p.notes} aria-label={t("has_notes", lang)}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h13l3 3v13H4z"/><path d="M8 10h8M8 14h6"/></svg></span> : null}
                         <div className="t-sub">{p.client_name || "—"} · {p.market}</div>
                       </td>
                       <td>{(+p.kw).toFixed(1)} kW{p.batt ? " + batt" : ""}</td>
                       <td>{yrsF(qq.payback)} {t("yrs", lang)}</td>
-                      <td>{fmt(qq.cost)}</td>
+                      {/* contract value you invoice (pre-grant), so these rows sum
+                          to the dashboard's Pipeline KPI */}
+                      <td>{fmt(qq.grossCost)}</td>
                       <td>
                         <StatusChip id={p.id} status={p.status} lang={lang} />
                         {sent && <div className={`age ${agingTier(sentOf(p))}`}>{agingLabel(sentOf(p), lang)}</div>}

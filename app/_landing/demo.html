@@ -57,6 +57,7 @@
   /* these elements use var(--ink) as background — keep them dark in dark mode
      (var(--ink) becomes the light text colour when the theme flips) */
   html[data-theme="dark"] .sidebar,
+  html[data-theme="dark"] .more-sheet,
   html[data-theme="dark"] .sales-bar,
   html[data-theme="dark"] .client-bar,
   html[data-theme="dark"] .toast,
@@ -111,6 +112,8 @@
   .nav a:hover{background:var(--white-line);color:#fff}
   .nav a.active{background:var(--amber);color:var(--ink);font-weight:600}
   .nav a.active svg{opacity:1}
+  .nav-more{display:none}
+  .more-sheet,.more-backdrop{display:none}
   .side-foot{margin-top:auto}
   .profile{display:flex;align-items:center;gap:11px;padding:12px;border-radius:12px;background:var(--white-line)}
   .avatar{
@@ -655,15 +658,33 @@
     .cb-grant{margin-left:88px}
     .sidebar{
       position:fixed;inset:auto 0 0 0;height:auto;z-index:60;
-      flex-direction:row;align-items:center;gap:6px;
-      padding:6px 8px calc(6px + env(safe-area-inset-bottom));
-      border-top:1px solid rgba(255,255,255,.16);
+      flex-direction:row;align-items:stretch;
+      padding:6px 6px env(safe-area-inset-bottom);
+      border-top:1px solid rgba(255,255,255,.14);
     }
     .logo,.side-foot{display:none}
-    .nav{flex-direction:row;flex:1;gap:3px}
-    .nav a{flex-direction:column;gap:4px;font-size:10px;padding:7px 4px;flex:1;align-items:center;justify-content:center;border-radius:9px}
+    .nav{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;flex:1}
+    .nav .nav-secondary{display:none}
+    .nav a,.nav-more{display:flex;flex-direction:column;gap:4px;line-height:1;min-width:0;font-size:10.5px;font-weight:600;padding:8px 2px;border-radius:12px;align-items:center;justify-content:center;white-space:nowrap}
+    .nav a svg,.nav-more svg{width:21px;height:21px}
+    .nav-more{background:none;border:none;color:var(--white-dim);cursor:pointer;font-family:inherit}
+    .nav-more.active{background:var(--white-line);color:#fff}
+    .more-backdrop{display:block;position:fixed;inset:0;z-index:65;background:rgba(10,20,15,.5);opacity:0;pointer-events:none;transition:opacity .25s}
+    .more-sheet{display:flex;flex-direction:column;gap:2px;position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--ink);border-top:1px solid rgba(255,255,255,.14);border-radius:18px 18px 0 0;padding:8px 10px calc(12px + env(safe-area-inset-bottom));transform:translateY(110%);transition:transform .34s cubic-bezier(.22,.9,.28,1);box-shadow:0 -14px 40px -12px rgba(0,0,0,.5)}
+    body.more-open .more-backdrop{opacity:1;pointer-events:auto}
+    body.more-open .more-sheet{transform:translateY(0)}
+    .more-grip{width:40px;height:4px;border-radius:99px;background:rgba(255,255,255,.28);margin:4px auto 8px}
+    .more-sheet a{display:flex;align-items:center;gap:14px;padding:14px 14px;border-radius:11px;color:var(--white-dim);font-size:15px;font-weight:500;text-decoration:none}
+    .more-sheet a svg{width:20px;height:20px;flex:none;opacity:.9}
+    .more-sheet a.active{background:var(--amber);color:var(--ink)}
+    .more-foot{display:flex;flex-direction:column;gap:2px;margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12)}
+    .more-foot-profile{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:11px;color:#fff}
+    .more-foot-profile .avatar{width:34px;height:34px;border-radius:50%;background:var(--white-line);display:grid;place-items:center;font-size:12.5px;font-weight:600;color:#fff;flex:none}
+    .more-foot-profile .who b{display:block;font-size:14px;font-weight:600;color:#fff;line-height:1.2}
+    .more-foot-profile .who span{font-size:12px;color:var(--white-dim)}
+    .more-sheet .reset-link{display:flex;align-items:center;width:100%;justify-content:flex-start;text-align:left;padding:14px;border-radius:11px;background:none;border:none;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--white-dim)}
     body.sales .sidebar{transform:translateY(110%)}
-    .view{padding:18px 16px 130px}
+    .view{padding:18px 16px 92px}
     .main{padding-bottom:0}
     .bands{grid-template-columns:1fr}
     .fin-split{grid-template-columns:1fr}
@@ -773,7 +794,48 @@ var KEY = "voltmira_v1";
 ================================================================== */
 var LANG = {
   en:{
-    nav_dashboard:"Dashboard", nav_projects:"Projects", nav_team:"Team", nav_settings:"Settings",
+    nav_dashboard:"Dashboard", nav_projects:"Quotes", nav_team:"Team", nav_settings:"Settings",
+    nav_leads:"Leads", nav_activity:"Activity", nav_catalog:"Catalog", nav_refer:"Refer", nav_guide:"Guide", nav_more:"More", copy:"Copy",
+    leads_sub:"Every enquiry in one inbox — from your website widget, opened proposals, or added by hand. Filter, call, and turn them into quotes.",
+    leads_attr_title:"Where your leads come from", lead_conv_short:"converted",
+    leadf_all:"All", leadf_new:"New", leadf_contacted:"Contacted", leadf_converted:"Converted", leadf_archived:"Archived",
+    lead_st_converted:"Converted", lead_mark_contacted:"Mark contacted", lead_archive:"Archive",
+    t_lead_contacted:"Marked as contacted", t_lead_archived:"Lead archived",
+    activity_sub:"Every change, who made it, and when — quotes, proposals opened, leads and settings.",
+    act_f_all:"All", act_f_quotes:"Quotes", act_f_proposals:"Proposals", act_f_leads:"Leads", act_f_wins:"Wins", act_f_settings:"Settings",
+    cat_count:"{n} products", cat_each:"each",
+    cat_sub:"Your equipment library — the panels, inverters and batteries you install, with prices. Reused to build every quote's bill of materials.",
+    cat_kind_panel:"Panels", cat_kind_inverter:"Inverters", cat_kind_battery:"Batteries", cat_kind_mounting:"Mounting", cat_kind_other:"Other",
+    cat_empty_t:"No products yet", cat_empty_s:"Add the equipment you install so quotes build from real prices.",
+    refer_sub:"Know another installer who'd use VoltMira? Share your link. When they sign up and subscribe, you both get a free month.",
+    refer_your_link:"Your referral link",
+    refer_share_msg:"I use VoltMira to quote solar clients — honest payback, tracked proposals. Try it free: {url}",
+    refer_share_wa:"Share on WhatsApp", refer_share_email:"Share by email", refer_mail_subj:"Try VoltMira — solar quoting software",
+    refer_reward:"Rewards apply automatically once billing goes live — during the beta everything is already free.",
+    refer_kpi_joined:"Installers joined", refer_kpi_subscribed:"Subscribed", refer_kpi_reward:"Free months earned",
+    refer_list_title:"Installers you referred", refer_col_who:"Company", refer_col_status:"Status", refer_col_when:"Joined",
+    refer_how_title:"How it works",
+    refer_how_1:"Copy your link and send it to another installer.",
+    refer_how_2:"They create a VoltMira account through it — they appear in your list.",
+    refer_how_3:"When they subscribe, you both get a free month.",
+    refd_signed_up:"Signed up", refd_subscribed:"Subscribed", refd_when_2w:"2 weeks ago", refd_when_5d:"5 days ago",
+    guide_title:"Your VoltMira handbook", guide_sub:"Everything you need to quote and close — in a few minutes.",
+    guide_s1_h:"The 5-step flow", guide_s1_p:"From a new enquiry to a won deal, VoltMira keeps every step in one place:",
+    guide_s1_a:"A lead lands in your inbox (website widget, referral, or added by hand).",
+    guide_s1_b:"You build a quote — system size, price, consumption; PVGIS pulls real sun data.",
+    guide_s1_c:"Send a tracked proposal link your client opens on their phone.",
+    guide_s1_d:"See when they open it, how long they look, and what they toggle.",
+    guide_s1_e:"They accept — you mark it won. Done.",
+    guide_s2_h:"Leads inbox", guide_s2_p:"Every enquiry shows its channel (website, WhatsApp, referral…) so you know what's working. One tap turns a lead into a quote.",
+    guide_s3_h:"The numbers", guide_s3_p:"Every figure is honest and defensible:",
+    guide_s3_a:"Three payback bands — pessimistic, expected, optimistic — never a single fake number.",
+    guide_s3_b:"Self-consumption, battery and subsidy modelled per the local market (RO / MD).",
+    guide_s3_c:"Every assumption is shown to the client, one tap away.",
+    guide_s4_h:"Tracked proposals", guide_s4_p:"Send a link, not a dead PDF. You see opens, viewing time and battery toggles — so you call at exactly the right moment.",
+    guide_s5_h:"Catalog & bill of materials", guide_s5_p:"Add your real panels, inverters and batteries once. Build each quote from them and the equipment total drives the price automatically.",
+    guide_faq_h:"FAQ",
+    guide_faq1_q:"Is the payback guaranteed?", guide_faq1_a:"No — they are honest estimates from your inputs and public sun data, shown as three bands. Never a single made-up number.",
+    guide_faq2_q:"Which markets does it cover?", guide_faq2_a:"Romania and Moldova today — net metering / net billing, Casa Verde and prosumer rules built in. More on request.",
     btn_new_quote:"New quote", btn_sales_mode:"Sales Mode", btn_back:"Back", btn_close:"Close",
     btn_save:"Save", btn_cancel:"Cancel", btn_delete:"Delete", btn_duplicate:"Duplicate",
     tab_quote:"Quote", tab_scenarios:"Scenarios",
@@ -798,7 +860,9 @@ var LANG = {
     exp_csv:"Export CSV", t_csv:"Pipeline exported as CSV",
     sel_n:"{n} selected", clear_sel:"Clear", bulk_del:"Delete", bulk_status:"Set status:",
     bulk_deleted:"Deleted {n} projects", bulk_status_set:"{n} projects set to {s}", restored:"Restored",
-    trend_title:"Quotes — last 6 months", trend_created:"Created", trend_won:"Won",
+    trend_title:"Quotes — last 6 months", trend_created:"Created", trend_won:"Won", trend_sent:"Sent",
+    pipe_title:"Sales pipeline", pipe_count:"{n} quotes", pipe_winrate:"{r} win rate",
+    pf_sent:"Sent", pf_opened:"Opened", pf_engaged:"Engaged", pf_won:"Won",
     pg_prev:"Prev", pg_next:"Next", pg_of:"{a}–{b} of {n}",
     market:"Market", next_followup:"Next follow-up",
     system:"System", label_system_size:"System size", elec_price:"Electricity price (\u20AC/kWh)",
@@ -954,7 +1018,8 @@ var LANG = {
     created_ago:"Created {t}", status_changed:"Status changed to {s}.", undo:"Undo"
   },
   ro:{
-    nav_dashboard:"Panou", nav_projects:"Proiecte", nav_team:"Echip\u0103", nav_settings:"Set\u0103ri",
+    nav_dashboard:"Panou", nav_projects:"Oferte", nav_team:"Echip\u0103", nav_settings:"Set\u0103ri",
+    nav_leads:"Contacte", nav_activity:"Activitate", nav_catalog:"Catalog", nav_refer:"Recomand\u0103", nav_guide:"Ghid", nav_more:"Mai mult", copy:"Copiaz\u0103",
     btn_new_quote:"Ofert\u0103 nou\u0103", btn_sales_mode:"Mod Vânzare", btn_back:"Înapoi", btn_close:"Închide",
     btn_save:"Salveaz\u0103", btn_cancel:"Anuleaz\u0103", btn_delete:"\u0218terge", btn_duplicate:"Duplic\u0103",
     tab_quote:"Ofert\u0103", tab_scenarios:"Scenarii",
@@ -979,7 +1044,9 @@ var LANG = {
     exp_csv:"Export CSV", t_csv:"Pipeline exportat ca CSV",
     sel_n:"{n} selectate", clear_sel:"Deselecteaz\u0103", bulk_del:"\u0218terge", bulk_status:"Seteaz\u0103 status:",
     bulk_deleted:"{n} proiecte \u0219terse", bulk_status_set:"{n} proiecte setate pe {s}", restored:"Restaurat",
-    trend_title:"Oferte \u2014 ultimele 6 luni", trend_created:"Create", trend_won:"C\u00e2\u0219tigate",
+    trend_title:"Oferte \u2014 ultimele 6 luni", trend_created:"Create", trend_won:"C\u00e2\u0219tigate", trend_sent:"Trimise",
+    pipe_title:"Pipeline v\u00e2nz\u0103ri", pipe_count:"{n} oferte", pipe_winrate:"{r} rat\u0103 c\u00e2\u0219tig",
+    pf_sent:"Trimise", pf_opened:"Deschise", pf_engaged:"Interesa\u021bi", pf_won:"C\u00e2\u0219tigate",
     pg_prev:"\u00cenapoi", pg_next:"\u00cenainte", pg_of:"{a}\u2013{b} din {n}",
     market:"Pia\u021b\u0103", next_followup:"Urm\u0103toarea urm\u0103rire",
     system:"Sistem", label_system_size:"Putere sistem", elec_price:"Pre\u021b energie (\u20AC/kWh)",
@@ -1135,7 +1202,8 @@ var LANG = {
     created_ago:"Creat {t}", status_changed:"Status schimbat în {s}.", undo:"Anuleaz\u0103"
   },
   ru:{
-    nav_dashboard:"\u041F\u0430\u043D\u0435\u043B\u044C", nav_projects:"\u041F\u0440\u043E\u0435\u043A\u0442\u044B", nav_team:"\u041A\u043E\u043C\u0430\u043D\u0434\u0430", nav_settings:"\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
+    nav_dashboard:"\u041F\u0430\u043D\u0435\u043B\u044C", nav_projects:"\u041E\u0444\u0435\u0440\u0442\u044B", nav_team:"\u041A\u043E\u043C\u0430\u043D\u0434\u0430", nav_settings:"\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
+    nav_leads:"\u0417\u0430\u044F\u0432\u043A\u0438", nav_activity:"\u0410\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C", nav_catalog:"\u041A\u0430\u0442\u0430\u043B\u043E\u0433", nav_refer:"\u041F\u0440\u0438\u0433\u043B\u0430\u0441\u0438\u0442\u044C", nav_guide:"\u0413\u0438\u0434", nav_more:"\u0415\u0449\u0451", copy:"\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C",
     btn_new_quote:"\u041D\u043E\u0432\u044B\u0439 \u0440\u0430\u0441\u0447\u0451\u0442", btn_sales_mode:"\u0420\u0435\u0436\u0438\u043C \u043F\u0440\u043E\u0434\u0430\u0436", btn_back:"\u041D\u0430\u0437\u0430\u0434", btn_close:"\u0417\u0430\u043A\u0440\u044B\u0442\u044C",
     btn_save:"\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C", btn_cancel:"\u041E\u0442\u043C\u0435\u043D\u0430", btn_delete:"\u0423\u0434\u0430\u043B\u0438\u0442\u044C", btn_duplicate:"\u0414\u0443\u0431\u043B\u0438\u0440\u043E\u0432\u0430\u0442\u044C",
     tab_quote:"\u0420\u0430\u0441\u0447\u0451\u0442", tab_scenarios:"\u0421\u0446\u0435\u043D\u0430\u0440\u0438\u0438",
@@ -1160,7 +1228,9 @@ var LANG = {
     exp_csv:"\u042D\u043A\u0441\u043F\u043E\u0440\u0442 CSV", t_csv:"\u0412\u043E\u0440\u043E\u043D\u043A\u0430 \u044D\u043A\u0441\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0430 \u0432 CSV",
     sel_n:"\u0412\u044B\u0431\u0440\u0430\u043D\u043E: {n}", clear_sel:"\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C", bulk_del:"\u0423\u0434\u0430\u043B\u0438\u0442\u044C", bulk_status:"\u0421\u0442\u0430\u0442\u0443\u0441:",
     bulk_deleted:"\u0423\u0434\u0430\u043B\u0435\u043D\u043E \u043F\u0440\u043E\u0435\u043A\u0442\u043E\u0432: {n}", bulk_status_set:"\u041F\u0440\u043E\u0435\u043A\u0442\u043E\u0432 \u043F\u0435\u0440\u0435\u0432\u0435\u0434\u0435\u043D\u043E \u0432 {s}: {n}", restored:"\u0412\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043E",
-    trend_title:"\u041F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u2014 \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 6 \u043C\u0435\u0441\u044F\u0446\u0435\u0432", trend_created:"\u0421\u043E\u0437\u0434\u0430\u043D\u043E", trend_won:"\u0412\u044B\u0438\u0433\u0440\u0430\u043D\u043E",
+    trend_title:"\u041F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u2014 \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 6 \u043C\u0435\u0441\u044F\u0446\u0435\u0432", trend_created:"\u0421\u043E\u0437\u0434\u0430\u043D\u043E", trend_won:"\u0412\u044B\u0438\u0433\u0440\u0430\u043D\u043E", trend_sent:"\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E",
+    pipe_title:"\u0412\u043E\u0440\u043E\u043D\u043A\u0430 \u043F\u0440\u043E\u0434\u0430\u0436", pipe_count:"{n} \u043E\u0444\u0435\u0440\u0442", pipe_winrate:"{r} \u0432\u044B\u0438\u0433\u0440\u044B\u0448\u0435\u0439",
+    pf_sent:"\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E", pf_opened:"\u041E\u0442\u043A\u0440\u044B\u0442\u043E", pf_engaged:"\u0412\u043E\u0432\u043B\u0435\u0447\u0435\u043D\u044B", pf_won:"\u0412\u044B\u0438\u0433\u0440\u0430\u043D\u043E",
     pg_prev:"\u041D\u0430\u0437\u0430\u0434", pg_next:"\u0412\u043F\u0435\u0440\u0451\u0434", pg_of:"{a}\u2013{b} \u0438\u0437 {n}",
     market:"\u0420\u044B\u043D\u043E\u043A", next_followup:"\u0421\u043B\u0435\u0434. \u043A\u043E\u043D\u0442\u0430\u043A\u0442",
     system:"\u0421\u0438\u0441\u0442\u0435\u043C\u0430", label_system_size:"\u041C\u043E\u0449\u043D\u043E\u0441\u0442\u044C \u0441\u0438\u0441\u0442\u0435\u043C\u044B", elec_price:"\u0426\u0435\u043D\u0430 \u044D\u043B/\u044D\u043D\u0435\u0440\u0433\u0438\u0438 (\u20AC/\u043A\u0412\u0442\u00B7\u0447)",
@@ -1425,13 +1495,15 @@ function seedState(){
   }, o)); }
   var p1 = proj({title:"Casa Popescu", client:"Ion Popescu", address:"Strada Lalelelor 12, Bucure\u0219ti",
     kw:6, batt:false, status:"sent", created:now-6*d, updated:now-2*d, ownerId:t2.id, nextFollowUp:todayISO(),
-    proposal:{ code:uid(), opens:2, seconds:214, battToggles:1, created:now-2*d, lastOpen:now-3600e3*2 }});
+    proposal:{ code:uid(), opens:4, seconds:334, battToggles:2, created:now-3*d, lastOpen:now-3600e3*2 }});
   var p2 = proj({title:"Vila Georgescu", client:"Elena Georgescu", address:"Aleea Nucilor 4, Ia\u0219i",
-    kw:9.5, batt:true, cons:7200, status:"won", created:now-21*d, updated:now-9*d});
+    kw:9.5, batt:true, cons:7200, status:"won", created:now-21*d, updated:now-9*d,
+    proposal:{ code:uid(), opens:3, seconds:281, battToggles:1, created:now-18*d, lastOpen:now-10*d }});
   var p3 = proj({title:"Pensiunea Bradul", client:"Vasile Moraru", address:"Str. Principal\u0103 88, Bra\u0219ov",
     kw:14, batt:true, cons:16000, price:0.23,
     status:"sent", created:now-4*d, updated:now-d, ownerId:t3.id,
-    nextFollowUp:new Date(now-2*d).toISOString().slice(0,10)});
+    nextFollowUp:new Date(now-2*d).toISOString().slice(0,10),
+    proposal:{ code:uid(), opens:1, seconds:96, battToggles:0, created:now-2*d, lastOpen:now-3600e3*20 }});
   var p4 = proj({title:"Apartament Iva\u0219cu", client:"Dana Iva\u0219cu", address:"Bd. Dacia 20, Chi\u0219in\u0103u",
     market:"MD", kw:3.5, cons:2800, price:0.15, status:"draft", created:now-2*d, updated:now-2*d});
   var p5 = proj({title:"Casa Rusu", client:"Ion Rusu", address:"str. Ismail 12, Chi\u0219in\u0103u",
@@ -1444,8 +1516,21 @@ function seedState(){
     team:[t1,t2,t3],
     projects:[p1,p2,p3,p4,p5],
     leads:[
-      {id:uid(), name:"C. Antonescu", note:"Asked for a 5 kW quote from the website widget", hot:true, created:now-3600e3*5, projectId:null},
-      {id:uid(), name:"L. Bejan", note:"Wants battery retrofit pricing", hot:false, created:now-2*d, projectId:null}
+      {id:uid(), name:"C. Antonescu", note:"Asked for a 5 kW quote from the website widget", hot:true, created:now-3600e3*5, projectId:null, source:"widget", channel:"website", status:"new", email:"c.antonescu@example.com", phone:"+40 722 145 903"},
+      {id:uid(), name:"L. Bejan", note:"Wants battery retrofit pricing", hot:false, created:now-2*d, projectId:null, source:"manual", channel:"whatsapp", status:"contacted", email:"", phone:"+40 744 210 668"},
+      {id:uid(), name:"Familia Ciobanu", note:"Referred by a neighbour — 8 kW house in Ialoveni", hot:true, created:now-3600e3*30, projectId:null, source:"manual", channel:"referral", status:"new", email:"familia.ciobanu@example.com", phone:"+373 691 44 227"},
+      {id:uid(), name:"S. Rotaru", note:"Facebook ad — asked about Casa Verde subsidy", hot:false, created:now-5*d, projectId:null, source:"widget", channel:"facebook", status:"contacted", email:"s.rotaru@example.com", phone:""}
+    ],
+    products:[
+      {id:uid(), kind:"panel",    brand:"Jinko Solar",    model:"Tiger Neo 60HL4", spec:"440 W",       price:82},
+      {id:uid(), kind:"panel",    brand:"LONGi",          model:"Hi-MO 6 Explorer", spec:"435 W",      price:85},
+      {id:uid(), kind:"panel",    brand:"Canadian Solar", model:"TOPHiKu6",         spec:"450 W",       price:88},
+      {id:uid(), kind:"inverter", brand:"Huawei",         model:"SUN2000-8KTL-M1",  spec:"8 kW hybrid", price:1180},
+      {id:uid(), kind:"inverter", brand:"Deye",           model:"SUN-6K-SG04LP3",   spec:"6 kW hybrid", price:980},
+      {id:uid(), kind:"battery",  brand:"Huawei",         model:"LUNA2000-5-S0",    spec:"5 kWh",       price:2150},
+      {id:uid(), kind:"battery",  brand:"Pylontech",      model:"US5000",           spec:"4.8 kWh",     price:1480},
+      {id:uid(), kind:"mounting", brand:"K2 Systems",     model:"SingleRail set",   spec:"per panel",   price:42},
+      {id:uid(), kind:"other",    brand:"Generic",        model:"DC cable + MC4",   spec:"per string",  price:35}
     ],
     activity:[
       {id:uid(), ts:now-3600e3*2, kind:"open", text:"<b>Ion Popescu</b> opened the proposal for <b>Casa Popescu</b> \u2014 3m 34s, toggled the battery", pid:p1.id},
@@ -1717,6 +1802,12 @@ document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeModa
 ================================================================== */
 var IC = {
   dash:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+  leads:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18v14H3z"/><path d="M3 7l9 6 9-6"/></svg>',
+  activity:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg>',
+  catalog:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+  guide:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v16H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M4 20.5A1.5 1.5 0 0 1 5.5 19H19v2H5.5A1.5 1.5 0 0 1 4 20.5z"/></svg>',
+  refer:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/><path d="M12 8S10.5 3.5 8 4.2C6.3 4.7 6.4 7 8 7.6 9.6 8.2 12 8 12 8Z"/></svg>',
+  more:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
   proj:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
   team:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M2.8 20c.7-3.4 3.2-5.2 6.2-5.2s5.5 1.8 6.2 5.2"/><circle cx="17.4" cy="9.4" r="2.6"/><path d="M15.5 14.9c2.8-.4 5.2 1.2 5.8 4.3"/></svg>',
   cog:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.14-1.4l2-1.55-2-3.46-2.35.95A7 7 0 0 0 14.1 5.1L13.75 2.6h-3.5L9.9 5.1a7 7 0 0 0-2.41 1.44l-2.35-.95-2 3.46 2 1.55A7 7 0 0 0 5 12c0 .48.05.94.14 1.4l-2 1.55 2 3.46 2.35-.95c.7.63 1.52 1.12 2.41 1.44l.35 2.5h3.5l.35-2.5a7 7 0 0 0 2.41-1.44l2.35.95 2-3.46-2-1.55c.09-.46.14-.92.14-1.4Z"/></svg>',
@@ -1805,21 +1896,53 @@ function statusLabel(s){ return {draft:t("st_draft"),sent:t("st_sent"),won:t("st
 /* ==================================================================
    Sidebar
 ================================================================== */
+// Secondary tabs \u2014 hidden from the mobile bottom bar, shown in the "More" sheet.
+var NAV_SECONDARY = [
+  {r:"catalog", ic:"catalog", key:"nav_catalog"},
+  {r:"team",    ic:"team",    key:"nav_team"},
+  {r:"refer",   ic:"refer",   key:"nav_refer"},
+  {r:"settings",ic:"cog",     key:"nav_settings"},
+  {r:"guide",   ic:"guide",   key:"nav_guide"},
+];
 function renderSidebar(route){
   var who = S.settings.owner || "\u2014";
+  function link(r, ic, key, extra){
+    var on = (route===r) || (r==="projects" && route==="project");
+    return '<a href="#'+r+'" class="'+(on?"active ":"")+(extra||"")+'">'+ic+' '+esc(t(key))+'</a>';
+  }
+  var secActive = NAV_SECONDARY.some(function(s){ return s.r===route; });
   $("sidebar").innerHTML =
     '<div class="logo">'+logoMark(24)+' '+esc(brandName())+'</div>'+
     '<nav class="nav" aria-label="'+esc(t("aria_main"))+'">'+
-      '<a href="#dashboard" class="'+(route==="dashboard"?"active":"")+'">'+IC.dash+' '+esc(t("nav_dashboard"))+'</a>'+
-      '<a href="#projects" class="'+(route==="projects"||route==="project"?"active":"")+'">'+IC.proj+' '+esc(t("nav_projects"))+'</a>'+
-      '<a href="#team" class="'+(route==="team"?"active":"")+'">'+IC.team+' '+esc(t("nav_team"))+'</a>'+
-      '<a href="#settings" class="'+(route==="settings"?"active":"")+'">'+IC.cog+' '+esc(t("nav_settings"))+'</a>'+
+      link("dashboard",IC.dash,"nav_dashboard")+
+      link("leads",IC.leads,"nav_leads")+
+      link("projects",IC.proj,"nav_projects")+
+      link("activity",IC.activity,"nav_activity")+
+      NAV_SECONDARY.map(function(s){ return link(s.r, IC[s.ic], s.key, "nav-secondary"); }).join("")+
+      '<button type="button" class="nav-more'+(secActive?" active":"")+'" data-act="more-toggle">'+IC.more+' '+esc(t("nav_more"))+'</button>'+
     '</nav>'+
     '<div class="side-foot"><div class="profile">'+
       '<div class="avatar">'+esc(initialsOf(who))+'</div>'+
       '<div class="who"><b>'+esc(who)+'</b><span>'+esc(S.settings.company||"")+'</span></div>'+
     '</div>'+
     '<button class="reset-link" data-act="reset-app">'+esc(t("reset_app"))+'</button>'+
+    '</div>';
+  // The More sheet + backdrop live at the top level of the body so their fixed
+  // positioning + stacking are clean. Rebuilt each render; navigation closes it
+  // (route() clears body.more-open).
+  var layer = document.getElementById("moreLayer");
+  if (!layer){ layer=document.createElement("div"); layer.id="moreLayer"; document.body.appendChild(layer); }
+  layer.innerHTML =
+    '<div class="more-backdrop" data-act="more-close"></div>'+
+    '<div class="more-sheet" role="menu" aria-label="'+esc(t("nav_more"))+'"><div class="more-grip"></div>'+
+      NAV_SECONDARY.map(function(s){
+        return '<a href="#'+s.r+'" class="'+(route===s.r?"active":"")+'">'+IC[s.ic]+' '+esc(t(s.key))+'</a>';
+      }).join("")+
+      '<div class="more-foot">'+
+        '<div class="more-foot-profile"><div class="avatar">'+esc(initialsOf(who))+'</div>'+
+          '<div class="who"><b>'+esc(who)+'</b><span>'+esc(S.settings.company||"")+'</span></div></div>'+
+        '<button class="reset-link" data-act="reset-app">'+esc(t("reset_app"))+'</button>'+
+      '</div>'+
     '</div>';
 }
 
@@ -1850,10 +1973,15 @@ function flushProposalTimer(){
 
 function renderRoute(r, v){
   if (r.route==="dashboard") v.innerHTML = pageDashboard();
+  else if (r.route==="leads") v.innerHTML = pageLeads();
   else if (r.route==="projects") v.innerHTML = pageProjects();
+  else if (r.route==="activity") v.innerHTML = pageActivity();
+  else if (r.route==="catalog") v.innerHTML = pageCatalog();
   else if (r.route==="project") v.innerHTML = pageEditor(r.id);
   else if (r.route==="team") v.innerHTML = pageTeam();
+  else if (r.route==="refer") v.innerHTML = pageRefer();
   else if (r.route==="settings") v.innerHTML = pageSettings();
+  else if (r.route==="guide") v.innerHTML = pageGuide();
   else if (r.route==="proposal") v.innerHTML = pageProposal(r.id);
   else { nav("dashboard"); return false; }
   return true;
@@ -1869,6 +1997,7 @@ function applyStaticI18n(){
 
 function route(){
   flushProposalTimer();
+  document.body.classList.remove("more-open");   // any navigation closes the More sheet
   applyStaticI18n();
   viewCurrency = null; clientAudit = null; // client-view overrides never leak between pages
   var r = parseHash();
@@ -2073,46 +2202,68 @@ function pageDashboard(){
 
   var overdueKpi = st.overdue>0 ? '<div class="kpi" style="border-color:var(--amber)"><b style="color:#B4700F">'+st.overdue+'</b><span>'+esc(t("dash_overdue"))+'</span></div>' : '';
 
-  // monthly trend: quotes created vs won over the last 6 months
+  // monthly trend: proposals SENT vs WON over the last 6 months — identical to the
+  // real dashboard (sent by proposal date, won by month the deal was marked won).
   var trendHtml = (function(){
     var now = new Date(), months = [];
     var locale = {en:"en-GB", ro:"ro-RO", ru:"ru-RU"}[(S.settings&&S.settings.lang)||"en"] || "en-GB";
     for (var mi=5; mi>=0; mi--){
       var d0 = new Date(now.getFullYear(), now.getMonth()-mi, 1);
       var d1 = new Date(now.getFullYear(), now.getMonth()-mi+1, 1);
-      var created = 0, won = 0, leads = 0;
+      var sent = 0, won = 0;
       S.projects.forEach(function(p){
-        if (p.created >= d0.getTime() && p.created < d1.getTime()) created++;
+        var sc = p.proposal ? p.proposal.created : null;
+        if (sc!=null && sc >= d0.getTime() && sc < d1.getTime()) sent++;
         if (p.status==="won" && p.updated >= d0.getTime() && p.updated < d1.getTime()) won++;
       });
-      (S.leads||[]).forEach(function(l){
-        if (l.created >= d0.getTime() && l.created < d1.getTime()) leads++;
-      });
-      var lbl = d0.toLocaleDateString(locale, {month:"short"});
-      months.push({lbl:lbl, created:created, won:won, leads:leads});
+      months.push({lbl:d0.toLocaleDateString(locale, {month:"short"}), sent:sent, won:won});
     }
-    var maxV = Math.max(1, Math.max.apply(null, months.map(function(m){return Math.max(m.created,m.won,m.leads);})));
-    var W=600, H=150, pad=6, baseY=H-24, plotH=baseY-18, groupW=W/6, barW=20;
-    function Y(v){ return baseY - Math.round(v/maxV*plotH); }
+    var maxV = Math.max(1, Math.max.apply(null, months.map(function(m){return Math.max(m.sent,m.won);})));
+    var W=560, H=150, baseY=H-24, plotH=baseY-16, groupW=W/6, barW=18;
     var bars = months.map(function(m, i){
       var cx = i*groupW + groupW/2;
-      var hC = Math.round(m.created/maxV*plotH), hW = Math.round(m.won/maxV*plotH);
-      return '<rect x="'+(cx-barW-3)+'" y="'+(baseY-hC)+'" width="'+barW+'" height="'+hC+'" rx="4" fill="var(--green)" opacity=".85"/>'+
-        (m.created?'<text x="'+(cx-barW/2-3)+'" y="'+(baseY-hC-5)+'" text-anchor="middle" font-size="11" fill="var(--muted)">'+m.created+'</text>':'')+
-        '<rect x="'+(cx+3)+'" y="'+(baseY-hW)+'" width="'+barW+'" height="'+hW+'" rx="4" fill="var(--amber)" opacity=".9"/>'+
+      var hS = Math.round(m.sent/maxV*plotH), hW = Math.round(m.won/maxV*plotH);
+      return '<rect x="'+(cx-barW-3)+'" y="'+(baseY-hS)+'" width="'+barW+'" height="'+hS+'" rx="4" fill="var(--blue)" opacity=".85"/>'+
+        (m.sent?'<text x="'+(cx-barW/2-3)+'" y="'+(baseY-hS-5)+'" text-anchor="middle" font-size="11" fill="var(--muted)">'+m.sent+'</text>':'')+
+        '<rect x="'+(cx+3)+'" y="'+(baseY-hW)+'" width="'+barW+'" height="'+hW+'" rx="4" fill="var(--green)" opacity=".9"/>'+
         (m.won?'<text x="'+(cx+3+barW/2)+'" y="'+(baseY-hW-5)+'" text-anchor="middle" font-size="11" fill="var(--muted)">'+m.won+'</text>':'')+
         '<text x="'+cx+'" y="'+(H-7)+'" text-anchor="middle" font-size="11.5" fill="var(--muted)">'+esc(m.lbl)+'</text>';
     }).join("");
-    // lead volume as an overlaid line + dots (reads as "flow over time" without crowding the bars)
-    var pts = months.map(function(m,i){ return (i*groupW + groupW/2)+","+Y(m.leads); });
-    var leadLine = '<polyline points="'+pts.join(" ")+'" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round" opacity=".9"/>'+
-      months.map(function(m,i){ return '<circle cx="'+(i*groupW+groupW/2)+'" cy="'+Y(m.leads)+'" r="3" fill="var(--blue)"/>'; }).join("");
-    var legend = '<span class="tr-leg"><i style="background:var(--green)"></i>'+esc(t("trend_created"))+'</span>'+
-      '<span class="tr-leg"><i style="background:var(--amber)"></i>'+esc(t("trend_won"))+'</span>'+
-      '<span class="tr-leg"><i style="background:var(--blue)"></i>'+esc(t("trend_leads"))+'</span>';
-    return '<section class="card" style="margin-bottom:18px"><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><h3 style="margin:0">'+esc(t("trend_title"))+'</h3><span class="spacer"></span>'+legend+'</div>'+
-      '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(t("trend_title"))+'" style="width:100%;height:auto;display:block;margin-top:'+pad+'px">'+
-      '<line x1="0" y1="'+baseY+'" x2="'+W+'" y2="'+baseY+'" stroke="var(--line)" stroke-width="1"/>'+bars+leadLine+'</svg></section>';
+    var legend = '<span class="tr-leg"><i style="background:var(--blue)"></i>'+esc(t("trend_sent"))+'</span>'+
+      '<span class="tr-leg"><i style="background:var(--green)"></i>'+esc(t("trend_won"))+'</span>';
+    return '<section class="card"><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><h3 style="margin:0">'+esc(t("trend_title"))+'</h3><span class="spacer"></span>'+legend+'</div>'+
+      '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(t("trend_title"))+'" style="width:100%;height:auto;display:block;margin-top:6px">'+
+      '<line x1="0" y1="'+baseY+'" x2="'+W+'" y2="'+baseY+'" stroke="var(--line)" stroke-width="1"/>'+bars+'</svg></section>';
+  })();
+
+  // conversion funnel: proposals Sent → Opened (client viewed ≥1×) → Engaged
+  // (≥3× — a near-close signal) → Won. Mirrors the real app dashboard.
+  var funnelHtml = (function(){
+    var sent=0, opened=0, engaged=0, won=0;
+    S.projects.forEach(function(p){
+      var op = p.proposal ? (p.proposal.opens||0) : 0;
+      if (!!p.proposal || p.status==="sent" || p.status==="won" || p.status==="lost") sent++;
+      if (op>=1) opened++;
+      if (op>=3) engaged++;
+      if (p.status==="won") won++;
+    });
+    var fmax = Math.max(1, sent, S.projects.length);
+    var defs = [["pf_sent",sent,"var(--blue)"],["pf_opened",opened,"var(--amber)"],
+                ["pf_engaged",engaged,"#B4700F"],["pf_won",won,"var(--green)"]];
+    var rows = defs.map(function(r){
+      var w = Math.round(r[1]/fmax*100);
+      return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:11px">'+
+        '<span style="width:84px;font-size:12.5px;color:var(--muted)">'+esc(t(r[0]))+'</span>'+
+        '<div style="flex:1;height:22px;background:rgba(120,120,120,.12);border-radius:7px;overflow:hidden">'+
+          '<i style="display:block;height:100%;width:'+w+'%;background:'+r[2]+';border-radius:7px;transition:width .5s var(--ease,ease)"></i></div>'+
+        '<b style="width:28px;text-align:right;color:'+r[2]+'">'+r[1]+'</b></div>';
+    }).join("");
+    return '<section class="card">'+
+      '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">'+
+        '<h3 style="margin:0">'+esc(t("pipe_title"))+'</h3><span class="spacer"></span>'+
+        '<span style="font-size:12.5px;color:var(--muted)">'+tf("pipe_count",{n:S.projects.length})+
+        (st.winRate!=="—"?' · <b style="color:var(--green)">'+tf("pipe_winrate",{r:st.winRate})+'</b>':'')+'</span>'+
+      '</div>'+rows+'</section>';
   })();
 
   return '<div class="page-head"><h1>'+esc(t("nav_dashboard"))+'</h1><span class="spacer"></span>'+
@@ -2122,21 +2273,173 @@ function pageDashboard(){
       '<div class="kpi"><b>'+st.winRate+'</b><span>'+esc(t("dash_winrate"))+'</span></div>'+
       '<div class="kpi"><b>'+st.avgPb+'</b><span>'+esc(t("dash_avgpb"))+'</span></div>'+
       '<div class="kpi"><b>'+st.count+'</b><span>'+esc(t("dash_total"))+'</span></div>'+
-      overdueKpi+
     '</div>'+
-    trendHtml+
-    marketReportCard()+
+    '<div class="grid-2" style="margin-bottom:18px">'+funnelHtml+trendHtml+'</div>'+
     '<div class="dash-grid">'+
       '<div class="stack">'+
         '<section class="card"><h3>'+esc(t("dash_recent"))+'</h3>'+
           (rows?'<div class="tbl-wrap"><table class="tbl"><thead><tr><th>'+esc(t("col_project"))+'</th><th>'+esc(t("col_system"))+'</th><th class="col-hm">'+esc(t("col_payback"))+'</th><th>'+esc(t("col_value"))+'</th><th>'+esc(t("col_status"))+'</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
                :'<div class="empty"><b>'+esc(t("empty_noproj_t"))+'</b>'+esc(t("empty_noproj_s"))+'</div>')+
         '</section>'+
-        overdueHtml+
         '<section class="card"><h3>'+esc(t("dash_leads"))+'</h3><ul class="feed">'+leadHtml+'</ul></section>'+
       '</div>'+
       '<section class="card"><h3>'+esc(t("dash_activity"))+'</h3><div class="feed-scroll"><ul class="feed">'+feed+'</ul></div></section>'+
     '</div>';
+}
+
+/* ==================================================================
+   PAGE: Leads
+================================================================== */
+var leadFilter = "all";
+var LEAD_CH = { website:["#378ADD","Website"], facebook:["#3B5998","Facebook"], instagram:["#C13584","Instagram"],
+  whatsapp:["#25D366","WhatsApp"], google:["#EA4335","Google"], referral:["#7F77DD","Referral"],
+  coldcall:["#E89B2D","Cold call"], other:["#8A9490","Other"] };
+function leadChannel(l){ return (l.channel && LEAD_CH[l.channel]) ? l.channel
+  : (l.source==="widget" ? "website" : (l.source==="proposal" ? "referral" : "other")); }
+function pageLeads(){
+  var all = S.leads||[];
+  var byCh = {};
+  all.forEach(function(l){ var c=leadChannel(l); byCh[c]=byCh[c]||{n:0,conv:0}; byCh[c].n++; if(l.status==="converted"||l.projectId) byCh[c].conv++; });
+  var tiles = Object.keys(byCh).sort(function(a,b){return byCh[b].n-byCh[a].n;}).map(function(c){
+    var m=LEAD_CH[c]||LEAD_CH.other;
+    return '<div class="kpi" style="text-align:left"><b style="display:flex;align-items:center;gap:7px"><span style="width:10px;height:10px;border-radius:50%;background:'+m[0]+'"></span>'+byCh[c].n+'</b><span>'+esc(m[1])+' · '+byCh[c].conv+' '+esc(t("lead_conv_short"))+'</span></div>';
+  }).join("");
+  var chips = ["all","new","contacted","converted","archived"].map(function(s){
+    return '<button class="btn sm '+(leadFilter===s?"primary":"ghost")+'" data-act="lead-filter" data-v="'+s+'">'+esc(t("leadf_"+s))+'</button>';
+  }).join(" ");
+  var shown = all.filter(function(l){ var st=l.status||"new"; return leadFilter==="all" ? st!=="archived" : st===leadFilter; });
+  var cards = shown.length ? shown.map(function(l){
+    var ch=leadChannel(l), m=LEAD_CH[ch]||LEAD_CH.other, st=l.status||"new";
+    var acts = st==="converted"
+      ? '<span class="chip won">'+esc(t("lead_st_converted"))+'</span>'
+      : '<button class="btn sm primary" data-act="quote-lead" data-id="'+l.id+'">'+esc(t("quote_it"))+'</button>'+
+        (st!=="contacted"?'<button class="btn sm ghost" data-act="lead-contacted" data-id="'+l.id+'">'+esc(t("lead_mark_contacted"))+'</button>':'')+
+        '<button class="btn sm ghost" data-act="lead-archive" data-id="'+l.id+'">'+esc(t("lead_archive"))+'</button>';
+    return '<div class="card" style="margin-bottom:10px"><div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">'+
+      '<div style="flex:1;min-width:200px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:15px">'+esc(l.name)+'</b>'+
+        (l.hot?' <span class="chip hot static" style="padding:2px 8px;font-size:10.5px">'+esc(t("hot"))+'</span>':'')+
+        '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:50%;background:'+m[0]+'"></span>'+esc(m[1])+'</span></div>'+
+        '<div style="color:var(--muted);font-size:13px;margin-top:3px">'+esc(l.note)+'</div>'+
+        '<div style="font-size:12.5px;margin-top:5px">'+(l.email?'<a href="mailto:'+esc(l.email)+'" style="color:var(--green)">'+esc(l.email)+'</a>':'')+(l.email&&l.phone?' · ':'')+(l.phone?'<a href="tel:'+esc(l.phone)+'" style="color:var(--green)">'+esc(l.phone)+'</a>':'')+'</div></div>'+
+      '<div style="display:flex;flex-direction:column;gap:7px;align-items:flex-end"><time style="font-size:12px;color:var(--muted)">'+ago(l.created)+'</time>'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+acts+'</div></div>'+
+    '</div></div>';
+  }).join("") : '<div class="empty"><b>'+esc(t("empty_noleads_t"))+'</b>'+esc(t("empty_noleads_s"))+'</div>';
+  return '<div class="page-head"><h1>'+esc(t("nav_leads"))+'</h1></div>'+
+    '<p style="color:var(--muted);font-size:13.5px;margin:0 0 16px;max-width:64ch">'+esc(t("leads_sub"))+'</p>'+
+    (tiles?'<h3 style="margin:0 0 10px;font-size:14px">'+esc(t("leads_attr_title"))+'</h3><div class="kpis" style="margin-bottom:18px">'+tiles+'</div>':'')+
+    '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">'+chips+'</div>'+
+    cards;
+}
+
+/* ==================================================================
+   PAGE: Activity
+================================================================== */
+var activityFilter = "all";
+function pageActivity(){
+  var chips = [["all","act_f_all"],["quote","act_f_quotes"],["proposal","act_f_proposals"],["lead","act_f_leads"],["won","act_f_wins"],["sys","act_f_settings"]].map(function(c){
+    return '<button class="btn sm '+(activityFilter===c[0]?"primary":"ghost")+'" data-act="act-filter" data-v="'+c[0]+'">'+esc(t(c[1]))+'</button>';
+  }).join(" ");
+  var kmap = { quote:["quote","proposal"], proposal:["proposal","open"], lead:["lead"], won:["won"], sys:["sys"] };
+  var list = (S.activity||[]).filter(function(a){
+    if (activityFilter==="all") return true;
+    var ok = kmap[activityFilter]||[activityFilter];
+    return ok.indexOf(a.kind)>=0;
+  });
+  var lastDay=null;
+  var rows = list.map(function(a){
+    var m = FEED_IC[a.kind]||FEED_IC.sys;
+    var dl = dayLabel(a.ts); var head="";
+    if (dl!==lastDay){ head='<li class="f-day">'+esc(dl)+'</li>'; lastDay=dl; }
+    return head+'<li><div class="f-ic '+m[0]+'">'+m[1]+'</div><div class="f-tx">'+a.text+'</div><time>'+ago(a.ts)+'</time></li>';
+  }).join("") || '<div class="empty"><b>'+esc(t("empty_nofeed_t"))+'</b>'+esc(t("empty_nofeed_s"))+'</div>';
+  return '<div class="page-head"><h1>'+esc(t("nav_activity"))+'</h1></div>'+
+    '<p style="color:var(--muted);font-size:13.5px;margin:0 0 16px;max-width:64ch">'+esc(t("activity_sub"))+'</p>'+
+    '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">'+chips+'</div>'+
+    '<section class="card"><ul class="feed">'+rows+'</ul></section>';
+}
+
+/* ==================================================================
+   PAGE: Catalog
+================================================================== */
+var CAT_KINDS = ["panel","inverter","battery","mounting","other"];
+var CAT_GLYPH = {
+  panel:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="1"/><path d="M3 9h18M3 13.5h18M9 4v14M15 4v14"/></svg>',
+  inverter:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M9 12h6"/><circle cx="12" cy="17" r="1.4"/></svg>',
+  battery:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 3.5h6"/><path d="M13 8l-2.5 4H13l-2 4"/></svg>',
+  mounting:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M7 7v10M17 7v10"/><path d="M3 20h18"/></svg>',
+  other:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12h8M12 8v8"/></svg>' };
+function pageCatalog(){
+  var prods = S.products||[];
+  var groups = CAT_KINDS.map(function(kind){
+    var items = prods.filter(function(p){return p.kind===kind;});
+    if (!items.length) return "";
+    var cards = items.map(function(p){
+      return '<article class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">'+
+        '<div style="aspect-ratio:5/2;display:grid;place-items:center;color:var(--muted);background:linear-gradient(135deg,var(--paper),var(--green-tint))">'+CAT_GLYPH[kind]+'</div>'+
+        '<div style="padding:12px 13px;display:flex;flex-direction:column;gap:3px;flex:1">'+
+          '<span style="font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em">'+esc(p.brand)+'</span>'+
+          '<b style="font-size:14.5px;line-height:1.25">'+esc(p.model)+'</b>'+
+          (p.spec?'<span class="chip" style="align-self:flex-start;font-size:11.5px;margin-top:2px">'+esc(p.spec)+'</span>':'')+
+          '<div style="margin-top:auto;padding-top:10px;font-size:16px;font-weight:800">'+formatMoney(p.price)+'<small style="font-size:11px;font-weight:500;color:var(--muted);margin-left:3px">'+esc(t("cat_each"))+'</small></div>'+
+        '</div></article>';
+    }).join("");
+    return '<section style="margin-bottom:22px"><h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 12px;display:flex;gap:9px;align-items:center">'+CAT_GLYPH[kind].replace('width="30" height="30"','width="18" height="18"')+esc(t("cat_kind_"+kind))+' <span style="opacity:.6;font-weight:500">· '+items.length+'</span></h3>'+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px">'+cards+'</div></section>';
+  }).join("");
+  return '<div class="page-head"><h1>'+esc(t("nav_catalog"))+'</h1><span class="spacer"></span>'+
+      '<span style="color:var(--muted);font-size:13px">'+tf("cat_count",{n:prods.length})+'</span></div>'+
+    '<p style="color:var(--muted);font-size:13.5px;margin:0 0 18px;max-width:64ch">'+esc(t("cat_sub"))+'</p>'+
+    (prods.length?groups:'<div class="empty"><b>'+esc(t("cat_empty_t"))+'</b>'+esc(t("cat_empty_s"))+'</div>');
+}
+
+/* ==================================================================
+   PAGE: Refer & earn
+================================================================== */
+function pageRefer(){
+  var link = "https://voltmira.com/login?ref=solartech";
+  var sample = [
+    {name:"Green Volt SRL", status:"subscribed", when:t("refd_when_2w")},
+    {name:"EcoWatt Bihor", status:"signed_up", when:t("refd_when_5d")}
+  ];
+  var rows = sample.map(function(r){
+    return '<tr><td><b>'+esc(r.name)+'</b></td><td><span class="chip '+(r.status==="signed_up"?"sent":"won")+'">'+esc(t("refd_"+r.status))+'</span></td><td>'+esc(r.when)+'</td></tr>';
+  }).join("");
+  return '<div class="page-head"><h1>'+esc(t("nav_refer"))+'</h1></div>'+
+    '<p style="color:var(--muted);font-size:13.5px;margin:0 0 18px;max-width:62ch">'+esc(t("refer_sub"))+'</p>'+
+    '<section class="card" style="margin-bottom:18px"><h3>'+esc(t("refer_your_link"))+'</h3>'+
+      '<div class="link-row" style="margin-top:6px"><code style="word-break:break-all">'+esc(link)+'</code>'+
+        '<button class="btn sm amber" data-act="copy-refer" data-v="'+esc(link)+'">'+esc(t("copy"))+'</button></div>'+
+      '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:12px">'+
+        '<a class="btn wapp" href="https://wa.me/?text='+encodeURIComponent(t("refer_share_msg").replace("{url}",link).replace("{company}",brandName()))+'" target="_blank" rel="noopener">'+esc(t("refer_share_wa"))+'</a>'+
+        '<a class="btn ghost" href="mailto:?subject='+encodeURIComponent(t("refer_mail_subj"))+'&body='+encodeURIComponent(t("refer_share_msg").replace("{url}",link).replace("{company}",brandName()))+'">'+esc(t("refer_share_email"))+'</a></div>'+
+      '<p style="font-size:12.5px;color:var(--muted);margin:12px 0 0">'+esc(t("refer_reward"))+'</p></section>'+
+    '<div class="kpis" style="margin-bottom:18px">'+
+      '<div class="kpi"><b>2</b><span>'+esc(t("refer_kpi_joined"))+'</span></div>'+
+      '<div class="kpi"><b>1</b><span>'+esc(t("refer_kpi_subscribed"))+'</span></div>'+
+      '<div class="kpi"><b>1</b><span>'+esc(t("refer_kpi_reward"))+'</span></div></div>'+
+    '<section class="card"><h3>'+esc(t("refer_list_title"))+'</h3>'+
+      '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>'+esc(t("refer_col_who"))+'</th><th>'+esc(t("refer_col_status"))+'</th><th>'+esc(t("refer_col_when"))+'</th></tr></thead><tbody>'+rows+'</tbody></table></div></section>'+
+    '<section class="card" style="margin-top:18px"><h3>'+esc(t("refer_how_title"))+'</h3>'+
+      '<ol style="margin:6px 0 0;padding-left:20px;line-height:1.7;font-size:14px">'+
+        '<li>'+esc(t("refer_how_1"))+'</li><li>'+esc(t("refer_how_2"))+'</li><li>'+esc(t("refer_how_3"))+'</li></ol></section>';
+}
+
+/* ==================================================================
+   PAGE: Guide / handbook
+================================================================== */
+function pageGuide(){
+  function sec(h, body){ return '<section class="card" style="margin-bottom:14px"><h3>'+esc(h)+'</h3>'+body+'</section>'; }
+  var p = function(x){ return '<p style="color:var(--ink);opacity:.85;font-size:14.5px;line-height:1.65;margin:0 0 10px">'+x+'</p>'; };
+  var ul = function(items){ return '<ul style="margin:0 0 6px;padding-left:20px;line-height:1.7;font-size:14px">'+items.map(function(i){return '<li>'+i+'</li>';}).join("")+'</ul>'; };
+  return '<div class="page-head"><h1>'+esc(t("guide_title"))+'</h1></div>'+
+    '<p style="color:var(--muted);font-size:13.5px;margin:0 0 18px;max-width:64ch">'+esc(t("guide_sub"))+'</p>'+
+    sec(t("guide_s1_h"), p(t("guide_s1_p"))+ul([t("guide_s1_a"),t("guide_s1_b"),t("guide_s1_c"),t("guide_s1_d"),t("guide_s1_e")])) +
+    sec(t("guide_s2_h"), p(t("guide_s2_p"))) +
+    sec(t("guide_s3_h"), p(t("guide_s3_p"))+ul([t("guide_s3_a"),t("guide_s3_b"),t("guide_s3_c")])) +
+    sec(t("guide_s4_h"), p(t("guide_s4_p"))) +
+    sec(t("guide_s5_h"), p(t("guide_s5_p"))) +
+    sec(t("guide_faq_h"), '<b style="font-size:14px">'+esc(t("guide_faq1_q"))+'</b>'+p(t("guide_faq1_a"))+'<b style="font-size:14px">'+esc(t("guide_faq2_q"))+'</b>'+p(t("guide_faq2_a")));
 }
 
 function ingestWidgetLead(){
@@ -3292,10 +3595,25 @@ document.addEventListener("click", function(e){
   else if (act==="quote-lead"){
     var ld = S.leads.find(function(l){return l.id===id;}); if(!ld) return;
     var lp = createProject({title:"Quote for "+ld.name, client:ld.name});
-    ld.projectId = lp.id; S.ui.tab="quote"; save();
+    ld.projectId = lp.id; ld.status = "converted"; S.ui.tab="quote"; save();
     nav("project/"+lp.id);
     toast(t("t_lead_conv"));
   }
+  else if (act==="lead-filter"){ leadFilter = el.getAttribute("data-v"); route(); }
+  else if (act==="lead-contacted"){
+    var lc = S.leads.find(function(l){return l.id===id;}); if(lc){ lc.status="contacted"; save(); route(); toast(t("t_lead_contacted")); }
+  }
+  else if (act==="lead-archive"){
+    var la = S.leads.find(function(l){return l.id===id;}); if(la){ la.status="archived"; save(); route(); toast(t("t_lead_archived")); }
+  }
+  else if (act==="act-filter"){ activityFilter = el.getAttribute("data-v"); route(); }
+  else if (act==="copy-refer"){
+    var rl = el.getAttribute("data-v")||"";
+    if (navigator.clipboard) navigator.clipboard.writeText(rl);
+    toast(t("t_copied"));
+  }
+  else if (act==="more-toggle"){ document.body.classList.toggle("more-open"); }
+  else if (act==="more-close"){ document.body.classList.remove("more-open"); }
 
   /* ---- scenarios ---- */
   else if (act==="sc-new"){

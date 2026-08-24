@@ -3,7 +3,7 @@
 // The avatar is downscaled and stored inline (data URL) like the company logo, so
 // no storage bucket is needed. Password change sends a real reset link by email.
 import { useState } from "react";
-import { supabaseBrowser } from "../../../lib/supabase-browser.js";
+import { supabaseBrowser, supabaseRecovery } from "../../../lib/supabase-browser.js";
 import { saveProfile } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
 
@@ -49,7 +49,9 @@ export default function ProfileForm({ lang, email, companyName, initial }) {
   async function resetPw() {
     setPwMsg(t("pf_pw_sending", lang));
     try {
-      await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + "/auth/callback?next=/reset-password" });
+      // Implicit-flow request + land straight on /reset-password, so the link
+      // still works when it's opened on a different device than it was asked for.
+      await supabaseRecovery().auth.resetPasswordForEmail(email, { redirectTo: location.origin + "/reset-password" });
     } catch { /* same message regardless */ }
     setPwMsg(t("pf_pw_sent", lang));
   }

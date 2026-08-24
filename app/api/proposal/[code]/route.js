@@ -13,7 +13,9 @@ import { escapeHtml } from "../../../../lib/safe.js";
 import { logActivity } from "../../../../lib/activity.js";
 import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
 import { sendEmail, proposalOpenedEmail, emailConfigured } from "../../../../lib/email.js";
-import { quote, defaultEngineSettings } from "@voltmira/engine";
+import { quote } from "@voltmira/engine";
+import { snapshotEngine } from "../../../../lib/engineSettings.js";
+import { bomHasBattery } from "../../../../lib/quoteInput.js";
 
 /** One email per proposal per this window, no matter how many opens. */
 const NOTIFY_THROTTLE_MS = 4 * 60 * 60 * 1000;
@@ -64,14 +66,25 @@ export async function GET(req, { params }) {
     return NextResponse.json({ error: "rate" }, { status: 429 });
 
   const db = supabaseAdmin();
+  // select("*") so the signature columns come through when present but a
+  // workspace that hasn't run add-proposal-signature.sql yet still works.
   const { data: prop } = await db.from("proposals")
-    .select("code, snapshot, accepted_at, company_id, created_at, project_id")
+    .select("*")
     .eq("code", params.code).single();
   if (!prop) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   const { data: co } = await db.from("companies")
     .select("name, short_name, logo_url, engine, currency, lang, plan")
     .eq("id", prop.company_id).single();
+
+  // Social proof, computed rather than typed: the installer's real count of won
+  // projects. A hand-entered "trusted by N homeowners" is an unverifiable claim;
+  // this one is true by construction, cannot be inflated, and grows on its own —
+  // which is the only kind of badge that belongs on a document whose whole pitch
+  // is that the client can check it. head:true = count only, no rows shipped.
+  const { count: wonCount } = await db.from("projects")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", prop.company_id).eq("status", "won");
 
   // "Prepared by": the rep who owns the quote, so the client can reach the actual
   // person. Live lookup via the service role (no RLS recursion). Falls back to the
@@ -89,7 +102,10 @@ export async function GET(req, { params }) {
   // settings they were computed with, so later Settings changes can never alter
   // what the client was shown. Older proposals (no snapshot.engine) fall back
   // to the company's current engine — same behaviour they always had.
-  const E = { ...defaultEngineSettings(), ...(prop.snapshot.engine || co?.engine || {}) };
+  const E = snapshotEngine(prop.snapshot.engine, co);
+  // Snapshots store the BOM itself, so this is derived rather than frozen — an
+  // older snapshot with no BOM simply has no costOverride and is unaffected.
+  prop.snapshot.bomHasBattery = bomHasBattery(prop.snapshot.bom);
   const q = quote(prop.snapshot, E);
 
   // Side-by-side options: extra configs the installer attached (base snapshot with
@@ -108,10 +124,15 @@ export async function GET(req, { params }) {
   return NextResponse.json({
     code: prop.code,
     accepted: !!prop.accepted_at,
+    // proof-of-signing only (name + timestamp). The drawn signature IMAGE is
+    // sensitive and NOT returned on this public link — the installer views it
+    // from their authenticated pipeline.
+    signedName: prop.signer_name || null,
+    signedAt: prop.accepted_at || null,
     sentAt: prop.created_at,   // when the link was created — drives "valid until"
     // lang drives the client-facing proposal copy — the client reads it in the
     // installer's chosen language, not always English.
-    company: { name: co?.name, shortName: co?.short_name, logoUrl: co?.logo_url, currency: co?.currency, lang: co?.lang, plan: co?.plan || "free" },
+    company: { name: co?.name, shortName: co?.short_name, logoUrl: co?.logo_url, currency: co?.currency, lang: co?.lang, plan: co?.plan || "free", wonCount: wonCount || 0 },
     preparedBy,
     inputs: {
       title: prop.snapshot.title, client: prop.snapshot.client, address: prop.snapshot.address,
@@ -126,6 +147,13 @@ export async function GET(req, { params }) {
       afmSubsidy: !!prop.snapshot.afmSubsidy,
       yieldOverride: prop.snapshot.yieldOverride || undefined,
       monthlyYieldShape: prop.snapshot.monthlyYieldShape || undefined,
+      // the frozen bill-of-materials total: without it the client-side audit
+      // panel recomputes a BOM quote from kW x EUR/kW and disagrees with the
+      // headline price the client is actually being shown.
+      costOverride: Number(prop.snapshot.costOverride) || 0,
+      // Derived from the frozen BOM's own line kinds, so the client-side audit
+      // panel prices the battery exactly the way the server did.
+      bomHasBattery: bomHasBattery(prop.snapshot.bom),
     },
     quote: {
       cost: q.e.cost, prod0: q.e.prod0, year1: q.e.year1, self: q.e.self,
@@ -193,7 +221,7 @@ export async function POST(req, { params }) {
     const title = escapeHtml(rawTitle);
     let text, actKind = "open", key;
     if (n <= 1) { text = `<b>${who}</b> opened “${title}”`; key = "act_opened"; }
-    else if (n >= 3) { text = `🔥 <b>${who}</b> opened “${title}” again — ${n}× total. Worth a call now.`; actKind = "lead"; key = "act_opened_hot"; }
+    else if (n >= 3) { text = `<b>${who}</b> opened “${title}” again — ${n}× total. Worth a call now.`; actKind = "lead"; key = "act_opened_hot"; }
     else { text = `<b>${who}</b> opened “${title}” again (${n}×)`; key = "act_opened_again"; }
     await logActivity(db, { companyId: prop.company_id, kind: actKind, key, params: { b: rawWho, title: rawTitle, n }, text, link: `/projects/${prop.project_id}` });
     // Retention feature: tell the installer while the client is still reading.
@@ -206,7 +234,26 @@ export async function POST(req, { params }) {
     await db.rpc("bump_proposal_stat", { p_code: prop.code, p_field: "batt_toggles", p_by: 1 });
   }
   if (kind === "accept" && !prop.accepted_at) {
-    await db.from("proposals").update({ accepted_at: new Date().toISOString() }).eq("code", prop.code);
+    // E-signature + audit trail. What gives an electronic signature evidentiary
+    // weight is WHO signed, WHEN, and from WHERE — so the drawn image is stored
+    // alongside the typed name, IP and device. All optional: an acceptance still
+    // succeeds without them (and before add-proposal-signature.sql has run).
+    const rawSig = typeof body.signature === "string" ? body.signature : "";
+    const okSig = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(rawSig) && rawSig.length <= 260_000;
+    const signature = okSig ? rawSig : null;
+    const signerName = String(body.signerName || "").trim().slice(0, 120) || null;
+
+    const stamp = new Date().toISOString();
+    const full = {
+      accepted_at: stamp,
+      signature,
+      signer_name: signerName,
+      signed_ip: ip || null,
+      signed_ua: String(req.headers.get("user-agent") || "").slice(0, 300) || null,
+    };
+    // Richest write first; fall back if the signature columns aren't there yet.
+    const { error: sigErr } = await db.from("proposals").update(full).eq("code", prop.code);
+    if (sigErr) await db.from("proposals").update({ accepted_at: stamp }).eq("code", prop.code);
     await db.from("projects").update({ status: "won" }).eq("id", prop.project_id).eq("status", "sent");
     // Name the human, not the URL slug — "Casa Popescu accepted…" reads far better
     // than "…proposal crppgt6x".

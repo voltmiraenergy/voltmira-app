@@ -76,14 +76,27 @@ export function simulate(p, E, bandKey) {
 
   // Battery cost scales with usable capacity (kWh). A legacy project that just has
   // batt=true with no size falls back to ~10 kWh so old quotes still compute.
-  const battKwh = p.batt ? Math.max(0, Number(p.battKwh) || 10) : 0;
+  // Only a truly UNSET size (legacy batt=true with no battKwh) falls back to ~10;
+  // an explicit 0 must stay 0 (was coerced to 10 by `|| 10`, so 0 and 10 kWh
+  // wrongly cost the same and a bigger battery seemed not to change the price).
+  const battKwh = p.batt ? (p.battKwh == null ? 10 : Math.max(0, Number(p.battKwh) || 0)) : 0;
   const batteryCost = battKwh > 0 ? battKwh * (Number(E.batteryCostPerKwh) || 500) : 0;
 
   // A bill of materials from the catalog drives the real cost when present;
-  // otherwise fall back to the kW x EUR/kW estimate (+ battery). costOverride is
-  // the BOM total, already including any battery line, so it replaces both.
+  // otherwise fall back to the kW x EUR/kW estimate (+ battery).
+  //
+  // The BOM total replaces the kW x rate estimate, but it only replaces the
+  // BATTERY cost when the BOM actually CONTAINS a battery line. Otherwise ticking
+  // "include battery" while building a BOM of panels + inverter handed the client
+  // the battery's self-consumption boost for free — €0 of cost against real extra
+  // savings, which shortened the quoted payback by years on a document that gets
+  // emailed to a homeowner. bomHasBattery is derived from the BOM's own line
+  // kinds by lib/quoteInput.js, so an explicit battery line is never charged twice.
   const override = Math.max(0, Number(p.costOverride) || 0);
-  const grossCost = override > 0 ? override : (kw * E.costPerKw + batteryCost);
+  const batteryUnpriced = override > 0 && battKwh > 0 && !p.bomHasBattery;
+  const grossCost = override > 0
+    ? override + (batteryUnpriced ? batteryCost : 0)
+    : (kw * E.costPerKw + batteryCost);
   let cost = grossCost;
   // Local grant, market-aware: RO subtracts the AFM/Casa Verde amount (RON),
   // MD subtracts the Moldovan prosumer grant (MDL). The `afmSubsidy` flag is the
@@ -91,7 +104,14 @@ export function simulate(p, E, bandKey) {
   // subsidyKey in engine settings, converted from its local currency to EUR.
   if (p.afmSubsidy && mkt.subsidyKey) {
     const amount = Number(E[mkt.subsidyKey]) || 0;
-    const fx = FX[mkt.subsidyFx] || 1;
+    // A caller-supplied live rate wins over the static table. The constants
+    // drift: checked 2026-08-21, RON was 4.97 here against an actual 5.2563,
+    // which valued a 20,000 RON grant at €4,024 instead of €3,805 — every
+    // subsidised Romanian quote understated the client's own cost by ~€219,
+    // and payback inherited the error. Frozen proposal snapshots carry the
+    // rate they were sent with, so an old proposal still recomputes identically.
+    const live = Number(E.fx && E.fx[mkt.subsidyFx]);
+    const fx = live > 0 ? live : (FX[mkt.subsidyFx] || 1);
     cost = Math.max(0, cost - amount / fx);
   }
 
@@ -170,8 +190,15 @@ export function simulate(p, E, bandKey) {
   if (immediate) payback = 0;
 
   return {
-    cost, prod0, solar0, wind0: 0, year1, payback,
-    roi: cost > 0 ? ((total - cost) / cost) * 100 : 999,
+    // `cost` is what the CLIENT pays (after any local grant) — the number the
+    // proposal shows. `grossCost` is the full system price before the grant, i.e.
+    // the contract value the installer actually invoices; the dashboard's pipeline
+    // KPI needs that one, not the client's out-of-pocket figure.
+    cost, grossCost, prod0, solar0, wind0: 0, year1, payback,
+    // null, not a sentinel: when a grant covers the whole system the return on
+    // the client's own outlay is undefined, and the old 999 rendered as a literal
+    // "25-yr ROI 999%" on the proposal PDF. Callers must show "∞" / "—".
+    roi: cost > 0 ? ((total - cost) / cost) * 100 : null,
     self: selfRatioEff, rows, horizon, immediate,
   };
 }

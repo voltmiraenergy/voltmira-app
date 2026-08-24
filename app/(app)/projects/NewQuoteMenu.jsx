@@ -36,7 +36,7 @@ export default function NewQuoteMenu({ templates = [], lang }) {
               style={{ display: "flex", width: "100%", alignItems: "center", gap: 10, textAlign: "left",
                 padding: "9px 10px", borderRadius: 8, cursor: "pointer", background: "none", border: "none", color: "var(--ink)" }}>
               <span style={{ fontWeight: 600, fontSize: 13.5, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tp.name}</span>
-              <span style={{ fontSize: 11.5, color: "var(--muted)", whiteSpace: "nowrap" }}>{Number(tp.kw).toFixed(1)} kW · {tp.market}{tp.batt ? " · 🔋" : ""}</span>
+              <span style={{ fontSize: 11.5, color: "var(--muted)", whiteSpace: "nowrap" }}>{Number(tp.kw).toFixed(1)} kW · {tp.market}{tp.batt ? " · batt" : ""}</span>
             </button>
           ))}
         </div>

@@ -25,9 +25,9 @@ export default function FollowUpStrip({ items: initial, lang }) {
 
   return (
     <section className="followup-strip">
-      <h3>☀ {t("today_title", lang)}</h3>
+      <h3>{t("today_title", lang)}</h3>
       <div className="fu-sub">{t("today_sub", lang)}</div>
-      {items.map(({ id, title, client, reason }) => (
+      {items.map(({ id, title, client, reason, age }) => (
         <div className="fu-row" key={id}
           style={{
             maxHeight: closing[id] ? 0 : 84, opacity: closing[id] ? 0 : 1,
@@ -42,6 +42,11 @@ export default function FollowUpStrip({ items: initial, lang }) {
             <span>{client || "—"} · {reason}</span>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {/* .fu-age was styled in AppTheme (red, bold, nowrap) but nothing
+                ever rendered it — leftover from an unfinished version. It is
+                the most scannable part of the row: how long this has been
+                sitting is exactly what decides who you call first. */}
+            {age > 0 && <span className="fu-age">{age}d</span>}
             <Link className="btn sm amber" href={`/projects/${id}`}>{t("ttl_open", lang)}</Link>
             <button className="btn sm ghost" onClick={() => dismiss(id)} aria-label={t("fu_done", lang)} title={t("fu_done", lang)}>
               ✓ {t("fu_done", lang)}

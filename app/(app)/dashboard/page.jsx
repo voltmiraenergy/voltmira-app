@@ -7,12 +7,21 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { supabaseServer } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
-import { createProject, cycleProjectStatus } from "../../../lib/actions.js";
-import { quote, defaultEngineSettings } from "@voltmira/engine";
+import { createProject, cycleProjectStatus, maybeClaimReferral } from "../../../lib/actions.js";
+import { quote } from "@voltmira/engine";
+import { companyEngine } from "../../../lib/engineSettings.js";
 import { t, normLang } from "../../../lib/i18n.js";
-import { proposalStatsByProject, daysSince } from "../../../lib/proposalStats.js";
+import { proposalStatsByProject, needsFollowUp, daysSince } from "../../../lib/proposalStats.js";
+import { rowToQuoteInput } from "../../../lib/quoteInput.js";
 import { activityHtml } from "../../../lib/activity.js";
-import OnboardingChecklist from "./OnboardingChecklist.jsx";
+import { mdDayKey, mdMonthKey, fmtDate } from "../../../lib/tz.js";
+import TrendChart from "./TrendChart.jsx";
+import FollowUpStrip from "./FollowUpStrip.jsx";
+import LeadActions from "../leads/LeadActions.jsx";
+
+// Post-sale install stages, mirrored from InstallChecklist.jsx. install_progress
+// is a { step: completedDate } map, so a truthy value means the step is done.
+const INSTALL_STEPS = ["deposit", "permit", "order", "install", "grid", "commission"];
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dashboard — VoltMira" };
@@ -31,14 +40,9 @@ async function cycleStatus(formData) {
   revalidatePath("/projects");
 }
 
-function rowToProject(r) {
-  return {
-    kw: Number(r.kw), price: Number(r.price), cons: Number(r.cons), batt: r.batt,
-    market: r.market, useMonthly: r.use_monthly, consMonthly: r.cons_monthly,
-    afmSubsidy: r.afm_subsidy, yieldOverride: r.yield_per_kwp ? Number(r.yield_per_kwp) : undefined,
-    monthlyYieldShape: r.monthly_yield_shape || undefined,
-  };
-}
+// Live recompute uses the SAME input builder as the editor + projects list, so a
+// battery/BOM project shows identical numbers everywhere. See lib/quoteInput.js.
+const rowToProject = rowToQuoteInput;
 
 // Relative "time ago" — server-rendered, coarse (matches the demo's ago()).
 function ago(iso, lang) {
@@ -51,13 +55,13 @@ function ago(iso, lang) {
 }
 
 // Sticky day-group label for the activity feed (demo's dayLabel()).
+// today/yesterday resolved in the app timezone so the boundary matches the user's
+// wall-clock rather than the server's UTC.
 function dayLabel(iso, lang, locale) {
-  const ts = new Date(iso).getTime();
-  const now = new Date();
-  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  if (ts >= startToday) return t("day_today", lang);
-  if (ts >= startToday - 864e5) return t("day_yesterday", lang);
-  return new Date(ts).toLocaleDateString(locale, { day: "numeric", month: "short" });
+  const k = mdDayKey(iso);
+  if (k === mdDayKey(Date.now())) return t("day_today", lang);
+  if (k === mdDayKey(Date.now() - 864e5)) return t("day_yesterday", lang);
+  return fmtDate(iso, locale, { day: "numeric", month: "short" });
 }
 
 // Feed icon + tint by activity kind (mirrors the demo FEED_IC).
@@ -76,77 +80,172 @@ function feedIcon(kind) {
 }
 
 export default async function Dashboard() {
+  // If this account arrived via a referral link, attribute it once (best-effort;
+  // never allowed to break the dashboard).
+  try { await maybeClaimReferral(); } catch {}
   const sb = supabaseServer();
   const [co, { data: projects }, { data: leads }, { data: acts }, stats] = await Promise.all([
     currentCompany(),
-    sb.from("projects").select("*").order("updated_at", { ascending: false }).limit(500),
-    sb.from("leads").select("*").is("project_id", null).order("created_at", { ascending: false }).limit(200),
+    // No limit. Every KPI on this page — pipeline, win rate, average deal,
+    // the quote count — is a whole-book figure, and a cap silently turned them
+    // into "your last 500 quotes" while /projects (unbounded) showed the truth.
+    // Two screens disagreeing about the same number is worse than a slow query.
+    sb.from("projects").select("*").order("updated_at", { ascending: false }),
+    // Archived leads were reappearing here forever: /leads correctly hides them
+    // but this query filtered only on project_id. neq() skips NULL rows in
+    // Postgres, so the status IS NULL case (pre-migration leads) needs the or().
+    sb.from("leads").select("*").is("project_id", null)
+      .or("status.is.null,status.neq.archived")
+      .order("created_at", { ascending: false }).limit(200),
     sb.from("activity").select("*").order("created_at", { ascending: false }).limit(40),
     proposalStatsByProject(sb),
   ]);
 
-  const E = { ...defaultEngineSettings(), ...(co?.engine || {}) };
+  const E = await companyEngine(co);
   const lang = normLang(co?.lang);
   const fmt = (n) => "€" + Math.round(n).toLocaleString("en-IE");
   const list = projects || [];
 
   // KPIs (over the whole pipeline, like the demo's computeStats()).
-  let pipeline = 0, won = 0, lost = 0, pbSum = 0, pbN = 0;
+  let pipeline = 0, won = 0, lost = 0, pbSum = 0, pbN = 0, wonValueSum = 0;
   for (const r of list) {
     const q = quote(rowToProject(r), E).e;
-    if (r.status === "sent") pipeline += q.cost;
-    if (r.status === "won") won++;
+    // Pipeline = contract value you invoice (full system price), NOT the client's
+    // post-grant out-of-pocket. On subsidised quotes those differ by the whole
+    // Casa Verde / MD grant, which was understating the pipeline.
+    if (r.status === "sent") pipeline += q.grossCost;
+    // wonValueSum feeds "average deal size" — the contract value of closed deals.
+    if (r.status === "won") { won++; wonValueSum += q.grossCost; }
     if (r.status === "lost") lost++;
-    if (q.payback !== null) { pbSum += q.payback; pbN++; }
+    // A quote that never pays back inside the horizon used to be dropped from the
+    // average entirely, which flattered the KPI. Count it at the horizon ("25+").
+    // Only quotes that actually went out. Pooling drafts and lost deals made
+    // this "the average payback of every number I ever typed into this tool"
+    // rather than the payback we put in front of clients.
+    if (r.status === "sent" || r.status === "won") {
+      pbSum += (q.payback === null ? q.horizon : q.payback); pbN++;
+    }
   }
   const winRate = (won + lost) ? Math.round(won / (won + lost) * 100) + "%" : "—";
-  const avgPb = pbN ? (pbSum / pbN).toFixed(1) + " " + t("yrs", lang) : "—";
+  const avgPbVal = pbN ? pbSum / pbN : null;
+  const avgPb = avgPbVal === null ? "—"
+    : (avgPbVal >= E.horizon ? `${E.horizon}+` : avgPbVal.toFixed(1)) + " " + t("yrs", lang);
   const yrsF = (p) => p === null ? "25+" : p === 0 ? "now" : p.toFixed(1);
+  // Average deal size = mean contract value of WON quotes; "—" until the first win.
+  const avgDeal = won ? wonValueSum / won : null;
 
   const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB";
 
-  // Conversion funnel — where do leads drop off? Sent (has a proposal) → Opened
-  // (client viewed ≥1×) → Engaged (viewed ≥3×, a near-close signal) → Won.
+  // Conversion funnel: Sent → Opened (viewed ≥1×) → Engaged (≥3×) → Won.
+  //
+  // "Sent" means the quote LEFT DRAFT — not "has a proposal row". The old
+  // definition counted only tracked proposals while Won counted every won
+  // project, so a deal closed verbally or at the counter made Won > Sent and
+  // the last bar came out longer than the first. A funnel that grows makes the
+  // whole dashboard look broken. Won is a subset of "left draft" by definition,
+  // so this can no longer invert.
+  //
+  // Opened/Engaged still require a proposal, because they are only knowable
+  // from tracking — a deal won without one legitimately skips those stages.
   let nSent = 0, nOpened = 0, nEngaged = 0;
+  let eurSent = 0, eurOpened = 0, eurEngaged = 0;
   for (const r of list) {
     const st = stats.get(r.id);
-    if (st && st.sentAt) nSent++;
-    if (st && st.opens >= 1) nOpened++;
-    if (st && st.opens >= 3) nEngaged++;
+    const left = r.status !== "draft" || !!(st && st.sentAt);
+    const gc = quote(rowToProject(r), E).e.grossCost;
+    if (left) { nSent++; eurSent += gc; }
+    if (st && st.opens >= 1) { nOpened++; eurOpened += gc; }
+    if (st && st.opens >= 3) { nEngaged++; eurEngaged += gc; }
   }
+  // € alongside the count: three €12k deals and three €40k deals are very
+  // different months, and a count-only funnel hides that completely.
   const funnel = [
-    ["sent", t("pf_sent", lang), nSent, "var(--blue)"],
-    ["opened", t("pf_opened", lang), nOpened, "var(--amber)"],
-    ["engaged", t("pf_engaged", lang), nEngaged, "#B4700F"],
-    ["won", t("pf_won", lang), won, "var(--green)"],
+    ["sent", t("pf_sent", lang), nSent, "var(--blue)", eurSent],
+    ["opened", t("pf_opened", lang), nOpened, "var(--amber)", eurOpened],
+    ["engaged", t("pf_engaged", lang), nEngaged, "#B4700F", eurEngaged],
+    ["won", t("pf_won", lang), won, "var(--green)", wonValueSum],
   ];
-  const fmax = Math.max(1, nSent, list.length);
+  // Scale the funnel against its OWN widest stage, not the total quote count.
+  // Using list.length squashed every bar whenever most quotes were still drafts
+  // (20 quotes, 3 sent → the "Sent" bar rendered 15% wide instead of full).
+  // `won` is included because a deal can be won without a tracked proposal, so
+  // it can legitimately exceed "Sent".
+  const fmax = Math.max(1, nSent, nOpened, nEngaged, won);
 
   // 6-month sent-vs-won trend (sent by proposal date, won by updated_at month).
-  const now = new Date();
+  // Months are bucketed by their APP_TZ key so an event just after midnight in
+  // Chisinau lands in the month the installer actually sees, not the UTC one.
+  const nowKey = mdMonthKey(Date.now());
+  const [nY, nM] = nowKey.split("-").map(Number);
   const months = [];
+  const monthIdx = new Map();
   for (let mi = 5; mi >= 0; mi--) {
-    const d0 = new Date(now.getFullYear(), now.getMonth() - mi, 1).getTime();
-    const d1 = new Date(now.getFullYear(), now.getMonth() - mi + 1, 1).getTime();
-    let s = 0, w = 0;
-    for (const r of list) {
-      const st = stats.get(r.id);
-      if (st && st.sentAt) { const x = new Date(st.sentAt).getTime(); if (x >= d0 && x < d1) s++; }
-      if (r.status === "won") { const x = new Date(r.updated_at).getTime(); if (x >= d0 && x < d1) w++; }
-    }
-    months.push({ lbl: new Date(d0).toLocaleDateString(locale, { month: "short" }), sent: s, won: w });
+    const d = new Date(nY, nM - 1 - mi, 15);   // mid-month: safe from any TZ shift
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    monthIdx.set(key, months.length);
+    months.push({ lbl: d.toLocaleDateString(locale, { month: "short" }), sent: 0, won: 0, sentEur: 0, wonEur: 0 });
   }
-  const mMax = Math.max(1, ...months.map(m => Math.max(m.sent, m.won)));
-  const CW = 560, CH = 150, cBase = CH - 24, cPlot = cBase - 16, cGroup = CW / 6, cBar = 18;
+  // Time-to-close: days from proposal sent → won, averaged over closed deals.
+  let closeSum = 0, closeN = 0;
+  for (const r of list) {
+    const st = stats.get(r.id);
+    // Contract value drives the €-weighted view of the same trend.
+    const gc = quote(rowToProject(r), E).e.grossCost;
+    if (st && st.sentAt) { const i = monthIdx.get(mdMonthKey(st.sentAt)); if (i !== undefined) { months[i].sent++; months[i].sentEur += gc; } }
+    // Prefer the client's acceptance date: updated_at drifts to "now" whenever a
+    // won quote is edited later, which silently moved old wins into this month.
+    const wonAt = r.status === "won" ? (st?.acceptedAt || r.updated_at) : null;
+    if (wonAt) {
+      const i = monthIdx.get(mdMonthKey(wonAt)); if (i !== undefined) { months[i].won++; months[i].wonEur += gc; }
+      if (st?.sentAt) { const dd = (new Date(wonAt) - new Date(st.sentAt)) / 864e5; if (dd >= 0) { closeSum += dd; closeN++; } }
+    }
+  }
+  // "—" until at least one tracked deal has both a sent and a won date.
+  const avgClose = closeN ? Math.round(closeSum / closeN) : null;
 
-  // Onboarding checklist — hides once the installer has hit the core aha.
-  const hasProposal = [...stats.values()].some(s => s.sentAt);
-  const onboardSteps = [
-    { key: "logo", done: !!co?.logo_url, label: t("ob_logo", lang), href: "/settings" },
-    { key: "quote", done: list.length > 0, label: t("ob_quote", lang), href: "/projects" },
-    { key: "proposal", done: hasProposal, label: t("ob_proposal", lang), href: "/projects" },
-  ];
-  const onboardDone = onboardSteps.every(s => s.done);
+  // Deals actively in installation: a won quote whose checklist has STARTED
+  // (≥1 step) but isn't fully commissioned. Requiring ≥1 step is deliberate — a
+  // just-won deal at 0/6 hasn't started installing and already shows in Recent
+  // quotes with a "Won" chip, so listing untouched deals here would be pure noise
+  // (exactly what stale "New quote" test wins looked like). Most-progressed first.
+  const installing = list
+    .filter(r => r.status === "won")
+    .map(r => ({ r, done: INSTALL_STEPS.filter(s => r.install_progress?.[s]).length }))
+    .filter(x => x.done >= 1 && x.done < INSTALL_STEPS.length)
+    .sort((a, b) => b.done - a.done)
+    .slice(0, 6);
+  // Quotes worth chasing: sent over a week ago and either never opened or gone
+  // quiet since. A quote sitting unopened for 16 days is a deal quietly dying,
+  // so it gets surfaced at the top of the dashboard rather than buried in a
+  // table. "Done" snoozes the row for a week (followup_snoozed_at).
+  const followUps = list
+    .filter(r => r.status === "sent")
+    .map(r => ({ r, st: stats.get(r.id) }))
+    // NB: daysSince(null) is 0, so a never-snoozed quote must be allowed
+    // explicitly — testing `daysSince(...) > 7` alone hid every fresh reminder.
+    .filter(({ r, st }) => needsFollowUp(st)
+      && (!r.followup_snoozed_at || daysSince(r.followup_snoozed_at) > 7))
+    .sort((a, b) => daysSince(b.st.sentAt) - daysSince(a.st.sentAt))
+    .slice(0, 4)
+    .map(({ r, st }) => ({
+      id: r.id,
+      title: r.title,
+      client: r.client_name,
+      // Days since it went out — drives the .fu-age urgency badge.
+      age: daysSince(st.sentAt),
+      // Never opened is the alarming case; "quiet since" is the softer one.
+      // Guard on lastOpen, not just opens: a row with opens>0 and a null
+      // last_open (imported or hand-inserted) rendered "no activity for 0d".
+      reason: (!st.opens || !st.lastOpen)
+        ? t("fu_never_opened", lang, { n: daysSince(st.sentAt) })
+        : t("fu_quiet", lang, { n: daysSince(st.lastOpen) }),
+    }));
+
+  // Sample data is NOT filtered out of the KPIs — filtering would defeat the
+  // "Load sample pipeline" button, whose entire purpose is to make the
+  // dashboard look populated for a live demo. The danger isn't that the numbers
+  // include sample rows; it's not KNOWING they do. So: say so, loudly.
+  const hasSample = list.some(r => r.sample) || (leads || []).some(l => l.sample);
 
   const recent = list.slice(0, 5);
 
@@ -166,12 +265,24 @@ export default async function Dashboard() {
         </form>
       </div>
 
-      <OnboardingChecklist steps={onboardSteps} allDone={onboardDone} lang={lang} />
+      {hasSample && (
+        <div className="sample-bar" role="status">
+          <span className="sample-badge">{t("demo_badge", lang)}</span>
+          <span className="sample-note">{t("sample_banner", lang)}</span>
+          <Link className="sample-cta" href="/settings">{t("sample_clear", lang)}</Link>
+        </div>
+      )}
+
+      {(
+        <>
+      <FollowUpStrip items={followUps} lang={lang} />
       <div className="kpis">
         <div className="kpi"><b>{fmt(pipeline)}</b><span>{t("kpi_pipeline", lang)}</span></div>
         <div className="kpi"><b>{winRate}</b><span>{t("kpi_winrate", lang)}</span></div>
         <div className="kpi"><b>{avgPb}</b><span>{t("kpi_payback", lang)}</span></div>
         <div className="kpi"><b>{list.length}</b><span>{t("kpi_projects", lang)}</span></div>
+        <div className="kpi"><b>{avgDeal === null ? "—" : fmt(avgDeal)}</b><span>{t("kpi_avgdeal", lang)}</span></div>
+        <div className="kpi"><b>{avgClose === null ? "—" : avgClose + " " + t("days", lang)}</b><span>{t("kpi_avgclose", lang)}</span></div>
       </div>
 
       <div className="grid-2" style={{ marginBottom: 18 }}>
@@ -186,11 +297,12 @@ export default async function Dashboard() {
           </div>
           {list.length ? (
             <div className="pipe-funnel">
-              {funnel.map(([k, label, val, color]) => (
+              {funnel.map(([k, label, val, color, eur]) => (
                 <div className="pf-row" key={k}>
                   <span className="pf-lbl">{label}</span>
                   <div className="pf-track"><i style={{ width: Math.round(val / fmax * 100) + "%", background: color }} /></div>
                   <b className="pf-val" style={{ color }}>{val}</b>
+                  <span className="pf-eur">{eur > 0 ? fmt(eur) : ""}</span>
                 </div>
               ))}
             </div>
@@ -199,30 +311,8 @@ export default async function Dashboard() {
           )}
         </section>
 
-        <section className="card">
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 6 }}>
-            <h3 style={{ margin: 0 }}>{t("mth_title", lang)}</h3>
-            <span className="spacer" />
-            <span className="tr-leg"><i style={{ background: "var(--blue)" }} />{t("trend_sent", lang)}</span>
-            <span className="tr-leg"><i style={{ background: "var(--green)" }} />{t("trend_won", lang)}</span>
-          </div>
-          <svg viewBox={`0 0 ${CW} ${CH}`} role="img" aria-label={t("mth_title", lang)} style={{ width: "100%", height: "auto", display: "block" }}>
-            <line x1="0" y1={cBase} x2={CW} y2={cBase} stroke="var(--line)" strokeWidth="1" />
-            {months.map((m, i) => {
-              const cx = i * cGroup + cGroup / 2;
-              const hS = Math.round(m.sent / mMax * cPlot), hW = Math.round(m.won / mMax * cPlot);
-              return (
-                <g key={i}>
-                  <rect x={cx - cBar - 3} y={cBase - hS} width={cBar} height={hS} rx="4" fill="var(--blue)" opacity=".85" />
-                  {m.sent ? <text x={cx - cBar / 2 - 3} y={cBase - hS - 5} textAnchor="middle" fontSize="11" fill="var(--muted)">{m.sent}</text> : null}
-                  <rect x={cx + 3} y={cBase - hW} width={cBar} height={hW} rx="4" fill="var(--green)" opacity=".9" />
-                  {m.won ? <text x={cx + 3 + cBar / 2} y={cBase - hW - 5} textAnchor="middle" fontSize="11" fill="var(--muted)">{m.won}</text> : null}
-                  <text x={cx} y={CH - 7} textAnchor="middle" fontSize="11.5" fill="var(--muted)">{m.lbl}</text>
-                </g>
-              );
-            })}
-          </svg>
-        </section>
+        <TrendChart months={months} title={t("mth_title", lang)}
+          sentLabel={t("trend_sent", lang)} wonLabel={t("trend_won", lang)} />
       </div>
 
       <div className="dash-grid">
@@ -272,9 +362,15 @@ export default async function Dashboard() {
                   return (
                     <li key={l.id}>
                       <div className={`f-ic ${ic.cls}`}>{ic.svg}</div>
-                      <div className="f-tx">
+                      <div className="f-tx" style={{ minWidth: 0 }}>
                         <b>{l.name}</b>{l.hot && <span className="chip hot static" style={{ padding: "2px 8px", fontSize: 10.5, marginLeft: 6 }}>{t("hot", lang)}</span>}
-                        <div style={{ color: "var(--muted)" }}>{l.note}</div>
+                        {l.phone ? <a href={`tel:${l.phone}`} style={{ marginLeft: 8, fontSize: 12.5, fontWeight: 600, color: "var(--green)", textDecoration: "none" }}>{l.phone}</a> : null}
+                        {l.note ? <div style={{ color: "var(--muted)" }}>{l.note}</div> : null}
+                        {/* Convert / mark-contacted / archive inline, so a lead can be
+                            actioned without leaving the dashboard. Reuses the /leads row. */}
+                        <div style={{ marginTop: 9 }}>
+                          <LeadActions id={l.id} status={l.status || "new"} projectId={l.project_id} lang={lang} />
+                        </div>
                       </div>
                       <time>{ago(l.created_at, lang)}</time>
                     </li>
@@ -283,6 +379,39 @@ export default async function Dashboard() {
               </ul>
             ) : (
               <div className="empty"><b>{t("empty_noleads_t", lang)}</b>{t("empty_noleads_s", lang)}</div>
+            )}
+          </section>
+
+          {/* Post-sale queue — surfaces the per-project InstallChecklist so the
+              paperwork after a win (ANRE permit, grid connection, commissioning)
+              is visible from the dashboard, not buried inside each quote. */}
+          <section className="card">
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <h3 style={{ margin: 0 }}>{t("dash_installing", lang)}</h3>
+            </div>
+            {installing.length ? (
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {installing.map(({ r, done }, i) => {
+                  const nextStep = INSTALL_STEPS.find(s => !r.install_progress?.[s]);
+                  const pct = Math.round(done / INSTALL_STEPS.length * 100);
+                  return (
+                    <div key={r.id} style={{ padding: "13px 0", borderTop: i ? "1px solid var(--line)" : "none" }}>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                        <Link className="t-title" href={`/projects/${r.id}`} style={{ fontSize: 14 }}>{r.title || t("untitled", lang)}</Link>
+                        {r.client_name ? <span style={{ fontSize: 12, color: "var(--muted)" }}>· {r.client_name}</span> : null}
+                        <span className="spacer" style={{ flex: 1 }} />
+                        <span style={{ fontFamily: "var(--font-m,monospace)", fontSize: 12, color: "var(--muted)" }}>{done}/{INSTALL_STEPS.length}</span>
+                      </div>
+                      <div style={{ height: 6, borderRadius: 99, background: "var(--line)", overflow: "hidden", margin: "9px 0 6px" }}>
+                        <div style={{ height: "100%", width: pct + "%", background: "var(--green)", borderRadius: 99 }} />
+                      </div>
+                      {nextStep ? <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("dash_next", lang)}: <b style={{ color: "var(--ink-soft,#2B4438)", fontWeight: 600 }}>{t("inst_" + nextStep, lang)}</b></div> : null}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="empty"><b>{t("empty_noinstall_t", lang)}</b>{t("empty_noinstall_s", lang)}</div>
             )}
           </section>
         </div>
@@ -300,13 +429,18 @@ export default async function Dashboard() {
                 const dl = dayLabel(a.created_at, lang, locale);
                 const head = dl !== lastDay ? <li className="f-day">{dl}</li> : null;
                 lastDay = dl;
+                const rowInner = (<>
+                  <div className={`f-ic ${ic.cls}`}>{ic.svg}</div>
+                  <div className="f-tx" dangerouslySetInnerHTML={{ __html: activityHtml(a, lang) }} />
+                  <time>{ago(a.created_at, lang)}</time>
+                </>);
                 return (
                   <Fragment key={a.id}>
                     {head}
                     <li>
-                      <div className={`f-ic ${ic.cls}`}>{ic.svg}</div>
-                      <div className="f-tx" dangerouslySetInnerHTML={{ __html: activityHtml(a, lang) }} />
-                      <time>{ago(a.created_at, lang)}</time>
+                      {a.link
+                        ? <Link href={a.link} className="f-link">{rowInner}</Link>
+                        : rowInner}
                     </li>
                   </Fragment>
                 );
@@ -317,6 +451,8 @@ export default async function Dashboard() {
           )}
         </section>
       </div>
+        </>
+      )}
     </>
   );
 }

@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function Terms() {
   return (
-    <LegalShell title="Terms of Service" updated="8 July 2026">
+    <LegalShell title="Terms of Service" updated="9 August 2026">
       <p className="note">
         Plain-language summary: use VoltMira for lawful quoting work, you own the data you put in,
         the payback figures are estimates (not guarantees), and either of us can end the
@@ -101,7 +101,23 @@ export default function Terms() {
         them.
       </p>
 
-      <h2>12. Contact</h2>
+      <h2>12. Governing law</h2>
+      <p>
+        These terms are governed by the laws of the <b>Republic of Moldova</b>, and the courts of
+        Chișinău have jurisdiction, without prejudice to any mandatory consumer-protection rights you
+        have in your country of residence. VoltMira is operated from Moldova and serves installers
+        across Moldova, Romania and the wider EU.
+      </p>
+
+      <h2>13. Who operates VoltMira</h2>
+      <p>
+        VoltMira is operated by its founder, Bogdan Toctarov, pending formal incorporation. A
+        registered company name and address will be published here once incorporation completes;
+        until then, the contact point for all legal and commercial matters is{" "}
+        <a href="mailto:voltmiraenergy@gmail.com">voltmiraenergy@gmail.com</a>.
+      </p>
+
+      <h2>14. Contact</h2>
       <p>
         Questions about these terms:{" "}
         <a href="mailto:voltmiraenergy@gmail.com">voltmiraenergy@gmail.com</a>.

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { setLeadStatus, deleteLead, createProjectFromLead } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
 
-export default function LeadActions({ id, status, projectId, lang }) {
+export default function LeadActions({ id, status, projectId, lang, onEdit }) {
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -24,7 +24,13 @@ export default function LeadActions({ id, status, projectId, lang }) {
   const primary = { ...btn, background: "var(--ink)", color: "var(--paper)", border: "none", fontWeight: 600 };
 
   return (
-    <div style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "flex-end" }}>
+    <div style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
+      {/* Edit lives in this row (not floating above it) so it lines up with the
+          other actions and shares their height, radius and spacing. */}
+      {onEdit && (
+        <button style={btn} disabled={pending} onClick={onEdit}
+          title={t("lead_edit", lang)} aria-label={t("lead_edit", lang)}>{t("lead_edit", lang)}</button>
+      )}
       {status === "converted" && projectId ? (
         <button style={primary} disabled={pending} onClick={() => router.push(`/projects/${projectId}`)}>
           {t("lead_open_quote", lang)}

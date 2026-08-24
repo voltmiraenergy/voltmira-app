@@ -29,7 +29,7 @@ export default function OnboardingChecklist({ steps, allDone, lang }) {
       </div>
       <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
         {steps.map(s => (
-          <Link key={s.key} href={s.href}
+          <Link key={s.key} href={s.href} className="ob-step"
             style={{ display: "flex", alignItems: "center", gap: 11, textDecoration: "none", color: "var(--ink)" }}>
             <span aria-hidden="true" style={{
               width: 22, height: 22, borderRadius: "50%", flex: "none", display: "grid", placeItems: "center", fontSize: 13,

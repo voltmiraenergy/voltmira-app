@@ -173,12 +173,40 @@ test("self-consumption never exceeds consumption (oversized system)", () => {
   assert.ok(selfK <= 1000 + 1e-9, `selfK ${selfK} must not exceed cons 1000`);
 });
 
-test("annual and monthly self-consumption paths agree for a flat profile", () => {
+test("both paths agree exactly when consumption is the binding cap", () => {
+  // Deliberately oversized (22 MWh produced against 1.2 MWh used): both paths are
+  // clamped to consumption, so this proves the CAP agrees — not the formulas.
+  // The formulas themselves are compared in the next test.
   const p = { ...BASE, kw: 20, cons: 1200 };
   const annual = simulate(p, E, "expc");
   const monthly = simulate({ ...p, useMonthly: true, consMonthly: Array(12).fill(100) }, E, "expc");
   assert.ok(Math.abs(annual.self - monthly.self) < 1e-9,
     `annual self ${annual.self} vs monthly ${monthly.self}`);
+});
+
+test("KNOWN GAP: on a normal system a flat monthly profile ≠ the annual formula", () => {
+  // Documents real current behaviour rather than hiding it. The annual path takes
+  // min(0.85, max(0.2, cons/prod * 0.55)) once; the monthly path applies that same
+  // clamped expression twelve times against a seasonal production curve. Because
+  // the expression is non-linear, the twelve monthly answers do not average back to
+  // the annual one (Jensen), so switching the monthly toggle ON with a perfectly
+  // flat profile shifts the numbers by a few percent.
+  //
+  // The monthly path is the more physically honest of the two (summer surplus
+  // genuinely cannot be self-consumed), so it reads LOWER. Unifying on it would
+  // move every existing quote, which is why it is recorded here rather than
+  // silently changed.
+  //
+  // MD (net billing) on purpose: only there does the self-consumption ratio carry
+  // money. Under RO's 1:1 netting a self-consumed and an exported kWh are worth
+  // the same, so the same divergence in `self` produces no divergence in savings.
+  const MD = { ...BASE, market: "MD", price: 0.18 };
+  const flat = simulate({ ...MD, cons: 6000 }, E, "expc");
+  const even = simulate({ ...MD, cons: 6000, useMonthly: true, consMonthly: Array(12).fill(500) }, E, "expc");
+  const gap = Math.abs(flat.year1 - even.year1) / flat.year1;
+  assert.ok(even.year1 < flat.year1, "the monthly path should be the more conservative one");
+  assert.ok(gap > 0.005 && gap < 0.05,
+    `expected a small known divergence, got ${(gap * 100).toFixed(2)}% (flat €${flat.year1.toFixed(0)} vs monthly €${even.year1.toFixed(0)})`);
 });
 
 test("zero consumption yields zero self-consumption (no phantom savings)", () => {
@@ -219,11 +247,22 @@ test("garbage inputs never leak NaN into the result", () => {
   ];
   for (const p of cases) {
     const r = simulate(p, E, "expc");
-    for (const k of ["cost", "year1", "roi", "self", "solar0"]) {
+    for (const k of ["cost", "year1", "self", "solar0"]) {
       assert.ok(Number.isFinite(r[k]), `${k} is ${r[k]} for input ${JSON.stringify(p.kw ?? p.price ?? p.cons)}`);
     }
+    // payback and roi are deliberately nullable: no break-even inside the horizon,
+    // and no outlay to earn a return on. Anything else must be a finite number.
     if (r.payback !== null) assert.ok(Number.isFinite(r.payback));
+    if (r.roi !== null) assert.ok(Number.isFinite(r.roi), `roi is ${r.roi}`);
   }
+});
+
+test("roi is null (not a 999 sentinel) when a grant covers the whole system", () => {
+  const r = simulate({ ...BASE, kw: 1, market: "RO", afmSubsidy: true }, E, "expc");
+  assert.equal(r.cost, 0);
+  assert.equal(r.roi, null);        // 999 used to render as a literal "ROI 999%"
+  assert.equal(r.payback, 0);
+  assert.equal(r.immediate, true);
 });
 
 test("negative system size is clamped to zero, not treated as a discount", () => {
@@ -255,12 +294,33 @@ test("battery: legacy batt=true with no capacity falls back to 10 kWh", () => {
   assert.ok(Math.abs(legacy.self - explicit.self) < 1e-9);
 });
 
-test("costOverride: a BOM total replaces the kW x rate + battery cost when present", () => {
-  const base = simulate({ ...BASE, batt: true }, E, "expc");   // kw*rate + battery
-  const over = simulate({ ...BASE, batt: true, costOverride: 9999 }, E, "expc");
+test("costOverride: a BOM total replaces the kW x rate estimate", () => {
+  const base = simulate({ ...BASE }, E, "expc");
+  const over = simulate({ ...BASE, costOverride: 9999 }, E, "expc");
   assert.equal(over.cost, 9999);                                // override wins
   assert.notEqual(base.cost, 9999);
   // zero / missing override falls back to the estimate (backward compatible)
   assert.equal(simulate({ ...BASE, costOverride: 0 }, E, "expc").cost,
                simulate({ ...BASE }, E, "expc").cost);
+});
+
+test("costOverride + battery: the BOM only covers the battery if it prices one", () => {
+  // A BOM that DOES contain a battery line already includes its cost.
+  const priced = simulate({ ...BASE, batt: true, battKwh: 10, costOverride: 9999, bomHasBattery: true }, E, "expc");
+  assert.equal(priced.cost, 9999);
+
+  // A BOM of panels + inverter with the battery toggle ON must still be charged
+  // for the battery. Otherwise the client is quoted the battery's extra
+  // self-consumption for free and the payback comes out years too short.
+  const unpriced = simulate({ ...BASE, batt: true, battKwh: 10, costOverride: 9999 }, E, "expc");
+  assert.equal(unpriced.cost, 9999 + 10 * E.batteryCostPerKwh);
+  assert.ok(unpriced.payback > priced.payback,
+    `unpaid-for battery must not shorten payback (${unpriced.payback} vs ${priced.payback})`);
+
+  // Both see the same energy benefit — only the cost differs.
+  assert.ok(Math.abs(unpriced.self - priced.self) < 1e-9);
+
+  // No battery at all: the flag is irrelevant.
+  assert.equal(simulate({ ...BASE, costOverride: 9999 }, E, "expc").cost,
+               simulate({ ...BASE, costOverride: 9999, bomHasBattery: true }, E, "expc").cost);
 });

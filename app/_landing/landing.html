@@ -39,7 +39,7 @@
 
 <!-- Structured data: product + FAQ rich results -->
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"VoltMira","applicationCategory":"BusinessApplication","operatingSystem":"Web","url":"https://voltmira.com/","description":"Solar quoting software for installers: three honest payback scenarios from real PVGIS satellite data, tracked proposal links with open alerts, WhatsApp sharing, one-tap client acceptance, quote templates and a full sales pipeline. Romania, Moldova and the EU.","inLanguage":["en","ro","ru"],"creator":{"@id":"https://voltmira.com/#bogdan-toctarov"},"publisher":{"@id":"https://voltmira.com/#organization"},"featureList":["Three-band honest payback (pessimistic, expected, optimistic)","Real PVGIS satellite solar data per roof","Tracked proposal links with open and view-time alerts","WhatsApp proposal sharing","One-tap digital client acceptance","Casa Verde (Romania) and Moldova prosumer subsidy calculator","Reusable quote templates","Sales pipeline with quote aging and follow-up alerts","Branded PDF proposals","Website lead-capture widget","CSV export","English, Romanian and Russian · EUR, RON, MDL"],"offers":[{"@type":"Offer","name":"Pro","price":"25","priceCurrency":"EUR"},{"@type":"Offer","name":"Team","price":"99","priceCurrency":"EUR"},{"@type":"Offer","name":"Enterprise","price":"299","priceCurrency":"EUR"}]}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"VoltMira","applicationCategory":"BusinessApplication","operatingSystem":"Web","url":"https://voltmira.com/","description":"Solar quoting software for installers: three honest payback scenarios from real PVGIS satellite data, tracked proposal links with open alerts, WhatsApp sharing, one-tap client acceptance, quote templates and a full sales pipeline. Romania, Moldova and the EU.","inLanguage":["en","ro","ru"],"creator":{"@id":"https://voltmira.com/#bogdan-toctarov"},"publisher":{"@id":"https://voltmira.com/#organization"},"featureList":["Three-band honest payback (pessimistic, expected, optimistic)","Real PVGIS satellite solar data per roof","Tracked proposal links with open and view-time alerts","WhatsApp proposal sharing","One-tap digital client acceptance","Casa Verde (Romania) and Moldova prosumer subsidy calculator","Reusable quote templates","Sales pipeline with quote aging and follow-up alerts","Branded PDF proposals","Website lead-capture widget","CSV export","English, Romanian and Russian · EUR, RON, MDL"],"offers":[{"@type":"Offer","name":"Pro","price":"49","priceCurrency":"EUR"},{"@type":"Offer","name":"Team","price":"119","priceCurrency":"EUR"}]}
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
@@ -178,16 +178,23 @@ h1,h2,h3,.font-d{font-family:var(--d);letter-spacing:-.03em}
   backdrop-filter:blur(10px);
   border-bottom:1px solid var(--line);
 }
-.nav-in{display:flex;align-items:center;gap:18px;height:68px}
+/* Gaps tighten on narrower desktops instead of forcing the labels to wrap.
+   Romanian and Russian nav copy is noticeably longer than English, so a fixed
+   18/22px gap pushed "Motor de onestitate" and "Отслеживаемые оферты" onto a
+   second line and made the whole bar look broken. */
+.nav-in{display:flex;align-items:center;gap:clamp(10px,1.4vw,18px);height:68px}
 .logo{display:flex;align-items:center;gap:11px;text-decoration:none;font-family:var(--d);font-weight:700;font-size:21px}
 .logo .mark{transition:transform .5s var(--ease)}
 .logo:hover .mark{transform:rotate(-8deg) scale(1.06)}
 .logo b{color:var(--ink)}
 .logo span{color:var(--green)}
-.nav-links{display:flex;gap:22px;margin-left:auto}
+.nav-links{display:flex;gap:clamp(12px,1.5vw,22px);margin-left:auto}
 .nav-links a{
   text-decoration:none;font-size:14.5px;font-weight:500;color:var(--ink-soft);
   position:relative;padding:4px 0;
+  /* One line, always. A wrapped nav item also breaks the underline hover
+     effect below, which is absolutely positioned against a single-line box. */
+  white-space:nowrap;
 }
 .nav-links a::after{
   content:"";position:absolute;left:0;bottom:0;height:2px;width:100%;
@@ -195,7 +202,10 @@ h1,h2,h3,.font-d{font-family:var(--d);letter-spacing:-.03em}
   transition:transform .35s var(--ease);
 }
 .nav-links a:hover::after{transform:scaleX(1);transform-origin:left}
-.nav-signin{text-decoration:none;font-size:14.5px;font-weight:600;color:var(--ink);padding:8px 4px;transition:color .2s}
+.nav-signin{text-decoration:none;font-size:14.5px;font-weight:600;color:var(--ink);padding:8px 4px;transition:color .2s;white-space:nowrap}
+/* "Start free trial" is one word in EN but two longer ones in RO/RU
+   ("Începe gratuit", "Начать бесплатно") — keep the button on a single line. */
+.nav-in .btn{white-space:nowrap}
 .nav-signin:hover{color:var(--green)}
 .lang-switch{display:flex;gap:2px;background:var(--paper-2);border:1px solid var(--line);border-radius:10px;padding:3px}
 .lang-btn{
@@ -775,6 +785,9 @@ h2{font-size:clamp(32px,4.6vw,58px);font-weight:700;line-height:1.03;letter-spac
 .price .amt{font-family:var(--d);font-size:48px;font-weight:700;letter-spacing:-.04em;margin:8px 0 2px;color:var(--ink)}
 .price .amt small{font-size:15px;color:var(--muted);font-weight:500}
 .price .amt .was{font-size:20px;color:var(--muted);font-weight:500;letter-spacing:-.01em}
+/* Enterprise carries no number until SSO and the API exist, so the slot holds
+   a phrase. At the 48px numeral scale it would read as shouting. */
+.price .amt .poa{font-size:26px;font-weight:600;letter-spacing:-.02em;color:var(--ink)}
 .price .for{font-size:13.5px;color:var(--muted);margin-bottom:20px}
 .price ul{list-style:none;display:grid;gap:11px;font-size:14.5px;margin-bottom:26px}
 .price li{display:flex;gap:10px;align-items:flex-start}
@@ -838,8 +851,13 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
 @media(max-width:520px){.whatsapp-bubble{width:48px;height:48px;bottom:16px;right:16px}}
 
 /* ---------- responsive ---------- */
-/* collapse the nav tabs to the burger before the row gets crowded */
-@media (max-width:1080px){
+/* Collapse the nav tabs to the burger before the row gets crowded.
+   The threshold is set by the WIDEST language, not English: Russian
+   ("Начать бесплатно" + "Честный движок" + "Живое демо") needs ~1107px of bar,
+   and at the old 1080px cut-off it pushed the CTA off the right edge. Anything
+   narrower than this now gets the burger in every language, so the bar can
+   never spill regardless of which one is selected. */
+@media (max-width:1160px){
   .nav-links{display:none}
   .nav-signin{display:none}
   .nav-burger{display:grid}
@@ -1083,27 +1101,26 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
       </article>
     </div>
 
-    <figure class="hband-chart rv" aria-label="Cumulative cash-flow chart showing pessimistic, expected and optimistic scenarios crossing break-even at different years">
-      <figcaption class="hbc-cap" data-i18n="hbc_cap">The same three scenarios, as 25-year cumulative cash flow — not just numbers.</figcaption>
-      <svg viewBox="0 0 600 232" role="img" aria-hidden="true" preserveAspectRatio="none">
-        <!-- break-even (zero) line -->
-        <line x1="10" y1="120" x2="590" y2="120" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 5"/>
-        <text x="14" y="114" font-family="var(--m)" font-size="10" fill="var(--muted)" data-i18n="hb_break">€0 · break-even</text>
-        <!-- pessimistic -->
-        <polyline points="10,200 126,150 242,112 358,90 474,72 590,55" fill="none" stroke="var(--red)" stroke-width="2" stroke-dasharray="5 4" opacity=".7" stroke-linejoin="round"/>
-        <!-- optimistic -->
-        <polyline points="10,200 126,122 242,80 358,52 474,30 590,12" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="5 4" opacity=".7" stroke-linejoin="round"/>
-        <!-- expected (headline) -->
-        <polyline points="10,200 126,135 242,95 358,68 474,45 590,25" fill="none" stroke="var(--green)" stroke-width="3" stroke-linejoin="round"/>
-        <!-- break-even markers -->
-        <circle cx="128" cy="120" r="4" fill="var(--green)"/>
-        <circle cx="152" cy="120" r="4.5" fill="var(--green)" stroke="var(--paper-2)" stroke-width="1.5"/>
-        <circle cx="184" cy="120" r="4" fill="var(--red)"/>
+    <figure class="rd-chart rv" aria-label="Cumulative cash-flow chart">
+      <figcaption data-i18n="hbc_cap">The same three scenarios, as cumulative cash flow over 25 years — not just numbers.</figcaption>
+      <svg viewBox="0 0 640 244" role="img" aria-hidden="true">
+        <defs><linearGradient id="rd-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--green)" stop-opacity=".16"/><stop offset="1" stop-color="var(--green)" stop-opacity="0"/></linearGradient></defs>
+        <g stroke="var(--line)" stroke-width="1"><line x1="44" y1="42" x2="628" y2="42"/><line x1="44" y1="96" x2="628" y2="96"/></g>
+        <line x1="44" y1="150" x2="628" y2="150" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="2 4"/>
+        <text x="44" y="144" font-size="11" fill="var(--muted)" data-i18n="hb_break">€0 · break-even</text>
+        <path d="M44 196 L160 166 L276 138 L392 98 L510 64 L628 38 L628 212 L44 212 Z" fill="url(#rd-area)"/>
+        <path d="M44 196 L160 178 L276 158 L392 130 L510 102 L628 78" fill="none" stroke="var(--red)" stroke-width="2" stroke-dasharray="6 5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M44 196 L160 156 L276 122 L392 84 L510 50 L628 20" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="6 5" opacity=".5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M44 196 L160 166 L276 138 L392 98 L510 64 L628 38" fill="none" stroke="var(--green)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="180" cy="150" r="4" fill="var(--green)" opacity=".5"/>
+        <circle cx="226" cy="150" r="4.5" fill="var(--green)" stroke="var(--paper-2)" stroke-width="1.5"/>
+        <circle cx="309" cy="150" r="4" fill="var(--red)"/>
+        <g font-size="10" fill="var(--muted)"><text x="40" y="230">1</text><text x="316" y="230">12</text><text x="600" y="230">25</text></g>
       </svg>
-      <div class="hbc-legend">
-        <span><i class="hl-p"></i><span data-i18n="band_pess">Pessimistic</span> ~7.5</span>
-        <span><i class="hl-e"></i><span data-i18n="band_exp">Expected</span> ~6.2</span>
-        <span><i class="hl-o"></i><span data-i18n="band_opt">Optimistic</span> ~5.0</span>
+      <div class="rd-legend">
+        <span><i class="rd-lp"></i><b data-i18n="band_pess">Pessimistic</b> ~7.5</span>
+        <span><i class="rd-le"></i><b data-i18n="band_exp">Expected</b> ~6.2</span>
+        <span><i class="rd-lo"></i><b data-i18n="band_opt">Optimistic</b> ~5.0</span>
       </div>
     </figure>
 
@@ -1155,81 +1172,74 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
 <section id="client-view" aria-label="What your client sees" style="padding-bottom:0">
   <div class="wrap">
     <span class="sec-eyebrow rv" data-i18n="cv_eyebrow">The client's side</span>
-    <h2 class="rv" data-i18n="cv_h2">This is what your<br>client actually opens.</h2>
-    <p class="cv-lead rv" data-i18n="cv_lead">Not a spreadsheet screenshot emailed as an attachment. A clean page on their phone — three honest scenarios, every assumption within reach, one tap to accept. And you see the moment they open it.</p>
+    <h2 class="rv" data-i18n="cv_h2">What your client<br>actually sees.</h2>
+    <p class="cv-lead rv" data-i18n="cv_lead">Not an Excel screenshot sent as an attachment. A clean page on their phone — three honest scenarios, every assumption a tap away, one touch to accept. And you see the moment they open it.</p>
     <div class="cv-stage rv">
       <div class="cv-phone">
-        <div class="cv-head">
-          <span class="cv-brand">SolarTech Iași</span>
-          <span class="cv-tag" data-i18n="cv_tag">Solar proposal</span>
-        </div>
-        <div class="cv-body">
-          <div class="cv-title">Casa Popescu</div>
-          <div class="cv-sub">Str. Lalelelor 12, Cluj · <span data-i18n="cv_for">prepared for Andrei</span></div>
-          <div class="cv-kpis">
-            <div><b>6.0 kW</b><span data-i18n="cv_k1">System</span></div>
-            <div><b>€10,500</b><span data-i18n="cv_k2">Investment</span></div>
-            <div><b>6,600 kWh</b><span data-i18n="cv_k3">Per year</span></div>
+        <div class="cv-notch"></div>
+        <div class="cv-screen">
+          <div class="cv-head">
+            <span class="cv-brand">SolarTech Iași</span>
+            <span class="cv-tag" data-i18n="cv_tag">Solar quote</span>
           </div>
-          <div class="cv-bands">
-            <div class="cv-band p"><span data-i18n="band_pess">Pessimistic</span><b>9.8 <small data-i18n="cv_yr">yr</small></b></div>
-            <div class="cv-band e"><span data-i18n="band_exp">Expected</span><b>8.9 <small data-i18n="cv_yr">yr</small></b></div>
-            <div class="cv-band o"><span data-i18n="band_opt">Optimistic</span><b>8.2 <small data-i18n="cv_yr">yr</small></b></div>
+          <div class="cv-body">
+            <div class="cv-title">Casa Popescu</div>
+            <div class="cv-sub">Str. Lalelelor 12, Cluj · <span data-i18n="cv_for">prepared for Andrei</span></div>
+            <div class="cv-kpis">
+              <div><b>6.0 kW</b><span data-i18n="cv_k1">System</span></div>
+              <div><b>€10,500</b><span data-i18n="cv_k2">Investment</span></div>
+              <div><b>6,600 kWh</b><span data-i18n="cv_k3">Per year</span></div>
+            </div>
+            <div class="cv-bands">
+              <div class="cv-band p"><span data-i18n="band_pess">Pessimistic</span><b>9.8 <small data-i18n="cv_yr">yrs</small></b></div>
+              <div class="cv-band e"><span data-i18n="band_exp">Expected</span><b>8.9 <small data-i18n="cv_yr">yrs</small></b></div>
+              <div class="cv-band o"><span data-i18n="band_opt">Optimistic</span><b>8.2 <small data-i18n="cv_yr">yrs</small></b></div>
+            </div>
+            <button class="cv-accept" type="button" tabindex="-1" data-i18n="cv_accept">Accept quote</button>
+            <div class="cv-track"><span class="cv-dot"></span><span data-i18n="cv_track">See every open, minutes viewed &amp; battery toggle</span></div>
           </div>
-          <button class="cv-accept" type="button" tabindex="-1" data-i18n="cv_accept">Accept this quote</button>
-          <div class="cv-track"><span class="cv-dot"></span><span data-i18n="cv_track">You see every open, minute viewed &amp; battery toggle</span></div>
         </div>
       </div>
       <ul class="cv-points">
         <li data-i18n="cv_p1"><b>On their phone, in their language</b> — not a PDF they have to pinch-zoom on the roof.</li>
-        <li data-i18n="cv_p2"><b>Every assumption one tap away</b> — the transparency that turns a client into a referrer.</li>
+        <li data-i18n="cv_p2"><b>Every assumption a tap away</b> — the transparency that turns a client into a referral.</li>
         <li data-i18n="cv_p3"><b>Accept right there</b> — the deal can close without a single phone call.</li>
       </ul>
     </div>
   </div>
 </section>
 
-<section id="compare" aria-label="Comparison with generic quoting tools" style="padding-top:0">
+<section id="compare" aria-label="Why VoltMira" style="padding-top:0">
   <div class="wrap">
-    <span class="sec-eyebrow rv" data-i18n="cmp_eyebrow">VoltMira vs your spreadsheet</span>
-    <h2 class="rv" data-i18n="cmp_h2">What your Excel misses,<br>VoltMira prints.</h2>
-    <p class="rv" style="color:var(--muted);max-width:520px;margin:-6px 0 26px;font-size:15px;line-height:1.6" data-i18n="cmp_lead">Your spreadsheet works — until a client asks “where did this number come from?” Here’s the gap, line by line.</p>
-    <div class="cmp-wrap rv">
-      <div class="cmp-row head">
-        <div class="c-lbl cmp-hd"></div>
-        <div class="c-gen cmp-hd" data-i18n="cmp_c1">Your Excel / PDF</div>
-        <div class="c-vm cmp-hd">VoltMira</div>
-      </div>
-      <div class="cmp-row">
-        <div class="c-lbl" data-i18n="cmp_r1l">Payback shown</div>
-        <div class="c-gen" data-i18n="cmp_r1g">One flattering number</div>
-        <div class="c-vm" data-i18n="cmp_r1v"><b>Three honest bands</b> — worst, expected, best</div>
-      </div>
-      <div class="cmp-row">
-        <div class="c-lbl" data-i18n="cmp_r2l">Solar data</div>
-        <div class="c-gen" data-i18n="cmp_r2g">One national average (≈1 100 kWh/kWp)</div>
-        <div class="c-vm" data-i18n="cmp_r2v"><b>PVGIS satellite data</b> for the exact roof</div>
-      </div>
-      <div class="cmp-row">
-        <div class="c-lbl" data-i18n="cmp_r3l">Assumptions</div>
-        <div class="c-gen" data-i18n="cmp_r3g">Hidden inside the engine</div>
-        <div class="c-vm" data-i18n="cmp_r3v"><b>Printed on every proposal</b>, ready to defend</div>
-      </div>
-      <div class="cmp-row">
-        <div class="c-lbl" data-i18n="cmp_r4l">Consumption</div>
-        <div class="c-gen" data-i18n="cmp_r4g">A yearly guess</div>
-        <div class="c-vm" data-i18n="cmp_r4v"><b>Monthly profile</b>, tariff-aware</div>
-      </div>
-      <div class="cmp-row">
-        <div class="c-lbl" data-i18n="cmp_r5l">After you hit send</div>
-        <div class="c-gen" data-i18n="cmp_r5g">Silence</div>
-        <div class="c-vm" data-i18n="cmp_r5v"><b>Opens, minutes viewed, battery toggles</b></div>
-      </div>
-      <div class="cmp-row">
-        <div class="c-lbl" data-i18n="cmp_r6l">Markets</div>
-        <div class="c-gen" data-i18n="cmp_r6g">One-size-fits-all</div>
-        <div class="c-vm" data-i18n="cmp_r6v"><b>RO net metering · MD net billing · DE feed-in</b> — applied automatically</div>
-      </div>
+    <span class="sec-eyebrow rv" data-i18n="cmp_eyebrow">Why installers choose VoltMira</span>
+    <h2 class="rv" data-i18n="cmp_h2">Not a spreadsheet.<br>A quote your client believes.</h2>
+    <figure class="rd-park rv">
+      <svg viewBox="0 0 1200 430" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Solar park at golden hour">
+  <defs>
+    <linearGradient id="pk-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6E4C4"/><stop offset="1" stop-color="#FBF7EE"/></linearGradient>
+    <linearGradient id="pk-pan" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#173028"/><stop offset="1" stop-color="#2E5A46"/></linearGradient>
+  </defs>
+  <rect width="1200" height="430" fill="url(#pk-sky)"/>
+  <circle cx="900" cy="150" r="78" fill="#E89B2D" opacity=".22"/>
+  <circle cx="900" cy="150" r="42" fill="#E89B2D" opacity=".42"/>
+  <path d="M0 252 q150 -30 300 -6 t300 -6 t300 -8 t300 -2 v194 H0 Z" fill="#DEE7DA"/>
+  <path d="M0 300 q200 -22 400 0 t400 -6 t400 0 v136 H0 Z" fill="#CBD9C6"/>
+  <rect y="336" width="1200" height="94" fill="#BACBB2"/>
+  <g fill="url(#pk-pan)" stroke="#3FAE6A" stroke-width="1"><path d="M486 300 L742 300 L758 284 L502 284 Z"/></g>
+  <g fill="url(#pk-pan)" stroke="#3FAE6A" stroke-width="1.2"><path d="M398 342 L798 342 L822 314 L422 314 Z"/></g>
+  <g fill="url(#pk-pan)" stroke="#3FAE6A" stroke-width="1.5"><path d="M250 404 L868 404 L900 358 L282 358 Z"/></g>
+  <g stroke="rgba(127,220,164,.32)" stroke-width="1">
+    <line x1="360" y1="404" x2="388" y2="358"/><line x1="470" y1="404" x2="494" y2="358"/><line x1="580" y1="404" x2="598" y2="358"/><line x1="690" y1="404" x2="704" y2="358"/><line x1="800" y1="404" x2="810" y2="358"/>
+    <line x1="470" y1="342" x2="486" y2="314"/><line x1="590" y1="342" x2="602" y2="314"/><line x1="710" y1="342" x2="718" y2="314"/>
+  </g>
+  <path d="M250 404 L868 404 L876 393 L258 393 Z" fill="#7FDCA4" opacity=".13"/>
+</svg>
+      <figcaption class="rd-park-cap"><b data-i18n="rd_park_t">From one roof to a whole park.</b><span data-i18n="rd_park_s">The same honest math, from a 6 kW home to hundreds of kW commercial.</span></figcaption>
+    </figure>
+    <div class="rd-why">
+      <div class="it"><h4><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></i><span data-i18n="rd_why1_h">Three honest scenarios</span></h4><p data-i18n="rd_why1_p">Pessimistic, expected, optimistic — every assumption printed on the quote, ready to defend.</p></div>
+      <div class="it"><h4><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg></i><span data-i18n="rd_why2_h">PVGIS data per roof</span></h4><p data-i18n="rd_why2_p">Satellite yield for the exact coordinates, not a rough national average.</p></div>
+      <div class="it"><h4><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="2.6"/></svg></i><span data-i18n="rd_why3_h">See when they read it</span></h4><p data-i18n="rd_why3_p">Opens, minutes viewed, battery toggled — you know exactly when to call.</p></div>
     </div>
   </div>
 </section>
@@ -1251,10 +1261,10 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
     </div>
     <div class="feedbox rv" id="feedbox" aria-label="Example activity feed">
       <div class="fb-t" data-i18n="trk_feed">Your activity feed</div>
-      <div class="fev"><span class="ic">👁</span><span class="tx" data-i18n="fe1"><b>Ion Popescu</b> opened <b>Casa Popescu</b></span><time data-i18n="fe1t">just now</time></div>
+      <div class="fev"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="2.5"/></svg></span><span class="tx" data-i18n="fe1"><b>Ion Popescu</b> opened <b>Casa Popescu</b></span><time data-i18n="fe1t">just now</time></div>
       <div class="fev"><span class="ic">⏱</span><span class="tx" data-i18n="fe2">Viewed for <b>3m 34s</b> — longest so far</span><time>2m</time></div>
-      <div class="fev"><span class="ic">🔋</span><span class="tx" data-i18n="fe3">Toggled the <b>battery on</b> · payback recalculated</span><time>3m</time></div>
-      <div class="fev"><span class="ic">👁</span><span class="tx" data-i18n="fe4">Opened again — <b>2nd visit today</b></span><time>1h</time></div>
+      <div class="fev"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M20 10v4"/></svg></span><span class="tx" data-i18n="fe3">Toggled the <b>battery on</b> · payback recalculated</span><time>3m</time></div>
+      <div class="fev"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="2.5"/></svg></span><span class="tx" data-i18n="fe4">Opened again — <b>2nd visit today</b></span><time>1h</time></div>
       <div class="fev"><span class="ic g">✓</span><span class="tx" data-i18n="fe5"><b>Accepted the quote</b> — project marked Won</span><time>1h</time></div>
     </div>
   </div>
@@ -1276,9 +1286,9 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
       <h2 class="rv" data-i18n="pvg_h2">Your competitor guesses.<br>You cite the EU’s satellites.</h2>
       <p class="sec-lead rv" data-i18n="pvg_lead">Type the client’s address and VoltMira pulls the actual irradiance for that roof from PVGIS — the European Commission’s solar database. Bucharest is not Berlin, and a south slope is not a north one. Your numbers know the difference, and your proposal says so.</p>
       <ul class="pvg-pills rv" aria-label="Data engine capabilities">
-        <li><span class="pp-ic" aria-hidden="true">📡</span><span data-i18n="pvg_p1"><b>Live PVGIS API</b> — queried per roof, not a static lookup table</span></li>
-        <li><span class="pp-ic" aria-hidden="true">📅</span><span data-i18n="pvg_p2"><b>Monthly consumption profiling</b> — not a flat yearly average</span></li>
-        <li><span class="pp-ic" aria-hidden="true">📈</span><span data-i18n="pvg_p3"><b>Three-band cumulative cash flow</b> — worst, expected and best, charted</span></li>
+        <li><span class="pp-ic" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12a7 7 0 0 1 14 0"/><path d="M2 12a10 10 0 0 1 20 0"/><circle cx="12" cy="17" r="2" fill="currentColor" stroke="none"/></svg></span><span data-i18n="pvg_p1"><b>Live PVGIS API</b> — queried per roof, not a static lookup table</span></li>
+        <li><span class="pp-ic" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><span data-i18n="pvg_p2"><b>Monthly consumption profiling</b> — not a flat yearly average</span></li>
+        <li><span class="pp-ic" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17l5-5 4 3 7-8"/><path d="M16 7h5v5"/></svg></span><span data-i18n="pvg_p3"><b>Three-band cumulative cash flow</b> — worst, expected and best, charted</span></li>
       </ul>
     </div>
   </div>
@@ -1289,7 +1299,7 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
   <div class="wrap">
     <span class="sec-eyebrow rv" data-i18n="pr_eyebrow">Pricing</span>
     <h2 class="rv" data-i18n="pr_h2">Costs less than the coffee<br>at one lost deal.</h2>
-    <p class="sec-lead rv" data-i18n="pr_lead">Free 21-day trial — no card. Early pilots lock founder pricing (first 50): <b>€25/mo Pro, forever</b>, for honest feedback.</p>
+    <p class="sec-lead rv" data-i18n="pr_lead">Free 21-day trial — no card. Cancel any time.</p>
     <p class="pr-roi rv" data-i18n="pr_roi">One extra deal a year pays for VoltMira for ~20 years.</p>
 
     <div class="pr-toggles rv">
@@ -1304,14 +1314,13 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
       </div>
     </div>
     <p class="save-note rv" data-i18n="pr_save" hidden>✓ 2 months free on annual billing</p>
-    <p class="md-note rv" data-i18n="pr_md_note" hidden>🇲🇩 Moldova installers get regional pricing — just mention it when you start.</p>
+    <p class="md-note rv" data-i18n="pr_md_note" hidden>Moldova installers get regional pricing — just mention it when you start.</p>
     <p class="cur-note rv" data-i18n="cur_note" hidden>Approximate — billing is in EUR. Rates for guidance only.</p>
 
     <div class="prices">
       <div class="price hot rv" style="transition-delay:.08s">
-        <span class="pop" data-i18n="pr_pop">Founder price — first 50</span>
         <h3 data-i18n="plan_pro">Pro</h3>
-        <div class="amt"><span class="cur-amt" data-eur-mo="25" data-eur-yr="250">€25</span><small class="per">/mo</small> <s class="was cur-amt" data-eur-mo="49" data-eur-yr="490">€49</s></div>
+        <div class="amt"><span class="cur-amt" data-eur-mo="49" data-eur-yr="490">€49</span><small class="per">/mo</small></div>
         <div class="for" data-i18n="pr_pro_for">For the installer who sells</div>
         <ul>
           <li data-i18n="f_pro1">Your logo on every proposal & PDF</li>
@@ -1323,7 +1332,7 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
       </div>
       <div class="price rv" style="transition-delay:.16s">
         <h3 data-i18n="plan_team">Team</h3>
-        <div class="amt"><span class="cur-amt" data-eur-mo="99" data-eur-yr="990">€99</span><small class="per">/mo</small></div>
+        <div class="amt"><span class="cur-amt" data-eur-mo="119" data-eur-yr="1190">€119</span><small class="per">/mo</small></div>
         <div class="for" data-i18n="pr_team_for">Up to 5 people, one pipeline</div>
         <ul>
           <li data-i18n="f_team1">Everything in Pro</li>
@@ -1335,12 +1344,11 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
       </div>
       <div class="price rv" style="transition-delay:.24s">
         <h3 data-i18n="plan_ent">Enterprise</h3>
-        <div class="amt"><span class="cur-amt" data-eur-mo="299" data-eur-yr="2990">€299</span><small class="per">/mo</small></div>
+        <div class="amt"><span class="poa" data-i18n="pr_ent_amt">Custom pricing</span></div>
         <div class="for" data-i18n="pr_ent_for">For multi-branch installers</div>
         <ul>
           <li data-i18n="f_ent1">Everything in Team, unlimited seats</li>
-          <li data-i18n="f_ent2">Single sign-on (SSO) &amp; audit log</li>
-          <li data-i18n="f_ent3">API access, webhooks &amp; CRM sync</li>
+          <li data-i18n="f_ent2">Full audit log of every change</li>
           <li data-i18n="f_ent4">Custom subsidy &amp; tariff rules</li>
           <li data-i18n="f_ent5">Dedicated manager, onboarding &amp; SLA</li>
         </ul>
@@ -1352,7 +1360,7 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
 
 <!-- ================= REFERRAL CTA ================= -->
 <div class="wrap" style="text-align:center;padding:20px 0 0">
-  <p style="color:var(--muted)"><span data-i18n="ref_pre">Know another installer?</span> <a href="mailto:voltmiraenergy@gmail.com?subject=Installer%20referral" style="color:var(--green);font-weight:600" data-i18n="ref_link">Refer them and get a free month when they join.</a></p>
+  <p style="color:var(--muted)"><span data-i18n="ref_pre">Know another installer?</span> <a href="/refer" style="color:var(--green);font-weight:600" data-i18n="ref_link">Get your referral link — you both get a free month.</a></p>
 </div>
 
 <!-- ================= FAQ ================= -->
@@ -1386,16 +1394,28 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
 </section>
 
 <!-- ================= FINAL CTA ================= -->
-<section id="join" style="padding-top:20px">
+<section id="join" class="rd-final" style="padding-top:20px">
   <div class="wrap">
     <div class="final rv">
+      <svg class="rd-inst" viewBox="0 0 420 360" role="img" aria-label="Installer setting a panel">
+  <path d="M0 360 L0 262 L420 150 L420 360 Z" fill="#0E4633"/>
+  <path d="M0 262 L420 150 L420 176 L0 288 Z" fill="#14493580"/>
+  <g><path d="M196 250 L356 208 L388 226 L228 270 Z" fill="#173028" stroke="#3FAE6A" stroke-width="1.6"/>
+    <g stroke="rgba(127,220,164,.28)" stroke-width="1"><line x1="252" y1="258" x2="272" y2="220"/><line x1="300" y1="246" x2="318" y2="210"/></g>
+    <path d="M196 250 L356 208 L362 211 L202 253 Z" fill="#7FDCA4" opacity=".16"/></g>
+  <g fill="#142A21">
+    <path d="M120 214 q8 -40 42 -40 q30 0 32 32 l-5 50 q-34 9 -64 0 Z"/>
+    <circle cx="150" cy="168" r="17" fill="#22392E"/>
+    <path d="M131 165 a19 15 0 0 1 38 0 Z" fill="#E89B2D"/>
+    <path d="M180 206 q34 4 46 26" stroke="#142A21" stroke-width="15" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>
       <h2 data-i18n="cta_h2">Be the installer whose<br>numbers hold up.</h2>
-      <p data-i18n="cta_lead">Start free today across Romania, Moldova and the EU. The first 50 installers keep founder pricing permanently.</p>
+      <p data-i18n="cta_lead">Start free today in Romania, Moldova and the EU. The first 50 installers keep the founder price forever.</p>
       <div class="hero-cta-row" style="justify-content:center">
-        <a class="btn btn-amber btn-lg" href="/login"><span data-i18n="join">Start free trial</span> <span class="arr">→</span></a>
-        <a class="btn btn-ghost btn-lg" href="/demo"><span data-i18n="cta_demo">Explore the live demo</span></a>
+        <a class="btn btn-amber btn-lg" href="/login"><span data-i18n="join">Start free</span> <span class="arr">&rarr;</span></a>
       </div>
-      <p class="wl-note" data-i18n="cta_note">No credit card required · Free during our beta · Cancel anytime.</p>
+      <p class="wl-note"><span data-i18n="cta_note">No card · Free during beta · Cancel anytime.</span> <a class="rd-demo-link" href="/demo"><span data-i18n="cta_demo">Explore the live demo</span> &rarr;</a></p>
     </div>
   </div>
 </section>
@@ -1436,378 +1456,7 @@ footer{padding:44px 0 90px;position:relative;z-index:2}
    Elements carry data-i18n="key"; setLang swaps their innerHTML.
    The nav switcher and ?lang= / localStorage drive the choice.
 ============================================================ */
-var I18N = {
-  en: {
-    nav_honesty:"Honesty engine", nav_tracking:"Tracked proposals", nav_pricing:"Pricing", nav_faq:"FAQ", nav_demo:"Live demo",
-    demo_eyebrow:"Try it before you sign up",
-    demo_h:"Walk through the <em>full Pro plan</em> — right now, no signup.",
-    demo_lead:"A live copy of VoltMira loaded with a fictional installer — SolarTech Iași — six projects, a team, tracked proposals, real math. Click anything; it resets when you leave.",
-    demo_t1:"<b><span class=\"tn\">01</span>Open the dashboard</b>Pipeline value, win rate, and the follow-ups that are about to slip.",
-    demo_t2:"<b><span class=\"tn\">02</span>Check Casa Popescu</b>See the tracked proposal: 2 opens, 3m 34s viewing, battery toggled on.",
-    demo_t3:"<b><span class=\"tn\">03</span>Make a quote</b>Hit “New quote”, drag the size slider, watch all three payback bands move.",
-    demo_btn:"Open the live demo",
-    demo_note:"Full Pro plan · sample data · nothing saves · resets on refresh",
-    nav_join:'Start free trial <span class="arr">→</span>',
-    hb_break:"€0 · break-even", hb_yr:" years",
-    hero_eyebrow:"For solar installers · RO · MD · EU",
-    h1_1:"Solar quotes", h1_2:"your clients can", h1_3:"fact-check.",
-    hero_lead:"Most quoting tools show one flattering number. VoltMira shows <b>three honest scenarios</b>, computed from real sun data for the client's roof — and tells you the moment they open your proposal.",
-    hero_cta:"Start free trial", hero_ok:"You're in — welcome aboard.",
-    hero_note:"No credit card required · Free during our beta · Set up in 2 minutes",
-    inst_foot:"drag the slider — this is the actual engine, not a picture",
-    hon_eyebrow:"The honesty engine", hon_h2:"One number is a sales pitch.<br>Three numbers is the truth.",
-    hon_lead:"Every VoltMira quote shows the payback under pessimistic, expected and optimistic assumptions — with every assumption printed on the proposal. Clients trust what they can verify. Trust closes roofs.",
-    band_pess:"Pessimistic", band_exp:"Expected", band_opt:"Optimistic",
-    why_pess:"<b>Low sun, flat prices.</b> −8% yield, 0.8%/yr panel degradation, zero electricity inflation. If even this number works, the deal is safe.",
-    why_exp:"<b>The likeliest outcome.</b> PVGIS yield for the exact roof, 0.5%/yr degradation, 3% price inflation. The number you stand behind.",
-    why_opt:"<b>If prices keep climbing.</b> +8% yield, 0.3%/yr degradation, 5% inflation. Shown honestly as the best case — never the headline.",
-    trk_eyebrow:"Tracked proposals", trk_h2:"Know the moment<br>they open it.",
-    trk_lead:"Stop guessing when to follow up. Send a live link instead of a dead PDF — and watch what happens on the other side.",
-    trk_feed:"Your activity feed",
-    pvg_eyebrow:"Real solar data", pvg_h2:"Your competitor guesses.<br>You cite the EU’s satellites.",
-    pvg_lead:"Type the client’s address and VoltMira pulls the actual irradiance for that roof from PVGIS — the European Commission’s solar database. Bucharest is not Berlin, and a south slope is not a north one. Your numbers know the difference, and your proposal says so.",
-    pvg_p1:"<b>Live PVGIS API</b> — queried per roof, not a static lookup table",
-    pvg_p2:"<b>Monthly consumption profiling</b> — not a flat yearly average",
-    pvg_p3:"<b>Three-band cumulative cash flow</b> — worst, expected and best, charted",
-    pr_eyebrow:"Pricing", pr_h2:"Costs less than the coffee<br>at one lost deal.",
-    pr_lead:"Free 21-day trial — no card. Early pilots lock founder pricing (first 50): <b>€25/mo Pro, forever</b>, for honest feedback.",
-    pr_roi:"One extra deal a year pays for VoltMira for ~20 years.",
-    bill_monthly:"Monthly", bill_annual:"Annual", per_mo:"/mo", per_yr:"/yr",
-    pr_save:"✓ 2 months free on annual billing",
-    pr_md_note:"🇲🇩 Moldova installers get regional pricing — just mention it when you start.",
-    plan_pro:"Pro", plan_team:"Team", plan_ent:"Enterprise",
-    pr_pro_for:"For the installer who sells", pr_team_for:"Up to 5 people, one pipeline", pr_ent_for:"For multi-branch installers",
-    pr_pop:"Founder price — first 50", pr_pro_cta:"Start free trial", pr_ent_cta:"Talk to us",
-    cur_note:"Approximate — billing is in EUR. Rates for guidance only.",
-    f_ent1:"Everything in Team, unlimited seats", f_ent2:"Single sign-on (SSO) & audit log", f_ent3:"API access, webhooks & CRM sync", f_ent4:"Custom subsidy & tariff rules", f_ent5:"Dedicated manager, onboarding & SLA",
-    f_pro1:"Your logo on every proposal & PDF", f_pro2:"Tracked proposal links + open alerts", f_pro3:"Website lead widget", f_pro4:"Saved clients & full pipeline",
-    f_team1:"Everything in Pro", f_team2:"5 seats with project owners", f_team3:"Shared clients & win-rate analytics", f_team4:"Priority support in RO/RU/EN",
-    join:"Start free trial", cta_demo:"Explore the live demo",
-    ref_pre:"Know another installer?", ref_link:"Refer them and get a free month when they join.",
-    faq_eyebrow:"Questions installers ask", faq_h2:"Fair questions.",
-    faq_q1:"Where do the solar numbers come from?",
-    faq_a1:"Yearly and monthly yield come from PVGIS, the European Commission’s satellite-derived solar database, for the exact coordinates of the roof. Tariff schemes (net metering in Romania, net billing in Moldova, feed-in in Germany) are applied automatically per market. Every assumption is printed on the proposal.",
-    faq_q2:"Why show a pessimistic number? Won’t it scare clients?",
-    faq_a2:"The opposite, in practice. Clients have heard too many perfect promises. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself.",
-    faq_q3:"Does it work for Moldova’s net billing?",
-    faq_a3:"Yes — that’s home turf. Moldova’s low export price makes self-consumption the whole game, so the engine models it month by month, values battery storage correctly, and supports MDL display and Russian/Romanian proposals.",
-    faq_q4:"What does “tracked proposal” mean for my client’s privacy?",
-    faq_a4:"The link records opens, time on page, and interactions with the quote itself — nothing else. No ad trackers, no profiling, EU-hosted. It’s the courtesy of knowing your quote was received, done transparently.",
-    faq_q5:"How do I start?",
-    faq_a5:"Sign up and you’re in — no waitlist, no card. Full access to build quotes and send tracked proposals straight away, free through our beta. The first 50 installers keep founder pricing permanently when paid plans go live.",
-    cta_h2:"Be the installer whose<br>numbers hold up.",
-    cta_lead:"Start free today across Romania, Moldova and the EU. The first 50 installers keep founder pricing permanently.",
-    ft5:"<b>Your data stays yours</b> — export every quote and client to CSV in one click, no lock-in.",
-    cta_ok:"You're in — welcome aboard.", cta_note:"No credit card required · Free during our beta · Cancel anytime.",
-    foot_tag:"© 2026 · The quoting tool your clients can fact-check.", foot_founder:"Founded by", foot_privacy:"Privacy", foot_terms:"Terms", foot_refunds:"Refunds",
-    skip:"Skip to content", nav_signin:"Sign in",
-    dm_pipeline:"Pipeline", dm_win:"Win rate", dm_pb:"Avg payback",
-    dm_won:"Won", dm_sent:"Sent", dm_draft:"Draft",
-    hbc_cap:"The same three scenarios, as 25-year cumulative cash flow — not just numbers.",
-    as_t:"Printed on every proposal", as_k1:"Yield (PVGIS)", as_k2:"Degradation",
-    as_k3:"Price inflation", as_k4:"Tariff scheme", as_v4:"Net metering 1:1",
-    cmp_eyebrow:"VoltMira vs your spreadsheet", cmp_h2:"What your Excel misses,<br>VoltMira prints.",
-    cmp_c1:"Your Excel / PDF", cmp_lead:"Your spreadsheet works — until a client asks “where did this number come from?” Here’s the gap, line by line.",
-    cv_eyebrow:"The client's side", cv_h2:"This is what your<br>client actually opens.",
-    cv_lead:"Not a spreadsheet screenshot emailed as an attachment. A clean page on their phone — three honest scenarios, every assumption within reach, one tap to accept. And you see the moment they open it.",
-    cv_tag:"Solar proposal", cv_for:"prepared for Andrei", cv_k1:"System", cv_k2:"Investment", cv_k3:"Per year", cv_yr:"yr", cv_accept:"Accept this quote",
-    cv_track:"You see every open, minute viewed & battery toggle",
-    cv_p1:"<b>On their phone, in their language</b> — not a PDF they have to pinch-zoom on the roof.",
-    cv_p2:"<b>Every assumption one tap away</b> — the transparency that turns a client into a referrer.",
-    cv_p3:"<b>Accept right there</b> — the deal can close without a single phone call.",
-    cmp_r1l:"Payback shown", cmp_r1g:"One flattering number", cmp_r1v:"<b>Three honest bands</b> — worst, expected, best",
-    cmp_r2l:"Solar data", cmp_r2g:"One national average (≈1 100 kWh/kWp)", cmp_r2v:"<b>PVGIS satellite data</b> for the exact roof",
-    cmp_r3l:"Assumptions", cmp_r3g:"Hidden inside the engine", cmp_r3v:"<b>Printed on every proposal</b>, ready to defend",
-    cmp_r4l:"Consumption", cmp_r4g:"A yearly guess", cmp_r4v:"<b>Monthly profile</b>, tariff-aware",
-    cmp_r5l:"After you hit send", cmp_r5g:"Silence", cmp_r5v:"<b>Opens, minutes viewed, battery toggles</b>",
-    cmp_r6l:"Markets", cmp_r6g:"One-size-fits-all", cmp_r6v:"<b>RO net metering · MD net billing · DE feed-in</b> — applied automatically",
-    est_head:"Free estimate · real PVGIS sun",
-    hp_opened_badge:"Opened 2×", hp_kicker:"Solar proposal", hp_for:"Prepared for", hp_sys:"8.4 kW rooftop · 12 panels + battery",
-    hp_pay_h:"Payback — three honest scenarios", hp_yr:"yr", hp_savings:"Lifetime savings", hp_accept:"Accept proposal",
-    hp_track:"Opened 2× · 3m 34s viewing · 4 days ago",
-    est_lead:"Your address → the real payback for <b>your</b> roof. No signup.",
-    est_addr:"Roof address", est_addr_ph:"Str. Lalelelor 12, București", est_country:"Country",
-    est_bill:"Monthly bill <span class=\"opt\">optional</span>", est_calc:"Calculate my payback", est_recalc:"Recalculate",
-    est_reading:"Reading the sun…", est_hint:"Real coordinates · PVGIS satellite data · your worst case, expected & best case.",
-    est_break:"years to break even", est_cta:"Turn this into a tracked proposal",
-    est_cost:"System cost", est_saved:"Saved / year", est_err_addr:"Enter a street and city.",
-    est_err_generic:"Something went wrong — try again.", est_err_busy:"The sun-data service is busy — try again in a moment.",
-    est_c_ro:"Romania", est_c_md:"Moldova", est_c_de:"Germany",
-    inst_title:"Payback · București rooftop · PVGIS", inst_live:"live math",
-    inst_break:"years to break even", inst_size:"SYSTEM SIZE",
-    iband_p:"Pessim.", iband_e:"Expected", iband_o:"Optim.", unit_yr:" yr", unit_kwp_yr:"kWh/kWp·yr",
-    mk_RO_scheme:"Net metering 1:1", mk_MD_scheme:"Net billing", mk_DE_scheme:"Feed-in tariff",
-    hiw_eyebrow:"Address to signed quote",
-    hiw_s1n:"Step 01", hiw_s1t:"Type the address",
-    hiw_s1d:"VoltMira pulls the real irradiance for that exact roof from <b>PVGIS</b> and applies the right tariff scheme for the market — automatically.",
-    hiw_s2n:"Step 02", hiw_s2t:"Get three honest numbers",
-    hiw_s2d:"Pessimistic, expected, optimistic — with <b>every assumption printed</b> on the proposal, ready to defend at the kitchen table.",
-    hiw_s3n:"Step 03", hiw_s3t:"Send the link, watch the feed",
-    hiw_s3d:"One link to the client's phone. You see <b>opens, minutes viewed, battery toggles</b> — and Accept lands the deal in your pipeline.",
-    ft1:"<b>Opens & time viewed</b> — “Ion opened it twice, 3 minutes each” beats “sent last Tuesday, no reply.”",
-    ft2:"<b>Interaction signals</b> — they toggled the battery on? That’s a buying question. Call about batteries.",
-    ft3:"<b>Accept from the page</b> — one tap on their phone marks the deal Won in your pipeline.",
-    ft4:"<b>Frozen snapshots</b> — the client always sees exactly what you sent, even if you edit later.",
-    fe1:"<b>Ion Popescu</b> opened <b>Casa Popescu</b>", fe1t:"just now",
-    fe2:"Viewed for <b>3m 34s</b> — longest so far",
-    fe3:"Toggled the <b>battery on</b> · payback recalculated",
-    fe4:"Opened again — <b>2nd visit today</b>",
-    fe5:"<b>Accepted the quote</b> — project marked Won",
-    pvk_addr:"Address", pvk_src:"Data source", pvv_src:"PVGIS · EU Joint Research Centre",
-    pvk_yield:"Yield at this roof", pvk_generic:"Generic tool assumes",
-    pvk_diff:"Difference on a 6 kW system", pvv_diff:"+1 122 kWh every year",
-    pvg_badge:"✓ Real sun, not national averages",
-    meta_title:"VoltMira — Solar quotes your clients can fact-check",
-    meta_desc:"The quoting tool for solar installers: honest three-band payback, real PVGIS sun data, and proposal links that tell you when clients open them. RO · MD · EU."
-  },
-  ro: {
-    nav_honesty:"Motor de onestitate", nav_tracking:"Oferte urmărite", nav_pricing:"Prețuri", nav_faq:"Întrebări", nav_demo:"Demo live",
-    demo_eyebrow:"Încearcă înainte să te înscrii",
-    demo_h:"Plimbă-te prin <em>planul Pro complet</em> — chiar acum, fără cont.",
-    demo_lead:"O copie live a VoltMira cu un instalator fictiv — SolarTech Iași — șase proiecte, o echipă, oferte urmărite, calcule reale. Dă click oriunde; totul se resetează când pleci.",
-    demo_t1:"<b><span class=\"tn\">01</span>Deschide dashboard-ul</b>Valoarea pipeline-ului, rata de câștig și follow-up-urile care stau să scape.",
-    demo_t2:"<b><span class=\"tn\">02</span>Vezi Casa Popescu</b>Oferta urmărită: 2 deschideri, 3m 34s vizualizare, baterie pornită.",
-    demo_t3:"<b><span class=\"tn\">03</span>Fă o ofertă</b>Apasă „Ofertă nouă”, trage slider-ul de putere și vezi cum se mișcă toate cele trei benzi.",
-    demo_btn:"Deschide demo-ul live",
-    demo_note:"Plan Pro complet · date demonstrative · nimic nu se salvează · se resetează la refresh",
-    nav_join:'Începe gratuit <span class="arr">→</span>',
-    hb_break:"€0 · prag de rentabilitate", hb_yr:" ani",
-    hero_eyebrow:"Pentru instalatori solari · RO · MD · UE",
-    h1_1:"Oferte solare pe care", h1_2:"clienții tăi le pot", h1_3:"verifica.",
-    hero_lead:"Majoritatea aplicațiilor arată un singur număr măgulitor. VoltMira arată <b>trei scenarii oneste</b>, calculate din date solare reale pentru acoperișul clientului — și îți spune în momentul în care ți-a deschis oferta.",
-    hero_cta:"Începe gratuit", hero_ok:"Ești înăuntru — bun venit!",
-    hero_note:"Fără card · Gratuit în perioada beta · Configurare în 2 minute",
-    inst_foot:"trage cursorul — acesta e motorul real, nu o poză",
-    hon_eyebrow:"Motorul de onestitate", hon_h2:"Un număr e o reclamă.<br>Trei numere sunt adevărul.",
-    hon_lead:"Fiecare ofertă VoltMira arată amortizarea în ipoteze pesimiste, așteptate și optimiste — cu fiecare ipoteză tipărită pe ofertă. Clienții au încredere în ce pot verifica. Încrederea aduce contracte.",
-    band_pess:"Pesimist", band_exp:"Așteptat", band_opt:"Optimist",
-    why_pess:"<b>Soare puțin, prețuri fixe.</b> −8% randament, 0,8%/an degradare panouri, zero inflație la energie. Dacă și acest număr funcționează, afacerea e sigură.",
-    why_exp:"<b>Rezultatul cel mai probabil.</b> Randament PVGIS pentru acoperișul exact, 0,5%/an degradare, 3% inflație preț. Numărul pe care îl susții.",
-    why_opt:"<b>Dacă prețurile cresc.</b> +8% randament, 0,3%/an degradare, 5% inflație. Arătat onest ca cel mai bun caz — niciodată ca titlu.",
-    trk_eyebrow:"Oferte urmărite", trk_h2:"Află momentul<br>în care o deschid.",
-    trk_lead:"Nu mai ghici când să revii. Trimite un link viu în loc de un PDF mort — și vezi ce se întâmplă de partea cealaltă.",
-    trk_feed:"Fluxul tău de activitate",
-    pvg_eyebrow:"Date solare reale", pvg_h2:"Concurenții ghicesc.<br>Tu citești sateliții UE.",
-    pvg_lead:"Introdu adresa clientului și VoltMira ia iradiația reală pentru acel acoperiș din PVGIS — baza de date solară a Comisiei Europene. București nu e Berlin, iar o pantă sudică nu e una nordică. Numerele tale știu diferența, iar oferta ta o spune.",
-    pvg_p1:"<b>API PVGIS live</b> — interogat pentru fiecare acoperiș, nu un tabel static",
-    pvg_p2:"<b>Profil lunar de consum</b> — nu o medie anuală plată",
-    pvg_p3:"<b>Flux de numerar cumulat pe trei benzi</b> — pesimist, așteptat și optimist, în grafic",
-    pr_eyebrow:"Prețuri", pr_h2:"Costă mai puțin decât cafeaua<br>la un contract pierdut.",
-    pr_lead:"Probă gratuită 21 de zile — fără card. Piloții timpurii blochează prețul de fondator (primii 50): <b>€25/lună Pro, pe viață</b>, pentru feedback onest.",
-    pr_roi:"O singură vânzare în plus pe an acoperă VoltMira ~20 de ani.",
-    bill_monthly:"Lunar", bill_annual:"Anual", per_mo:"/lună", per_yr:"/an",
-    pr_save:"✓ 2 luni gratis la plata anuală",
-    pr_md_note:"🇲🇩 Instalatorii din Moldova primesc preț regional — spune-ne când începi.",
-    plan_pro:"Pro", plan_team:"Echipă", plan_ent:"Enterprise",
-    pr_pro_for:"Pentru instalatorul care vinde", pr_team_for:"Până la 5 persoane, un pipeline", pr_ent_for:"Pentru instalatori cu mai multe filiale",
-    pr_pop:"Preț fondator — primii 50", pr_pro_cta:"Începe gratuit", pr_ent_cta:"Hai să vorbim",
-    cur_note:"Aproximativ — facturarea este în EUR. Cursuri orientative.",
-    f_ent1:"Tot din Echipă, locuri nelimitate", f_ent2:"Autentificare unică (SSO) & jurnal de audit", f_ent3:"Acces API, webhook-uri & sincronizare CRM", f_ent4:"Reguli personalizate de subvenții & tarife", f_ent5:"Manager dedicat, onboarding & SLA",
-    f_pro1:"Logo-ul tău pe fiecare ofertă & PDF", f_pro2:"Linkuri urmărite + alerte la deschidere", f_pro3:"Widget de lead pentru site", f_pro4:"Clienți salvați & pipeline complet",
-    f_team1:"Tot ce e în Pro", f_team2:"5 locuri cu responsabili de proiect", f_team3:"Clienți comuni & analiză rată câștig", f_team4:"Suport prioritar în RO/RU/EN",
-    join:"Începe gratuit", cta_demo:"Explorează demo-ul live",
-    ref_pre:"Cunoști alt instalator?", ref_link:"Recomandă-l și primești o lună gratuită când se înscrie.",
-    faq_eyebrow:"Întrebări de la instalatori", faq_h2:"Întrebări corecte.",
-    faq_q1:"De unde vin numerele solare?",
-    faq_a1:"Randamentul anual și lunar vine din PVGIS, baza de date solară prin satelit a Comisiei Europene, pentru coordonatele exacte ale acoperișului. Schemele de tarifare (net metering în România, net billing în Moldova, feed-in în Germania) se aplică automat pe piață. Fiecare ipoteză e tipărită pe ofertă.",
-    faq_q2:"De ce să arăți un număr pesimist? Nu sperie clienții?",
-    faq_a2:"Din contră, în practică. Clienții au auzit prea multe promisiuni perfecte. Un interval cu ipoteze vizibile pare inginerie; un singur număr roz pare vânzare. Când cazul cel mai rău tot bate factura, afacerea se apără singură.",
-    faq_q3:"Funcționează pentru net billing-ul Moldovei?",
-    faq_a3:"Da — e teren propriu. Prețul mic la export din Moldova face autoconsumul totul, așa că motorul îl modelează lună cu lună, evaluează corect bateriile și suportă afișare MDL și oferte în rusă/română.",
-    faq_q4:"Ce înseamnă “ofertă urmărită” pentru confidențialitatea clientului?",
-    faq_a4:"Linkul înregistrează deschideri, timp pe pagină și interacțiuni cu oferta — nimic altceva. Fără trackere publicitare, fără profilare, găzduit în UE. E curtoazia de a ști că oferta a fost primită, transparent.",
-    faq_q5:"Cum încep?",
-    faq_a5:"Te înscrii și ești înăuntru — fără listă de așteptare, fără card. Acces complet pentru a construi oferte și a trimite propuneri urmărite imediat, gratuit în perioada beta. Primii 50 de instalatori păstrează prețul de fondator permanent când apar planurile plătite.",
-    cta_h2:"Fii instalatorul ale cărui<br>numere rezistă.",
-    cta_lead:"Începe gratuit azi în România, Moldova și UE. Primii 50 de instalatori păstrează prețul de fondator permanent.",
-    ft5:"<b>Datele tale rămân ale tale</b> — exporți fiecare ofertă și client în CSV dintr-un clic, fără blocaj.",
-    cta_ok:"Ești înăuntru — bun venit!", cta_note:"Fără card · Gratuit în perioada beta · Anulezi oricând.",
-    foot_tag:"© 2026 · Instrumentul de ofertare pe care clienții îl pot verifica.", foot_founder:"Fondat de", foot_privacy:"Confidențialitate", foot_terms:"Termeni", foot_refunds:"Rambursări",
-    skip:"Sari la conținut", nav_signin:"Autentificare",
-    dm_pipeline:"Pipeline", dm_win:"Rată de câștig", dm_pb:"Amortizare medie",
-    dm_won:"Câștigat", dm_sent:"Trimis", dm_draft:"Ciornă",
-    hbc_cap:"Aceleași trei scenarii, ca flux de numerar cumulat pe 25 de ani — nu doar cifre.",
-    as_t:"Tipărit pe fiecare ofertă", as_k1:"Randament (PVGIS)", as_k2:"Degradare",
-    as_k3:"Inflația prețului", as_k4:"Schemă tarifară", as_v4:"Net metering 1:1",
-    cmp_eyebrow:"VoltMira vs tabelul tău Excel", cmp_h2:"Ce ratează Excel-ul tău,<br>VoltMira tipărește.",
-    cmp_c1:"Excel-ul / PDF-ul tău", cmp_lead:"Tabelul tău funcționează — până când un client întreabă „de unde vine cifra asta?”. Iată diferența, rând cu rând.",
-    cv_eyebrow:"Partea clientului", cv_h2:"Asta vede<br>clientul tău, de fapt.",
-    cv_lead:"Nu o captură de Excel trimisă ca atașament. O pagină curată pe telefonul lui — trei scenarii oneste, fiecare ipoteză la un click, o atingere pentru a accepta. Iar tu vezi momentul în care o deschide.",
-    cv_tag:"Ofertă solară", cv_for:"pregătită pentru Andrei", cv_k1:"Sistem", cv_k2:"Investiție", cv_k3:"Pe an", cv_yr:"ani", cv_accept:"Acceptă oferta",
-    cv_track:"Vezi fiecare deschidere, minute vizionate & comutarea bateriei",
-    cv_p1:"<b>Pe telefonul lui, în limba lui</b> — nu un PDF pe care trebuie să-l mărească pe acoperiș.",
-    cv_p2:"<b>Fiecare ipoteză la o atingere</b> — transparența care transformă un client într-o recomandare.",
-    cv_p3:"<b>Acceptă direct de acolo</b> — afacerea se poate închide fără niciun telefon.",
-    cmp_r1l:"Amortizarea afișată", cmp_r1g:"Un singur număr măgulitor", cmp_r1v:"<b>Trei scenarii oneste</b> — pesimist, așteptat, optimist",
-    cmp_r2l:"Date solare", cmp_r2g:"O medie națională (≈1 100 kWh/kWp)", cmp_r2v:"<b>Date satelitare PVGIS</b> pentru acoperișul exact",
-    cmp_r3l:"Ipoteze", cmp_r3g:"Ascunse în motorul de calcul", cmp_r3v:"<b>Tipărite pe fiecare ofertă</b>, gata de apărat",
-    cmp_r4l:"Consum", cmp_r4g:"O estimare anuală", cmp_r4v:"<b>Profil lunar</b>, adaptat tarifului",
-    cmp_r5l:"După ce trimiți", cmp_r5g:"Tăcere", cmp_r5v:"<b>Deschideri, minute vizualizate, baterie pornită</b>",
-    cmp_r6l:"Piețe", cmp_r6g:"Aceeași formulă peste tot", cmp_r6v:"<b>RO net metering · MD net billing · DE feed-in</b> — aplicate automat",
-    est_head:"Estimare gratuită · date PVGIS reale",
-    hp_opened_badge:"Deschisă 2×", hp_kicker:"Ofertă solară", hp_for:"Pregătită pentru", hp_sys:"8.4 kW pe acoperiș · 12 panouri + baterie",
-    hp_pay_h:"Amortizare — trei scenarii oneste", hp_yr:"ani", hp_savings:"Economii pe viață", hp_accept:"Acceptă oferta",
-    hp_track:"Deschisă de 2× · 3m 34s vizionare · acum 4 zile",
-    est_lead:"Adresa ta → amortizarea reală pentru <b>acoperișul tău</b>. Fără cont.",
-    est_addr:"Adresa acoperișului", est_addr_ph:"Str. Lalelelor 12, București", est_country:"Țară",
-    est_bill:"Factură lunară <span class=\"opt\">opțional</span>", est_calc:"Calculează amortizarea", est_recalc:"Recalculează",
-    est_reading:"Se citește soarele…", est_hint:"Coordonate reale · date satelitare PVGIS · cazul pesimist, așteptat și optimist.",
-    est_break:"ani până la amortizare", est_cta:"Transformă în ofertă urmărită",
-    est_cost:"Cost sistem", est_saved:"Economii / an", est_err_addr:"Introdu strada și orașul.",
-    est_err_generic:"Ceva n-a mers — mai încearcă.", est_err_busy:"Serviciul de date solare e ocupat — încearcă din nou într-o clipă.",
-    est_c_ro:"România", est_c_md:"Moldova", est_c_de:"Germania",
-    inst_title:"Amortizare · Acoperiș București · PVGIS", inst_live:"calcul live",
-    inst_break:"ani până la amortizare", inst_size:"PUTERE SISTEM",
-    iband_p:"Pesimist", iband_e:"Așteptat", iband_o:"Optimist", unit_yr:" ani", unit_kwp_yr:"kWh/kWp·an",
-    mk_RO_scheme:"Net metering 1:1", mk_MD_scheme:"Net billing", mk_DE_scheme:"Tarif feed-in",
-    hiw_eyebrow:"De la adresă la ofertă semnată",
-    hiw_s1n:"Pasul 01", hiw_s1t:"Introdu adresa",
-    hiw_s1d:"VoltMira ia iradianța reală pentru acel acoperiș din <b>PVGIS</b> și aplică automat schema de tarifare potrivită pieței.",
-    hiw_s2n:"Pasul 02", hiw_s2t:"Primești trei numere oneste",
-    hiw_s2d:"Pesimist, așteptat, optimist — cu <b>fiecare ipoteză tipărită</b> pe ofertă, gata de apărat la masa din bucătărie.",
-    hiw_s3n:"Pasul 03", hiw_s3t:"Trimiți linkul, urmărești fluxul",
-    hiw_s3d:"Un link pe telefonul clientului. Vezi <b>deschideri, minute petrecute, baterie pornită</b> — iar Accept aduce contractul în pipeline.",
-    ft1:"<b>Deschideri & timp petrecut</b> — „Ion a deschis-o de două ori, câte 3 minute” bate „trimisă marțea trecută, fără răspuns”.",
-    ft2:"<b>Semnale de interacțiune</b> — a pornit bateria? E o întrebare de cumpărare. Sună-l despre baterii.",
-    ft3:"<b>Accept direct din pagină</b> — o atingere pe telefon marchează proiectul Câștigat în pipeline.",
-    ft4:"<b>Instantanee înghețate</b> — clientul vede mereu exact ce ai trimis, chiar dacă editezi ulterior.",
-    fe1:"<b>Ion Popescu</b> a deschis <b>Casa Popescu</b>", fe1t:"chiar acum",
-    fe2:"Vizualizată <b>3m 34s</b> — cel mai mult până acum",
-    fe3:"A pornit <b>bateria</b> · amortizare recalculată",
-    fe4:"A deschis din nou — <b>a 2-a vizită azi</b>",
-    fe5:"<b>A acceptat oferta</b> — proiect marcat Câștigat",
-    pvk_addr:"Adresă", pvk_src:"Sursa datelor", pvv_src:"PVGIS · Centrul Comun de Cercetare al UE",
-    pvk_yield:"Randament la acest acoperiș", pvk_generic:"Un tool generic presupune",
-    pvk_diff:"Diferența la un sistem de 6 kW", pvv_diff:"+1 122 kWh în fiecare an",
-    pvg_badge:"✓ Soare real, nu medii naționale",
-    meta_title:"VoltMira — Oferte solare pe care clienții le pot verifica",
-    meta_desc:"Aplicația de ofertare pentru instalatori solari: amortizare onestă în trei benzi, date solare reale PVGIS și linkuri de ofertă care îți spun când clienții le deschid. RO · MD · UE."
-  },
-  ru: {
-    nav_honesty:"Честный движок", nav_tracking:"Отслеживаемые оферты", nav_pricing:"Цены", nav_faq:"Вопросы", nav_demo:"Живое демо",
-    demo_eyebrow:"Попробуйте перед регистрацией",
-    demo_h:"Пройдитесь по <em>полному плану Pro</em> — прямо сейчас, без регистрации.",
-    demo_lead:"Живая копия VoltMira с вымышленным установщиком — SolarTech Iași — шесть проектов, команда, отслеживаемые оферты, реальные расчёты. Нажимайте что угодно — при выходе всё сбросится.",
-    demo_t1:"<b><span class=\"tn\">01</span>Откройте дашборд</b>Сумма воронки, процент побед и напоминания, которые вот-вот ускользнут.",
-    demo_t2:"<b><span class=\"tn\">02</span>Посмотрите Casa Popescu</b>Отслеживаемая оферта: 2 открытия, 3м 34с просмотра, включённая батарея.",
-    demo_t3:"<b><span class=\"tn\">03</span>Сделайте расчёт</b>Нажмите «New quote», потяните слайдер мощности — и смотрите, как движутся все три сценария.",
-    demo_btn:"Открыть живое демо",
-    demo_note:"Полный план Pro · тестовые данные · ничего не сохраняется · сброс при обновлении",
-    nav_join:'Начать бесплатно <span class="arr">→</span>',
-    hb_break:"€0 · точка окупаемости", hb_yr:" лет",
-    hero_eyebrow:"Для солнечных установщиков · RO · MD · ЕС",
-    h1_1:"Солнечные расчёты,", h1_2:"которые клиент может", h1_3:"проверить.",
-    hero_lead:"Большинство программ показывают одну красивую цифру. VoltMira показывает <b>три честных сценария</b>, рассчитанных по реальным солнечным данным для крыши клиента — и сообщает, когда он открыл вашу оферту.",
-    hero_cta:"Начать бесплатно", hero_ok:"Вы в системе — добро пожаловать!",
-    hero_note:"Без карты · Бесплатно в бета-версии · Настройка за 2 минуты",
-    inst_foot:"потяните ползунок — это настоящий движок, не картинка",
-    hon_eyebrow:"Честный движок", hon_h2:"Одна цифра — это реклама.<br>Три цифры — правда.",
-    hon_lead:"Каждая оферта VoltMira показывает окупаемость при пессимистичных, ожидаемых и оптимистичных допущениях — и каждое допущение напечатано в оферте. Клиенты доверяют тому, что могут проверить.",
-    band_pess:"Пессим.", band_exp:"Ожидаем.", band_opt:"Оптим.",
-    why_pess:"<b>Мало солнца, цены не растут.</b> −8% выработки, 0,8%/год деградация, нулевая инфляция. Если даже эта цифра работает — сделка надёжна.",
-    why_exp:"<b>Самый вероятный исход.</b> Выработка PVGIS для конкретной крыши, 0,5%/год деградация, 3% инфляция. Цифра, за которую вы ручаетесь.",
-    why_opt:"<b>Если цены растут.</b> +8% выработки, 0,3%/год деградация, 5% инфляция. Честно показан как лучший случай — никогда как заголовок.",
-    trk_eyebrow:"Отслеживаемые оферты", trk_h2:"Знайте момент,<br>когда её открыли.",
-    trk_lead:"Хватит гадать, когда напомнить. Отправьте живую ссылку вместо мёртвого PDF — и следите, что происходит на той стороне.",
-    trk_feed:"Ваша лента активности",
-    pvg_p1:"<b>Живой API PVGIS</b> — запрос по каждой крыше, а не статическая таблица",
-    pvg_p2:"<b>Помесячный профиль потребления</b> — не плоское среднее за год",
-    pvg_p3:"<b>Накопленный денежный поток по трём сценариям</b> — на графике",
-    pvg_eyebrow:"Реальные солнечные данные", pvg_h2:"Конкуренты угадывают.<br>Вы ссылаетесь на спутники ЕС.",
-    pvg_lead:"Введите адрес клиента, и VoltMira возьмёт реальную инсоляцию для этой крыши из PVGIS — солнечной базы Еврокомиссии. Бухарест — не Берлин, а южный склон — не северный. Ваши цифры знают разницу.",
-    pr_eyebrow:"Цены", pr_h2:"Дешевле кофе<br>при одной потерянной сделке.",
-    pr_lead:"Бесплатный 21-дневный период — без карты. Ранние пилоты фиксируют цену основателя (первые 50): <b>€25/мес Pro, навсегда</b>, за честный отзыв.",
-    pr_roi:"Одна дополнительная сделка в год окупает VoltMira на ~20 лет.",
-    bill_monthly:"Помесячно", bill_annual:"Годовая", per_mo:"/мес", per_yr:"/год",
-    pr_save:"✓ 2 месяца бесплатно при годовой оплате",
-    pr_md_note:"🇲🇩 Установщики из Молдовы получают региональную цену — просто скажите при старте.",
-    plan_pro:"Pro", plan_team:"Команда", plan_ent:"Enterprise",
-    pr_pro_for:"Для установщика, который продаёт", pr_team_for:"До 5 человек, один pipeline", pr_ent_for:"Для сетей с несколькими филиалами",
-    pr_pop:"Цена основателя — первые 50", pr_pro_cta:"Начать бесплатно", pr_ent_cta:"Связаться с нами",
-    cur_note:"Приблизительно — оплата в EUR. Курсы для ориентира.",
-    f_ent1:"Всё из Team, неограниченно мест", f_ent2:"Единый вход (SSO) и журнал аудита", f_ent3:"API-доступ, вебхуки и синхронизация CRM", f_ent4:"Индивидуальные правила субсидий и тарифов", f_ent5:"Персональный менеджер, онбординг и SLA",
-    f_pro1:"Ваш логотип на каждой оферте и PDF", f_pro2:"Отслеживаемые ссылки + уведомления", f_pro3:"Виджет лидов для сайта", f_pro4:"Сохранённые клиенты и весь pipeline",
-    f_team1:"Всё из Pro", f_team2:"5 мест с владельцами проектов", f_team3:"Общие клиенты и аналитика побед", f_team4:"Приоритетная поддержка на RO/RU/EN",
-    join:"Начать бесплатно", cta_demo:"Открыть живое демо",
-    ref_pre:"Знаете другого установщика?", ref_link:"Порекомендуйте — и получите месяц бесплатно, когда он присоединится.",
-    faq_eyebrow:"Вопросы установщиков", faq_h2:"Справедливые вопросы.",
-    faq_q1:"Откуда берутся солнечные цифры?",
-    faq_a1:"Годовая и месячная выработка берётся из PVGIS — спутниковой солнечной базы Еврокомиссии для точных координат крыши. Тарифные схемы (net metering в Румынии, net billing в Молдове, feed-in в Германии) применяются автоматически. Каждое допущение напечатано в оферте.",
-    faq_q2:"Зачем показывать пессимистичную цифру? Не отпугнёт ли?",
-    faq_a2:"Наоборот, на практике. Клиенты слышали слишком много идеальных обещаний. Диапазон с допущениями читается как инженерия; одна красивая цифра — как продажа. Когда даже худший случай лучше счёта — сделка защищает себя сама.",
-    faq_q3:"Работает ли для net billing Молдовы?",
-    faq_a3:"Да — это родная территория. Низкая цена экспорта в Молдове делает самопотребление главным, поэтому движок моделирует его помесячно, правильно оценивает аккумуляторы и поддерживает MDL и оферты на русском/румынском.",
-    faq_q4:"Что означает “отслеживаемая оферта” для конфиденциальности?",
-    faq_a4:"Ссылка фиксирует открытия, время на странице и взаимодействия с офертой — и больше ничего. Никаких рекламных трекеров, хостинг в ЕС.",
-    faq_q5:"Как начать?",
-    faq_a5:"Зарегистрируйтесь — и вы внутри, без списка ожидания и без карты. Полный доступ: сразу стройте расчёты и отправляйте отслеживаемые оферты, бесплатно в бета-версии. Первые 50 установщиков сохраняют цену основателя навсегда при запуске платных планов.",
-    cta_h2:"Станьте установщиком,<br>чьи цифры не подводят.",
-    cta_lead:"Начните бесплатно сегодня в Румынии, Молдове и ЕС. Первые 50 установщиков сохраняют цену основателя навсегда.",
-    ft5:"<b>Ваши данные остаются вашими</b> — экспорт каждой сметы и клиента в CSV одним кликом, без привязки.",
-    cta_ok:"Вы в системе — добро пожаловать!", cta_note:"Без карты · Бесплатно в бета-версии · Отмена в любой момент.",
-    foot_tag:"© 2026 · Инструмент расчётов, который клиент может проверить.", foot_founder:"Основатель —", foot_privacy:"Конфиденциальность", foot_terms:"Условия", foot_refunds:"Возвраты",
-    skip:"К содержанию", nav_signin:"Войти",
-    dm_pipeline:"Воронка", dm_win:"Процент побед", dm_pb:"Средняя окупаемость",
-    dm_won:"Выиграно", dm_sent:"Отправлено", dm_draft:"Черновик",
-    hbc_cap:"Те же три сценария — как накопленный денежный поток за 25 лет, а не просто цифры.",
-    as_t:"Печатается на каждом предложении", as_k1:"Выработка (PVGIS)", as_k2:"Деградация",
-    as_k3:"Инфляция цен", as_k4:"Тарифная схема", as_v4:"Net metering 1:1",
-    cmp_eyebrow:"VoltMira против вашей таблицы", cmp_h2:"Что упускает ваш Excel,<br>VoltMira печатает.",
-    cmp_c1:"Ваш Excel / PDF", cmp_lead:"Ваша таблица работает — пока клиент не спросит «откуда эта цифра?». Вот разница, строка за строкой.",
-    cv_eyebrow:"Со стороны клиента", cv_h2:"Вот что клиент<br>открывает на самом деле.",
-    cv_lead:"Не скриншот Excel во вложении. Чистая страница на его телефоне — три честных сценария, каждое допущение под рукой, одно касание, чтобы принять. И вы видите момент, когда он её открыл.",
-    cv_tag:"Солнечная оферта", cv_for:"подготовлено для Андрея", cv_k1:"Система", cv_k2:"Инвестиция", cv_k3:"В год", cv_yr:"лет", cv_accept:"Принять оферту",
-    cv_track:"Вы видите каждое открытие, минуты просмотра и переключение батареи",
-    cv_p1:"<b>На его телефоне, на его языке</b> — не PDF, который надо увеличивать пальцами на крыше.",
-    cv_p2:"<b>Каждое допущение в одно касание</b> — прозрачность, которая превращает клиента в рекомендателя.",
-    cv_p3:"<b>Принять прямо там</b> — сделка закрывается без единого звонка.",
-    cmp_r1l:"Окупаемость", cmp_r1g:"Одно красивое число", cmp_r1v:"<b>Три честных сценария</b> — худший, ожидаемый, лучший",
-    cmp_r2l:"Солнечные данные", cmp_r2g:"Средняя по стране (≈1 100 кВт·ч/кВп)", cmp_r2v:"<b>Спутниковые данные PVGIS</b> для конкретной крыши",
-    cmp_r3l:"Допущения", cmp_r3g:"Спрятаны в движке", cmp_r3v:"<b>Напечатаны на каждом предложении</b>",
-    cmp_r4l:"Потребление", cmp_r4g:"Годовая прикидка", cmp_r4v:"<b>Помесячный профиль</b> с учётом тарифа",
-    cmp_r5l:"После отправки", cmp_r5g:"Тишина", cmp_r5v:"<b>Открытия, минуты просмотра, переключения батареи</b>",
-    cmp_r6l:"Рынки", cmp_r6g:"Один шаблон для всех", cmp_r6v:"<b>RO · MD · DE</b> — тарифные схемы применяются автоматически",
-    est_head:"Бесплатная оценка · реальные данные PVGIS",
-    hp_opened_badge:"Открыто 2×", hp_kicker:"Солнечное предложение", hp_for:"Подготовлено для", hp_sys:"8.4 кВт на крыше · 12 панелей + батарея",
-    hp_pay_h:"Окупаемость — три честных сценария", hp_yr:"лет", hp_savings:"Экономия за весь срок", hp_accept:"Принять предложение",
-    hp_track:"Открыто 2× · 3м 34с просмотр · 4 дня назад",
-    est_lead:"Ваш адрес → реальная окупаемость для <b>вашей крыши</b>. Без регистрации.",
-    est_addr:"Адрес крыши", est_addr_ph:"Str. Lalelelor 12, București", est_country:"Страна",
-    est_bill:"Счёт в месяц <span class=\"opt\">необязательно</span>", est_calc:"Рассчитать окупаемость", est_recalc:"Пересчитать",
-    est_reading:"Читаем солнце…", est_hint:"Реальные координаты · спутниковые данные PVGIS · пессим., ожидаемый и оптим. сценарии.",
-    est_break:"лет до окупаемости", est_cta:"Превратить в отслеживаемую оферту",
-    est_cost:"Стоимость системы", est_saved:"Экономия / год", est_err_addr:"Введите улицу и город.",
-    est_err_generic:"Что-то пошло не так — попробуйте ещё раз.", est_err_busy:"Сервис солнечных данных занят — попробуйте через минуту.",
-    est_c_ro:"Румыния", est_c_md:"Молдова", est_c_de:"Германия",
-    inst_title:"Окупаемость · Крыша, Бухарест · PVGIS", inst_live:"живой расчёт",
-    inst_break:"лет до окупаемости", inst_size:"МОЩНОСТЬ СИСТЕМЫ",
-    iband_p:"Пессим.", iband_e:"Ожидаем.", iband_o:"Оптим.", unit_yr:" лет", unit_kwp_yr:"кВт·ч/кВп·год",
-    mk_RO_scheme:"Нет-метеринг 1:1", mk_MD_scheme:"Нет-биллинг", mk_DE_scheme:"Зелёный тариф (feed-in)",
-    hiw_eyebrow:"От адреса до подписанной оферты",
-    hiw_s1n:"Шаг 01", hiw_s1t:"Введите адрес",
-    hiw_s1d:"VoltMira берёт реальную инсоляцию для этой крыши из <b>PVGIS</b> и автоматически применяет тарифную схему рынка.",
-    hiw_s2n:"Шаг 02", hiw_s2t:"Получите три честные цифры",
-    hiw_s2d:"Пессимистичный, ожидаемый, оптимистичный — <b>каждое допущение напечатано</b> в оферте и готово к защите за кухонным столом.",
-    hiw_s3n:"Шаг 03", hiw_s3t:"Отправьте ссылку и смотрите ленту",
-    hiw_s3d:"Одна ссылка на телефон клиента. Вы видите <b>открытия, минуты просмотра, включение батареи</b> — а Accept переводит сделку в выигранные.",
-    ft1:"<b>Открытия и время просмотра</b> — «Ион открыл дважды, по 3 минуты» лучше, чем «отправлено во вторник, ответа нет».",
-    ft2:"<b>Сигналы интереса</b> — включил батарею? Это вопрос покупателя. Звоните и говорите о батареях.",
-    ft3:"<b>Принятие прямо со страницы</b> — одно касание на телефоне, и сделка отмечена выигранной.",
-    ft4:"<b>Замороженные снимки</b> — клиент всегда видит именно то, что вы отправили, даже если правите позже.",
-    fe1:"<b>Ион Попеску</b> открыл <b>Casa Popescu</b>", fe1t:"только что",
-    fe2:"Просмотр <b>3м 34с</b> — дольше всех",
-    fe3:"Включил <b>батарею</b> · окупаемость пересчитана",
-    fe4:"Открыл снова — <b>2-й визит за день</b>",
-    fe5:"<b>Принял оферту</b> — проект отмечен выигранным",
-    pvk_addr:"Адрес", pvk_src:"Источник данных", pvv_src:"PVGIS · Исследовательский центр ЕС",
-    pvk_yield:"Выработка на этой крыше", pvk_generic:"Обычная программа считает",
-    pvk_diff:"Разница на системе 6 кВт", pvv_diff:"+1 122 кВт·ч каждый год",
-    pvg_badge:"✓ Реальное солнце, а не средние по стране",
-    meta_title:"VoltMira — Солнечные расчёты, которые клиент может проверить",
-    meta_desc:"Инструмент расчётов для солнечных установщиков: честная окупаемость в трёх сценариях, реальные данные PVGIS и ссылки на оферты с уведомлением об открытии. RO · MD · ЕС"
-  }
-};
-
+/*__I18N_INJECTED__*/
 function setLang(lang){
   if (!I18N[lang]) lang = "en";
   var dict = I18N[lang];
@@ -1835,7 +1484,13 @@ function setLang(lang){
   try { localStorage.setItem("voltmira_lang", lang); } catch(e){}
 }
 document.querySelectorAll(".lang-btn").forEach(function(b){
-  b.addEventListener("click", function(){ setLang(b.getAttribute("data-lang")); });
+  b.addEventListener("click", function(){
+    var l = b.getAttribute("data-lang");
+    try { localStorage.setItem("voltmira_lang", l); } catch(e){}
+    var target = l === "ro" ? "/ro" : l === "ru" ? "/ru" : "/";
+    if (location.pathname !== target) { location.assign(target); return; }
+    setLang(l);   // already on the right URL — just repaint
+  });
 });
 
 /* ---------------- theme toggle (light / dark) ---------------- */
@@ -1852,12 +1507,20 @@ document.querySelectorAll(".lang-btn").forEach(function(b){
   });
 })();
 (function(){
+  // The page is now server-rendered per language at / , /ro and /ru. When the
+  // visitor asked for a locale path, that URL is the strongest possible signal
+  // of intent — stronger than a stale localStorage value or a browser locale —
+  // so it wins. Without this, someone opening /ro with "en" saved would watch
+  // the Romanian page they requested flip to English a moment after load.
+  var ssr = window.__SSR_LANG;
+  if (ssr && ssr !== "en" && I18N[ssr]) { setLang(ssr); return; }
+
   var saved = null;
   try { saved = localStorage.getItem("voltmira_lang"); } catch(e){}
   var urlLang = new URLSearchParams(location.search).get("lang");
   var initial = urlLang || saved || (navigator.language || "en").slice(0,2).toLowerCase();
   if (!I18N[initial]) initial = "en";
-  if (initial !== "en") setLang(initial); else setLang("en");
+  setLang(initial);
 })();
 /* ------------- pricing toggles: display currency + billing period ------------- */
 (function(){
@@ -2003,5 +1666,37 @@ if (pvg && hasIO){
 <a href="https://wa.me/37362121019" class="whatsapp-bubble" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
   <svg viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
 </a>
+<style id="rd-style">
+.rd-chart{margin:36px 0 0;border:1px solid var(--line);border-radius:16px;background:var(--paper-2);padding:22px 22px 16px;box-shadow:0 22px 54px -36px rgba(20,42,33,.32)}
+.rd-chart figcaption{font-size:14px;color:var(--muted);margin:0 0 16px;font-weight:500}
+.rd-chart svg{display:block;width:100%;height:auto}
+.rd-legend{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:14px;font-size:12.5px;color:var(--muted)}
+.rd-legend b{color:var(--ink);font-weight:600}
+.rd-legend i{display:inline-block;width:16px;border-top:3px solid;vertical-align:middle;margin-right:7px}
+.rd-lp{border-color:var(--red)!important}.rd-le{border-color:var(--green)!important}.rd-lo{border-color:var(--green)!important;opacity:.5}
+.rd-park{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);margin-top:8px;box-shadow:0 28px 64px -38px rgba(20,42,33,.42)}
+.rd-park svg{display:block;width:100%;height:auto}
+.rd-park::after{content:"";position:absolute;left:0;right:0;bottom:0;height:58%;background:linear-gradient(transparent,rgba(12,22,17,.76));pointer-events:none;z-index:1}
+.rd-park-cap{position:absolute;left:24px;right:24px;bottom:20px;margin:0;z-index:2}
+.rd-park-cap b{font-weight:800;font-size:clamp(20px,3vw,30px);letter-spacing:-.02em;color:#fff;display:block;text-shadow:0 2px 22px rgba(0,0,0,.55)}
+.rd-park-cap span{font-size:13.5px;color:rgba(255,255,255,.9);display:block;margin-top:7px;max-width:52ch;text-shadow:0 1px 10px rgba(0,0,0,.4)}
+.rd-why{display:grid;grid-template-columns:1fr;gap:16px;margin-top:30px}
+@media(min-width:760px){.rd-why{grid-template-columns:repeat(3,1fr);gap:26px}}
+.rd-why h4{font-weight:700;font-size:16px;color:var(--ink);margin:0 0 7px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.rd-why h4 i{width:30px;height:30px;border-radius:9px;background:var(--green-tint);color:var(--green);display:grid;place-items:center;flex:none}
+.rd-why h4 i svg{width:16px;height:16px}
+.rd-why p{font-size:14px;color:var(--muted);line-height:1.55;margin:0}
+.cv-phone{border-radius:30px!important;padding:9px!important;background:linear-gradient(160deg,#20201f,#111312)!important;border:none!important;box-shadow:0 34px 80px -30px rgba(20,42,33,.55)!important}
+.cv-screen{background:var(--paper-2);border-radius:22px;overflow:hidden}
+.cv-notch{height:20px;display:flex;align-items:center;justify-content:center}
+.cv-notch::before{content:"";width:62px;height:5px;border-radius:99px;background:rgba(255,255,255,.22)}
+.cv-band{border-radius:11px!important}
+.rd-final .final{position:relative;overflow:hidden}
+.rd-final .final h2,.rd-final .final p,.rd-final .final .hero-cta-row,.rd-final .final .wl-note{position:relative;z-index:2}
+.rd-inst{position:absolute;right:-6px;bottom:-6px;width:min(34%,300px);height:auto;opacity:.8;pointer-events:none;z-index:1}
+@media(max-width:820px){.rd-inst{display:none}}
+.rd-demo-link{color:#fff;opacity:.82;font-weight:600;white-space:nowrap}
+.rd-demo-link:hover{opacity:1;text-decoration:underline}
+</style>
 </body>
 </html>

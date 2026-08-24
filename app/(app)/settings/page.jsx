@@ -104,6 +104,10 @@ export default function Settings() {
         default_market: co.default_market, currency: co.currency, lang: normLang(co.lang),
         subsidy_amount_ron: co.subsidy_amount_ron, prosumer_limit_kw: co.prosumer_limit_kw,
         notify_open: co.notify_open !== false,
+        // company legal details for invoicing
+        legal_name: co.legal_name, reg_no: co.reg_no, vat_no: co.vat_no,
+        legal_address: co.legal_address, iban: co.iban, invoice_prefix: co.invoice_prefix,
+        vat_rate: co.vat_rate,
         engine: eng,
       });
       setMsg(t("s_saved", lang));
@@ -216,7 +220,12 @@ export default function Settings() {
           <div className="field"><label>{t("s_company_name", lang)}</label>
             <input className="input" value={co.name || ""} onChange={set("name")} /></div>
           <div className="field"><label>{t("short_name", lang)}</label>
-            <input className="input" value={co.short_name || ""} onChange={set("short_name")} placeholder="VoltMira" /></div>
+            {/* The old placeholder was the literal string "VoltMira", which read as a
+                value someone had typed rather than an example. Show a hint from the
+                installer's OWN name instead, and say what the field actually does. */}
+            <input className="input" value={co.short_name || ""} onChange={set("short_name")}
+              placeholder={(co.name || "").trim().split(/\s+/)[0] || t("s_short_name_ph", lang)} />
+            <p className="set-note" style={{ marginTop: 6 }}>{t("s_short_name_note", lang)}</p></div>
         </div>
         <div className="field"><label>{t("s_logo", lang)}</label>
           <div style={{ display: "flex", gap: 11, alignItems: "center", flexWrap: "wrap" }}>
@@ -255,6 +264,28 @@ export default function Settings() {
           <span className="txt">{t("s_notify", lang)}<small>{t("s_notify_note", lang)}</small></span>
         </label>
         <div className="set-note">{t("co_note", lang)}</div>
+      </section>
+
+      {/* Invoicing — company legal details printed on proforma invoices */}
+      <section className="card st-sec">
+        <div className="st-head"><SecIcon name="company" /><h3>{t("s_invoicing", lang)}</h3></div>
+        <div className="set-note" style={{ marginTop: -4, marginBottom: 12 }}>{t("s_invoicing_sub", lang)}</div>
+        <div className="set-grid">
+          <div className="field"><label>{t("s_legal_name", lang)}</label>
+            <input className="input" value={co.legal_name || ""} onChange={set("legal_name")} placeholder={co.name || "SolarTech SRL"} /></div>
+          <div className="field"><label>{t("s_reg_no", lang)}</label>
+            <input className="input" value={co.reg_no || ""} onChange={set("reg_no")} placeholder="CUI / IDNO" /></div>
+          <div className="field"><label>{t("s_vat_no", lang)}</label>
+            <input className="input" value={co.vat_no || ""} onChange={set("vat_no")} placeholder="RO12345678" /></div>
+          {numField("iVat", t("s_vat_rate", lang), co.vat_rate ?? 0, 1, "%", setCoNum("vat_rate"))}
+          <div className="field"><label>{t("s_iban", lang)}</label>
+            <input className="input" value={co.iban || ""} onChange={set("iban")} placeholder="RO49 AAAA 1B31…" /></div>
+          <div className="field"><label>{t("s_inv_prefix", lang)}</label>
+            <input className="input" value={co.invoice_prefix || ""} onChange={set("invoice_prefix")} placeholder="PF" maxLength={6} /></div>
+        </div>
+        <div className="field" style={{ marginTop: 12 }}><label>{t("s_legal_address", lang)}</label>
+          <input className="input" value={co.legal_address || ""} onChange={set("legal_address")} placeholder={t("s_legal_address_ph", lang)} /></div>
+        <div className="set-note">{t("s_invoicing_note", lang)}</div>
       </section>
 
       {/* Plan */}
@@ -358,7 +389,7 @@ export default function Settings() {
       </>) : (
         <section className="card st-sec">
           <div className="st-head"><SecIcon name="sliders" /><h3>{t("calc_engine", lang)}</h3></div>
-          <p className="st-desc" style={{ margin: 0 }}>🔒 {t("s_owner_only", lang)}</p>
+          <p className="st-desc" style={{ margin: 0 }}>{t("s_owner_only", lang)}</p>
         </section>
       )}
 

@@ -42,7 +42,7 @@ export default function TemplateBar({ templates = [], lang }) {
           <button className="tpl-chip-use" disabled={pending}
             onClick={() => use(tp.id)} title={t("tpl_use_hint", lang)}>
             <b>{tp.name}</b>
-            <small>{Number(tp.kw).toFixed(1)} kW · {tp.market}{tp.batt ? " · 🔋" : ""}</small>
+            <small>{Number(tp.kw).toFixed(1)} kW · {tp.market}{tp.batt ? " · batt" : ""}</small>
           </button>
           <button className="tpl-chip-del" disabled={pending}
             onClick={() => del(tp.id)} aria-label={t("tpl_delete", lang)} title={t("tpl_delete", lang)}>✕</button>

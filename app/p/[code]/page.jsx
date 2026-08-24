@@ -6,6 +6,7 @@ import AutoPrint from "./AutoPrint.jsx";
 import PrintSheet from "./PrintSheet.jsx";
 import ClientAudit from "./ClientAudit.jsx";
 import { t, normLang } from "../../../lib/i18n.js";
+import { fmtDate } from "../../../lib/tz.js";
 
 async function getProposal(code) {
   const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -16,6 +17,16 @@ async function getProposal(code) {
 
 export const dynamic = "force-dynamic";
 
+// Second layer behind the X-Robots-Tag header in next.config.mjs. These pages
+// hold a named homeowner's address, consumption and price; they are reachable
+// by anyone with the capability link, which is exactly why they must never be
+// indexed. The title is deliberately generic so a leaked SERP entry (or a
+// browser-history sync) cannot expose the client's name.
+export const metadata = {
+  title: "Solar proposal",
+  robots: { index: false, follow: false, nocache: true },
+};
+
 export default async function ProposalPage({ params, searchParams }) {
   // ?print=1 = the INSTALLER exporting a PDF: no tracking (would inflate their
   // own open counts), no accept/request buttons, auto print dialog.
@@ -25,17 +36,26 @@ export default async function ProposalPage({ params, searchParams }) {
     return <main style={S.wrap}><h1 style={S.h1}>{t("pp_not_found", "en")}</h1>
       <p style={S.muted}>{t("pp_expired", "en")}</p></main>;
   }
-  const { company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [] } = data;
+  const { company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
+  const signedDate = signedAt
+    ? fmtDate(signedAt, { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB", { day: "numeric", month: "short", year: "numeric" })
+    : null;
 
   // ?print=1 → the branded PDF document (same layout as the demo's printProposal),
   // not the mobile proposal. AutoPrint fires the save-as-PDF dialog.
   if (printMode) {
+    // No QR code here. Around 80% of clients open the proposal on a phone, and
+    // a QR asks them to scan a screen with the device already holding it — the
+    // link is simply a tap away. It only ever made sense on a printed copy,
+    // which is the rarer case, so it was cost with no payoff on the common one.
     return (
       <main lang={lang} style={{ background: "#fff", minHeight: "100vh" }}>
         <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} />
-        <AutoPrint />
+        {/* The PDF route drives printing through CDP and passes auto=0:
+            window.print() inside headless Chromium blocks rather than returns. */}
+        {searchParams?.auto !== "0" && <AutoPrint />}
       </main>
     );
   }
@@ -74,7 +94,7 @@ export default async function ProposalPage({ params, searchParams }) {
             <div key={key} style={{ ...S.band, borderLeft: `4px solid ${c}` }}>
               <div style={{ ...S.bandTag, color: c }}>{t(key, lang)}</div>
               <div style={S.bandYrs}>{yrs(b.payback)} <small style={S.muted}>{t("pp_years", lang)}</small></div>
-              <div style={S.kpiLbl}>{t("pp_roi", lang, { n: q.horizon, v: Math.round(b.roi) })}</div>
+              <div style={S.kpiLbl}>{t("pp_roi", lang, { n: q.horizon, v: b.roi == null ? "∞" : Math.round(b.roi) })}</div>
             </div>
           ))}
         </div>
@@ -111,14 +131,14 @@ export default async function ProposalPage({ params, searchParams }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(148px,1fr))", gap: 12 }}>
             <div style={{ ...S.optCard, borderColor: "#1E6B4E" }}>
               <div style={{ ...S.optBadge, background: "#E4EFE9", color: "#1E6B4E" }}>{t("pp_recommended", lang)}</div>
-              <div style={S.optSys}>{inputs.kw.toFixed(1)} kW{inputs.batt ? " + 🔋" : ""}</div>
+              <div style={S.optSys}>{inputs.kw.toFixed(1)} kW{inputs.batt ? t("pp_plus_batt", lang) : ""}</div>
               <div style={S.optPay}>{yrs(q.bands.expc.payback)} <small style={S.muted}>{t("pp_years", lang)}</small></div>
               <div style={S.kpiLbl}>{fmt(q.cost)} · {fmt(q.year1 / 12)}{t("pp_mo", lang)}</div>
             </div>
             {options.map((o, i) => (
               <div key={i} style={S.optCard}>
                 <div style={S.optBadge}>{o.label || `${t("pp_option", lang)} ${i + 2}`}</div>
-                <div style={S.optSys}>{o.kw.toFixed(1)} kW{o.battKwh > 0 ? " + 🔋" : ""}</div>
+                <div style={S.optSys}>{o.kw.toFixed(1)} kW{o.battKwh > 0 ? t("pp_plus_batt", lang) : ""}</div>
                 <div style={S.optPay}>{yrs(o.payback)} <small style={S.muted}>{t("pp_years", lang)}</small></div>
                 <div style={S.kpiLbl}>{fmt(o.cost)} · {fmt(o.year1 / 12)}{t("pp_mo", lang)}</div>
               </div>
@@ -169,7 +189,7 @@ export default async function ProposalPage({ params, searchParams }) {
         </section>
       ) : null}
 
-      <Tracker code={params.code} accepted={accepted} lang={lang} />
+      <Tracker code={params.code} accepted={accepted} lang={lang} signedName={signedName} signedDate={signedDate} />
 
       {/* Growth loop: every free-plan proposal a homeowner opens carries a
           tasteful VoltMira credit. Pro/Team white-labels it away. */}
@@ -177,7 +197,7 @@ export default async function ProposalPage({ params, searchParams }) {
         <a href="https://voltmira.com" target="_blank" rel="noopener noreferrer"
           style={{ display: "block", textAlign: "center", marginTop: 22, textDecoration: "none" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 700, color: "#142A21", fontFamily: "Inter, system-ui, sans-serif" }}>
-            <span style={{ display: "inline-grid", placeItems: "center", width: 22, height: 22, borderRadius: 6, background: "#142A21", color: "#E89B2D", fontSize: 13 }}>⚡</span>
+            <span style={{ display: "inline-grid", placeItems: "center", width: 22, height: 22, borderRadius: 6, background: "#142A21", color: "#E89B2D", fontSize: 13 }}><svg width="13" height="13" viewBox="0 0 34 34"><path d="M8 25 L14 12" stroke="#C4543B" stroke-width="3" stroke-linecap="round"/><path d="M14.5 25 L20.5 9" stroke="#E89B2D" stroke-width="3" stroke-linecap="round"/><path d="M21 25 L27 6.5" stroke="#3FAE6A" stroke-width="3" stroke-linecap="round"/></svg></span>
             {t("powered_by", lang)}
           </div>
           <div style={{ ...S.muted, fontSize: 12, marginTop: 3 }}>{t("powered_by_sub", lang)}</div>

@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function Privacy() {
   return (
-    <LegalShell title="Privacy Policy" updated="8 July 2026">
+    <LegalShell title="Privacy Policy" updated="9 August 2026">
       <p className="note">
         This policy explains what we collect and why. We keep data in the EU, use no advertising
         trackers, and never sell your data or your clients&rsquo; data.
@@ -49,7 +49,7 @@ export default function Privacy() {
 
       <h2>Where your data lives</h2>
       <p>
-        All application data is stored in the EU (Frankfurt). Our sub-processors are Supabase
+        All application data is stored in the EU (Stockholm, Sweden). Our sub-processors are Supabase
         (database and authentication), Vercel (hosting), and Paddle (payments — merchant of record). A transactional
         email provider will be added when email notifications launch. Each sub-processor is bound by
         a data-processing agreement.

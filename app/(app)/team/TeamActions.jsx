@@ -1,13 +1,15 @@
 "use client";
-// app/(app)/team/TeamActions.jsx — member list with invite + remove.
+// app/(app)/team/TeamActions.jsx — member list with invite + resend + remove.
 // All mutations go through /api/team, which re-checks the caller is the owner.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { t } from "../../../lib/i18n.js";
 
-export default function TeamActions({ lang, meId, me, members, counts = {} }) {
+export default function TeamActions({ lang, meId, me, members, counts = {}, pending = [], stats = {}, currency = "EUR" }) {
   const router = useRouter();
   const isOwner = me?.role === "owner";
+  const [openMember, setOpenMember] = useState(null);
+  const money = (n) => "€" + Math.round(n || 0).toLocaleString("en-IE");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [title, setTitle] = useState("sales");
@@ -15,27 +17,63 @@ export default function TeamActions({ lang, meId, me, members, counts = {} }) {
   const [msg, setMsg] = useState(null); // {ok, text}
   const [inviteLink, setInviteLink] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  // Set when the address already belongs to another workspace: holds the facts
+  // the owner needs before deciding to move them. {email,name,title,detail}
+  const [ask, setAsk] = useState(null);
 
-  async function invite(e) {
-    e.preventDefault();
-    if (busy) return;
-    setMsg(null); setInviteLink(null); setBusy(true);
+  const isPending = (id) => pending.includes(id);
+
+  // The link is only half the job — say plainly whether the email actually left.
+  function deliveryText(j, addr) {
+    if (j.moved) return t("tm_moved", lang, { e: addr });
+    if (j.emailed) return t(j.resent ? "tm_resent" : "tm_emailed", lang, { e: addr });
+    if (j.emailError && j.emailError !== "not_configured") return t("tm_mail_fail", lang);
+    return t("tm_link_ready", lang);
+  }
+
+  async function post(body, addr) {
+    setMsg(null); setInviteLink(null); setAsk(null); setBusy(true);
     try {
       const res = await fetch("/api/team", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, title }),
+        body: JSON.stringify(body),
       });
       const j = await res.json().catch(() => ({}));
       if (res.ok) {
         setInviteLink(j.inviteLink || null);
-        setMsg({ ok: true, text: j.emailed ? t("tm_emailed", lang, { e: email }) : t("tm_link_ready", lang) });
-        setName(""); router.refresh();
+        setMsg({ ok: !!j.emailed || !j.emailError || j.emailError === "not_configured",
+                 text: deliveryText(j, addr) });
+        router.refresh();
+        return true;
       }
-      else if (j.error === "seats") setMsg({ ok: false, text: t("tm_err_seats", lang) });
-      else if (j.error === "exists") setMsg({ ok: false, text: t("tm_err_exists", lang) });
-      else setMsg({ ok: false, text: t("tm_err", lang) });
+      // Not a failure — the address already has a workspace, so the owner has a
+      // decision to make. Show the numbers instead of a dead-end error.
+      if (j.error === "other_team" && j.detail) {
+        setAsk({ ...body, detail: j.detail });
+        return false;
+      }
+      const ERR = { seats: "tm_err_seats", already_member: "tm_err_already",
+                    other_team: "tm_err_other_team", exists: "tm_err_exists",
+                    owner_only: "tm_owner_only" };
+      setMsg({ ok: false, text: t(ERR[j.error] || "tm_err", lang) });
+      return false;
     } finally { setBusy(false); }
   }
+
+  async function invite(e) {
+    e.preventDefault();
+    if (busy) return;
+    const addr = email;
+    if (await post({ email, name, title }, addr)) { setName(""); setEmail(""); }
+  }
+
+  async function confirmMove() {
+    if (busy || !ask) return;
+    const { detail, ...body } = ask;
+    if (await post({ ...body, confirm: true }, body.email)) { setName(""); setEmail(""); }
+  }
+
+  const resend = (m) => { if (!busy) post({ resend: m.id }, m.email); };
 
   async function remove(id) {
     if (busy) return;
@@ -64,39 +102,104 @@ export default function TeamActions({ lang, meId, me, members, counts = {} }) {
     return n === 1 ? t("n_project", lang) : t("n_projects", lang, { n });
   };
 
+  // Relative contribution: each member's share of the team's won value, so the
+  // list reads as a leaderboard instead of a flat roster. Falls back to quote
+  // count while nobody has closed anything yet, so the bars aren't all empty.
+  const teamWon = members.reduce((s, m) => s + (stats[m.id]?.wonEur || 0), 0);
+  const teamQuotes = members.reduce((s, m) => s + (counts[m.id] || 0), 0);
+  const share = (m) => {
+    const s = stats[m.id] || {};
+    if (teamWon > 0) return (s.wonEur || 0) / teamWon;
+    return teamQuotes > 0 ? (counts[m.id] || 0) / teamQuotes : 0;
+  };
+  const topId = teamWon > 0
+    ? members.reduce((best, m) => ((stats[m.id]?.wonEur || 0) > (stats[best.id]?.wonEur || 0) ? m : best), members[0])?.id
+    : null;
+
   return (
-    <div className="grid-2">
+    <div className="team-grid">
       <section className="card">
-        <h3>{t("members", lang)}</h3>
-        {members.map(m => (
-          <div key={m.id} className="member">
-            <div className="avatar green">{(m.name || m.email || "?").trim()[0]?.toUpperCase() || "?"}</div>
-            <div className="m-who">
-              <b>{m.name || m.email}{m.id === meId && <span style={{ color: "var(--muted)", fontWeight: 400 }}> · {t("tm_you", lang)}</span>}</b>
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.email}</span>
+        <div className="ch-row">
+          <h3>{t("members", lang)}</h3>
+          <span className="ch-count">{members.length}</span>
+        </div>
+        {members.map(m => {
+          const open = openMember === m.id;
+          const s = stats[m.id] || {};
+          const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
+          const pct = Math.round(share(m) * 100);
+          const isTop = m.id === topId && teamWon > 0;
+          return (
+          <div key={m.id} className={"member-wrap" + (open ? " open" : "")}>
+            <div className={`member${open ? " open" : ""}`} role="button" tabIndex={0} aria-expanded={open}
+              onClick={() => setOpenMember(open ? null : m.id)}
+              onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpenMember(open ? null : m.id); } }}>
+              {/* Role-tinted ring turns the avatar into the row's colour key. */}
+              <span className="m-av" style={{ "--rc": roleColor(m) }}>
+                <span className="m-av-in">{(m.name || m.email || "?").trim()[0]?.toUpperCase() || "?"}</span>
+                {isTop && <span className="m-crown" title={t("tm_top", lang)} aria-label={t("tm_top", lang)}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 18h18l-1.6-9-4.6 3.6L12 5l-2.8 7.6L4.6 9 3 18z" /></svg>
+                </span>}
+              </span>
+
+              <div className="m-who">
+                <div className="m-name">
+                  <b>{m.name || m.email}</b>
+                  {/* Role sits on the name line rather than in its own right-hand
+                      column — that column was stealing ~90px from the name/email
+                      block and forcing the row to wrap on a normal-width screen. */}
+                  <span className="m-role" style={{ "--rc": roleColor(m) }}>{roleLabel(m)}</span>
+                  {m.id === meId && <span className="m-you">{t("tm_you", lang)}</span>}
+                  {isPending(m.id) && <span className="m-pending" title={t("tm_pending_title", lang)}>{t("tm_pending", lang)}</span>}
+                </div>
+                <div className="m-mail">{m.email}</div>
+                {/* Always-visible headline metrics — the row should be useful
+                    before you expand it. */}
+                <div className="m-meta">
+                  <span title={projCount(m.id)}>{counts[m.id] || 0} {t("tm_st_quotes", lang).toLowerCase()}</span>
+                  <i />
+                  <span>{money(s.wonEur)} {t("tm_st_won", lang).toLowerCase()}</span>
+                  {pct > 0 && <><i /><span className="m-share">{pct}%</span></>}
+                </div>
+                <div className="m-bar" aria-hidden="true"><span style={{ width: Math.max(pct, pct > 0 ? 3 : 0) + "%", background: roleColor(m) }} /></div>
+              </div>
+
+              <span className="m-acts">
+                {isOwner && m.id !== meId && isPending(m.id) && (
+                  <button className="btn sm" onClick={stop(() => resend(m))} disabled={busy}
+                    title={t("tm_resend_title", lang)}>{t("tm_resend", lang)}</button>
+                )}
+                {isOwner && m.id !== meId && (
+                  <button className="btn icon del" onClick={stop(() => remove(m.id))} disabled={busy} title={t("tm_remove", lang)} aria-label={t("tm_remove", lang)}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 7h16" /><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" /></svg>
+                  </button>
+                )}
+                <svg className="m-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                  style={{ transform: open ? "rotate(180deg)" : "none" }}><path d="M6 9l6 6 6-6" /></svg>
+              </span>
             </div>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap" }}>
-              <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", flex: "none", background: roleColor(m) }} />
-              {roleLabel(m)}
-            </span>
-            <span className="m-count" title={projCount(m.id)} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" /><path d="M9 13h6M9 17h4" /></svg>
-              {counts[m.id] || 0}
-            </span>
-            {isOwner && m.id !== meId && (
-              <button className="btn icon del" onClick={() => remove(m.id)} disabled={busy} title={t("tm_remove", lang)} aria-label={t("tm_remove", lang)}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 7h16" /><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" /></svg>
-              </button>
+            {open && (
+              <div className="member-detail">
+                <div className="md-stats">
+                  <div className="md-stat"><b>{s.total || 0}</b><span>{t("tm_st_quotes", lang)}</span></div>
+                  <div className="md-stat"><b>{s.won || 0}</b><span>{t("tm_st_won", lang)}</span></div>
+                  <div className="md-stat"><b className={s.winRate != null && s.winRate >= 50 ? "good" : ""}>{s.winRate != null ? s.winRate + "%" : "—"}</b><span>{t("tm_st_winrate", lang)}</span></div>
+                  <div className="md-stat"><b>{money(s.pipelineEur)}</b><span>{t("tm_st_pipeline", lang)}</span></div>
+                  <div className="md-stat"><b className="good">{money(s.wonEur)}</b><span>{t("tm_st_wonval", lang)}</span></div>
+                </div>
+              </div>
             )}
           </div>
-        ))}
+        ); })}
         <div className="seat-note"><b>{t("seats_used", lang, { n: members.length })}</b> · {t("team_plan_note", lang)}</div>
       </section>
 
       {isOwner ? (
-        <section className="card">
-          <h3>{t("add_member", lang)}</h3>
-          <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 14 }}>{t("tm_invite_sub", lang)}</p>
+        <section className="card invite-card">
+          <div className="ch-row">
+            <h3>{t("add_member", lang)}</h3>
+          </div>
+          <p className="invite-sub">{t("tm_invite_sub", lang)}</p>
           <form onSubmit={invite}>
             <div className="field">
               <label htmlFor="tmName">{t("name", lang)}</label>
@@ -104,12 +207,18 @@ export default function TeamActions({ lang, meId, me, members, counts = {} }) {
                 placeholder={t("ph_fullname", lang)} onChange={e => setName(e.target.value)} />
             </div>
             <div className="field">
-              <label htmlFor="tmRole">{t("role", lang)}</label>
-              <select className="input" id="tmRole" value={title} onChange={e => setTitle(e.target.value)}>
-                <option value="sales">{t("role_sales", lang)}</option>
-                <option value="engineer">{t("role_engineer", lang)}</option>
-                <option value="manager">{t("role_manager", lang)}</option>
-              </select>
+              {/* Three fixed options read better as a segmented control than a
+                  dropdown — the choice and its colour key are visible at once. */}
+              <label>{t("role", lang)}</label>
+              <div className="role-seg" role="radiogroup" aria-label={t("role", lang)}>
+                {["sales", "engineer", "manager"].map(r => (
+                  <button key={r} type="button" role="radio" aria-checked={title === r}
+                    className={"role-opt" + (title === r ? " on" : "")}
+                    style={{ "--rc": ROLE_DOT[r] }} onClick={() => setTitle(r)}>
+                    <span className="ro-dot" />{t("role_" + r, lang)}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="field">
               <label htmlFor="tmMail">{t("email", lang)}</label>
@@ -123,6 +232,29 @@ export default function TeamActions({ lang, meId, me, members, counts = {} }) {
           </form>
           {msg && <p style={{ fontSize: 13, fontWeight: 600, margin: "12px 0 0",
             color: msg.ok ? "var(--green)" : "var(--red)" }}>{msg.text}</p>}
+
+          {ask && (
+            <div className="warn-card" style={{ marginTop: 14 }}>
+              <b style={{ display: "block", marginBottom: 5 }}>{t("tm_move_title", lang)}</b>
+              <p style={{ margin: "0 0 4px", lineHeight: 1.55 }}>
+                {t("tm_move_body", lang, { e: ask.email, co: ask.detail.company,
+                   q: ask.detail.quotes, l: ask.detail.leads })}
+              </p>
+              {ask.detail.lastMember && (
+                <p style={{ margin: "0 0 4px", lineHeight: 1.55, fontWeight: 700 }}>
+                  {t("tm_move_last", lang, { co: ask.detail.company })}
+                </p>
+              )}
+              <div style={{ display: "flex", gap: 8, marginTop: 11, flexWrap: "wrap" }}>
+                <button type="button" className="btn sm primary" disabled={busy} onClick={confirmMove}>
+                  {busy ? t("tm_inviting", lang) : t("tm_move_yes", lang)}
+                </button>
+                <button type="button" className="btn sm" disabled={busy} onClick={() => setAsk(null)}>
+                  {t("lead_cancel", lang)}
+                </button>
+              </div>
+            </div>
+          )}
           {inviteLink && (
             <div style={{ marginTop: 12 }}>
               <div className="link-row">
@@ -141,7 +273,14 @@ export default function TeamActions({ lang, meId, me, members, counts = {} }) {
           )}
         </section>
       ) : (
-        <section className="card"><p style={{ color: "var(--muted)", fontSize: 13, margin: 0 }}>{t("tm_owner_only", lang)}</p></section>
+        <section className="card invite-card">
+          <div className="owner-only">
+            <span className="oo-ic">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+            </span>
+            <p>{t("tm_owner_only", lang)}</p>
+          </div>
+        </section>
       )}
     </div>
   );

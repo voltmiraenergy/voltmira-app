@@ -12,16 +12,31 @@ const STEPS = ["deposit", "permit", "order", "install", "grid", "commission"];
 export default function InstallChecklist({ projectId, initial = {}, lang }) {
   const [prog, setProg] = useState(initial || {});
   const [pending, start] = useTransition();
+  const [failed, setFailed] = useState(null);
 
   const toggle = (step) => {
     const done = !prog[step];
-    // optimistic
+    const before = prog;
+    // Optimistic, but reversible. The tick used to stay put even when the write
+    // failed, so an installer could believe "Grid connection" was recorded when
+    // nothing had been saved — and only find out on the next page load.
     setProg(p => {
       const n = { ...p };
       if (done) n[step] = new Date().toISOString().slice(0, 10); else delete n[step];
       return n;
     });
-    start(() => setInstallStep(projectId, step, done));
+    start(async () => {
+      try {
+        // Adopt the server's merged map so a teammate's concurrent tick shows up
+        // here instead of being silently overwritten on the next toggle.
+        const fresh = await setInstallStep(projectId, step, done);
+        if (fresh && typeof fresh === "object") setProg(fresh);
+      } catch {
+        setProg(before);
+        setFailed(step);
+        setTimeout(() => setFailed(null), 4000);
+      }
+    });
   };
 
   const doneCount = STEPS.filter(s => prog[s]).length;
@@ -35,6 +50,11 @@ export default function InstallChecklist({ projectId, initial = {}, lang }) {
         </span>
       </div>
       <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--muted)" }}>{t("inst_sub", lang)}</p>
+      {failed && (
+        <p role="alert" style={{ margin: "0 0 12px", fontSize: 13, color: "var(--red)" }}>
+          {t("inst_failed", lang)}
+        </p>
+      )}
 
       {/* progress bar */}
       <div style={{ height: 6, borderRadius: 99, background: "var(--line)", overflow: "hidden", marginBottom: 14 }}>

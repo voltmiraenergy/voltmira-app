@@ -11,6 +11,7 @@ import Logo from "../../lib/Logo.jsx";
 import { t, normLang } from "../../lib/i18n.js";
 import { currentUser, currentCompany } from "../../lib/session.js";
 import { supabaseAdmin } from "../../lib/supabase.js";
+import { isDemoEmail } from "../../lib/demo.js";
 
 // Initials for the profile avatar — first letters of the first two words, or the
 // first two characters of an email local-part. Matches the demo's initialsOf().
@@ -30,7 +31,9 @@ export default async function AppLayout({ children }) {
 
   // The logged-in user's own profile (name + personal avatar) for the sidebar card.
   const { data: prof } = await supabaseAdmin().from("profiles").select("name, avatar_url").eq("id", user.id).maybeSingle();
-  const who = prof?.name || user.user_metadata?.full_name || user.user_metadata?.name || co?.name || user.email || "";
+  // NB: never fall back to the company name here — the card already shows it on
+  // the line underneath, so a user with no profile name got it printed twice.
+  const who = prof?.name || user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
   // Personal avatar wins; then the company logo; then initials.
   const avatar = prof?.avatar_url || co?.logo_url || "";
 
@@ -41,6 +44,7 @@ export default async function AppLayout({ children }) {
     { href: "/activity", label: t("nav_activity", lang) },
     { href: "/catalog", label: t("nav_catalog", lang) },
     { href: "/team", label: t("nav_team", lang) },
+    { href: "/refer", label: t("nav_refer", lang) },
     { href: "/settings", label: t("nav_settings", lang) },
     { href: "/guide", label: t("nav_guide", lang) },
   ];
@@ -48,10 +52,25 @@ export default async function AppLayout({ children }) {
   return (
     <div className="app">
       <AppTheme />
+      {/* Persist the workspace language so the client error boundary (which can't
+          read the server-side company lang) can localize itself. */}
+      <script dangerouslySetInnerHTML={{ __html: `try{localStorage.setItem('voltmira_lang',${JSON.stringify(lang)})}catch(e){}` }} />
       <a className="skip-link" href="#main">{lang === "ro" ? "Sari la conținut" : lang === "ru" ? "К содержимому" : "Skip to content"}</a>
       <aside className="sidebar">
         <div className="logo"><Logo dark size={26} /></div>
-        <SideNav items={items} />
+        <SideNav items={items} moreLabel={t("nav_more", lang)}
+          sheetFooter={
+            <>
+              <Link className="more-foot-profile" href="/profile">
+                {avatar
+                  ? <img className="avatar" src={avatar} alt="" />
+                  : <div className="avatar">{initialsOf(who)}</div>}
+                <div className="who"><b>{who}</b><span>{co?.name}</span></div>
+              </Link>
+              <ThemeToggle lang={lang} />
+              <SignOut lang={lang} />
+            </>
+          } />
         <div className="side-foot">
           <Link className="profile" href="/profile" style={{ textDecoration: "none", color: "inherit" }} title={t("pf_title", lang)}>
             {avatar
@@ -64,7 +83,18 @@ export default async function AppLayout({ children }) {
           <SignOut lang={lang} />
         </div>
       </aside>
-      <main className="main" id="main">{children}</main>
+      <main className="main" id="main">
+        {/* Demo tenants are real workspaces (see lib/demoSeed.js), so without this
+            strip there is nothing telling a visitor the data is invented. */}
+        {isDemoEmail(user.email) && (
+          <div className="demo-bar">
+            <span className="demo-badge">{t("demo_badge", lang)}</span>
+            <span className="demo-note">{t("demo_note", lang)}</span>
+            <Link className="demo-cta" href="/login">{t("demo_cta", lang)}</Link>
+          </div>
+        )}
+        {children}
+      </main>
     </div>
   );
 }

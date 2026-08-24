@@ -33,3 +33,7 @@ Thumbs.db
 # Test / coverage
 coverage/
 **/coverage/
+
+# local debug artifacts / editor backups
+_probe_user_id.txt
+*.bak

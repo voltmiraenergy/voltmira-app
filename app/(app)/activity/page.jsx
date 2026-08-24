@@ -6,6 +6,7 @@ import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
 import { t, normLang } from "../../../lib/i18n.js";
 import { activityHtml } from "../../../lib/activity.js";
+import { mdDayKey, fmtDate, fmtTime } from "../../../lib/tz.js";
 import ActivityFilters from "./ActivityFilters.jsx";
 
 export const dynamic = "force-dynamic";
@@ -13,11 +14,18 @@ export const metadata = { title: "Activity — VoltMira" };
 
 const PAGE = 25;
 const TYPES = ["all", "quote", "proposal", "lead", "sys", "won"];
-const TYPE_KINDS = { quote: ["quote"], proposal: ["proposal", "open"], lead: ["lead"], sys: ["sys"], won: ["won"] };
+// "sent" was written by five call sites (proposal emailed, proforma emailed,
+// seeded feed rows) and appeared in NO category, so those entries vanished the
+// moment any filter was applied. Sending and opening are both proposal
+// lifecycle events, so they belong together.
+const TYPE_KINDS = { quote: ["quote"], proposal: ["proposal", "open", "sent"], lead: ["lead"], sys: ["sys"], won: ["won"] };
 const TYPE_META = {
   quote: { key: "act_type_quote", c: "#378ADD" },
   proposal: { key: "act_type_proposal", c: "#378ADD" },
   open: { key: "act_type_proposal", c: "#378ADD" },
+  // Without this, a "sent" row fell through to the quote badge and was labelled
+  // "Quotes" while sitting under the Proposals filter.
+  sent: { key: "act_type_proposal", c: "#378ADD" },
   lead: { key: "act_type_lead", c: "#C97F14" },
   won: { key: "act_type_won", c: "#1E6B4E" },
   sys: { key: "act_type_settings", c: "#5A4FB0" },
@@ -40,32 +48,52 @@ export default async function ActivityPage({ searchParams }) {
   const type = TYPES.includes(searchParams?.type) ? searchParams.type : "all";
   const page = Math.max(1, parseInt(searchParams?.page || "1", 10) || 1);
 
-  const [{ data: rows }, { data: members }] = await Promise.all([
-    sb.from("activity").select("*").order("created_at", { ascending: false }).limit(600),
+  // Filter and paginate in the DATABASE. This used to pull the 600 most recent
+  // rows and then filter in JavaScript, so a search reached only as far back as
+  // those 600 — and the count read as a total. On a ledger whose whole job is
+  // answering "who did what, and when", the answer quietly became "nothing"
+  // for anything older. Now the query does the work and the count is real.
+  //
+  // Built fresh each time: a supabase-js builder is single-use, so the count
+  // query and the page query cannot share one.
+  const buildQuery = () => {
+    let qb = sb.from("activity").select("*", { count: "exact" }).order("created_at", { ascending: false });
+    if (type !== "all") qb = qb.in("kind", TYPE_KINDS[type] || []);
+    if (who !== "all") qb = qb.eq("actor_id", who);
+    if (q) {
+      // Commas and parentheses are PostgREST's own or() syntax, so they have to
+      // go or the whole filter is silently malformed.
+      const safe = q.replace(/[,()%]/g, " ").trim();
+      if (safe) qb = qb.or(`text.ilike.%${safe}%,actor_name.ilike.%${safe}%`);
+    }
+    return qb;
+  };
+
+  // range(0,0) fetches one row purely to get the exact count cheaply.
+  const [{ count: matched }, { data: members }] = await Promise.all([
+    buildQuery().range(0, 0),
     co ? supabaseAdmin().from("profiles").select("id, name, email").eq("company_id", co.id).order("created_at") : Promise.resolve({ data: [] }),
   ]);
 
-  let list = rows || [];
-  if (type !== "all") { const kinds = TYPE_KINDS[type] || []; list = list.filter(r => kinds.includes(r.kind)); }
-  if (who !== "all") list = list.filter(r => r.actor_id === who);
-  if (q) { const qq = q.toLowerCase(); list = list.filter(r => (r.text || "").toLowerCase().includes(qq) || (r.actor_name || "").toLowerCase().includes(qq)); }
-
-  const total = list.length;
+  const total = matched || 0;
   const pages = Math.max(1, Math.ceil(total / PAGE));
   const p = Math.min(pages, page);
   const start = (p - 1) * PAGE;
-  const pageRows = list.slice(start, start + PAGE);
+  const { data: rows } = await buildQuery().range(start, start + PAGE - 1);
+  const pageRows = rows || [];
 
   const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB";
-  const now = new Date();
-  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  // today/yesterday are decided in the app's timezone (Moldova/Romania), so the
+  // day boundary matches the wall-clock the user sees — not the server's UTC.
+  const todayK = mdDayKey(Date.now());
+  const yestK = mdDayKey(Date.now() - 864e5);
   const dayLabel = (iso) => {
-    const ts = new Date(iso).getTime();
-    if (ts >= startToday) return t("day_today", lang);
-    if (ts >= startToday - 864e5) return t("day_yesterday", lang);
-    return new Date(ts).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
+    const k = mdDayKey(iso);
+    if (k === todayK) return t("day_today", lang);
+    if (k === yestK) return t("day_yesterday", lang);
+    return fmtDate(iso, locale, { day: "numeric", month: "short", year: "numeric" });
   };
-  const time = (iso) => new Date(iso).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  const time = (iso) => fmtTime(iso, locale);
 
   const href = (pg) => {
     const parts = [];
@@ -139,7 +167,6 @@ export default async function ActivityPage({ searchParams }) {
         </div>
       ) : (
         <div className="empty" style={{ maxWidth: 460, margin: "48px auto", textAlign: "center" }}>
-          <div style={{ fontSize: 34, marginBottom: 10 }} aria-hidden="true">📜</div>
           <b style={{ display: "block", fontSize: 17, marginBottom: 6 }}>{t("act_empty", lang)}</b>
           <span style={{ color: "var(--muted)", fontSize: 14 }}>{t("act_empty_sub", lang)}</span>
         </div>

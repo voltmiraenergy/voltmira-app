@@ -16,7 +16,7 @@ export async function middleware(req) {
   const isProtected = path.startsWith("/dashboard") || path.startsWith("/projects")
     || path.startsWith("/settings") || path.startsWith("/team") || path.startsWith("/leads")
     || path.startsWith("/guide") || path.startsWith("/catalog") || path.startsWith("/profile")
-    || path.startsWith("/activity");
+    || path.startsWith("/activity") || path.startsWith("/refer");
 
   if (!isProtected) return res;
 

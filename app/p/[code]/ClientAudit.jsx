@@ -18,6 +18,12 @@ export default function ClientAudit({ inputs, assumptions: E, lang }) {
       batt: inputs.batt, market: inputs.market, useMonthly: inputs.useMonthly,
       consMonthly: inputs.consMonthly, afmSubsidy: inputs.afmSubsidy,
       yieldOverride: inputs.yieldOverride, monthlyYieldShape: inputs.monthlyYieldShape,
+      // Carry the real battery capacity and the frozen BOM total, otherwise this
+      // panel priced a 20 kWh battery as 10 kWh (engine fallback) and ignored the
+      // bill of materials — so the audit contradicted the headline proposal.
+      battKwh: inputs.battKwh,
+      costOverride: Number(inputs.costOverride) || 0,
+      bomHasBattery: !!inputs.bomHasBattery,
     };
     const bend = (b) => ({ ...b, infl: Math.max(0, b.infl + inflDelta) });
     const E2 = { ...E, bands: { pess: bend(E.bands.pess), expc: bend(E.bands.expc), opti: bend(E.bands.opti) } };

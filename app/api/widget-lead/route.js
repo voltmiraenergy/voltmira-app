@@ -31,10 +31,23 @@ export async function POST(req) {
     String(b.address || "").trim().slice(0, 200),
   ].filter(Boolean).join(" \u00B7 ");
 
-  await db.from("leads").insert({
-    company_id: companyId, name, note, hot: true, source: "widget",
+  // `hot` used to be hardcoded true, so every website lead arrived flagged and
+  // the flag told the installer nothing. Base it on an actual qualifying signal:
+  // a phone number (reachable now) or a stated bill (sized and motivated).
+  const hot = !!(phone || bill);
+
+  // CHECK THIS WRITE. It used to be fire-and-forget, so a failed insert still
+  // returned {ok:true}: the visitor saw "Thank you!" and the installer never
+  // learned that someone had tried to reach them. Losing a lead silently is the
+  // worst thing this endpoint can do.
+  const { error: insErr } = await db.from("leads").insert({
+    company_id: companyId, name, note, hot, source: "widget",
     email: String(b.email || "").trim().slice(0, 120), phone,
   });
+  if (insErr) {
+    console.error("[widget-lead] insert failed:", insErr.message);
+    return NextResponse.json({ error: "save_failed" }, { status: 500 });
+  }
   await logActivity(db, {
     companyId, kind: "lead", key: "act_lead_widget", params: { b: name },
     text: `New lead from the website widget: <b>${escapeHtml(name)}</b>`,

@@ -85,7 +85,7 @@ const HTML = {
     <div class="row"><div class="k">Converted</div><div class="v">You built a quote from it — lead and quote are now linked.</div></div>
     <div class="row"><div class="k">Archived</div><div class="v">Not a fit, or gone cold. Tidied away, not deleted.</div></div>
   </div>
-  <div class="g-tip"><p>✏️ &nbsp;Click <b>Edit</b> on any lead to fix their name, phone, and email right in the inbox — and tag the <b>channel</b> it came from (website, Facebook, WhatsApp, referral, cold call) so you learn which one actually pays off.</p></div>
+  <div class="g-tip"><p>Click <b>Edit</b> on any lead to fix their name, phone, and email right in the inbox — and tag the <b>channel</b> it came from (website, Facebook, WhatsApp, referral, cold call) so you learn which one actually pays off.</p></div>
 </section>
 
 <section>
@@ -99,7 +99,7 @@ const HTML = {
     <div class="row"><div class="k">Battery <small>optional, kWh</small></div><div class="v">Adds storage. Enter usable capacity — cost and benefit both scale with it. Worth it in Moldova (see below).</div></div>
     <div class="row"><div class="k">Casa Verde grant <small>optional</small></div><div class="v">If the client qualifies for a subsidy, set the amount in Settings and switch it on — it comes off the up-front cost.</div></div>
   </div>
-  <div class="g-tip"><p>📍 &nbsp;Type the client's <b>address</b> and VoltMira pulls the real sunlight for that exact roof from satellite data — numbers for <i>their</i> house, not a national average.</p></div>
+  <div class="g-tip"><p>Type the client's <b>address</b> and VoltMira pulls the real sunlight for that exact roof from satellite data — numbers for <i>their</i> house, not a national average.</p></div>
 </section>
 
 <section>
@@ -128,7 +128,7 @@ const HTML = {
   </div>
   <div class="g-card">
     <p><b>Battery &amp; the Moldova advantage.</b> Since Moldova moved to <b>net billing</b> (2024), exported power earns ≈ €0.07/kWh while power you use is worth ≈ €0.18. A battery stores daytime surplus for the evening, turning cheap exports into full-price self-use — so in Moldova a battery genuinely adds savings.</p>
-    <div class="g-tip"><p>🔋 &nbsp;Size the battery to cover the <b>evening</b>, not to be as big as possible — an oversized battery just adds cost.</p></div>
+    <div class="g-tip"><p>Size the battery to cover the <b>evening</b>, not to be as big as possible — an oversized battery just adds cost.</p></div>
   </div>
 </section>
 
@@ -147,9 +147,9 @@ const HTML = {
   <div class="g-h"><span class="g-n">6</span><h2>Plans</h2></div>
   <p class="g-lede">Free during beta — no card required. Founder pricing is locked for the first 50 installers.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Pro · €25/mo</div><div class="pd">Your logo on every proposal &amp; PDF, tracked links + open alerts, website lead widget, full pipeline.</div></div>
-    <div class="plan"><div class="pn">Team · €99/mo</div><div class="pd">Everything in Pro, up to 5 people on one pipeline, win-rate analytics, priority support.</div></div>
-    <div class="plan"><div class="pn">Enterprise · €299/mo</div><div class="pd">Unlimited seats for multi-branch installers, SSO, API access, a dedicated manager.</div></div>
+    <div class="plan hot"><div class="pn">Pro · €49/mo</div><div class="pd">Your logo on every proposal &amp; PDF, tracked links + open alerts, website lead widget, full pipeline.</div></div>
+    <div class="plan"><div class="pn">Team · €119/mo</div><div class="pd">Everything in Pro, up to 5 people on one pipeline, win-rate analytics, priority support.</div></div>
+    <div class="plan"><div class="pn">Enterprise · custom pricing</div><div class="pd">Unlimited seats for multi-branch installers, full audit log, a dedicated manager.</div></div>
   </div>
 </section>
 
@@ -195,7 +195,7 @@ const HTML = {
     <div class="row"><div class="k">Convertit</div><div class="v">Ai făcut o ofertă din el — contactul și oferta sunt acum legate.</div></div>
     <div class="row"><div class="k">Arhivat</div><div class="v">Nu se potrivește sau s-a răcit. Pus deoparte, nu șters.</div></div>
   </div>
-  <div class="g-tip"><p>✏️ &nbsp;Apasă <b>Editează</b> pe orice contact ca să corectezi numele, telefonul și emailul direct în inbox — și etichetează <b>canalul</b> din care a venit (site, Facebook, WhatsApp, recomandare, apel la rece), ca să afli care aduce cu adevărat rezultate.</p></div>
+  <div class="g-tip"><p>Apasă <b>Editează</b> pe orice contact ca să corectezi numele, telefonul și emailul direct în inbox — și etichetează <b>canalul</b> din care a venit (site, Facebook, WhatsApp, recomandare, apel la rece), ca să afli care aduce cu adevărat rezultate.</p></div>
 </section>
 
 <section>
@@ -209,7 +209,7 @@ const HTML = {
     <div class="row"><div class="k">Baterie <small>opțional, kWh</small></div><div class="v">Adaugă stocare. Introdu capacitatea utilă — și costul, și beneficiul cresc cu ea. Merită în Moldova (vezi mai jos).</div></div>
     <div class="row"><div class="k">Grant Casa Verde <small>opțional</small></div><div class="v">Dacă clientul se califică pentru subvenție, setează suma în Setări și activeaz-o — se scade din costul inițial.</div></div>
   </div>
-  <div class="g-tip"><p>📍 &nbsp;Scrie <b>adresa</b> clientului și VoltMira ia lumina solară reală pentru acel acoperiș din date satelitare — cifre pentru casa <i>lui</i>, nu o medie națională.</p></div>
+  <div class="g-tip"><p>Scrie <b>adresa</b> clientului și VoltMira ia lumina solară reală pentru acel acoperiș din date satelitare — cifre pentru casa <i>lui</i>, nu o medie națională.</p></div>
 </section>
 
 <section>
@@ -238,7 +238,7 @@ const HTML = {
   </div>
   <div class="g-card">
     <p><b>Bateria &amp; avantajul Moldovei.</b> De când Moldova a trecut la <b>facturare netă</b> (2024), energia exportată aduce ≈ €0,07/kWh, iar cea pe care o folosești valorează ≈ €0,18. O baterie stochează surplusul de zi pentru seară, transformând exporturile ieftine în autoconsum la preț întreg — așa că în Moldova bateria chiar adaugă economii.</p>
-    <div class="g-tip"><p>🔋 &nbsp;Dimensionează bateria ca să acopere <b>seara</b>, nu ca să fie cât mai mare — o baterie supradimensionată doar adaugă cost.</p></div>
+    <div class="g-tip"><p>Dimensionează bateria ca să acopere <b>seara</b>, nu ca să fie cât mai mare — o baterie supradimensionată doar adaugă cost.</p></div>
   </div>
 </section>
 
@@ -257,9 +257,9 @@ const HTML = {
   <div class="g-h"><span class="g-n">6</span><h2>Planuri</h2></div>
   <p class="g-lede">Gratuit în beta — fără card. Prețul de fondator e blocat pentru primii 50 de instalatori.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Pro · €25/lună</div><div class="pd">Logo-ul tău pe fiecare propunere și PDF, linkuri urmărite + alerte de deschidere, widget de contacte pe site, pipeline complet.</div></div>
-    <div class="plan"><div class="pn">Team · €99/lună</div><div class="pd">Tot ce e în Pro, până la 5 persoane pe un pipeline, analiză a ratei de câștig, suport prioritar.</div></div>
-    <div class="plan"><div class="pn">Enterprise · €299/lună</div><div class="pd">Locuri nelimitate pentru instalatori cu mai multe filiale, SSO, acces API, manager dedicat.</div></div>
+    <div class="plan hot"><div class="pn">Pro · €49/lună</div><div class="pd">Logo-ul tău pe fiecare propunere și PDF, linkuri urmărite + alerte de deschidere, widget de contacte pe site, pipeline complet.</div></div>
+    <div class="plan"><div class="pn">Team · €119/lună</div><div class="pd">Tot ce e în Pro, până la 5 persoane pe un pipeline, analiză a ratei de câștig, suport prioritar.</div></div>
+    <div class="plan"><div class="pn">Enterprise · preț personalizat</div><div class="pd">Locuri nelimitate pentru instalatori cu mai multe filiale, jurnal complet de audit, manager dedicat.</div></div>
   </div>
 </section>
 
@@ -305,7 +305,7 @@ const HTML = {
     <div class="row"><div class="k">Конвертирован</div><div class="v">Вы сделали расчёт — заявка и расчёт связаны.</div></div>
     <div class="row"><div class="k">В архиве</div><div class="v">Не подошёл или остыл. Убран, но не удалён.</div></div>
   </div>
-  <div class="g-tip"><p>✏️ &nbsp;Нажмите <b>Изменить</b> на любой заявке, чтобы поправить имя, телефон и почту прямо во входящих — и отметьте <b>канал</b>, из которого она пришла (сайт, Facebook, WhatsApp, рекомендация, холодный звонок), чтобы понять, какой из них реально окупается.</p></div>
+  <div class="g-tip"><p>Нажмите <b>Изменить</b> на любой заявке, чтобы поправить имя, телефон и почту прямо во входящих — и отметьте <b>канал</b>, из которого она пришла (сайт, Facebook, WhatsApp, рекомендация, холодный звонок), чтобы понять, какой из них реально окупается.</p></div>
 </section>
 
 <section>
@@ -319,7 +319,7 @@ const HTML = {
     <div class="row"><div class="k">Батарея <small>необязательно, кВт·ч</small></div><div class="v">Добавляет накопитель. Введите полезную ёмкость — и стоимость, и выгода растут вместе с ней. В Молдове окупается (см. ниже).</div></div>
     <div class="row"><div class="k">Грант Casa Verde <small>необязательно</small></div><div class="v">Если клиент имеет право на субсидию, задайте сумму в Настройках и включите её — она вычитается из первоначальной стоимости.</div></div>
   </div>
-  <div class="g-tip"><p>📍 &nbsp;Введите <b>адрес</b> клиента, и VoltMira возьмёт реальную инсоляцию именно для этой крыши из спутниковых данных — цифры для <i>его</i> дома, а не средние по стране.</p></div>
+  <div class="g-tip"><p>Введите <b>адрес</b> клиента, и VoltMira возьмёт реальную инсоляцию именно для этой крыши из спутниковых данных — цифры для <i>его</i> дома, а не средние по стране.</p></div>
 </section>
 
 <section>
@@ -348,7 +348,7 @@ const HTML = {
   </div>
   <div class="g-card">
     <p><b>Батарея &amp; преимущество Молдовы.</b> С тех пор как Молдова перешла на <b>нетто-биллинг</b> (2024), экспортируемая энергия приносит ≈ €0,07/кВт·ч, а используемая вами стоит ≈ €0,18. Батарея запасает дневной избыток на вечер, превращая дешёвый экспорт в самопотребление по полной цене — поэтому в Молдове батарея действительно добавляет экономию.</p>
-    <div class="g-tip"><p>🔋 &nbsp;Подбирайте батарею под <b>вечер</b>, а не «как можно больше» — избыточная батарея лишь добавляет затраты.</p></div>
+    <div class="g-tip"><p>Подбирайте батарею под <b>вечер</b>, а не «как можно больше» — избыточная батарея лишь добавляет затраты.</p></div>
   </div>
 </section>
 
@@ -367,9 +367,9 @@ const HTML = {
   <div class="g-h"><span class="g-n">6</span><h2>Тарифы</h2></div>
   <p class="g-lede">Бесплатно на бета-этапе — без карты. Цена основателя зафиксирована для первых 50 монтажников.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Pro · €25/мес</div><div class="pd">Ваш логотип на каждом предложении и PDF, отслеживаемые ссылки + уведомления об открытии, виджет заявок на сайте, полный пайплайн.</div></div>
-    <div class="plan"><div class="pn">Team · €99/мес</div><div class="pd">Всё из Pro, до 5 человек в одном пайплайне, аналитика конверсии, приоритетная поддержка.</div></div>
-    <div class="plan"><div class="pn">Enterprise · €299/мес</div><div class="pd">Неограниченные места для монтажников с филиалами, SSO, доступ к API, персональный менеджер.</div></div>
+    <div class="plan hot"><div class="pn">Pro · €49/мес</div><div class="pd">Ваш логотип на каждом предложении и PDF, отслеживаемые ссылки + уведомления об открытии, виджет заявок на сайте, полный пайплайн.</div></div>
+    <div class="plan"><div class="pn">Team · €119/мес</div><div class="pd">Всё из Pro, до 5 человек в одном пайплайне, аналитика конверсии, приоритетная поддержка.</div></div>
+    <div class="plan"><div class="pn">Enterprise · индивидуальная цена</div><div class="pd">Неограниченные места для монтажников с филиалами, полный журнал аудита, персональный менеджер.</div></div>
   </div>
 </section>
 

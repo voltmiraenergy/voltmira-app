@@ -56,7 +56,6 @@ export default async function LeadsPage({ searchParams }) {
 
       {shown.length === 0 ? (
         <div className="empty" style={{ maxWidth: 460, margin: "48px auto", textAlign: "center" }}>
-          <div style={{ fontSize: 34, marginBottom: 10 }} aria-hidden="true">📨</div>
           <b style={{ display: "block", fontSize: 17, marginBottom: 6 }}>{t("lead_empty", lang)}</b>
           <span style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.6 }}>{t("lead_empty_sub", lang)}</span>
         </div>

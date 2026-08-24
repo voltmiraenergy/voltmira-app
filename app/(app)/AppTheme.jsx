@@ -40,6 +40,7 @@ const CSS = `
   }
   /* these use var(--ink) as a background — keep them dark when the theme flips */
   html[data-theme="dark"] .sidebar,
+  html[data-theme="dark"] .more-sheet,
   html[data-theme="dark"] .toast,
   html[data-theme="dark"] .embed-code{ background:#080B09; }
   html[data-theme="dark"] .fchip.on{ background:#080B09; border-color:#080B09; color:#fff; }
@@ -77,6 +78,10 @@ const CSS = `
   .nav a:hover{background:var(--white-line);color:#fff}
   .nav a.active{background:var(--amber);color:var(--ink);font-weight:600}
   .nav a.active svg{opacity:1}
+  /* the mobile "More" bottom sheet + its trigger are hidden on desktop, where
+     the full vertical nav already shows every tab */
+  .nav-more{display:none}
+  .more-sheet,.more-backdrop{display:none}
   .side-foot{margin-top:auto}
   .profile{display:flex;align-items:center;gap:11px;padding:12px;border-radius:12px;background:var(--white-line)}
   .avatar{
@@ -134,6 +139,81 @@ const CSS = `
   .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;box-shadow:none!important}
   .btn.wapp{background:#25D366;color:#fff;box-shadow:0 3px 12px rgba(37,211,102,.3)}
   .btn.wapp:hover{background:#1FBE5A;transform:translateY(-1px);box-shadow:0 6px 18px rgba(37,211,102,.4)}
+
+  /* First-run screen (empty workspace). Two choices, generous space, nothing
+     to scroll past — the opposite of the all-zeros dashboard it replaces. */
+  .firstrun{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:34px 30px;margin-bottom:18px;text-align:center}
+  .firstrun h2{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+  .firstrun .fr-sub{font-size:14px;color:var(--muted);margin:0 auto 26px;max-width:46ch;line-height:1.55}
+  .fr-paths{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;
+    max-width:660px;margin:0 auto;text-align:left}
+  @media(max-width:640px){.fr-paths{grid-template-columns:minmax(0,1fr)}}
+  .fr-card{display:flex;flex-direction:column;align-items:flex-start;gap:7px;
+    border:1px solid var(--line);border-radius:13px;padding:20px 18px;background:var(--paper)}
+  .fr-card.fr-primary{border-color:color-mix(in srgb,var(--green) 45%,transparent);
+    background:var(--green-tint)}
+  .fr-ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+    background:var(--paper-2);border:1px solid var(--line);color:var(--green);margin-bottom:3px}
+  .fr-card b{font-size:15px;font-weight:650;color:var(--ink)}
+  .fr-card > span{font-size:12.5px;color:var(--muted);line-height:1.5}
+  .fr-card .btn{margin-top:9px;align-self:stretch}
+  .fr-err{font-size:12px;color:var(--red);margin-top:4px}
+  .fr-foot{font-size:12.5px;color:var(--muted);margin:24px 0 0;line-height:1.5}
+  @media (pointer:coarse){ .app .fr-card .btn{min-height:44px} }
+
+  /* "You're looking at sample data" — amber, same family as the demo strip.
+     Filtering sample rows out of the KPIs would break the demo button; naming
+     them is what actually prevents the embarrassing version of this. */
+  .sample-bar{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:16px;
+    padding:9px 13px;border-radius:12px;background:var(--amber-tint);
+    border:1px solid color-mix(in srgb,var(--amber) 40%,transparent)}
+  .sample-badge{font-family:var(--font-d);font-size:10.5px;font-weight:700;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--ink);background:var(--amber);border-radius:99px;padding:3px 9px;flex:none}
+  .sample-note{font-size:13px;color:var(--ink);opacity:.85;flex:1;min-width:0;line-height:1.45}
+  .sample-cta{flex:none;font-size:12.5px;font-weight:600;color:var(--ink);text-decoration:none;
+    border-bottom:1.5px solid color-mix(in srgb,var(--ink) 40%,transparent);padding-bottom:1px}
+  .sample-cta:hover{border-bottom-color:var(--ink)}
+  /* Funnel € column */
+  .pf-eur{flex:none;min-width:74px;text-align:right;font-size:12px;color:var(--muted);
+    font-variant-numeric:tabular-nums}
+  @media(max-width:560px){.pf-eur{display:none}}
+
+  /* Demo workspace strip. Amber (the attention token) rather than a loud red:
+     it should read as context, not as an error, while presenting to a client. */
+  /* Deposit chooser in the proforma modal */
+  .dep-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .dep-opt{display:flex;align-items:center;justify-content:center;padding:11px 8px;border-radius:10px;
+    border:1.5px solid var(--line);background:var(--paper-2);color:var(--muted);
+    font-size:13.5px;font-weight:600;cursor:pointer;transition:border-color .15s,color .15s,background .15s}
+  .dep-opt:hover{border-color:var(--green);color:var(--ink)}
+  .dep-opt.on{border-color:var(--green);color:var(--green);background:var(--green-tint)}
+  .dep-amount{font-family:var(--font-d);font-size:24px;font-weight:700;letter-spacing:-.02em;
+    color:var(--ink);margin-bottom:16px}
+  .dep-amount span{font-size:14px;font-weight:500;color:var(--muted)}
+  @media (pointer:coarse){ .app .dep-opt{min-height:44px} }
+
+  /* Email-the-PDF row in the share modal */
+  .email-row{display:flex;gap:8px;margin-bottom:10px}
+  .email-row input{flex:1;min-width:0;border:1px solid var(--line);background:var(--paper-2);
+    border-radius:10px;padding:10px 12px;font-size:14px}
+  .email-row input:focus{outline:2px solid var(--amber);outline-offset:1px}
+  .email-row .btn{flex:none}
+  .email-row .btn:disabled{opacity:.5;cursor:not-allowed}
+  .email-msg{font-size:12.5px;line-height:1.45;margin:-4px 0 10px}
+  .email-msg.ok{color:var(--green)}
+  .email-msg.bad{color:var(--red)}
+
+  .demo-bar{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:18px;
+    padding:10px 14px;border-radius:12px;background:var(--amber-tint);
+    border:1px solid color-mix(in srgb,var(--amber) 38%,transparent)}
+  .demo-badge{font-family:var(--font-d);font-size:10.5px;font-weight:700;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--ink);background:var(--amber);border-radius:99px;padding:3px 9px;flex:none}
+  .demo-note{font-size:13px;color:var(--ink);opacity:.85;flex:1;min-width:0;line-height:1.45}
+  .demo-cta{flex:none;font-size:12.5px;font-weight:600;color:var(--ink);text-decoration:none;
+    border-bottom:1.5px solid color-mix(in srgb,var(--ink) 40%,transparent);padding-bottom:1px}
+  .demo-cta:hover{border-bottom-color:var(--ink)}
+  @media (max-width:560px){.demo-note{flex-basis:100%;order:3}}
 
   .card{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
   .card h3{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:15px}
@@ -291,6 +371,10 @@ const CSS = `
   .feed time{color:var(--muted);font-size:11.5px;white-space:nowrap;padding-top:2px}
   .feed-scroll{max-height:348px;overflow-y:auto;margin:0 -6px;padding:0 6px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
   .feed .f-day{position:sticky;top:0;z-index:2;list-style:none;display:block;background:var(--paper-2);padding:5px 2px;margin:2px 0;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+  /* a feed row that points at a quote/settings becomes a clickable link */
+  .feed a.f-link{display:flex;gap:12px;align-items:flex-start;width:100%;text-decoration:none;color:inherit;margin:-11px 0;padding:11px 6px;border-radius:9px;transition:background .15s}
+  .feed a.f-link:hover{background:rgba(20,42,33,.05)}
+  html[data-theme="dark"] .feed a.f-link:hover{background:rgba(255,255,255,.05)}
   .empty{text-align:center;color:var(--muted);font-size:13.5px;padding:34px 16px;border:1.5px dashed var(--line);border-radius:12px;line-height:1.6}
   .empty b{display:block;font-family:var(--font-d);font-size:15px;color:var(--ink);margin-bottom:3px}
 
@@ -305,9 +389,47 @@ const CSS = `
   .proj-title:focus{border-color:var(--green);background:var(--paper-2);outline:none}
   .pvgis-data{margin-top:9px;padding:9px 12px;border:1px solid var(--green);background:var(--green-tint);border-radius:10px;font-size:12.5px;color:var(--muted);text-align:center}
   .pvgis-data .pvg-k{font-family:var(--font-d);font-weight:700;color:var(--green);font-size:15px}
-  .cost-line{display:flex;flex-wrap:wrap;gap:24px;align-items:center}
-  .cost-line .k b{display:block;font-family:var(--font-d);font-size:24px;font-weight:700;letter-spacing:-.02em}
+  /* Headline figures sit in one tight row. They used to be gap:24px with a
+     flex spacer pushing the donut to the far edge, which opened a dead band
+     across the middle of the card at every width above ~700px. */
+  .cost-line{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:flex-start}
+  .cost-line .k b{display:block;font-family:var(--font-d);font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
   .cost-line .k span{font-size:12px;color:var(--muted)}
+  .cost-spec{margin-top:10px;font-size:12.5px;color:var(--muted)}
+  .cost-spec b{font-family:var(--font-d);font-weight:700;color:var(--ink)}
+
+  /* Self-consumption ring + legend */
+  .self-split{display:flex;align-items:center;gap:18px;margin-top:16px;flex-wrap:wrap}
+  .self-split .ss-ring{flex:none}
+  .ss-legend{display:flex;flex-direction:column;gap:7px;min-width:0;flex:1}
+  .ss-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink)}
+  .ss-item i{width:9px;height:9px;border-radius:3px;flex:none}
+  .ss-item b{font-family:var(--font-d);font-weight:700;margin-left:2px}
+  .ss-cov{font-size:11.5px;line-height:1.45;color:var(--muted);margin-top:2px;max-width:34ch}
+
+  /* Investment vs lifetime-return breakdown */
+  .cost-break{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+  .cost-break .cb-t{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:11px}
+  .cb-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .cb-row .cb-lbl{flex:0 0 92px;font-size:12.5px;color:var(--ink)}
+  /* --line, not --paper: in dark, --paper (#0F1310) sits 1.07 contrast against
+     the card (--paper-2 #171B16), so the unfilled part of the bar vanished.
+     --line is the divider token and reads in both themes. */
+  .cb-row .cb-track{flex:1;height:14px;background:var(--line);border-radius:99px;overflow:hidden;min-width:40px}
+  .cb-row .cb-track i{display:block;height:100%;border-radius:99px;transition:width .4s var(--ease,ease)}
+  .cb-row .cb-track .cb-cost{background:var(--amber)}
+  .cb-row .cb-track .cb-life{background:var(--green)}
+  .cb-row .cb-val{flex:0 0 auto;font-family:var(--font-d);font-size:13.5px;font-weight:700;min-width:64px;text-align:right}
+  .cb-grant{font-size:11.5px;color:var(--muted);margin:2px 0 8px 102px}
+  .cb-net{display:flex;justify-content:space-between;align-items:baseline;margin-top:11px;padding-top:11px;border-top:1px dashed var(--line)}
+  .cb-net span{font-size:12.5px;color:var(--muted)}
+  .cb-net b{font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--green)}
+  .cb-net b.neg{color:var(--red)}
+  @media(max-width:560px){
+    .cb-row .cb-lbl{flex-basis:78px;font-size:12px}
+    .cb-row .cb-val{min-width:56px}
+    .cb-grant{margin-left:88px}
+  }
 
   /* Financing */
   .fin-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
@@ -352,15 +474,105 @@ const CSS = `
   .fchip:hover{border-color:var(--green);color:var(--green)}
   .fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
 
-  /* Team */
-  .member{display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid var(--line)}
-  .member:last-child{border-bottom:none}
-  .member .m-who{flex:1;min-width:0}
-  .member .m-who b{display:block;font-size:14px;font-weight:600}
-  .member .m-who span{font-size:12px;color:var(--muted)}
-  .member .m-count{font-size:12px;color:var(--muted);white-space:nowrap}
-  .seat-note{font-size:12.5px;color:var(--muted);margin-top:14px;padding-top:13px;border-top:1px dashed var(--line)}
+  /* ============ Team ============ */
+  /* Header strip: one measured band of stats, divided rather than boxed, so the
+     page opens with a scoreboard instead of three floating tiles. */
+  .team-hero{display:grid;grid-template-columns:repeat(4,1fr);background:var(--paper-2);
+    border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:18px 4px;margin-bottom:18px}
+  .th-item{padding:0 20px;border-left:1px solid var(--line)}
+  .th-item:first-child{border-left:none}
+  .th-lbl{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .th-val{font-family:var(--font-d);font-size:26px;font-weight:700;letter-spacing:-.025em;line-height:1.1;margin-top:7px;color:var(--ink)}
+  .th-val .th-of{font-size:14px;font-weight:500;color:var(--muted);margin-left:5px}
+  .th-money{color:var(--green)}
+  .th-sub{font-size:11.5px;color:var(--muted);margin-top:8px}
+  /* Discrete pips beat a continuous bar here — you can count the seats left. */
+  .seat-pips{display:flex;gap:5px;margin-top:11px}
+  .seat-pips .pip{width:100%;max-width:26px;height:6px;border-radius:99px;background:var(--line)}
+  .seat-pips .pip.on{background:var(--green)}
+  @media(max-width:860px){
+    .team-hero{grid-template-columns:repeat(2,1fr);gap:18px 0;padding:18px 4px}
+    .th-item:nth-child(3){border-left:none}
+  }
+  @media(max-width:520px){.team-hero{grid-template-columns:minmax(0,1fr)}.th-item{border-left:none}}
+
+  .team-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;align-items:start}
+  /* minmax(0,1fr), not 1fr: a bare 1fr is minmax(auto,1fr), so one long
+     unbreakable string (a member email) sets the track min-content and pushes
+     every card past the viewport. At 375px this blew the cards out to 469px. */
+  @media(max-width:900px){.team-grid{grid-template-columns:minmax(0,1fr)}}
+  .ch-row{display:flex;align-items:center;gap:9px;margin-bottom:14px}
+  .ch-row h3{margin:0}
+  .ch-count{font-family:var(--font-d);font-size:11.5px;font-weight:700;color:var(--muted);
+    background:var(--paper);border:1px solid var(--line);border-radius:99px;padding:1px 8px}
+
+  /* Member rows read as a leaderboard: role-tinted avatar ring, headline metrics
+     visible without expanding, and a share-of-team bar for relative standing. */
+  .member-wrap{border-bottom:1px solid var(--line)}
+  .member-wrap:last-child{border-bottom:none}
+  .member-wrap.open{background:var(--paper);border-radius:12px;border-bottom-color:transparent}
+  .member{display:flex;align-items:center;gap:14px;padding:14px 10px;margin:0 -10px;
+    border-radius:12px;cursor:pointer;transition:background .15s;user-select:none}
+  .member:hover{background:var(--paper)}
+  .member-wrap.open .member{background:transparent}
+
+  .m-av{position:relative;flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;
+    background:color-mix(in srgb,var(--rc) 16%,transparent);box-shadow:0 0 0 1.5px color-mix(in srgb,var(--rc) 45%,transparent) inset}
+  .m-av-in{font-family:var(--font-d);font-weight:700;font-size:15px;color:var(--rc)}
+  .m-crown{position:absolute;right:-3px;bottom:-3px;width:17px;height:17px;border-radius:50%;
+    background:var(--amber);color:var(--ink);display:grid;place-items:center;
+    box-shadow:0 0 0 2px var(--paper-2)}
+
+  .m-who{flex:1;min-width:0}
+  .m-name{display:flex;align-items:center;gap:7px;flex-wrap:wrap;line-height:1.25}
+  .m-name b{font-size:14.5px;font-weight:600;color:var(--ink)}
+  .m-you{font-size:11px;color:var(--muted);background:var(--paper);border:1px solid var(--line);
+    border-radius:99px;padding:1px 7px}
+  .m-pending{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    border-radius:99px;padding:2px 8px;background:var(--amber-tint);color:#B4700F;white-space:nowrap}
+  .m-mail{font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .m-meta{display:flex;align-items:center;gap:8px;margin-top:7px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .m-meta i{width:3px;height:3px;border-radius:50%;background:var(--line);flex:none}
+  /* --ink-soft is not part of the dark token set, so a fallback literal here
+     rendered dark-on-dark. Use --ink, which is defined in both themes. */
+  .m-meta .m-share{font-weight:700;color:var(--ink)}
+  .m-bar{height:4px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px;max-width:320px}
+  .m-bar span{display:block;height:100%;border-radius:99px;transition:width .35s var(--ease,ease)}
+
+  .m-role{flex:none;font-size:11px;font-weight:600;white-space:nowrap;color:var(--rc);
+    background:color-mix(in srgb,var(--rc) 12%,transparent);border-radius:99px;padding:2px 9px}
+  .m-acts{flex:none;display:flex;align-items:center;gap:6px;color:var(--muted)}
+  /* Keep the name from wrapping the row into two lines on a narrow card. */
+  .m-name b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .th-item{min-width:0}
+
+  .member-detail{padding:0 10px 16px}
+  .md-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .md-stat{background:var(--paper-2);border:1px solid var(--line);border-radius:11px;padding:12px 8px;text-align:center}
+  .md-stat b{display:block;font-family:var(--font-d);font-size:17px;font-weight:700;letter-spacing:-.02em;color:var(--ink);line-height:1.15}
+  .md-stat b.good{color:var(--green)}
+  .md-stat span{font-size:10.5px;color:var(--muted);display:block;margin-top:3px}
+  @media(max-width:720px){.md-stats{grid-template-columns:repeat(2,1fr)}}
+
+  .seat-note{font-size:12.5px;color:var(--muted);margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
   .seat-note b{color:var(--green)}
+
+  /* Invite card */
+  .invite-card{position:sticky;top:18px}
+  .invite-sub{color:var(--muted);font-size:13px;margin:0 0 16px;line-height:1.55}
+  .role-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .role-opt{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 6px;border-radius:10px;
+    border:1.5px solid var(--line);background:var(--paper-2);color:var(--muted);
+    font-size:12.5px;font-weight:600;cursor:pointer;transition:border-color .15s,color .15s,background .15s}
+  .role-opt .ro-dot{width:7px;height:7px;border-radius:50%;background:var(--rc);flex:none;opacity:.55}
+  .role-opt:hover{border-color:color-mix(in srgb,var(--rc) 55%,transparent);color:var(--ink)}
+  .role-opt.on{border-color:var(--rc);color:var(--ink);background:color-mix(in srgb,var(--rc) 9%,transparent)}
+  .role-opt.on .ro-dot{opacity:1}
+  .owner-only{display:flex;gap:12px;align-items:flex-start}
+  .owner-only .oo-ic{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+    background:var(--paper);border:1px solid var(--line);color:var(--muted)}
+  .owner-only p{margin:7px 0 0;color:var(--muted);font-size:13.5px;line-height:1.55}
 
   /* Settings */
   .set-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:13px}
@@ -385,26 +597,77 @@ const CSS = `
 
   /* ============ Mobile ============ */
   @media (max-width:980px){
-    .editor,.dash-grid,.grid-2{grid-template-columns:1fr}
+    .editor,.dash-grid,.grid-2{grid-template-columns:minmax(0,1fr)}
   }
   @media (pointer:coarse){
     .app input[type=range]{height:10px}
     .app input[type=range]::-webkit-slider-thumb{width:28px;height:28px}
     .app input[type=range]::-moz-range-thumb{width:28px;height:28px}
+    /* Thumb-sized hit areas. This app gets used one-handed on a roof, and an
+       audit at 375px found 15 controls under 40px tall (some at 22px). Scoped to
+       coarse pointers so the desktop density is untouched. 44px is the
+       accessible minimum; .sm keeps a slightly tighter 40px. */
+    .app .btn{min-height:44px}
+    .app .btn.sm{min-height:40px}
+    .app .btn.icon{min-width:44px;min-height:44px}
+    .app .chip{min-height:36px}
+    .app .fchip{min-height:38px}
+    .app .member{padding-top:16px;padding-bottom:16px}
+    /* Onboarding + follow-up rows are links, not buttons — give them real height */
+    .app .followup-strip .fu-row .btn{min-height:40px}
+    .app .ob-step{min-height:44px}
+    .app .tr-tab{min-height:40px;min-width:44px}
+    .app .role-opt{min-height:42px}
+    .app .tbl .t-title{display:inline-flex;align-items:center;min-height:40px}
   }
   @media (max-width:768px){
     .app{grid-template-columns:1fr}
     .input,.proj-title{font-size:16px}
+    /* Bottom nav (option A): a tidy single row of the 4 primary tabs + a "More"
+       button that opens a bottom sheet with the rest. No cramming 9 tabs. */
     .sidebar{
       position:fixed;inset:auto 0 0 0;height:auto;z-index:60;
-      flex-direction:row;align-items:center;gap:6px;
-      padding:6px 8px calc(6px + env(safe-area-inset-bottom));
-      border-top:1px solid rgba(255,255,255,.16);
+      flex-direction:row;align-items:stretch;
+      padding:6px 6px env(safe-area-inset-bottom);
+      border-top:1px solid rgba(255,255,255,.14);
     }
     .logo,.side-foot{display:none}
-    .nav{flex-direction:row;flex:1;gap:3px}
-    .nav a{flex-direction:column;gap:4px;font-size:10px;padding:7px 4px;flex:1;align-items:center;justify-content:center;border-radius:9px}
-    .view{padding:18px 16px 96px}
+    .nav{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;flex:1}
+    .nav .nav-secondary{display:none}         /* secondary tabs live in the sheet */
+    .nav a,.nav-more{
+      display:flex;flex-direction:column;gap:4px;line-height:1;min-width:0;
+      font-size:10.5px;font-weight:600;padding:8px 2px;border-radius:12px;
+      align-items:center;justify-content:center;white-space:nowrap;
+    }
+    .nav a svg,.nav-more svg{width:21px;height:21px}
+    .nav-more{background:none;border:none;color:var(--white-dim);cursor:pointer;font-family:inherit}
+    .nav-more.active{background:var(--white-line);color:#fff}
+    /* backdrop + sheet */
+    .more-backdrop{display:block;position:fixed;inset:0;z-index:65;background:rgba(10,20,15,.5);
+      opacity:0;pointer-events:none;transition:opacity .25s}
+    .more-backdrop.open{opacity:1;pointer-events:auto}
+    .more-sheet{display:flex;flex-direction:column;gap:2px;position:fixed;left:0;right:0;bottom:0;z-index:70;
+      background:var(--ink);border-top:1px solid rgba(255,255,255,.14);border-radius:18px 18px 0 0;
+      padding:8px 10px calc(12px + env(safe-area-inset-bottom));
+      transform:translateY(110%);transition:transform .34s cubic-bezier(.22,.9,.28,1);
+      box-shadow:0 -14px 40px -12px rgba(0,0,0,.5)}
+    .more-sheet.open{transform:translateY(0)}
+    .more-grip{width:40px;height:4px;border-radius:99px;background:rgba(255,255,255,.28);margin:4px auto 8px}
+    .more-sheet a{display:flex;align-items:center;gap:14px;padding:14px 14px;border-radius:11px;
+      color:var(--white-dim);font-size:15px;font-weight:500;text-decoration:none}
+    .more-sheet a svg{width:20px;height:20px;flex:none;opacity:.9}
+    .more-sheet a.active{background:var(--amber);color:var(--ink)}
+    .more-sheet a.active svg{opacity:1}
+    /* account footer inside the sheet: profile, theme toggle, sign out */
+    .more-foot{display:flex;flex-direction:column;gap:2px;margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12)}
+    .more-foot-profile{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:11px;text-decoration:none;color:#fff}
+    .more-foot-profile .avatar{width:34px;height:34px;border-radius:50%;background:var(--white-line);display:grid;place-items:center;font-size:12.5px;font-weight:600;color:#fff;object-fit:cover;flex:none}
+    .more-foot-profile .who b{display:block;font-size:14px;font-weight:600;color:#fff;line-height:1.2}
+    .more-foot-profile .who span{font-size:12px;color:var(--white-dim)}
+    .more-sheet .side-theme,.more-sheet .reset-link{display:flex;align-items:center;gap:14px;width:100%;justify-content:flex-start;text-align:left;padding:14px;border-radius:11px;background:none;border:none;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--white-dim)}
+    .more-sheet .side-theme svg{width:20px;height:20px;flex:none;opacity:.9}
+    .more-sheet .reset-link{color:#E88E7A}
+    .view{padding:18px 16px 92px}
     .filters .input{width:100%}
     .proj-title{width:170px;font-size:18px}
   }

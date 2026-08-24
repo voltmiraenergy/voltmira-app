@@ -9,7 +9,8 @@ import { t } from "../../../lib/i18n.js";
 
 const KINDS = ["panel", "inverter", "battery", "mounting", "other"];
 const SPEC_HINT = { panel: "550 W", inverter: "8 kW", battery: "10 kWh", mounting: "", other: "" };
-const EMPTY = { kind: "panel", brand: "", model: "", spec: "", unit_price: "", image_url: "" };
+const EMPTY = { kind: "panel", brand: "", model: "", spec: "", unit_price: "", image_url: "", track_stock: false, stock: "" };
+const LOW_STOCK = 2;   // available at or below this shows the amber "low" state
 
 // Clean line-art thumbnails per kind — shown when a product has no photo, so the
 // grid never has a broken or empty tile. Inherit currentColor for theming.
@@ -70,6 +71,18 @@ const CSS = `
   display:grid;place-items:center;cursor:pointer;color:var(--muted);font-size:13px;transition:color .18s,border-color .18s}
 .cat-iconbtn:hover{color:var(--ink);border-color:#CBC7B6}
 .cat-starter{border:1.5px dashed var(--line);border-radius:16px;padding:26px 24px;text-align:center;max-width:520px;margin:8px auto}
+.cat-inv-row{display:flex;gap:16px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.cat-inv-toggle{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--ink)}
+.cat-inv-toggle input{width:16px;height:16px;accent-color:var(--green);cursor:pointer}
+.cat-inv-qty{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.cat-inv-qty .input{width:96px}
+.cat-stock{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;font-size:11.5px;font-weight:700;
+  border-radius:99px;padding:3px 10px;margin-top:5px;letter-spacing:.01em}
+.cat-stock::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.cat-stock.ok{color:#1E6B4E;background:rgba(30,107,78,.10)}
+.cat-stock.low{color:#B26A00;background:rgba(232,155,45,.14)}
+.cat-stock.out{color:#B23B2A;background:rgba(196,84,59,.13)}
+.cat-stock-sub{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45}
 .cat-starter .em{font-size:34px;margin-bottom:6px}
 .cat-starter h3{margin:0 0 6px;font-size:17px}
 .cat-starter p{margin:0 auto 16px;color:var(--muted);font-size:13.5px;line-height:1.6;max-width:44ch}
@@ -79,7 +92,7 @@ const CSS = `
 }
 `;
 
-export default function CatalogManager({ initial, lang }) {
+export default function CatalogManager({ initial, lang, committed = {}, reserved = {} }) {
   const [items, setItems] = useState(initial);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -98,11 +111,14 @@ export default function CatalogManager({ initial, lang }) {
   }
   function startEdit(p) {
     setEditId(p.id);
-    setEditForm({ kind: p.kind, brand: p.brand, model: p.model, spec: p.spec, unit_price: p.unit_price, image_url: p.image_url || "" });
+    setEditForm({ kind: p.kind, brand: p.brand, model: p.model, spec: p.spec, unit_price: p.unit_price,
+      image_url: p.image_url || "", track_stock: !!p.track_stock, stock: p.stock ?? "" });
   }
   function saveEdit() {
     start(() => updateProduct(editId, editForm).then(() => {
-      setItems(l => l.map(x => x.id === editId ? { ...x, ...editForm, unit_price: Number(editForm.unit_price) || 0 } : x));
+      setItems(l => l.map(x => x.id === editId ? { ...x, ...editForm,
+        unit_price: Number(editForm.unit_price) || 0,
+        track_stock: !!editForm.track_stock, stock: Math.max(0, Math.round(Number(editForm.stock) || 0)) } : x));
       setEditId(null);
     }));
   }
@@ -136,8 +152,44 @@ export default function CatalogManager({ initial, lang }) {
             onChange={e => set({ ...v, image_url: e.target.value })} /></div>
         <ProductThumb kind={v.kind} src={/^https:\/\//i.test(v.image_url || "") ? v.image_url : ""} className="cat-prev" />
       </div>
+      <div className="cat-inv-row">
+        <label className="cat-inv-toggle">
+          <input type="checkbox" checked={!!v.track_stock} onChange={e => set({ ...v, track_stock: e.target.checked })} />
+          {t("inv_track", lang)}
+        </label>
+        {v.track_stock && (
+          <div className="cat-inv-qty">
+            <span>{t("inv_stock", lang)}</span>
+            <input className="input" type="number" min="0" step="1" value={v.stock} placeholder="0"
+              onChange={e => set({ ...v, stock: e.target.value })} />
+          </div>
+        )}
+      </div>
     </div>
   );
+
+  // Inventory badge for a product card. Available = physical stock minus units
+  // committed in WON deals. Open-quote reservations show as a soft hint only.
+  function stockBadge(p) {
+    if (!p.track_stock) return null;
+    const stock = Math.max(0, Math.round(Number(p.stock) || 0));
+    const won = committed[p.id] || 0;
+    const open = reserved[p.id] || 0;
+    const avail = stock - won;
+    const cls = avail <= 0 ? "out" : avail <= LOW_STOCK ? "low" : "ok";
+    const label = avail <= 0 ? t("inv_out", lang) : t("inv_available", lang, { n: avail });
+    const sub = [
+      t("inv_on_hand", lang, { n: stock }),
+      won > 0 ? t("inv_won", lang, { n: won }) : null,
+      open > 0 ? t("inv_open", lang, { n: open }) : null,
+    ].filter(Boolean).join(" · ");
+    return (
+      <>
+        <span className={`cat-stock ${cls}`}>{label}</span>
+        <span className="cat-stock-sub">{sub}</span>
+      </>
+    );
+  }
 
   const hasItems = items.length > 0;
 
@@ -165,7 +217,7 @@ export default function CatalogManager({ initial, lang }) {
 
       {!hasItems && !adding ? (
         <div className="cat-starter">
-          <div className="em" aria-hidden="true">📦</div>
+          
           <h3>{t("cat_empty", lang)}</h3>
           <p>{t("cat_starter_hint", lang)}</p>
           <div style={{ display: "flex", gap: 9, justifyContent: "center", flexWrap: "wrap" }}>
@@ -204,11 +256,12 @@ export default function CatalogManager({ initial, lang }) {
                         {p.brand && <span className="cat-brand">{p.brand}</span>}
                         <span className="cat-name">{p.model || p.brand || t("cat_untitled", lang)}</span>
                         {p.spec && <span className="cat-spec">{p.spec}</span>}
+                        {stockBadge(p)}
                         <div className="cat-foot">
                           <span className="cat-price">{fmt(p.unit_price)}<small>{t("cat_price_each", lang)}</small></span>
                           <div className="cat-acts">
                             <button className="cat-iconbtn" onClick={() => startEdit(p)} disabled={pending}
-                              aria-label={t("cat_edit", lang)} title={t("cat_edit", lang)}>✎</button>
+                              aria-label={t("cat_edit", lang)} title={t("cat_edit", lang)}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
                             <button className="cat-iconbtn" onClick={() => remove(p.id)} disabled={pending}
                               aria-label={t("cat_delete", lang)} title={t("cat_delete", lang)}>✕</button>
                           </div>

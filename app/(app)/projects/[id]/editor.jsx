@@ -8,9 +8,11 @@ import Link from "next/link";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
 import { createProposal, saveQuoteTemplate } from "../../../../lib/actions.js";
 import InstallChecklist from "./InstallChecklist.jsx";
+import SignedContract from "./SignedContract.jsx";
 import ShareCard from "./ShareCard.jsx";
-import { quote, MARKETS, FX } from "@voltmira/engine";
+import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
 import { t } from "../../../../lib/i18n.js";
+import { fmtDate } from "../../../../lib/tz.js";
 
 // System-size slider range — raised to 50 kW for larger commercial projects.
 const KW_MIN = 2, KW_MAX = 50;
@@ -46,11 +48,22 @@ function Chart({ q, lang }) {
   );
 }
 
-function Donut({ self, lang }) {
+function Donut({ self, prod0, cons, lang }) {
   const r = 42, c = 2 * Math.PI * r, sc = Math.max(0, Math.min(1, self));
+  // Two different questions, and the ring only ever answered the first:
+  //   sc       = share of PRODUCTION consumed on site
+  //   coverage = share of the CLIENT'S OWN USE the system covers
+  // On an oversized system sc reads alarmingly low (8%) while coverage is 100%,
+  // so showing the ring alone invited exactly the wrong conclusion.
+  const consN = Number(cons) || 0;
+  const coverage = consN > 0 ? Math.min(1, (sc * (Number(prod0) || 0)) / consN) : 0;
+  // The ring is SVG only. The caption used to live inside this component,
+  // centred under a 110px box, so "of production — covers 79% of the client's
+  // own use" wrapped into four ragged lines. It now renders as a legend beside
+  // the ring, where it has the width to read as one sentence.
   return (
-    <svg viewBox="0 0 100 100" width="110" height="110" role="img"
-      aria-label={`Self-consumed ${Math.round(sc * 100)}%`}>
+    <svg viewBox="0 0 100 100" width="96" height="96" className="ss-ring" role="img"
+      aria-label={`${Math.round(sc * 100)}% of production self-consumed, covering ${Math.round(coverage * 100)}% of the client's use`}>
       <circle cx="50" cy="50" r={r} fill="none" stroke="var(--line)" strokeWidth="12" />
       <circle cx="50" cy="50" r={r} fill="none" stroke="#E89B2D" strokeWidth="12" opacity=".65"
         strokeDasharray={`${c * (1 - sc)} ${c}`} transform="rotate(-90 50 50)" strokeLinecap="round" />
@@ -65,7 +78,7 @@ function Donut({ self, lang }) {
 }
 
 /* ---------- editor ---------- */
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "" }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", signed = null }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, address: initial.address,
@@ -84,7 +97,25 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   });
   const [saved, setSaved] = useState("saved");     // saved | saving | error
   const [pvgisBusy, setPvgisBusy] = useState(false);
+  const [billBusy, setBillBusy] = useState(false);   // AI bill extractor
+  const [billRes, setBillRes] = useState(null);      // extracted values awaiting review
+  const [billErr, setBillErr] = useState("");
+  const billInput = useRef(null);
   const [propUrl, setPropUrl] = useState(null);
+  // Emailing the PDF: the recipient isn't stored on the project (only the client's
+  // NAME is), so this always starts empty rather than guessing an address.
+  const [emailTo, setEmailTo] = useState("");
+  // Deposit % for the proforma. The invoice page has supported ?deposit= since
+  // it was written, but nothing ever passed it — so the single most useful part
+  // of a proforma (asking for money up front) was reachable only by hand-editing
+  // the URL. 0 = invoice the full amount.
+  const [invOpen, setInvOpen] = useState(false);
+  const [depPct, setDepPct] = useState(30);
+  const [invTo, setInvTo] = useState("");
+  const [invBusy, setInvBusy] = useState(false);
+  const [invMsg, setInvMsg] = useState(null);
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailMsg, setEmailMsg] = useState(null);
   const [copied, setCopied] = useState(false);
   const [tplSaved, setTplSaved] = useState(false);
   const [tplOpen, setTplOpen] = useState(false);
@@ -103,12 +134,37 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     } catch { /* non-fatal */ } finally { setTplBusy(false); }
   }
 
-  const bomTotal = useMemo(
-    () => (p.bom || []).reduce((s, l) => s + (Number(l.unitPrice) || 0) * (Number(l.qty) || 0), 0),
-    [p.bom]);
-  const q = useMemo(() => quote({ ...p, costOverride: bomTotal }, E), [p, E, bomTotal]);
+  // Quote price is driven entirely by system size (kW × rate + battery).
+  const q = useMemo(() => quote({ ...p, costOverride: 0 }, E), [p, E]);
   const fmt = n => "€" + Math.round(n).toLocaleString("en-IE");
   const yrs = n => n === null ? "25+" : n === 0 ? tr("pp_immediate") : n.toFixed(1);
+  // per-kWh prices need decimals, and 0.036 must not print as "0.04"
+  const eurKwh = v => "€" + Number(v).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+
+  // How far the array overshoots what the client can actually use, and the size
+  // that would roughly match their annual consumption. Honours the monthly
+  // profile via the engine's own helper so the two never disagree.
+  const consEff = Math.max(0, Number(effectiveConsumption(p)) || 0);
+  const oversize = consEff > 0 ? q.e.prod0 / consEff : 0;
+  const yieldPerKwp = Number(p.yieldOverride) || Number(E.baseYield) || 1100;
+  const suggestKw = consEff > 0 ? consEff / yieldPerKwp : 0;
+
+  /* ---- headline derivations for the System & investment card ---- */
+  // Share of the client's OWN use the array covers (distinct from self-consumption,
+  // which is the share of PRODUCTION used on site — see Donut).
+  const coverage = consEff > 0 ? Math.min(1, (q.e.self * q.e.prod0) / consEff) : 0;
+  // grossCost, NOT cost: €/W is the benchmark an installer checks against market
+  // rates (~1.0-1.2 €/W), so it has to be the system price. Using the
+  // after-grant figure rendered a subsidised 6 kW job at 0.38 €/W — a number
+  // that looks broken next to any real quote.
+  const costPerW = Number(p.kw) > 0 ? q.e.grossCost / (Number(p.kw) * 1000) : 0;
+  // `rows` is cumulative cashflow seeded at -cost, so the final element is the
+  // net profit over the horizon and lifetime savings = net + cost.
+  const netProfit = q.e.rows.length ? q.e.rows[q.e.rows.length - 1] : 0;
+  const lifetime = netProfit + q.e.cost;
+  // What the grant knocked off: grossCost is the invoice, cost is out-of-pocket.
+  const grants = Math.max(0, q.e.grossCost - q.e.cost);
+  const cbMax = Math.max(q.e.cost, lifetime, 1);
 
   /* debounced autosave — MUST surface failure: a false "Saved" while the write
      was rejected (expired session, offline, RLS) silently loses the edit. */
@@ -154,21 +210,36 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     clearTimeout(timer.current);
     timer.current = setTimeout(() => persist(next), 600);
   }
+  // AI energy-bill extractor: upload a photo/PDF → /api/extract-bill reads it →
+  // installer reviews the values → applyBill() fills them in. Never auto-applies.
+  async function handleBill(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";                       // allow re-picking the same file
+    if (!file) return;
+    setBillErr(""); setBillRes(null); setBillBusy(true);
+    try {
+      const fd = new FormData(); fd.append("file", file);
+      const r = await fetch("/api/extract-bill", { method: "POST", body: fd });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.ok) setBillErr(d.message || tr("bill_err"));
+      else setBillRes(d);
+    } catch { setBillErr(tr("bill_err")); }
+    finally { setBillBusy(false); }
+  }
+  function applyBill() {
+    if (billRes && billRes.annualKwh > 0) {
+      const kwh = Math.round(billRes.annualKwh);
+      update(p.useMonthly
+        ? { cons: kwh, consMonthly: Array(12).fill(Math.round(kwh / 12)) }
+        : { cons: kwh });
+    }
+    setBillRes(null);
+  }
+
   // side-by-side comparison options (max 2 alternatives beyond the base quote)
   const setOption = (i, patch) => update({ options: p.options.map((o, j) => j === i ? { ...o, ...patch } : o) });
   const addOption = () => { if (p.options.length < 2) update({ options: [...p.options, { label: "", kw: p.kw, battKwh: 0 }] }); };
   const removeOption = (i) => update({ options: p.options.filter((_, j) => j !== i) });
-  // bill of materials from the catalog (drives the real cost when it has lines)
-  const addBomLine = (prod) => update({ bom: [...(p.bom || []), {
-    productId: prod.id, kind: prod.kind, label: [prod.brand, prod.model].filter(Boolean).join(" ") || prod.spec || "—",
-    spec: prod.spec, unitPrice: Number(prod.unit_price) || 0, qty: 1 }] });
-  const setBomQty = (i, qty) => update({ bom: p.bom.map((l, j) => j === i ? { ...l, qty: Math.max(0, +qty || 0) } : l) });
-  const removeBomLine = (i) => update({ bom: p.bom.filter((_, j) => j !== i) });
-  const kwFromPanels = () => {
-    const watts = (p.bom || []).filter(l => l.kind === "panel").reduce((s, l) =>
-      s + (parseFloat(String(l.spec).replace(/[^0-9.]/g, "")) || 0) * (Number(l.qty) || 0), 0);
-    if (watts > 0) update({ kw: Math.round(watts / 1000 * 10) / 10 });
-  };
   useEffect(() => () => clearTimeout(timer.current), []);
 
   async function fetchPVGIS() {
@@ -190,8 +261,54 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   }
 
   async function downloadPdf() {
+    // Warm first so the browser launch overlaps with makeProposal()/navigation.
+    fetch("/api/proposal/warm", { method: "POST", keepalive: true }).catch(() => { });
     const code = propUrl ? propUrl.split("/p/")[1] : await makeProposal();
-    window.open(`/p/${code}?print=1`, "_blank", "noopener");
+    // Server-rendered PDF, not the browser print dialog. The dialog stamped
+    // Chrome's own header (page title + proposal URL) onto every page, which
+    // undid white-labelling, and left paper size up to whoever was exporting.
+    window.open(`/api/proposal/${code}/pdf`, "_blank", "noopener");
+  }
+
+  // Chromium's cold launch is ~3.5s. Kick it off when the share modal appears so
+  // it finishes while the installer is still reading the link — fire-and-forget,
+  // because a failed warm-up must never affect the UI.
+  useEffect(() => {
+    if (!propUrl && !invOpen) return;
+    fetch("/api/proposal/warm", { method: "POST", keepalive: true }).catch(() => { });
+  }, [propUrl, invOpen]);
+
+  async function sendProforma() {
+    if (!invTo.trim()) return;
+    setInvBusy(true); setInvMsg(null);
+    try {
+      const r = await fetch(`/api/projects/${initial.id}/invoice`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ to: invTo.trim(), deposit: depPct }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok) setInvMsg({ ok: true, text: tr("email_sent_to", { to: invTo.trim() }) });
+      else setInvMsg({ ok: false, text: d.error === "email_not_configured" ? tr("email_off") : tr("email_failed") });
+    } catch {
+      setInvMsg({ ok: false, text: tr("email_failed") });
+    } finally { setInvBusy(false); }
+  }
+
+  async function sendByEmail() {
+    const code = propUrl ? propUrl.split("/p/")[1] : null;
+    if (!code || !emailTo.trim()) return;
+    setEmailBusy(true); setEmailMsg(null);
+    try {
+      const r = await fetch(`/api/proposal/${code}/email`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ to: emailTo.trim() }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok) setEmailMsg({ ok: true, text: tr("email_sent_to", { to: emailTo.trim() }) });
+      else setEmailMsg({ ok: false, text: d.error === "email_not_configured" ? tr("email_off") : tr("email_failed") });
+    } catch {
+      setEmailMsg({ ok: false, text: tr("email_failed") });
+    } finally { setEmailBusy(false); }
   }
 
   const mSave = q.e.year1 / 12, net = mSave - (p.loan || 0);
@@ -204,7 +321,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const validityDays = E.quoteValidityDays || 30;
   const validUntilDate = proposalSentAt ? new Date(new Date(proposalSentAt).getTime() + validityDays * 86400000) : null;
   const quoteStale = validUntilDate ? validUntilDate.getTime() < Date.now() : false;
-  const validUntilStr = validUntilDate ? validUntilDate.toLocaleDateString({ en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB") : null;
+  // app timezone, so this matches the date printed on the client's PDF
+  const validUntilStr = validUntilDate ? fmtDate(validUntilDate, { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB") : null;
 
   // Local subsidy is market-aware: RO = AFM/Casa Verde (RON), MD = prosumer grant
   // (MDL). DE has none, so the toggle hides there. Amount converts to EUR for the
@@ -260,13 +378,14 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           <button className="btn ghost" onClick={openTemplate}>{tplSaved ? tr("tpl_saved") : tr("tpl_save")}</button>
         )}
         <button className="btn ghost" onClick={downloadPdf}>{tr("dl_pdf")}</button>
+        <button className="btn ghost" onClick={() => setInvOpen(true)}>{tr("inv_button")}</button>
         <button className="btn primary" onClick={makeProposal}>{tr("gen_proposal")}</button>
       </div>
 
       {proposalSentAt && (
         <div style={{ margin: "-8px 0 16px", fontSize: 12.5, fontWeight: quoteStale ? 700 : 400,
           color: quoteStale ? "var(--red)" : "var(--muted)" }}>
-          {quoteStale ? "⚠ " : ""}{tr("q_valid_until", { d: validUntilStr })}{quoteStale ? " · " + tr("q_stale") : ""}
+          {tr("q_valid_until", { d: validUntilStr })}{quoteStale ? " · " + tr("q_stale") : ""}
         </div>
       )}
 
@@ -364,6 +483,27 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 </div>
               </div>
             )}
+            {/* AI energy-bill extractor — snap the client's bill, review, apply */}
+            <input ref={billInput} type="file" accept="image/*,application/pdf" hidden onChange={handleBill} />
+            <button type="button" className="btn ghost" style={{ width: "100%", marginTop: 8 }}
+              onClick={() => billInput.current && billInput.current.click()} disabled={billBusy}>
+              {billBusy ? tr("bill_reading") : tr("bill_upload")}
+            </button>
+            {billErr && <div style={{ fontSize: 12.5, color: "var(--red)", marginTop: 6 }}>{billErr}</div>}
+            {billRes && (
+              <div className="pvgis-data" style={{ marginTop: 8 }}>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>{tr("bill_found")}</div>
+                <div>{tr("annual_cons")}: <span className="pvg-k">{billRes.annualKwh ? Math.round(billRes.annualKwh).toLocaleString() : "—"}</span> kWh</div>
+                {billRes.meterNumber && <div>{tr("bill_meter")}: {billRes.meterNumber}</div>}
+                {billRes.supplier && <div>{tr("bill_supplier")}: {billRes.supplier}</div>}
+                {billRes.subsidy && <div>{tr("bill_subsidy")}: {billRes.subsidy}</div>}
+                {billRes.notes && <div style={{ color: "var(--muted)", marginTop: 2 }}>{billRes.notes}</div>}
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <button type="button" className="btn sm primary" onClick={applyBill} disabled={!billRes.annualKwh}>{tr("bill_apply")}</button>
+                  <button type="button" className="btn sm ghost" onClick={() => setBillRes(null)}>{tr("bill_cancel")}</button>
+                </div>
+              </div>
+            )}
             {check(p.batt, tr("battery_label"), tr("battery_sub"), v => update({ batt: v }))}
             {p.batt && (() => {
               const battCost = (Number(p.battKwh) || 0) * (Number(E.batteryCostPerKwh) || 500);
@@ -407,54 +547,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             )}
           </section>
 
-          <section className="card">
-            <h3>{tr("bom_title")}</h3>
-            <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--muted)" }}>{tr("bom_sub")}</p>
-            {catalog.length === 0 ? (
-              <p style={{ fontSize: 13.5, color: "var(--ink-soft,#2B4438)" }}>
-                {tr("bom_no_catalog")} <a href="/catalog" style={{ color: "var(--green)", fontWeight: 600 }}>{tr("nav_catalog")} →</a>
-              </p>
-            ) : (
-              <>
-                {(p.bom || []).map((l, i) => (
-                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <b style={{ fontSize: 14 }}>{l.label}</b>
-                      {l.spec && <span style={{ marginLeft: 7, fontSize: 12, color: "var(--muted)" }}>{l.spec}</span>}
-                    </div>
-                    <input className="input" type="number" min="0" step="1" value={l.qty}
-                      onChange={e => setBomQty(i, e.target.value)} style={{ width: 62 }} aria-label="qty" />
-                    <span style={{ width: 76, textAlign: "right", fontVariantNumeric: "tabular-nums", fontSize: 13.5 }}>
-                      {fmt((Number(l.unitPrice) || 0) * (Number(l.qty) || 0))}</span>
-                    <button className="btn sm ghost" onClick={() => removeBomLine(i)}
-                      aria-label={tr("bom_remove")} style={{ color: "var(--muted)" }}>✕</button>
-                  </div>
-                ))}
-                <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 12, flexWrap: "wrap" }}>
-                  <select className="input" style={{ flex: "1 1 170px" }} value=""
-                    onChange={e => { const prod = catalog.find(c => c.id === e.target.value); if (prod) addBomLine(prod); e.target.value = ""; }}>
-                    <option value="">+ {tr("bom_add")}</option>
-                    {catalog.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {[c.brand, c.model].filter(Boolean).join(" ") || "—"}{c.spec ? ` · ${c.spec}` : ""} — {fmt(c.unit_price)}
-                      </option>
-                    ))}
-                  </select>
-                  {(p.bom || []).some(l => l.kind === "panel") && (
-                    <button className="btn ghost" onClick={kwFromPanels}>{tr("bom_set_kw")}</button>
-                  )}
-                </div>
-                {bomTotal > 0 && (
-                  <>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "2px solid var(--ink)", fontWeight: 700 }}>
-                      <span>{tr("bom_total")}</span><span style={{ fontSize: 17 }}>{fmt(bomTotal)}</span>
-                    </div>
-                    <p style={{ fontSize: 12, color: "var(--green)", margin: "8px 0 0" }}>✓ {tr("bom_drives")}</p>
-                  </>
-                )}
-              </>
-            )}
-          </section>
         </div>
 
         {/* right: results */}
@@ -467,8 +559,64 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               <div className="k"><b>{Math.round(q.e.prod0).toLocaleString()} kWh</b>
                 <span>{tr("prod_year")}{p.yieldOverride ? " " + tr("tag_pvgis") : " " + tr("tag_default")}</span></div>
               <div className="k"><b>{fmt(q.e.year1)}</b><span>{tr("savings_y1")}</span></div>
-              <span className="spacer" />
-              <Donut self={q.e.self} lang={lang} />
+            </div>
+            {/* Cost per watt is how installers sanity-check a price against the
+                market in one glance — €/W here, not the demo's lei/W, because
+                this installer-side view is EUR throughout (see fmt above). */}
+            {costPerW > 0 && (
+              <div className="cost-spec">{tr("cost_per_w")}: <b>{costPerW.toFixed(2)} €/W</b></div>
+            )}
+            {/* Ring + legend side by side. Previously a spacer shoved the ring to
+                the far right of the number row, leaving a dead gap across the
+                card and squeezing the caption into four wrapped lines. */}
+            <div className="self-split">
+              <Donut self={q.e.self} prod0={q.e.prod0} cons={consEff} lang={lang} />
+              <div className="ss-legend">
+                <div className="ss-item"><i style={{ background: "var(--green)" }} />
+                  {tr("self_consumed")}<b>{Math.round(q.e.self * 100)}%</b></div>
+                <div className="ss-item"><i style={{ background: "var(--amber)", opacity: .65 }} />
+                  {tr("exported")}<b>{Math.round((1 - q.e.self) * 100)}%</b></div>
+                {consEff > 0 && (
+                  <div className="ss-cov">{tr("donut_covers", { n: Math.round(coverage * 100) })}</div>
+                )}
+              </div>
+            </div>
+            {/* Installer-side only (never reaches the client). An array that dwarfs the
+                household's use looks fine on every headline number except payback —
+                because the surplus earns the export tariff, not the retail price. */}
+            {oversize > 1.8 && (
+              <div className="warn-card">
+                {tr("oversize_warn", {
+                  x: oversize < 10 ? oversize.toFixed(1) : Math.round(oversize),
+                  p: Math.round((1 - q.e.self) * 100),
+                  fe: eurKwh(mkt.feed), pr: eurKwh(Number(p.price) || 0),
+                })}
+                {suggestKw > 0 ? " " + tr("oversize_hint", { kw: suggestKw.toFixed(1) }) : ""}
+              </div>
+            )}
+
+            {/* Investment vs lifetime return: two proportional bars and the net.
+                The engine returns neither `lifetime` nor `netProfit`, but `rows`
+                is the cumulative cashflow starting at -cost, so its last element
+                IS the net profit and lifetime = net + cost. Derived that way
+                rather than from `roi`, which is null when a grant covers the
+                whole system and would drop the block exactly when it matters. */}
+            <div className="cost-break">
+              <div className="cb-t">{tr("cb_title", { h: E.horizon })}</div>
+              {[[tr("cb_cost"), q.e.cost, "cb-cost"], [tr("cb_life"), lifetime, "cb-life"]].map(([lbl, val, cls]) => (
+                <div className="cb-row" key={cls}>
+                  <span className="cb-lbl">{lbl}</span>
+                  <span className="cb-track">
+                    <i className={cls} style={{ width: Math.max(3, (val / cbMax) * 100).toFixed(1) + "%" }} />
+                  </span>
+                  <b className="cb-val">{fmt(val)}</b>
+                </div>
+              ))}
+              {grants > 0 && <div className="cb-grant">{tr("cb_grants")}: −{fmt(grants)}</div>}
+              <div className="cb-net">
+                <span>{tr("cb_net")}</span>
+                <b className={netProfit >= 0 ? "" : "neg"}>{fmt(netProfit)}</b>
+              </div>
             </div>
           </section>
 
@@ -480,7 +628,9 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 <div key={cls} className={`band ${cls}`}>
                   <div className="tag">{l}</div>
                   <div className="yrs">{yrs(b.payback)} <small>{tr("yrs")}</small></div>
-                  <div className="roi">{tr("roi_line", { h: E.horizon, n: Math.round(b.roi) })}</div>
+                  {/* roi is null when a grant covers the whole system — return on a
+                      zero outlay is undefined, so show ∞ rather than a made-up number. */}
+                  <div className="roi">{tr("roi_line", { h: E.horizon, n: b.roi == null ? "∞" : Math.round(b.roi) })}</div>
                 </div>
               ))}
             </div>
@@ -504,11 +654,57 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             </div>
           </section>
 
+          {signed && <SignedContract signed={signed} lang={lang} />}
+
           {p.status === "won" && (
             <InstallChecklist projectId={initial.id} initial={initial.install_progress} lang={lang} />
           )}
         </div>
       </div>
+
+      {/* proforma modal: pick a deposit, then open the document */}
+      {invOpen && (
+        <div className="overlay" onClick={() => setInvOpen(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h4>{tr("inv_dep_title")}</h4>
+            <p className="sub">{tr("inv_dep_sub")}</p>
+            <div className="dep-seg" role="radiogroup" aria-label={tr("inv_dep_title")}>
+              {[0, 30, 50].map(v => (
+                <button key={v} type="button" role="radio" aria-checked={depPct === v}
+                  className={"dep-opt" + (depPct === v ? " on" : "")}
+                  onClick={() => setDepPct(v)}>
+                  {v === 0 ? tr("inv_dep_full") : v + "%"}
+                </button>
+              ))}
+            </div>
+            <div className="dep-amount">
+              {depPct > 0
+                ? <>{fmt(q.e.grossCost * depPct / 100)} <span>/ {fmt(q.e.grossCost)}</span></>
+                : fmt(q.e.grossCost)}
+            </div>
+            <div className="email-row">
+              <input type="email" inputMode="email" autoComplete="email"
+                placeholder={tr("email_ph")} value={invTo}
+                onChange={e => { setInvTo(e.target.value); setInvMsg(null); }} />
+              <button className="btn sm primary" onClick={sendProforma}
+                disabled={invBusy || !invTo.trim()}>
+                {invBusy ? tr("email_sending") : tr("inv_email")}
+              </button>
+            </div>
+            {invMsg && <div className={"email-msg" + (invMsg.ok ? " ok" : " bad")}>{invMsg.text}</div>}
+            <div className="modal-acts">
+              <button className="btn ghost" onClick={() => setInvOpen(false)}>{tr("close")}</button>
+              {/* Server-rendered: the browser print path stamped Chrome's header
+                  and the internal /projects/<uuid> URL onto a financial document. */}
+              <a className="btn ghost" target="_blank" rel="noopener noreferrer"
+                href={`/api/projects/${initial.id}/invoice${depPct > 0 ? `?deposit=${depPct}` : ""}`}>{tr("inv_dl")}</a>
+              <a className="btn primary" target="_blank" rel="noopener noreferrer"
+                href={`/projects/${initial.id}/invoice${depPct > 0 ? `?deposit=${depPct}` : ""}`}
+                onClick={() => setInvOpen(false)}>{tr("inv_dep_open")}</a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* proposal modal */}
       {propUrl && (
@@ -530,6 +726,22 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.38a9.9 9.9 0 0 0 4.73 1.2h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.64-1.03-5.13-2.9-7A9.82 9.82 0 0 0 12.04 2Zm0 18.15h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.1.81.83-3.02-.2-.31a8.22 8.22 0 0 1-1.26-4.4c0-4.54 3.7-8.23 8.24-8.23 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.69 8.24-8.22 8.24Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.4-.42-.56-.43h-.48c-.16 0-.42.06-.64.31-.22.25-.84.83-.84 2.02 0 1.19.86 2.34.98 2.5.12.16 1.69 2.58 4.1 3.62.57.25 1.02.4 1.37.5.57.19 1.1.16 1.51.1.46-.07 1.47-.6 1.68-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.28Z" /></svg>
               {tr("wa_share")}
             </a>
+            {/* Email the PDF. Rendering happens server-side, so this takes a
+                couple of seconds — the button states say so rather than looking
+                dead. */}
+            <div className="email-row">
+              <input type="email" inputMode="email" autoComplete="email"
+                placeholder={tr("email_ph")} value={emailTo}
+                onChange={e => { setEmailTo(e.target.value); setEmailMsg(null); }} />
+              <button className="btn sm primary" onClick={sendByEmail}
+                disabled={emailBusy || !emailTo.trim()}>
+                {emailBusy ? tr("email_sending") : tr("send_email")}
+              </button>
+            </div>
+            {emailMsg && (
+              <div className={"email-msg" + (emailMsg.ok ? " ok" : " bad")}>{emailMsg.text}</div>
+            )}
+
             <ShareCard lang={lang} companyName={companyName} companyLogo={companyLogo}
               client={p.client || tr("your_client")}
               systemLabel={`${p.kw.toFixed(1)} kW${p.batt ? " + " + (p.battKwh || 10) + " kWh" : ""}`}

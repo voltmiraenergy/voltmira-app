@@ -1,21 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Each language is its own URL, and every entry lists the full alternate set —
+  itself included, which is what hreflang requires to be read as one cluster.
+  These used to be ?lang= query params that all served identical English HTML,
+  so the annotation was describing three copies of the same page.
+
+  /demo is deliberately absent: robots.txt disallows it (every visit provisions
+  a real workspace), and submitting a URL you also block is a Search Console
+  error, not a neutral hint.
+-->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://voltmira.com/</loc>
-    <lastmod>2026-07-24</lastmod>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://voltmira.com/?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="ro" href="https://voltmira.com/?lang=ro"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="https://voltmira.com/?lang=ru"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://voltmira.com/"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://voltmira.com/ro"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://voltmira.com/ru"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://voltmira.com/"/>
   </url>
   <url>
-    <loc>https://voltmira.com/demo</loc>
-    <lastmod>2026-07-24</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://voltmira.com/ro</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://voltmira.com/"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://voltmira.com/ro"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://voltmira.com/ru"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://voltmira.com/"/>
+  </url>
+  <url>
+    <loc>https://voltmira.com/ru</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://voltmira.com/"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://voltmira.com/ro"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://voltmira.com/ru"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://voltmira.com/"/>
   </url>
   <url>
     <loc>https://voltmira.com/privacy</loc>
