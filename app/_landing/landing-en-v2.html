@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoltMira — Solar quotes your clients can fact-check</title>
+<meta name="description" content="Solar quoting software for installers: honest three-band payback from real PVGIS data, tracked proposals with open alerts, WhatsApp sharing, one-tap acceptance and a full pipeline. Free trial. RO · MD · EU.">
+<meta name="author" content="Bogdan Toctarov">
+<meta name="keywords" content="solar quoting software, solar installer software, PV payback calculator, PVGIS, tracked solar proposal, Casa Verde subsidy, net metering Romania, net billing Moldova, VoltMira, Bogdan Toctarov">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#142A21">
+<script>(function(){try{var t=localStorage.getItem("voltmira_theme");if(t!=="dark"&&t!=="light"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0F1310":"#142A21");}catch(e){}})();</script>
+
+<!-- Canonical + language alternates -->
+<link rel="canonical" href="https://voltmira.com/">
+<link rel="alternate" hreflang="en" href="https://voltmira.com/">
+<link rel="alternate" hreflang="ro" href="https://voltmira.com/ro">
+<link rel="alternate" hreflang="ru" href="https://voltmira.com/ru">
+<link rel="alternate" hreflang="x-default" href="https://voltmira.com/">
+
+<!-- Social sharing -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="VoltMira">
+<meta property="og:url" content="https://voltmira.com/">
+<meta property="og:title" content="VoltMira — Solar quotes your clients can fact-check">
+<meta property="og:description" content="Three honest payback scenarios from real PVGIS data, tracked proposal links with open alerts, WhatsApp sharing and one-tap client acceptance. Free trial for solar installers in RO · MD · EU.">
+<meta property="og:image" content="https://voltmira.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="VoltMira — solar quotes your clients can fact-check">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ro_RO">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="VoltMira — Solar quotes your clients can fact-check">
+<meta name="twitter:description" content="Three honest payback scenarios from real PVGIS data, tracked proposals with open alerts, WhatsApp sharing and one-tap acceptance. Free trial for solar installers.">
+<meta name="twitter:image" content="https://voltmira.com/og.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+<!-- Structured data: product + FAQ rich results -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"VoltMira","applicationCategory":"BusinessApplication","operatingSystem":"Web","url":"https://voltmira.com/","description":"Solar quoting software for installers: three honest payback scenarios from real PVGIS satellite data, tracked proposal links with open alerts, WhatsApp sharing, one-tap client acceptance, quote templates and a full sales pipeline. Romania, Moldova and the EU.","inLanguage":["en","ro","ru"],"creator":{"@id":"https://voltmira.com/#bogdan-toctarov"},"publisher":{"@id":"https://voltmira.com/#organization"},"featureList":["Three-band honest payback (pessimistic, expected, optimistic)","Real PVGIS satellite solar data per roof","Tracked proposal links with open and view-time alerts","WhatsApp proposal sharing","One-tap digital client acceptance","Casa Verde (Romania) and Moldova prosumer subsidy calculator","Reusable quote templates","Sales pipeline with quote aging and follow-up alerts","Branded PDF proposals","Website lead-capture widget","CSV export","English, Romanian and Russian · EUR, RON, MDL"],"offers":[{"@type":"Offer","name":"Pro","price":"49","priceCurrency":"EUR"},{"@type":"Offer","name":"Team","price":"119","priceCurrency":"EUR"}]}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Where do the solar numbers come from?","acceptedAnswer":{"@type":"Answer","text":"Yearly and monthly yield come from PVGIS, the European Commission's satellite-derived solar database, for the exact coordinates of the roof. Tariff schemes (net metering in Romania, net billing in Moldova, feed-in in Germany) are applied automatically per market. Every assumption is printed on the proposal."}},
+{"@type":"Question","name":"Why show a pessimistic number? Won't it scare clients?","acceptedAnswer":{"@type":"Answer","text":"The opposite, in practice. Clients have heard too many perfect promises. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself."}},
+{"@type":"Question","name":"Does it work for Moldova's net billing?","acceptedAnswer":{"@type":"Answer","text":"Yes. Moldova's low export price makes self-consumption the whole game, so the engine models it month by month, values battery storage correctly, and supports MDL display and Russian/Romanian proposals."}},
+{"@type":"Question","name":"What does a tracked proposal mean for my client's privacy?","acceptedAnswer":{"@type":"Answer","text":"The link records opens, time on page, and interactions with the quote itself — nothing else. No ad trackers, no profiling, EU-hosted."}},
+{"@type":"Question","name":"How do I start?","acceptedAnswer":{"@type":"Answer","text":"Sign up and you're in — no waitlist, no card. You get full access to build quotes and send tracked proposals straight away, free through our beta. The first 50 installers keep founder pricing permanently when paid plans go live."}}
+]}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Organization","@id":"https://voltmira.com/#organization","name":"VoltMira","legalName":"VoltMira","url":"https://voltmira.com/","logo":"https://voltmira.com/apple-touch-icon.png","image":"https://voltmira.com/og.png","email":"voltmiraenergy@gmail.com","telephone":"+373-62-121-019","description":"Solar quoting software for installers in Romania, Moldova and the EU — honest three-band payback, real PVGIS data and tracked proposals.","slogan":"Solar quotes your clients can fact-check.","foundingDate":"2026","founder":{"@id":"https://voltmira.com/#bogdan-toctarov"},"areaServed":["RO","MD","DE","EU"],"knowsAbout":["solar quoting","photovoltaic payback","PVGIS satellite data","net metering","Casa Verde subsidy","solar installers Romania","solar installers Moldova"],"sameAs":["https://instagram.com/voltmira.energy","https://wa.me/37362121019"]}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Person","@id":"https://voltmira.com/#bogdan-toctarov","name":"Bogdan Toctarov","url":"https://voltmira.com/","jobTitle":"Founder","description":"Bogdan Toctarov is the founder of VoltMira, solar quoting software for installers in Romania and Moldova.","worksFor":{"@id":"https://voltmira.com/#organization"},"founderOf":{"@id":"https://voltmira.com/#organization"},"knowsAbout":["solar energy","photovoltaic systems","solar quoting software","SaaS"]}
+</script>
+<link rel="sitemap" type="application/xml" href="/sitemap.xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+<!-- Vercel Analytics — this page is raw HTML outside the React layout, so the script is included directly -->
+<script defer src="/_vercel/insights/script.js"></script>
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 34"><rect width="34" height="34" rx="8" fill="%23142A21"/><path d="M8 26 L14 12" stroke="%23C4543B" stroke-width="3.2" stroke-linecap="round"/><path d="M14.5 26 L20.5 8" stroke="%23E89B2D" stroke-width="3.2" stroke-linecap="round"/><path d="M21 26 L27 5.5" stroke="%233FAE6A" stroke-width="3.2" stroke-linecap="round"/></svg>'>
+<style>
+:root{
+  --paper:#F6F5F0;
+  --paper-2:#FFFFFF;
+  --ink:#142A21;
+  --ink-soft:#2B4438;
+  --green:#1E6B4E;
+  --green-deep:#0E4633;
+  --green-tint:#E4EFE9;
+  --amber:#E89B2D;
+  --amber-deep:#C97F14;
+  --amber-tint:#FBF0DD;
+  --red:#C4543B;
+  --muted:#66756C;
+  --line:#E3E1D6;
+  --shadow: 0 30px 70px -30px rgba(20,42,33,.28);
+  --d:'Inter Tight',Inter,system-ui,sans-serif;
+  --b:'Inter',system-ui,sans-serif;
+  --ease:cubic-bezier(.22,.9,.28,1);
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --spring:cubic-bezier(.2,1.14,.32,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1310; --paper-2:#161B16; --ink:#EEF1EA; --ink-soft:#C7D0C8;
+    --green:#4FB584; --green-deep:#3FAE6A; --green-tint:rgba(79,181,132,.14);
+    --amber:#EBA542; --amber-deep:#F2B85F; --amber-tint:rgba(232,155,45,.14);
+    --red:#E0725A; --muted:#8E998F; --line:#28302A;
+    --shadow: 0 30px 70px -30px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1310; --paper-2:#161B16; --ink:#EEF1EA; --ink-soft:#C7D0C8;
+  --green:#4FB584; --green-deep:#3FAE6A; --green-tint:rgba(79,181,132,.14);
+  --amber:#EBA542; --amber-deep:#F2B85F; --amber-tint:rgba(232,155,45,.14);
+  --red:#E0725A; --muted:#8E998F; --line:#28302A;
+  --shadow: 0 30px 70px -30px rgba(0,0,0,.6);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--b);color:var(--ink);background:var(--paper);
+  font-size:16px;line-height:1.6;overflow-x:hidden;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.45;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+::selection{background:var(--amber-tint)}
+a{color:inherit}
+button{font-family:inherit;font-size:inherit}
+:focus-visible{outline:2.5px solid var(--amber);outline-offset:3px;border-radius:4px}
+h1,h2,h3,.font-d{font-family:var(--d);letter-spacing:-.03em;text-wrap:balance}
+img{max-width:100%;display:block}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px;position:relative;z-index:2}
+
+.rv{opacity:0;transform:translateY(26px) scale(.975);transition:opacity .8s var(--ease-out),transform .8s var(--spring)}
+.rv.in{opacity:1;transform:none}
+/* staggered reveal for card groups — each sibling waits a beat longer than
+   the last so groups cascade in instead of popping in as one flat block */
+.bands3.rv-group .bcard:nth-child(1),.stat-in .stat:nth-child(1),.hiw-steps .hiw-step:nth-child(1),.prices .price:nth-child(1),.scale-cols .scale-it:nth-child(1){transition-delay:0s}
+.bands3.rv-group .bcard:nth-child(2),.stat-in .stat:nth-child(2),.hiw-steps .hiw-step:nth-child(2),.prices .price:nth-child(2),.scale-cols .scale-it:nth-child(2){transition-delay:.1s}
+.bands3.rv-group .bcard:nth-child(3),.stat-in .stat:nth-child(3),.hiw-steps .hiw-step:nth-child(3),.prices .price:nth-child(3),.scale-cols .scale-it:nth-child(3){transition-delay:.2s}
+.stat-in .stat:nth-child(4){transition-delay:.3s}
+
+/* scroll progress bar */
+.scroll-progress{position:fixed;top:0;left:0;height:3px;width:100%;z-index:70;background:transparent;pointer-events:none}
+.scroll-progress i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--red),var(--amber),var(--green));transform-origin:left;box-shadow:0 0 12px rgba(232,155,45,.4)}
+
+/* nav gains weight once the page has scrolled past the hero */
+.nav{transition:box-shadow .3s var(--ease),background .3s var(--ease)}
+.nav.scrolled{box-shadow:0 8px 24px -18px rgba(20,42,33,.35)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+  .rv{opacity:1;transform:none}
+}
+
+/* ============ NAV ============ */
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--paper) 86%, transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-in{display:flex;align-items:center;gap:clamp(10px,1.6vw,26px);height:70px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--d);font-weight:800;font-size:20px}
+.logo b{color:var(--ink)}
+.logo span{color:var(--green)}
+.nav-links{display:none;gap:clamp(14px,1.6vw,26px);margin-left:auto}
+.nav-links a{text-decoration:none;font-size:14.5px;font-weight:500;color:var(--ink-soft);white-space:nowrap;transition:color .2s}
+.nav-links a:hover{color:var(--ink)}
+.nav-signin{display:none}
+@media(min-width:860px){
+  .nav-links{display:flex}
+  .nav-signin{display:inline-block;text-decoration:none;font-size:14.5px;font-weight:600;color:var(--ink-soft)}
+}
+.theme-toggle{border:1px solid var(--line);background:var(--paper-2);border-radius:10px;width:36px;height:36px;display:grid;place-items:center;cursor:pointer;color:var(--ink-soft);flex:none;padding:0;transition:color .2s,border-color .2s,transform .2s}
+.theme-toggle:hover{color:var(--ink);transform:translateY(-1px)}
+.theme-toggle svg{width:18px;height:18px}
+.theme-toggle .ic-sun{display:none}
+:root[data-theme="dark"] .theme-toggle .ic-sun{display:block}
+:root[data-theme="dark"] .theme-toggle .ic-moon{display:none}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .theme-toggle .ic-sun{display:block}
+  :root:not([data-theme="light"]) .theme-toggle .ic-moon{display:none}
+}
+.btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:700;border-radius:12px;padding:12px 20px;font-size:15px;border:1px solid transparent;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .2s,color .2s;cursor:pointer}
+.btn-sm{padding:9px 16px;font-size:13.5px;border-radius:10px}
+.btn-lg{padding:15px 26px;font-size:16px}
+.btn-primary{background:var(--ink);color:var(--paper)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.btn-amber{background:var(--amber);color:#1B1305}
+.btn-amber:hover{transform:translateY(-2px);box-shadow:0 20px 40px -18px rgba(232,155,45,.55)}
+.btn .arr{transition:transform .3s var(--ease)}
+.btn:hover .arr{transform:translateX(3px)}
+
+/* ============ HERO ============ */
+.hero{padding:64px 0 40px;position:relative}
+.hero-grid{display:grid;grid-template-columns:1fr;gap:44px}
+@media(min-width:980px){.hero-grid{grid-template-columns:1.02fr 1fr;gap:50px;align-items:center}}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--green);margin-bottom:18px}
+.eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber)}
+h1.hh{font-size:clamp(38px,5.4vw,62px);line-height:.98;font-weight:800;margin-bottom:22px}
+h1.hh .hl{position:relative;white-space:nowrap;color:var(--green)}
+h1.hh .hl svg{position:absolute;left:0;bottom:-.14em;width:100%;height:.3em;overflow:visible}
+h1.hh .hl path{fill:none;stroke:var(--amber);stroke-width:5;stroke-linecap:round}
+.lead{font-size:18.5px;color:var(--ink-soft);max-width:490px;margin-bottom:30px}
+.lead b{color:var(--ink)}
+.hero-cta-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.wl-note{font-size:13px;color:var(--muted)}
+
+.hero-visual{position:relative}
+.hero-photo{border-radius:26px;overflow:hidden;box-shadow:var(--shadow);aspect-ratio:16/11.2;position:relative;border:1px solid var(--line)}
+.hero-photo img{width:100%;height:100%;object-fit:cover}
+.hero-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(200deg,rgba(14,25,19,.02) 40%,rgba(14,25,19,.5) 100%)}
+.hero-photo .cap{position:absolute;left:16px;top:16px;background:color-mix(in srgb, var(--paper-2) 82%, transparent);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:10px;padding:6px 11px;font-size:11.5px;font-weight:600;color:var(--ink-soft);z-index:2}
+
+.tprop{position:absolute;left:-18px;bottom:-28px;width:min(268px,72%);background:var(--paper-2);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:16px 16px 18px;z-index:3}
+@media(max-width:979px){.tprop{position:static;width:min(360px,100%);margin:18px auto 0}}
+.tp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.tp-from{display:flex;align-items:center;gap:7px;font-family:var(--d);font-weight:700;font-size:12.5px}
+.tp-badge{display:inline-flex;align-items:center;gap:4px;background:var(--green-tint);color:var(--green);font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px}
+.tp-client{font-size:14.5px;font-weight:700;margin-bottom:2px}
+.tp-sub{font-size:11.5px;color:var(--muted);margin-bottom:12px}
+.tp-h{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:7px}
+.tp-bands{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px}
+.tp-band{border-radius:9px;padding:8px 6px;background:var(--paper);border-top:3px solid}
+.tp-band.p{border-color:var(--red)}.tp-band.e{border-color:var(--amber)}.tp-band.o{border-color:var(--green)}
+.tp-band span{display:block;font-size:8.5px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.tp-band b{font-family:var(--d);font-size:15px}
+.tp-accept{width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;padding:10px;font-weight:700;font-size:12.5px;text-align:center}
+
+.stat-strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--paper-2)}
+.stat-in{display:flex;flex-wrap:wrap;gap:32px;justify-content:space-between;padding:26px 0}
+.stat{flex:1;min-width:150px}
+.stat b{display:block;font-family:var(--d);font-size:26px;font-weight:800}
+.stat span{font-size:12.5px;color:var(--muted)}
+
+/* ============ SECTION SHELL ============ */
+section{padding:96px 0}
+.sec-eyebrow{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--amber-deep);margin-bottom:14px}
+.sec-h{font-size:clamp(28px,3.6vw,42px);font-weight:800;line-height:1.06;margin-bottom:16px}
+.sec-lead{font-size:16.5px;color:var(--ink-soft);max-width:640px;margin-bottom:44px}
+
+/* ============ HOW IT WORKS ============ */
+.hiw-grid{display:grid;grid-template-columns:1fr;gap:48px;align-items:center}
+@media(min-width:980px){.hiw-grid{grid-template-columns:.92fr 1.08fr;gap:56px}}
+.hiw-photo{border-radius:22px;overflow:hidden;box-shadow:var(--shadow);aspect-ratio:6/7}
+.hiw-photo img{width:100%;height:100%;object-fit:cover}
+.hiw-steps{display:grid;gap:0}
+.hiw-step{display:grid;grid-template-columns:44px 1fr;gap:18px;padding:22px 0;border-top:1px solid var(--line)}
+.hiw-step:last-child{border-bottom:1px solid var(--line)}
+.hiw-n{font-family:var(--d);font-weight:800;font-size:14px;color:var(--muted)}
+.hiw-step h3{font-size:19px;font-weight:700;margin-bottom:6px}
+.hiw-step p{font-size:15px;color:var(--ink-soft);max-width:46ch}
+.hiw-step p b{color:var(--ink)}
+
+/* ============ HONESTY ============ */
+#honesty{background:var(--paper-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.bands3{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:20px}
+@media(min-width:820px){.bands3{grid-template-columns:1fr 1fr 1fr}}
+.bcard{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:26px 24px;border-top:4px solid}
+.bcard.pess{border-color:var(--red)}.bcard.expc{border-color:var(--amber)}.bcard.opti{border-color:var(--green)}
+.bcard .tag{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:8px}
+.bcard .yrs{font-family:var(--d);font-size:38px;font-weight:800;margin-bottom:10px}
+.bcard .yrs small{font-size:15px;font-weight:600;color:var(--muted)}
+.bcard p{font-size:14px;color:var(--ink-soft)}
+.bcard p b{color:var(--ink)}
+.assump-strip{background:var(--ink);color:var(--paper);border-radius:18px;padding:22px 26px;display:grid;gap:16px}
+@media(min-width:700px){.assump-strip{grid-template-columns:auto 1fr;align-items:center}}
+.as-t{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;opacity:.7;white-space:nowrap}
+.as-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+@media(min-width:560px){.as-grid{grid-template-columns:repeat(4,1fr)}}
+.as-kv .k{display:block;font-size:11px;opacity:.65;margin-bottom:2px}
+.as-kv .v{font-family:var(--d);font-weight:700;font-size:15px}
+
+/* ============ PHOTO BREAK ============ */
+/* fixed-dark section (not theme tokens — same reasoning as .final) with the
+   photo contained in a framed card beside the copy, not underneath it, so
+   text contrast never depends on how busy the photo is */
+.break-sec{background:#0A1811;color:#F3F1E8;overflow:hidden}
+.break-grid{display:grid;grid-template-columns:1fr;gap:56px;align-items:center;padding:104px 0}
+@media(min-width:940px){.break-grid{grid-template-columns:1.1fr .9fr;gap:40px}}
+.break-sec .sec-eyebrow{color:#EBA542}
+.break-q{font-family:var(--d);font-weight:800;font-size:clamp(28px,4vw,44px);line-height:1.1;margin-bottom:20px}
+.break-q em{font-style:normal;color:#8FDCB2}
+.break-sub{font-size:16px;max-width:48ch;opacity:.72;margin-bottom:30px}
+
+/* the visual argument: a dull one-number export behind, VoltMira's three-band
+   quote in front and in color — the contrast makes the headline's point
+   instead of illustrating it after the fact */
+.break-visual{position:relative;min-height:420px;border-radius:24px;overflow:hidden}
+.bv-bg{position:absolute;inset:0;z-index:0}
+.bv-bg img{width:100%;height:100%;object-fit:cover;filter:saturate(.85)}
+.bv-bg::after{content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(155deg, rgba(10,24,17,.2) 0%, rgba(10,24,17,.82) 55%, rgba(10,24,17,.96) 100%),
+    radial-gradient(55% 55% at 78% 82%, rgba(10,24,17,0) 0%, rgba(10,24,17,.55) 100%);
+}
+.mock-sheet{
+  position:absolute;top:8%;left:6%;width:min(272px,78%);z-index:2;
+  background:#E6E3D8;color:#57574C;border-radius:12px;padding:20px 20px 16px;
+  transform:rotate(-7deg);box-shadow:0 22px 48px -20px rgba(0,0,0,.5);
+  font-family:'SF Mono','Roboto Mono',Consolas,monospace;
+}
+.mock-sheet .ms-title{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#8A8A7B;margin-bottom:10px}
+.ms-row{display:grid;grid-template-columns:1.35fr .75fr .8fr;gap:6px;font-size:11.5px;padding:7px 0;border-top:1px solid #CFCBBB}
+.ms-row:first-of-type{border-top:none}
+.ms-row.ms-h{font-weight:700;color:#6D6D60;border-top:none;padding-bottom:8px}
+.ms-row.ms-dim{opacity:.4}
+.ms-row span:nth-child(2),.ms-row span:nth-child(3){text-align:right;font-variant-numeric:tabular-nums}
+
+.mock-quote{
+  position:relative;z-index:2;margin-left:auto;margin-right:6%;width:min(276px,80%);
+  background:#FBFAF5;color:#142A21;border-radius:18px;padding:20px 20px 22px;
+  transform:rotate(3deg) translate(0,14%);box-shadow:0 36px 74px -20px rgba(0,0,0,.6);
+  border:1px solid rgba(20,42,33,.06);
+}
+.mq-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.mq-badge{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#66756C}
+.mq-open{font-size:10px;font-weight:700;color:#1E6B4E;background:#E4EFE9;padding:3px 8px;border-radius:99px}
+.mq-name{font-family:var(--d);font-weight:800;font-size:17px}
+.mq-sub{font-size:11.5px;color:#66756C;margin-bottom:14px}
+.mq-bands{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:14px}
+.mq-b{border-radius:9px;padding:8px 6px;background:#F2F1EA;border-top:3px solid}
+.mq-b.p{border-color:#C4543B}.mq-b.e{border-color:#E89B2D}.mq-b.o{border-color:#1E6B4E}
+.mq-b span{display:block;font-size:8.5px;font-weight:700;text-transform:uppercase;color:#8A8F87;margin-bottom:2px}
+.mq-b b{font-family:var(--d);font-size:15px}
+.mq-b b small{font-size:9px;font-weight:600;color:#66756C}
+.mq-accept{background:#1E6B4E;color:#fff;text-align:center;border-radius:10px;padding:10px;font-weight:700;font-size:12.5px}
+@media(max-width:520px){.mock-sheet{position:relative;top:0;left:0;transform:rotate(-4deg)}.mock-quote{transform:rotate(2deg) translate(0,-14%)}}
+
+/* ============ TRACKING ============ */
+.track-grid{display:grid;grid-template-columns:1fr;gap:44px}
+@media(min-width:940px){.track-grid{grid-template-columns:1fr 1fr;gap:60px;align-items:center}}
+.feat-list{list-style:none;display:grid;gap:16px}
+.feat-list li{display:flex;gap:12px;font-size:15px;color:var(--ink-soft)}
+.feat-list li b{color:var(--ink)}
+.feat-list .dot{flex:none;width:22px;height:22px;border-radius:50%;background:var(--green-tint);color:var(--green);display:grid;place-items:center;font-size:12px;font-weight:800;margin-top:1px}
+.feedbox{background:var(--paper-2);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow)}
+.fb-t{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:14px}
+.fev{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line);font-size:13.5px}
+.fev:first-of-type{border-top:none}
+.fev .ic{flex:none;width:26px;height:26px;border-radius:50%;background:var(--paper);display:grid;place-items:center;color:var(--green);font-size:13px}
+.fev .ic.g{background:var(--green);color:#fff}
+.fev .tx{flex:1}
+.fev time{font-size:11px;color:var(--muted);flex:none}
+
+/* ============ SCALE / COMMERCIAL BANNER ============ */
+.scale-sec{padding-top:0}
+.scale-photo{border-radius:22px;overflow:hidden;box-shadow:var(--shadow);aspect-ratio:21/9;margin-bottom:36px}
+.scale-photo img{width:100%;height:100%;object-fit:cover}
+.scale-cols{display:grid;grid-template-columns:1fr;gap:26px}
+@media(min-width:820px){.scale-cols{grid-template-columns:repeat(3,1fr)}}
+.scale-it h4{font-size:16px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:9px}
+.scale-it h4 i{width:30px;height:30px;border-radius:9px;background:var(--green-tint);color:var(--green);display:grid;place-items:center;flex:none}
+.scale-it p{font-size:14px;color:var(--ink-soft)}
+
+/* ============ PRICING ============ */
+#pricing{background:var(--paper-2);border-top:1px solid var(--line)}
+.prices{display:grid;grid-template-columns:1fr;gap:18px}
+@media(min-width:860px){.prices{grid-template-columns:repeat(3,1fr)}}
+.price{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:28px 26px;display:flex;flex-direction:column}
+.price.hot{border-color:var(--amber);box-shadow:0 24px 50px -28px rgba(232,155,45,.4);position:relative}
+.price.hot::before{content:"Most popular";position:absolute;top:-12px;left:26px;background:var(--amber);color:#1B1305;font-size:10.5px;font-weight:800;padding:4px 10px;border-radius:99px;letter-spacing:.03em}
+.price h3{font-family:var(--d);font-size:19px;font-weight:800;margin-bottom:10px}
+.price .amt{display:flex;align-items:baseline;gap:5px;margin-bottom:6px}
+.price .amt b{font-family:var(--d);font-size:34px;font-weight:800}
+.price .amt small{font-size:13px;color:var(--muted)}
+.price .for{font-size:13.5px;color:var(--muted);margin-bottom:18px}
+.price ul{list-style:none;display:grid;gap:10px;margin-bottom:22px;flex:1}
+.price li{font-size:13.5px;color:var(--ink-soft);padding-left:20px;position:relative}
+.price li::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700}
+.price .btn{justify-content:center;width:100%}
+
+/* ============ FAQ ============ */
+.faq{display:grid;gap:0;max-width:760px}
+.faq details{border-top:1px solid var(--line);padding:18px 0}
+.faq details:last-child{border-bottom:1px solid var(--line)}
+.faq summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:20px;font-weight:700;font-size:15.5px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .pl{font-size:20px;color:var(--muted);transition:transform .25s var(--ease);flex:none}
+.faq details[open] summary .pl{transform:rotate(45deg)}
+.faq p{font-size:14.5px;color:var(--ink-soft);margin-top:12px;max-width:64ch}
+
+/* ============ FINAL CTA ============ */
+.final-sec{padding-top:0}
+/* fixed dark surface in both themes — the ink/paper tokens swap in dark mode,
+   which would otherwise flip this into a pale card on a dark page */
+.final{position:relative;overflow:hidden;background:#0A1811;color:#F3F1E8;border-radius:28px;border:1px solid rgba(255,255,255,.08);isolation:isolate}
+.final::before{content:"";position:absolute;top:0;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,rgba(232,155,45,.55),transparent);z-index:2}
+.final-glow{position:absolute;inset:-25%;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(42% 55% at 20% 112%, rgba(232,155,45,.5), transparent 62%),
+    radial-gradient(36% 46% at 86% -8%, rgba(79,181,132,.32), transparent 62%);
+  filter:blur(6px);animation:finalBreathe 9s ease-in-out infinite}
+@keyframes finalBreathe{0%,100%{opacity:.82;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+.final-mark{position:absolute;right:-6%;bottom:-14%;width:340px;height:340px;max-width:44%;opacity:.16;z-index:1;pointer-events:none}
+.final-in{position:relative;z-index:2;padding:88px 40px;text-align:center}
+.final h2{font-size:clamp(30px,4.2vw,46px);font-weight:800;margin-bottom:16px;color:#F8F7F0;line-height:1.04}
+.final p{opacity:.72;font-size:17px;margin:0 auto 32px;max-width:44ch}
+.final .hero-cta-row{justify-content:center;margin-bottom:24px}
+.final .btn-amber{box-shadow:0 26px 54px -18px rgba(232,155,45,.6)}
+.final .btn-amber:hover{box-shadow:0 30px 60px -16px rgba(232,155,45,.7)}
+.final-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 20px;font-size:12.5px;color:rgba(243,241,232,.58)}
+.final-chips span{position:relative;padding-left:15px}
+.final-chips span::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:4px;height:4px;border-radius:50%;background:rgba(243,241,232,.42)}
+.final-chips span:first-child{padding-left:0}
+.final-chips span:first-child::before{display:none}
+@media (prefers-reduced-motion:reduce){.final-glow{animation:none}}
+
+/* ============ FOOTER ============ */
+footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--paper-2)}
+.foot-grid{display:grid;grid-template-columns:1fr;gap:40px;padding-bottom:40px}
+@media(min-width:760px){.foot-grid{grid-template-columns:1.3fr 1fr 1fr 1fr}}
+.foot-brand p{font-size:13.5px;color:var(--muted);max-width:30ch;margin-top:12px;line-height:1.6}
+.foot-col h5{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:14px}
+.foot-col ul{list-style:none;display:grid;gap:10px}
+.foot-col a{text-decoration:none;color:var(--ink-soft);font-size:14px;transition:color .2s}
+.foot-col a:hover{color:var(--green)}
+.foot-bottom{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;padding-top:26px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.foot-bottom .founder a{color:var(--muted);text-decoration:underline;text-underline-offset:2px}
+.foot-bottom .sp{flex:1 1 auto;min-width:8px}
+.foot-bottom a{text-decoration:none;color:var(--muted);transition:color .2s}
+.foot-bottom a:hover{color:var(--ink)}
+.credits{margin-top:22px;font-size:11px;color:var(--muted);line-height:1.7;opacity:.82}
+.credits a{color:var(--muted);text-decoration:underline;text-underline-offset:2px}
+</style>
+</head>
+<body>
+
+<div class="scroll-progress" aria-hidden="true"><i id="scrollBar"></i></div>
+
+<nav class="nav" id="siteNav">
+  <div class="wrap nav-in">
+    <a class="logo" href="#top">
+      <svg width="32" height="32" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+        <rect width="34" height="34" rx="8" fill="#142A21"/>
+        <path d="M8 25 L14 12" stroke="#C4543B" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M14.5 25 L20.5 9" stroke="#E89B2D" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M21 25 L27 6.5" stroke="#3FAE6A" stroke-width="2.6" stroke-linecap="round"/>
+        <circle cx="20.5" cy="9" r="2.1" fill="#E89B2D"/>
+      </svg>
+      <span><b>Volt</b><span>Mira</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="#honesty">Honesty engine</a>
+      <a href="#tracking">Tracked proposals</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a href="/demo">Live demo</a>
+    </div>
+    <a class="nav-signin" href="/login">Sign in</a>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">
+      <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2 12h2.4M19.6 12H22M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg>
+    </button>
+    <a href="/login" class="btn btn-amber btn-sm">Start free trial <span class="arr">→</span></a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">For solar installers · RO · MD · EU</span>
+      <h1 class="hh">Solar quotes<br>your clients can<br><span class="hl">fact&#8209;check.<svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M4 30 C 80 12, 180 34, 260 20 S 380 22, 396 14"/></svg></span></h1>
+      <p class="lead">Most quoting tools show one flattering number. VoltMira shows <b>three honest scenarios</b>, computed from real sun data for the client's roof — and tells you the moment they open your proposal.</p>
+      <div class="hero-cta-row">
+        <a class="btn btn-primary btn-lg" href="/login">Start free trial <span class="arr">→</span></a>
+        <a class="btn btn-lg" style="border-color:var(--line)" href="#honesty">See how it works</a>
+      </div>
+      <p class="wl-note">No credit card required · Free during our beta · Set up in 2 minutes</p>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-photo">
+        <img src="/landing/hero-rooftop.jpg" alt="Residential rooftop solar installation on a tiled roof under a clear blue sky">
+        <span class="cap">Casa Popescu · Iași</span>
+      </div>
+      <div class="tprop">
+        <div class="tp-head">
+          <div class="tp-from">
+            <svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="8" fill="#142A21"/><path d="M8 25 L14 12" stroke="#C4543B" stroke-width="2.6" stroke-linecap="round"/><path d="M14.5 25 L20.5 9" stroke="#E89B2D" stroke-width="2.6" stroke-linecap="round"/><path d="M21 25 L27 6.5" stroke="#3FAE6A" stroke-width="2.6" stroke-linecap="round"/><circle cx="20.5" cy="9" r="2.1" fill="#E89B2D"/></svg>
+            SolarTech SRL
+          </div>
+          <span class="tp-badge">Opened 2×</span>
+        </div>
+        <div class="tp-client">8.4 kW rooftop · 12 panels + battery</div>
+        <div class="tp-sub">Lifetime savings €18,240</div>
+        <div class="tp-h">Payback — three honest scenarios</div>
+        <div class="tp-bands">
+          <div class="tp-band p"><span>Pessim.</span><b>9.1<small style="font-size:9px;font-weight:600"> yr</small></b></div>
+          <div class="tp-band e"><span>Expected</span><b>7.3<small style="font-size:9px;font-weight:600"> yr</small></b></div>
+          <div class="tp-band o"><span>Optim.</span><b>6.2<small style="font-size:9px;font-weight:600"> yr</small></b></div>
+        </div>
+        <div class="tp-accept">Accept proposal ✓</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="stat-strip">
+  <div class="wrap stat-in">
+    <div class="stat rv"><b>3 scenarios</b><span>Pessimistic · expected · optimistic on every quote</span></div>
+    <div class="stat rv"><b>PVGIS satellite data</b><span>Real irradiance for the exact roof, not an average</span></div>
+    <div class="stat rv"><b>RO · MD · EU</b><span>Net metering, net billing &amp; feed-in tariffs built in</span></div>
+    <div class="stat rv"><b>&lt; 2 min</b><span>From address to a sendable proposal</span></div>
+  </div>
+</div>
+
+<section class="hiw" aria-label="How it works">
+  <div class="wrap">
+    <span class="sec-eyebrow rv">Address to signed quote</span>
+    <h2 class="sec-h rv">Built for the installer<br>standing on the roof.</h2>
+    <div class="hiw-grid">
+      <div class="hiw-photo rv">
+        <img src="/landing/installers.jpg" alt="Two installers mounting monocrystalline solar panels on a residential tile roof">
+      </div>
+      <div class="hiw-steps">
+        <article class="hiw-step rv">
+          <span class="hiw-n">01</span>
+          <div><h3>Type the address</h3><p>VoltMira pulls the real irradiance for that exact roof from <b>PVGIS</b> and applies the right tariff scheme for the market — automatically.</p></div>
+        </article>
+        <article class="hiw-step rv">
+          <span class="hiw-n">02</span>
+          <div><h3>Get three honest numbers</h3><p>Pessimistic, expected, optimistic — with <b>every assumption printed</b> on the proposal, ready to defend at the kitchen table.</p></div>
+        </article>
+        <article class="hiw-step rv">
+          <span class="hiw-n">03</span>
+          <div><h3>Send the link, watch the feed</h3><p>One link to the client's phone. You see <b>opens, minutes viewed, battery toggles</b> — and Accept lands the deal in your pipeline.</p></div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="honesty">
+  <div class="wrap">
+    <span class="sec-eyebrow rv">The honesty engine</span>
+    <h2 class="sec-h rv">One number is a sales pitch.<br>Three numbers is the truth.</h2>
+    <p class="sec-lead rv">Every VoltMira quote shows the payback under pessimistic, expected and optimistic assumptions — with every assumption printed on the proposal. Clients trust what they can verify. Trust closes roofs.</p>
+    <div class="bands3 rv-group">
+      <article class="bcard pess rv">
+        <div class="tag">Pessimistic</div>
+        <div class="yrs"><b class="cu" data-count="6.6" data-decimals="1">6.6</b><small> years</small></div>
+        <p><b>Low sun, flat prices.</b> −8% yield, 0.8%/yr panel degradation, zero electricity inflation. If even this number works, the deal is safe.</p>
+      </article>
+      <article class="bcard expc rv">
+        <div class="tag">Expected</div>
+        <div class="yrs"><b class="cu" data-count="6.0" data-decimals="1">6.0</b><small> years</small></div>
+        <p><b>The likeliest outcome.</b> PVGIS yield for the exact roof, 0.5%/yr degradation, 3% price inflation. The number you stand behind.</p>
+      </article>
+      <article class="bcard opti rv">
+        <div class="tag">Optimistic</div>
+        <div class="yrs"><b class="cu" data-count="5.7" data-decimals="1">5.7</b><small> years</small></div>
+        <p><b>If prices keep climbing.</b> +8% yield, 0.3%/yr degradation, 5% inflation. Shown honestly as the best case — never the headline.</p>
+      </article>
+    </div>
+    <div class="assump-strip rv">
+      <div class="as-t">Printed on every proposal</div>
+      <div class="as-grid">
+        <div class="as-kv"><span class="k">Yield (PVGIS)</span><span class="v">1,168 kWh/kWp</span></div>
+        <div class="as-kv"><span class="k">Degradation</span><span class="v">0.5%/yr</span></div>
+        <div class="as-kv"><span class="k">Price inflation</span><span class="v">3%/yr</span></div>
+        <div class="as-kv"><span class="k">Tariff scheme</span><span class="v">Net metering 1:1</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="break-sec">
+  <div class="wrap break-grid">
+    <div class="break-copy">
+      <span class="sec-eyebrow">Why installers switch</span>
+      <p class="break-q">Not a spreadsheet.<br>A quote your client <em>believes.</em></p>
+      <p class="break-sub">Clients have heard too many perfect promises. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself.</p>
+      <a class="btn btn-amber" href="#pricing">See pricing <span class="arr">→</span></a>
+    </div>
+    <div class="break-visual">
+      <div class="bv-bg" aria-hidden="true"><img src="/landing/cell-texture-bg.jpg" alt=""></div>
+      <div class="mock-sheet" aria-hidden="true">
+        <div class="ms-title">export_quotes_final_v3.xlsx</div>
+        <div class="ms-row ms-h"><span>Client</span><span>kW</span><span>Payback</span></div>
+        <div class="ms-row"><span>Popescu I.</span><span>6.0</span><span>7.2 yr</span></div>
+        <div class="ms-row"><span>Rusu V.</span><span>8.4</span><span>6.1 yr</span></div>
+        <div class="ms-row"><span>Ceban A.</span><span>4.5</span><span>9.4 yr</span></div>
+        <div class="ms-row ms-dim"><span>Ionescu M.</span><span>5.2</span><span>&mdash;</span></div>
+      </div>
+      <div class="mock-quote" aria-hidden="true">
+        <div class="mq-top"><span class="mq-badge">Solar quote</span><span class="mq-open">Opened 2&times;</span></div>
+        <div class="mq-name">Casa Rusu</div>
+        <div class="mq-sub">8.4 kW &middot; Chi&#537;in&#259;u</div>
+        <div class="mq-bands">
+          <div class="mq-b p"><span>Pessim.</span><b>6.6<small> yr</small></b></div>
+          <div class="mq-b e"><span>Expected</span><b>6.0<small> yr</small></b></div>
+          <div class="mq-b o"><span>Optim.</span><b>5.7<small> yr</small></b></div>
+        </div>
+        <div class="mq-accept">Accept quote &#10003;</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="tracking">
+  <div class="wrap track-grid">
+    <div>
+      <span class="sec-eyebrow rv">Tracked proposals</span>
+      <h2 class="sec-h rv">Know the moment<br>they open it.</h2>
+      <p class="sec-lead rv" style="margin-bottom:28px">Stop guessing when to follow up. Send a live link instead of a dead PDF — and watch what happens on the other side.</p>
+      <ul class="feat-list rv">
+        <li><span class="dot">✓</span><span><b>Opens &amp; time viewed</b> — "Ion opened it twice, 3 minutes each" beats "sent last Tuesday, no reply."</span></li>
+        <li><span class="dot">✓</span><span><b>Interaction signals</b> — they toggled the battery on? That's a buying question. Call about batteries.</span></li>
+        <li><span class="dot">✓</span><span><b>Accept from the page</b> — one tap on their phone marks the deal Won in your pipeline.</span></li>
+        <li><span class="dot">✓</span><span><b>Your data stays yours</b> — export every quote and client to CSV in one click, no lock-in.</span></li>
+      </ul>
+    </div>
+    <div class="feedbox rv">
+      <div class="fb-t">Your activity feed</div>
+      <div class="fev"><span class="ic">◉</span><span class="tx"><b>Ion Popescu</b> opened <b>Casa Popescu</b></span><time>just now</time></div>
+      <div class="fev"><span class="ic">⏱</span><span class="tx">Viewed for <b>3m 34s</b> — longest so far</span><time>2m</time></div>
+      <div class="fev"><span class="ic">⚡</span><span class="tx">Toggled the <b>battery on</b> · payback recalculated</span><time>3m</time></div>
+      <div class="fev"><span class="ic">◉</span><span class="tx">Opened again — <b>2nd visit today</b></span><time>1h</time></div>
+      <div class="fev"><span class="ic g">✓</span><span class="tx"><b>Accepted the quote</b> — project marked Won</span><time>1h</time></div>
+    </div>
+  </div>
+</section>
+
+<section class="scale-sec">
+  <div class="wrap">
+    <span class="sec-eyebrow rv">From one roof to a whole park</span>
+    <h2 class="sec-h rv">The same honest math,<br>6 kW or 600 kW.</h2>
+    <div class="scale-photo rv">
+      <img src="/landing/commercial-rooftop.jpg" alt="A large commercial rooftop covered edge-to-edge in solar panels">
+    </div>
+    <div class="scale-cols">
+      <div class="scale-it rv">
+        <h4><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></i>Three honest scenarios</h4>
+        <p>Pessimistic, expected, optimistic — every assumption printed on the quote, ready to defend.</p>
+      </div>
+      <div class="scale-it rv">
+        <h4><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg></i>PVGIS data per roof</h4>
+        <p>Satellite yield for the exact coordinates, not a rough national average.</p>
+      </div>
+      <div class="scale-it rv">
+        <h4><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="2.6"/></svg></i>See when they read it</h4>
+        <p>Opens, minutes viewed, battery toggled — you know exactly when to call.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <span class="sec-eyebrow rv">Pricing</span>
+    <h2 class="sec-h rv">Costs less than the coffee<br>at one lost deal.</h2>
+    <p class="sec-lead rv" style="margin-bottom:36px">Free 21-day trial — no card. One extra deal a year pays for VoltMira for ~20 years.</p>
+    <div class="prices">
+      <div class="price hot rv">
+        <h3>Pro</h3>
+        <div class="amt"><b class="cu" data-count="49" data-prefix="€">€49</b><small>/mo</small></div>
+        <div class="for">For the installer who sells</div>
+        <ul>
+          <li>Your logo on every proposal &amp; PDF</li>
+          <li>Tracked proposal links + open alerts</li>
+          <li>Website lead widget</li>
+          <li>Saved clients &amp; full pipeline</li>
+        </ul>
+        <a href="/login" class="btn btn-amber">Start free trial</a>
+      </div>
+      <div class="price rv">
+        <h3>Team</h3>
+        <div class="amt"><b class="cu" data-count="119" data-prefix="€">€119</b><small>/mo</small></div>
+        <div class="for">Up to 5 people, one pipeline</div>
+        <ul>
+          <li>Everything in Pro</li>
+          <li>5 seats with project owners</li>
+          <li>Shared clients &amp; win-rate analytics</li>
+          <li>Priority support in RO/RU/EN</li>
+        </ul>
+        <a href="/login" class="btn btn-primary">Start free trial</a>
+      </div>
+      <div class="price rv">
+        <h3>Enterprise</h3>
+        <div class="amt"><b style="font-size:22px">Custom</b></div>
+        <div class="for">For multi-branch installers</div>
+        <ul>
+          <li>Everything in Team, unlimited seats</li>
+          <li>Full audit log of every change</li>
+          <li>Custom subsidy &amp; tariff rules</li>
+          <li>Dedicated manager &amp; SLA</li>
+        </ul>
+        <a href="mailto:voltmiraenergy@gmail.com?subject=VoltMira%20Enterprise" class="btn btn-primary">Talk to us</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <span class="sec-eyebrow rv">Questions installers ask</span>
+    <h2 class="sec-h rv" style="margin-bottom:36px">Fair questions.</h2>
+    <div class="faq rv">
+      <details open>
+        <summary>Where do the solar numbers come from?<span class="pl">+</span></summary>
+        <p>Yearly and monthly yield come from PVGIS, the European Commission's satellite-derived solar database, for the exact coordinates of the roof. Tariff schemes are applied automatically per market. Every assumption is printed on the proposal.</p>
+      </details>
+      <details>
+        <summary>Why show a pessimistic number? Won't it scare clients?<span class="pl">+</span></summary>
+        <p>The opposite, in practice. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself.</p>
+      </details>
+      <details>
+        <summary>Does it work for Moldova's net billing?<span class="pl">+</span></summary>
+        <p>Yes — that's home turf. Moldova's low export price makes self-consumption the whole game, so the engine models it month by month and values battery storage correctly.</p>
+      </details>
+      <details>
+        <summary>How do I start?<span class="pl">+</span></summary>
+        <p>Sign up and you're in — no waitlist, no card. Full access to build quotes and send tracked proposals straight away, free through the beta.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="final-sec">
+  <div class="wrap">
+    <div class="final rv">
+      <div class="final-glow" aria-hidden="true"></div>
+      <svg class="final-mark" viewBox="0 0 240 240" fill="none" aria-hidden="true">
+        <path d="M38 208 L86 96" stroke="#C4543B" stroke-width="17" stroke-linecap="round"/>
+        <path d="M104 208 L158 66" stroke="#E89B2D" stroke-width="17" stroke-linecap="round"/>
+        <path d="M170 208 L222 34" stroke="#3FAE6A" stroke-width="17" stroke-linecap="round"/>
+      </svg>
+      <div class="final-in">
+        <h2>Be the installer whose<br>numbers hold up.</h2>
+        <p>Start free today in Romania, Moldova and the EU — no waitlist, no card, set up in minutes.</p>
+        <div class="hero-cta-row">
+          <a class="btn btn-amber btn-lg" href="/login">Start free <span class="arr">→</span></a>
+        </div>
+        <div class="final-chips">
+          <span>No card required</span><span>Free during beta</span><span>Cancel anytime</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="logo" href="#top" style="font-size:18px">
+          <svg width="26" height="26" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+            <rect width="34" height="34" rx="8" fill="#142A21"/>
+            <path d="M8 25 L14 12" stroke="#C4543B" stroke-width="2.6" stroke-linecap="round"/>
+            <path d="M14.5 25 L20.5 9" stroke="#E89B2D" stroke-width="2.6" stroke-linecap="round"/>
+            <path d="M21 25 L27 6.5" stroke="#3FAE6A" stroke-width="2.6" stroke-linecap="round"/>
+            <circle cx="20.5" cy="9" r="2.1" fill="#E89B2D"/>
+          </svg>
+          <span><b>Volt</b><span>Mira</span></span>
+        </a>
+        <p>The quoting tool your clients can fact-check. Built for installers in Moldova, Romania and the EU.</p>
+      </div>
+      <div class="foot-col">
+        <h5>Product</h5>
+        <ul>
+          <li><a href="#honesty">Honesty engine</a></li>
+          <li><a href="#tracking">Tracked proposals</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Company</h5>
+        <ul>
+          <li><a href="/login">Sign in</a></li>
+          <li><a href="/login">Start free trial</a></li>
+          <li><a href="/demo">Live demo</a></li>
+          <li><a href="/refer">Refer an installer</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Get in touch</h5>
+        <ul>
+          <li><a href="mailto:voltmiraenergy@gmail.com">voltmiraenergy@gmail.com</a></li>
+          <li><a href="https://wa.me/37362121019" target="_blank" rel="noopener">WhatsApp</a></li>
+          <li><a href="https://instagram.com/voltmira.energy" target="_blank" rel="noopener">Instagram</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 VoltMira. All rights reserved.</span>
+      <span class="founder">Founded by <a href="https://voltmira.com/" rel="author">Bogdan Toctarov</a></span>
+      <span class="sp"></span>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="/refunds">Refunds</a>
+    </div>
+    <p class="credits">Photography placeholder pending real installation photos, credited via Wikimedia Commons: <a href="https://commons.wikimedia.org/wiki/File:Solar_panels_on_a_roof.jpg" target="_blank" rel="noopener">"Solar panels on a roof"</a> by Pujanak (public domain) · <a href="https://commons.wikimedia.org/wiki/File:Installation_of_photovoltaic_modules_on_roof.jpg" target="_blank" rel="noopener">"Installation of photovoltaic modules on roof"</a> by Stefan Thiesen (CC BY-SA 3.0) · <a href="https://commons.wikimedia.org/wiki/File:Rooftop_Solar_Panels.jpg" target="_blank" rel="noopener">"Rooftop Solar Panels"</a> by EY418 (CC BY-SA 4.0, cropped to remove the New York skyline).</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  try{
+    var t = localStorage.getItem('voltmira_theme');
+    if(t === 'dark' || t === 'light'){ document.documentElement.setAttribute('data-theme', t); }
+  }catch(e){}
+  var btn = document.getElementById('themeToggle');
+  btn.addEventListener('click', function(){
+    var cur = document.documentElement.getAttribute('data-theme');
+    var mql = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var isDark = cur ? cur === 'dark' : mql;
+    var next = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try{ localStorage.setItem('voltmira_theme', next); }catch(e){}
+  });
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // -- staggered scroll reveal --------------------------------------------
+  var els = document.querySelectorAll('.rv');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, {threshold:.14, rootMargin:'0px 0px -6% 0px'});
+    els.forEach(function(el){ io.observe(el); });
+  } else {
+    els.forEach(function(el){ el.classList.add('in'); });
+  }
+
+  // -- count-up numbers (honesty-band years, plan prices) -----------------
+  var counters = document.querySelectorAll('.cu');
+  function animateCount(el){
+    var target = parseFloat(el.getAttribute('data-count'));
+    var decimals = parseInt(el.getAttribute('data-decimals') || '0', 10);
+    var prefix = el.getAttribute('data-prefix') || '';
+    if(reduceMotion || isNaN(target)){
+      el.textContent = prefix + target.toFixed(decimals);
+      return;
+    }
+    var start = null, dur = 1100;
+    function step(ts){
+      if(!start) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      var val = target * eased;
+      el.textContent = prefix + val.toFixed(decimals);
+      if(p < 1) requestAnimationFrame(step);
+      else el.textContent = prefix + target.toFixed(decimals);
+    }
+    requestAnimationFrame(step);
+  }
+  if('IntersectionObserver' in window && counters.length){
+    var cio = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){ animateCount(en.target); cio.unobserve(en.target); }
+      });
+    }, {threshold:.6});
+    counters.forEach(function(el){ cio.observe(el); });
+  } else {
+    counters.forEach(animateCount);
+  }
+
+  // -- scroll progress bar + nav elevation + subtle hero parallax ---------
+  var progressBar = document.getElementById('scrollBar');
+  var nav = document.getElementById('siteNav');
+  var heroImg = document.querySelector('.hero-photo img');
+  var ticking = false;
+  function onScroll(){
+    var doc = document.documentElement;
+    var scrollTop = doc.scrollTop || document.body.scrollTop;
+    var scrollH = (doc.scrollHeight - doc.clientHeight) || 1;
+    var pct = Math.min(scrollTop / scrollH, 1) * 100;
+    if(progressBar) progressBar.style.width = pct + '%';
+    if(nav) nav.classList.toggle('scrolled', scrollTop > 8);
+    if(heroImg && !reduceMotion){
+      var shift = Math.min(scrollTop * 0.08, 40);
+      heroImg.style.transform = 'translateY(' + shift + 'px) scale(1.08)';
+    }
+    ticking = false;
+  }
+  window.addEventListener('scroll', function(){
+    if(!ticking){ requestAnimationFrame(onScroll); ticking = true; }
+  }, {passive:true});
+  onScroll();
+})();
+</script>
+</body>
+</html>
