@@ -342,14 +342,6 @@ const CSS = `
   .tbl .col-sel input{width:15px;height:15px;accent-color:var(--green);cursor:pointer;vertical-align:middle}
 
   /* Dashboard "Needs follow-up" strip */
-  .followup-strip{background:var(--amber-tint);border:1px solid rgba(232,155,45,.4);border-radius:var(--radius);padding:16px 18px;margin-bottom:18px}
-  .followup-strip h3{color:#8A5A0F;margin:0 0 3px;font-size:13px;text-transform:uppercase;letter-spacing:.07em}
-  .fu-sub{font-size:13px;color:#8A5A0F;opacity:.92;margin-bottom:10px}
-  .fu-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid rgba(232,155,45,.28)}
-  .fu-row .fu-who{flex:1;min-width:0}
-  .fu-row .fu-who b{display:block;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .fu-row .fu-who span{font-size:12px;color:#8A5A0F}
-  .fu-row .fu-age{font-size:12px;font-weight:700;color:var(--red);white-space:nowrap}
 
   /* KPI strip */
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px}
@@ -638,7 +630,6 @@ const CSS = `
     .app .fchip{min-height:38px}
     .app .member{padding-top:16px;padding-bottom:16px}
     /* Onboarding + follow-up rows are links, not buttons — give them real height */
-    .app .followup-strip .fu-row .btn{min-height:40px}
     .app .ob-step{min-height:44px}
     .app .tr-tab{min-height:40px;min-width:44px}
     .app .role-opt{min-height:42px}

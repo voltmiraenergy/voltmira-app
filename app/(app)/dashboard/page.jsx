@@ -11,12 +11,11 @@ import { createProject, cycleProjectStatus, maybeClaimReferral } from "../../../
 import { quote } from "@voltmira/engine";
 import { companyEngine } from "../../../lib/engineSettings.js";
 import { t, normLang } from "../../../lib/i18n.js";
-import { proposalStatsByProject, needsFollowUp, daysSince } from "../../../lib/proposalStats.js";
+import { proposalStatsByProject } from "../../../lib/proposalStats.js";
 import { rowToQuoteInput } from "../../../lib/quoteInput.js";
 import { activityHtml } from "../../../lib/activity.js";
 import { mdDayKey, mdMonthKey, fmtDate } from "../../../lib/tz.js";
 import TrendChart from "./TrendChart.jsx";
-import FollowUpStrip from "./FollowUpStrip.jsx";
 import LeadActions from "../leads/LeadActions.jsx";
 import Avatar from "../../../lib/Avatar.jsx";
 
@@ -215,32 +214,6 @@ export default async function Dashboard() {
     .filter(x => x.done >= 1 && x.done < INSTALL_STEPS.length)
     .sort((a, b) => b.done - a.done)
     .slice(0, 6);
-  // Quotes worth chasing: sent over a week ago and either never opened or gone
-  // quiet since. A quote sitting unopened for 16 days is a deal quietly dying,
-  // so it gets surfaced at the top of the dashboard rather than buried in a
-  // table. "Done" snoozes the row for a week (followup_snoozed_at).
-  const followUps = list
-    .filter(r => r.status === "sent")
-    .map(r => ({ r, st: stats.get(r.id) }))
-    // NB: daysSince(null) is 0, so a never-snoozed quote must be allowed
-    // explicitly — testing `daysSince(...) > 7` alone hid every fresh reminder.
-    .filter(({ r, st }) => needsFollowUp(st)
-      && (!r.followup_snoozed_at || daysSince(r.followup_snoozed_at) > 7))
-    .sort((a, b) => daysSince(b.st.sentAt) - daysSince(a.st.sentAt))
-    .slice(0, 4)
-    .map(({ r, st }) => ({
-      id: r.id,
-      title: r.title,
-      client: r.client_name,
-      // Days since it went out — drives the .fu-age urgency badge.
-      age: daysSince(st.sentAt),
-      // Never opened is the alarming case; "quiet since" is the softer one.
-      // Guard on lastOpen, not just opens: a row with opens>0 and a null
-      // last_open (imported or hand-inserted) rendered "no activity for 0d".
-      reason: (!st.opens || !st.lastOpen)
-        ? t("fu_never_opened", lang, { n: daysSince(st.sentAt) })
-        : t("fu_quiet", lang, { n: daysSince(st.lastOpen) }),
-    }));
 
   // Sample data is NOT filtered out of the KPIs — filtering would defeat the
   // "Load sample pipeline" button, whose entire purpose is to make the
@@ -276,7 +249,6 @@ export default async function Dashboard() {
 
       {(
         <>
-      <FollowUpStrip items={followUps} lang={lang} />
       <div className="kpis">
         <div className="kpi"><b>{fmt(pipeline)}</b><span>{t("kpi_pipeline", lang)}</span></div>
         <div className="kpi"><b>{winRate}</b><span>{t("kpi_winrate", lang)}</span></div>
