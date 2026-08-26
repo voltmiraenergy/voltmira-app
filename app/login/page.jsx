@@ -35,7 +35,7 @@ const CSS = `
     --green:#1E6B4E; --green-deep:#0E4633; --green-tint:#E4EFE9; --mint:#7FDCA4;
     --amber:#E89B2D; --amber-deep:#C97F14; --amber-tint:#FBF0DD;
     --red:#C4543B; --muted:#66756C; --line:#E3E1D6;
-    --d:'Inter',system-ui,sans-serif; --b:'Inter',system-ui,sans-serif;
+    --d:'Inter Tight','Inter',system-ui,sans-serif; --b:'Inter',system-ui,sans-serif;
     --ease:cubic-bezier(.22,.9,.28,1); --spring:cubic-bezier(.34,1.56,.64,1);
   }
   html[data-theme="dark"]{
@@ -59,12 +59,25 @@ const CSS = `
       radial-gradient(115% 80% at 6% 0%, rgba(232,155,45,.11), transparent 44%),
       radial-gradient(120% 115% at 104% 108%, rgba(63,174,106,.13), transparent 52%),
       linear-gradient(160deg,#0C1610 0%,#070F0B 58%,#050B08 100%)}
+  /* real rooftop photo, sitting between the base gradient (fallback if the
+     image is slow/blocked) and the sun-ring/grain/text layers. The scrim
+     reproduces the same reading contrast the flat gradient gave the text,
+     in both themes — see the dark-mode override right below it. */
+  .bp-photo{position:absolute;inset:0;z-index:0}
+  .bp-photo img{width:100%;height:100%;object-fit:cover}
+  .bp-photo::after{content:"";position:absolute;inset:0;
+    background:
+      linear-gradient(175deg, rgba(9,21,16,.30) 0%, rgba(9,21,16,.87) 60%, rgba(9,21,16,.97) 100%),
+      radial-gradient(120% 70% at 8% 0%, rgba(232,155,45,.20), transparent 46%)}
+  html[data-theme="dark"] .bp-photo::after{background:
+      linear-gradient(175deg, rgba(5,11,8,.42) 0%, rgba(5,11,8,.92) 60%, rgba(5,11,8,.98) 100%),
+      radial-gradient(120% 70% at 8% 0%, rgba(232,155,45,.14), transparent 46%)}
   /* one editorial mark: an oversized faint sun ring, off-canvas top-right */
   .brand-pane::before{content:"";position:absolute;top:-240px;right:-240px;width:660px;height:660px;border-radius:50%;
-    border:1px solid rgba(232,155,45,.20);pointer-events:none;
+    border:1px solid rgba(232,155,45,.20);pointer-events:none;z-index:1;
     box-shadow:0 0 160px rgba(232,155,45,.10),inset 0 0 130px rgba(232,155,45,.05)}
   /* fine film grain for a printed, non-flat feel */
-  .brand-pane::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  .brand-pane::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;z-index:1;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .045 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
   .bp-top,.bp-mid,.bp-foot{position:relative;z-index:2}
   .bp-mid{margin:auto 0;animation:bpIn .75s var(--ease) both}
@@ -334,6 +347,7 @@ export default function Login() {
 
         {/* ---------- left: minimal editorial brand pane ---------- */}
         <aside className="brand-pane" aria-hidden="true">
+          <div className="bp-photo"><img src="/landing/hero-rooftop.jpg" alt="" /></div>
           <div className="bp-top"><Logo dark size={32} /></div>
 
           <div className="bp-mid">

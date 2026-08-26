@@ -18,6 +18,7 @@ import { mdDayKey, mdMonthKey, fmtDate } from "../../../lib/tz.js";
 import TrendChart from "./TrendChart.jsx";
 import FollowUpStrip from "./FollowUpStrip.jsx";
 import LeadActions from "../leads/LeadActions.jsx";
+import KpiValue from "./KpiValue.jsx";
 
 // Post-sale install stages, mirrored from InstallChecklist.jsx. install_progress
 // is a { step: completedDate } map, so a truthy value means the step is done.
@@ -127,9 +128,10 @@ export default async function Dashboard() {
     }
   }
   const winRate = (won + lost) ? Math.round(won / (won + lost) * 100) + "%" : "—";
+  // Raw twin of winRate, above, for the KpiValue count-up (a client component
+  // can't receive the formatted string's logic as a function — see KpiValue.jsx).
+  const winRatePct = (won + lost) ? Math.round(won / (won + lost) * 100) : null;
   const avgPbVal = pbN ? pbSum / pbN : null;
-  const avgPb = avgPbVal === null ? "—"
-    : (avgPbVal >= E.horizon ? `${E.horizon}+` : avgPbVal.toFixed(1)) + " " + t("yrs", lang);
   const yrsF = (p) => p === null ? "25+" : p === 0 ? "now" : p.toFixed(1);
   // Average deal size = mean contract value of WON quotes; "—" until the first win.
   const avgDeal = won ? wonValueSum / won : null;
@@ -277,12 +279,12 @@ export default async function Dashboard() {
         <>
       <FollowUpStrip items={followUps} lang={lang} />
       <div className="kpis">
-        <div className="kpi"><b>{fmt(pipeline)}</b><span>{t("kpi_pipeline", lang)}</span></div>
-        <div className="kpi"><b>{winRate}</b><span>{t("kpi_winrate", lang)}</span></div>
-        <div className="kpi"><b>{avgPb}</b><span>{t("kpi_payback", lang)}</span></div>
-        <div className="kpi"><b>{list.length}</b><span>{t("kpi_projects", lang)}</span></div>
-        <div className="kpi"><b>{avgDeal === null ? "—" : fmt(avgDeal)}</b><span>{t("kpi_avgdeal", lang)}</span></div>
-        <div className="kpi"><b>{avgClose === null ? "—" : avgClose + " " + t("days", lang)}</b><span>{t("kpi_avgclose", lang)}</span></div>
+        <div className="kpi"><b><KpiValue value={pipeline} kind="currency" /></b><span>{t("kpi_pipeline", lang)}</span></div>
+        <div className="kpi"><b><KpiValue value={winRatePct} kind="percent" /></b><span>{t("kpi_winrate", lang)}</span></div>
+        <div className="kpi"><b><KpiValue value={avgPbVal} kind="years" extra={{ horizon: E.horizon, suffix: t("yrs", lang) }} /></b><span>{t("kpi_payback", lang)}</span></div>
+        <div className="kpi"><b><KpiValue value={list.length} kind="count" /></b><span>{t("kpi_projects", lang)}</span></div>
+        <div className="kpi"><b><KpiValue value={avgDeal} kind="currency" /></b><span>{t("kpi_avgdeal", lang)}</span></div>
+        <div className="kpi"><b><KpiValue value={avgClose} kind="days" extra={{ suffix: t("days", lang) }} /></b><span>{t("kpi_avgclose", lang)}</span></div>
       </div>
 
       <div className="grid-2" style={{ marginBottom: 18 }}>
