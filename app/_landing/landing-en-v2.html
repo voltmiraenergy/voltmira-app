@@ -213,7 +213,7 @@ h1.hh .hl path{fill:none;stroke:var(--amber);stroke-width:5;stroke-linecap:round
 .tp-accept{width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;padding:10px;font-weight:700;font-size:12.5px;text-align:center}
 
 .stat-strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--paper-2)}
-.stat-in{display:flex;flex-wrap:wrap;gap:32px;justify-content:space-between;padding:26px 0}
+.stat-in{display:flex;flex-wrap:wrap;gap:32px;justify-content:space-between;padding-top:26px;padding-bottom:26px}
 .stat{flex:1;min-width:150px}
 .stat b{display:block;font-family:var(--d);font-size:26px;font-weight:800}
 .stat span{font-size:12.5px;color:var(--muted)}
@@ -261,7 +261,7 @@ section{padding:96px 0}
    photo contained in a framed card beside the copy, not underneath it, so
    text contrast never depends on how busy the photo is */
 .break-sec{background:#0A1811;color:#F3F1E8;overflow:hidden}
-.break-grid{display:grid;grid-template-columns:1fr;gap:56px;align-items:center;padding:104px 0}
+.break-grid{display:grid;grid-template-columns:1fr;gap:56px;align-items:center;padding-top:104px;padding-bottom:104px}
 @media(min-width:940px){.break-grid{grid-template-columns:1.1fr .9fr;gap:40px}}
 .break-sec .sec-eyebrow{color:#EBA542}
 .break-q{font-family:var(--d);font-weight:800;font-size:clamp(28px,4vw,44px);line-height:1.1;margin-bottom:20px}
@@ -310,7 +310,13 @@ section{padding:96px 0}
 .mq-b b{font-family:var(--d);font-size:15px}
 .mq-b b small{font-size:9px;font-weight:600;color:#66756C}
 .mq-accept{background:#1E6B4E;color:#fff;text-align:center;border-radius:10px;padding:10px;font-weight:700;font-size:12.5px}
-@media(max-width:520px){.mock-sheet{position:relative;top:0;left:0;transform:rotate(-4deg)}.mock-quote{transform:rotate(2deg) translate(0,-14%)}}
+@media(max-width:520px){
+  .stat-in{gap:18px 16px;padding-top:22px;padding-bottom:22px}
+  .stat{min-width:132px}
+  .stat b{font-size:20px;line-height:1.16}
+  .stat span{font-size:12px;line-height:1.45;display:block;margin-top:3px}
+  .break-grid{padding-top:64px;padding-bottom:64px;gap:36px}
+.mock-sheet{position:relative;top:0;left:0;transform:rotate(-4deg)}.mock-quote{transform:rotate(2deg) translate(0,-14%)}}
 
 /* ============ TRACKING ============ */
 .track-grid{display:grid;grid-template-columns:1fr;gap:44px}
