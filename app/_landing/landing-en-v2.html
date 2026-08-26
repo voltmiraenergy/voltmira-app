@@ -411,6 +411,33 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
 .foot-bottom .sp{flex:1 1 auto;min-width:8px}
 .foot-bottom a{text-decoration:none;color:var(--muted);transition:color .2s}
 .foot-bottom a:hover{color:var(--ink)}
+
+/* ---------------- language switcher ---------------- */
+.lang{position:relative;flex:none}
+.lang-btn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 9px 0 8px;border-radius:99px;
+  border:1px solid var(--line);background:var(--paper-2);color:var(--ink);cursor:pointer;
+  font-family:inherit;font-size:12.5px;font-weight:700;letter-spacing:.04em;transition:border-color .2s,background .2s}
+.lang-btn:hover{border-color:var(--ink);background:var(--paper)}
+.lang-flag{display:flex}
+.lf{width:19px;height:14px;border-radius:2.5px;display:block;box-shadow:0 0 0 1px rgba(0,0,0,.12) inset}
+.lang-chev{width:13px;height:13px;opacity:.55;transition:transform .25s var(--ease)}
+.lang.open .lang-chev{transform:rotate(180deg)}
+.lang-menu{position:absolute;top:calc(100% + 9px);right:0;min-width:186px;padding:6px;z-index:60;
+  background:var(--paper-2);border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 18px 44px -14px rgba(20,42,33,.34);
+  opacity:0;visibility:hidden;transform:translateY(-6px);
+  transition:opacity .2s var(--ease),transform .24s var(--ease),visibility .24s}
+.lang.open .lang-menu{opacity:1;visibility:visible;transform:none}
+.lang-opt{display:flex;align-items:center;gap:11px;width:100%;padding:10px 11px;border:none;border-radius:10px;
+  background:transparent;cursor:pointer;font-family:inherit;font-size:14.5px;font-weight:600;color:var(--ink);text-align:left}
+.lang-opt:hover{background:var(--paper)}
+.lang-opt span{flex:1}
+.lang-tick{width:17px;height:17px;color:var(--green);opacity:0;flex:none}
+.lang-opt[aria-selected="true"] .lang-tick{opacity:1}
+@media(max-width:520px){
+  .lang-btn{height:32px;padding:0 7px 0 6px;font-size:12px}
+  .lang-menu{min-width:170px}
+}
 </style>
 </head>
 <body>
@@ -437,6 +464,18 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
       <a href="/demo">Live demo</a>
     </div>
     <a class="nav-signin" href="/login">Sign in</a>
+    <div class="lang" id="langWrap">
+      <button type="button" class="lang-btn" id="langBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Change language">
+        <span class="lang-flag" id="langFlag"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="15" fill="#012169"/><path d="M0 0l21 15M21 0L0 15" stroke="#fff" stroke-width="3"/><path d="M0 0l21 15M21 0L0 15" stroke="#C8102E" stroke-width="1.6"/><path d="M10.5 0v15M0 7.5h21" stroke="#fff" stroke-width="5"/><path d="M10.5 0v15M0 7.5h21" stroke="#C8102E" stroke-width="3"/></svg></span>
+        <span class="lang-code" id="langCode">EN</span>
+        <svg class="lang-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="lang-menu" id="langMenu" role="listbox" aria-label="Language">
+        <button type="button" role="option" class="lang-opt" data-lang="ro" data-path="/ro" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="7" height="15" fill="#002B7F"/><rect x="7" width="7" height="15" fill="#FCD116"/><rect x="14" width="7" height="15" fill="#CE1126"/></svg><span>Română</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+        <button type="button" role="option" class="lang-opt" data-lang="en" data-path="/" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="15" fill="#012169"/><path d="M0 0l21 15M21 0L0 15" stroke="#fff" stroke-width="3"/><path d="M0 0l21 15M21 0L0 15" stroke="#C8102E" stroke-width="1.6"/><path d="M10.5 0v15M0 7.5h21" stroke="#fff" stroke-width="5"/><path d="M10.5 0v15M0 7.5h21" stroke="#C8102E" stroke-width="3"/></svg><span>English</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+        <button type="button" role="option" class="lang-opt" data-lang="ru" data-path="/ru" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="5" fill="#fff"/><rect y="5" width="21" height="5" fill="#0039A6"/><rect y="10" width="21" height="5" fill="#D52B1E"/></svg><span>Русский</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+      </div>
+    </div>
     <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">
       <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2 12h2.4M19.6 12H22M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg>
@@ -869,6 +908,46 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
     if(!ticking){ requestAnimationFrame(onScroll); ticking = true; }
   }, {passive:true});
   onScroll();
+})();
+
+/* ---------------- language switcher ----------------
+   The page is rendered per language on the server (lib/landing.js), so the
+   control only has to navigate. Current language comes from the path, which
+   keeps it correct on every entry point without waiting for a dictionary. */
+(function(){
+  var wrap = document.getElementById('langWrap');
+  if(!wrap) return;
+  var btn = document.getElementById('langBtn'),
+      menu = document.getElementById('langMenu'),
+      code = document.getElementById('langCode'),
+      flag = document.getElementById('langFlag'),
+      opts = [].slice.call(menu.querySelectorAll('.lang-opt'));
+
+  var path = location.pathname.replace(/\/+$/, '');
+  var cur = path === '/ro' ? 'ro' : path === '/ru' ? 'ru' : 'en';
+
+  opts.forEach(function(o){
+    var on = o.getAttribute('data-lang') === cur;
+    o.setAttribute('aria-selected', String(on));
+    if(on){
+      code.textContent = o.getAttribute('data-lang').toUpperCase();
+      flag.innerHTML = o.querySelector('.lf').outerHTML;
+    }
+    o.addEventListener('click', function(){
+      var target = o.getAttribute('data-path');
+      try{ localStorage.setItem('voltmira_lang', o.getAttribute('data-lang')); }catch(e){}
+      if(target !== (path || '/')) location.assign(target); else close();
+    });
+  });
+
+  function open(){ wrap.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+  function close(){ wrap.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    wrap.classList.contains('open') ? close() : open();
+  });
+  document.addEventListener('click', function(e){ if(!wrap.contains(e.target)) close(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') close(); });
 })();
 </script>
 </body>
