@@ -311,11 +311,23 @@ section{padding:96px 0}
 .mq-b b small{font-size:9px;font-weight:600;color:#66756C}
 .mq-accept{background:#1E6B4E;color:#fff;text-align:center;border-radius:10px;padding:10px;font-weight:700;font-size:12.5px}
 @media(max-width:520px){
-  .stat-in{gap:18px 16px;padding-top:22px;padding-bottom:22px}
-  .stat{min-width:132px}
-  .stat b{font-size:20px;line-height:1.16}
-  .stat span{font-size:12px;line-height:1.45;display:block;margin-top:3px}
-  .break-grid{padding-top:64px;padding-bottom:64px;gap:36px}
+  /* Phone: a centred 2x2 grid reads far better than two ragged left-aligned
+     columns. Equal tracks stop "PVGIS satellite data" setting the column width,
+     and centring the text balances the short labels against the long ones. */
+  .stat-in{display:grid;grid-template-columns:1fr 1fr;gap:26px 14px;
+    padding-top:26px;padding-bottom:26px;justify-content:initial}
+  .stat{min-width:0;text-align:center}
+  .stat b{font-size:19px;line-height:1.2;letter-spacing:-.02em}
+  .stat span{font-size:12px;line-height:1.5;display:block;margin-top:5px;
+    max-width:19ch;margin-left:auto;margin-right:auto}
+
+  /* Same treatment for the break section: centred reads as composed rather
+     than as text that ran out of room. */
+  .break-grid{padding-top:60px;padding-bottom:60px;gap:32px;text-align:center}
+  .break-sec .sec-eyebrow{margin-bottom:12px}
+  .break-q{font-size:clamp(26px,7.4vw,34px);line-height:1.14}
+  .break-sub{margin-left:auto;margin-right:auto;max-width:36ch}
+  .break-sec .btn{margin-left:auto;margin-right:auto}
 .mock-sheet{position:relative;top:0;left:0;transform:rotate(-4deg)}.mock-quote{transform:rotate(2deg) translate(0,-14%)}}
 
 /* ============ TRACKING ============ */
@@ -413,7 +425,10 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
 .foot-bottom a:hover{color:var(--ink)}
 
 /* ---------------- language switcher ---------------- */
-.lang{position:relative;flex:none}
+/* Hidden until the v2 copy exists in ro/ru: /ro and /ru still render the old
+   landing.html, so offering the choice today drops the visitor onto a
+   different design. Delete this one line the moment translations land. */
+.lang{position:relative;flex:none;display:none}
 .lang-btn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 9px 0 8px;border-radius:99px;
   border:1px solid var(--line);background:var(--paper-2);color:var(--ink);cursor:pointer;
   font-family:inherit;font-size:12.5px;font-weight:700;letter-spacing:.04em;transition:border-color .2s,background .2s}
