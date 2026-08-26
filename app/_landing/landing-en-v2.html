@@ -425,10 +425,7 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
 .foot-bottom a:hover{color:var(--ink)}
 
 /* ---------------- language switcher ---------------- */
-/* Hidden until the v2 copy exists in ro/ru: /ro and /ru still render the old
-   landing.html, so offering the choice today drops the visitor onto a
-   different design. Delete this one line the moment translations land. */
-.lang{position:relative;flex:none;display:none}
+.lang{position:relative;flex:none}
 .lang-btn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 9px 0 8px;border-radius:99px;
   border:1px solid var(--line);background:var(--paper-2);color:var(--ink);cursor:pointer;
   font-family:inherit;font-size:12.5px;font-weight:700;letter-spacing:.04em;transition:border-color .2s,background .2s}
@@ -469,50 +466,50 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
         <path d="M21 25 L27 6.5" stroke="#3FAE6A" stroke-width="2.6" stroke-linecap="round"/>
         <circle cx="20.5" cy="9" r="2.1" fill="#E89B2D"/>
       </svg>
-      <span><b>Volt</b><span>Mira</span></span>
+      <span data-i18n="v2_001"><b>Volt</b><span>Mira</span></span>
     </a>
     <div class="nav-links">
-      <a href="#honesty">Honesty engine</a>
-      <a href="#tracking">Tracked proposals</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#faq">FAQ</a>
-      <a href="/demo">Live demo</a>
+      <a href="#honesty" data-i18n="v2_002">Honesty engine</a>
+      <a href="#tracking" data-i18n="v2_003">Tracked proposals</a>
+      <a href="#pricing" data-i18n="v2_004">Pricing</a>
+      <a href="#faq" data-i18n="v2_005">FAQ</a>
+      <a href="/demo" data-i18n="v2_006">Live demo</a>
     </div>
-    <a class="nav-signin" href="/login">Sign in</a>
+    <a class="nav-signin" href="/login" data-i18n="v2_007">Sign in</a>
     <div class="lang" id="langWrap">
       <button type="button" class="lang-btn" id="langBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Change language">
         <span class="lang-flag" id="langFlag"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="15" fill="#012169"/><path d="M0 0l21 15M21 0L0 15" stroke="#fff" stroke-width="3"/><path d="M0 0l21 15M21 0L0 15" stroke="#C8102E" stroke-width="1.6"/><path d="M10.5 0v15M0 7.5h21" stroke="#fff" stroke-width="5"/><path d="M10.5 0v15M0 7.5h21" stroke="#C8102E" stroke-width="3"/></svg></span>
-        <span class="lang-code" id="langCode">EN</span>
+        <span class="lang-code" id="langCode" data-i18n="v2_008">EN</span>
         <svg class="lang-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="lang-menu" id="langMenu" role="listbox" aria-label="Language">
-        <button type="button" role="option" class="lang-opt" data-lang="ro" data-path="/ro" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="7" height="15" fill="#002B7F"/><rect x="7" width="7" height="15" fill="#FCD116"/><rect x="14" width="7" height="15" fill="#CE1126"/></svg><span>Română</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
-        <button type="button" role="option" class="lang-opt" data-lang="en" data-path="/" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="15" fill="#012169"/><path d="M0 0l21 15M21 0L0 15" stroke="#fff" stroke-width="3"/><path d="M0 0l21 15M21 0L0 15" stroke="#C8102E" stroke-width="1.6"/><path d="M10.5 0v15M0 7.5h21" stroke="#fff" stroke-width="5"/><path d="M10.5 0v15M0 7.5h21" stroke="#C8102E" stroke-width="3"/></svg><span>English</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
-        <button type="button" role="option" class="lang-opt" data-lang="ru" data-path="/ru" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="5" fill="#fff"/><rect y="5" width="21" height="5" fill="#0039A6"/><rect y="10" width="21" height="5" fill="#D52B1E"/></svg><span>Русский</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+        <button type="button" role="option" class="lang-opt" data-lang="ro" data-path="/ro" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="7" height="15" fill="#002B7F"/><rect x="7" width="7" height="15" fill="#FCD116"/><rect x="14" width="7" height="15" fill="#CE1126"/></svg><span data-i18n="v2_009">Română</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+        <button type="button" role="option" class="lang-opt" data-lang="en" data-path="/" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="15" fill="#012169"/><path d="M0 0l21 15M21 0L0 15" stroke="#fff" stroke-width="3"/><path d="M0 0l21 15M21 0L0 15" stroke="#C8102E" stroke-width="1.6"/><path d="M10.5 0v15M0 7.5h21" stroke="#fff" stroke-width="5"/><path d="M10.5 0v15M0 7.5h21" stroke="#C8102E" stroke-width="3"/></svg><span data-i18n="v2_010">English</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+        <button type="button" role="option" class="lang-opt" data-lang="ru" data-path="/ru" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="5" fill="#fff"/><rect y="5" width="21" height="5" fill="#0039A6"/><rect y="10" width="21" height="5" fill="#D52B1E"/></svg><span data-i18n="v2_011">Русский</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
       </div>
     </div>
     <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">
       <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2 12h2.4M19.6 12H22M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg>
     </button>
-    <a href="/login" class="btn btn-amber btn-sm">Start free trial <span class="arr">→</span></a>
+    <a href="/login" class="btn btn-amber btn-sm" data-i18n="v2_012">Start free trial <span class="arr">→</span></a>
   </div>
 </nav>
 
 <header class="hero" id="top">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <span class="eyebrow">For solar installers · RO · MD · EU</span>
-      <h1 class="hh">Solar quotes<br>your clients can<br><span class="hl">fact&#8209;check.<svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M4 30 C 80 12, 180 34, 260 20 S 380 22, 396 14"/></svg></span></h1>
-      <p class="lead">Most quoting tools show one flattering number. VoltMira shows <b>three honest scenarios</b>, computed from real sun data for the client's roof — and tells you the moment they open your proposal.</p>
+      <span class="eyebrow" data-i18n="v2_013">For solar installers · RO · MD · EU</span>
+      <h1 class="hh" data-i18n="v2_147">Solar quotes<br>your clients can<br><span class="hl">fact&#8209;check.<svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M4 30 C 80 12, 180 34, 260 20 S 380 22, 396 14"/></svg></span></h1>
+      <p class="lead" data-i18n="v2_014">Most quoting tools show one flattering number. VoltMira shows <b>three honest scenarios</b>, computed from real sun data for the client's roof — and tells you the moment they open your proposal.</p>
       <div class="hero-cta-row">
-        <a class="btn btn-primary btn-lg" href="/login">Start free trial <span class="arr">→</span></a>
-        <a class="btn btn-lg" style="border-color:var(--line)" href="#honesty">See how it works</a>
+        <a class="btn btn-primary btn-lg" href="/login" data-i18n="v2_015">Start free trial <span class="arr">→</span></a>
+        <a class="btn btn-lg" style="border-color:var(--line)" href="#honesty" data-i18n="v2_016">See how it works</a>
       </div>
-      <p class="wl-note">No credit card required · Free during our beta · Set up in 2 minutes</p>
+      <p class="wl-note" data-i18n="v2_017">No credit card required · Free during our beta · Set up in 2 minutes</p>
     </div>
     <div class="hero-visual">
-      <div class="hero-photo">
+      <div class="hero-photo" data-i18n="v2_018">
         <img src="/landing/hero-rooftop.jpg" alt="Residential rooftop solar installation on a tiled roof under a clear blue sky">
         <span class="cap">Casa Popescu · Iași</span>
       </div>
@@ -522,17 +519,17 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
             <svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="8" fill="#142A21"/><path d="M8 25 L14 12" stroke="#C4543B" stroke-width="2.6" stroke-linecap="round"/><path d="M14.5 25 L20.5 9" stroke="#E89B2D" stroke-width="2.6" stroke-linecap="round"/><path d="M21 25 L27 6.5" stroke="#3FAE6A" stroke-width="2.6" stroke-linecap="round"/><circle cx="20.5" cy="9" r="2.1" fill="#E89B2D"/></svg>
             SolarTech SRL
           </div>
-          <span class="tp-badge">Opened 2×</span>
+          <span class="tp-badge" data-i18n="v2_019">Opened 2×</span>
         </div>
-        <div class="tp-client">8.4 kW rooftop · 12 panels + battery</div>
-        <div class="tp-sub">Lifetime savings €18,240</div>
-        <div class="tp-h">Payback — three honest scenarios</div>
+        <div class="tp-client" data-i18n="v2_020">8.4 kW rooftop · 12 panels + battery</div>
+        <div class="tp-sub" data-i18n="v2_021">Lifetime savings €18,240</div>
+        <div class="tp-h" data-i18n="v2_022">Payback — three honest scenarios</div>
         <div class="tp-bands">
-          <div class="tp-band p"><span>Pessim.</span><b>9.1<small style="font-size:9px;font-weight:600"> yr</small></b></div>
-          <div class="tp-band e"><span>Expected</span><b>7.3<small style="font-size:9px;font-weight:600"> yr</small></b></div>
-          <div class="tp-band o"><span>Optim.</span><b>6.2<small style="font-size:9px;font-weight:600"> yr</small></b></div>
+          <div class="tp-band p" data-i18n="v2_023"><span>Pessim.</span><b>9.1<small style="font-size:9px;font-weight:600"> yr</small></b></div>
+          <div class="tp-band e" data-i18n="v2_024"><span>Expected</span><b>7.3<small style="font-size:9px;font-weight:600"> yr</small></b></div>
+          <div class="tp-band o" data-i18n="v2_025"><span>Optim.</span><b>6.2<small style="font-size:9px;font-weight:600"> yr</small></b></div>
         </div>
-        <div class="tp-accept">Accept proposal ✓</div>
+        <div class="tp-accept" data-i18n="v2_026">Accept proposal ✓</div>
       </div>
     </div>
   </div>
@@ -540,17 +537,17 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
 
 <div class="stat-strip">
   <div class="wrap stat-in">
-    <div class="stat rv"><b>3 scenarios</b><span>Pessimistic · expected · optimistic on every quote</span></div>
-    <div class="stat rv"><b>PVGIS satellite data</b><span>Real irradiance for the exact roof, not an average</span></div>
-    <div class="stat rv"><b>RO · MD · EU</b><span>Net metering, net billing &amp; feed-in tariffs built in</span></div>
-    <div class="stat rv"><b>&lt; 2 min</b><span>From address to a sendable proposal</span></div>
+    <div class="stat rv" data-i18n="v2_027"><b>3 scenarios</b><span>Pessimistic · expected · optimistic on every quote</span></div>
+    <div class="stat rv" data-i18n="v2_028"><b>PVGIS satellite data</b><span>Real irradiance for the exact roof, not an average</span></div>
+    <div class="stat rv" data-i18n="v2_029"><b>RO · MD · EU</b><span>Net metering, net billing &amp; feed-in tariffs built in</span></div>
+    <div class="stat rv" data-i18n="v2_030"><b>&lt; 2 min</b><span>From address to a sendable proposal</span></div>
   </div>
 </div>
 
 <section class="hiw" aria-label="How it works">
   <div class="wrap">
-    <span class="sec-eyebrow rv">Address to signed quote</span>
-    <h2 class="sec-h rv">Built for the installer<br>standing on the roof.</h2>
+    <span class="sec-eyebrow rv" data-i18n="v2_031">Address to signed quote</span>
+    <h2 class="sec-h rv" data-i18n="v2_032">Built for the installer<br>standing on the roof.</h2>
     <div class="hiw-grid">
       <div class="hiw-photo rv">
         <img src="/landing/installers.jpg" alt="Two installers mounting monocrystalline solar panels on a residential tile roof">
@@ -558,15 +555,15 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
       <div class="hiw-steps">
         <article class="hiw-step rv">
           <span class="hiw-n">01</span>
-          <div><h3>Type the address</h3><p>VoltMira pulls the real irradiance for that exact roof from <b>PVGIS</b> and applies the right tariff scheme for the market — automatically.</p></div>
+          <div><h3 data-i18n="v2_033">Type the address</h3><p data-i18n="v2_034">VoltMira pulls the real irradiance for that exact roof from <b>PVGIS</b> and applies the right tariff scheme for the market — automatically.</p></div>
         </article>
         <article class="hiw-step rv">
           <span class="hiw-n">02</span>
-          <div><h3>Get three honest numbers</h3><p>Pessimistic, expected, optimistic — with <b>every assumption printed</b> on the proposal, ready to defend at the kitchen table.</p></div>
+          <div><h3 data-i18n="v2_035">Get three honest numbers</h3><p data-i18n="v2_036">Pessimistic, expected, optimistic — with <b>every assumption printed</b> on the proposal, ready to defend at the kitchen table.</p></div>
         </article>
         <article class="hiw-step rv">
           <span class="hiw-n">03</span>
-          <div><h3>Send the link, watch the feed</h3><p>One link to the client's phone. You see <b>opens, minutes viewed, battery toggles</b> — and Accept lands the deal in your pipeline.</p></div>
+          <div><h3 data-i18n="v2_037">Send the link, watch the feed</h3><p data-i18n="v2_038">One link to the client's phone. You see <b>opens, minutes viewed, battery toggles</b> — and Accept lands the deal in your pipeline.</p></div>
         </article>
       </div>
     </div>
@@ -575,33 +572,33 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
 
 <section id="honesty">
   <div class="wrap">
-    <span class="sec-eyebrow rv">The honesty engine</span>
-    <h2 class="sec-h rv">One number is a sales pitch.<br>Three numbers is the truth.</h2>
-    <p class="sec-lead rv">Every VoltMira quote shows the payback under pessimistic, expected and optimistic assumptions — with every assumption printed on the proposal. Clients trust what they can verify. Trust closes roofs.</p>
+    <span class="sec-eyebrow rv" data-i18n="v2_039">The honesty engine</span>
+    <h2 class="sec-h rv" data-i18n="v2_040">One number is a sales pitch.<br>Three numbers is the truth.</h2>
+    <p class="sec-lead rv" data-i18n="v2_041">Every VoltMira quote shows the payback under pessimistic, expected and optimistic assumptions — with every assumption printed on the proposal. Clients trust what they can verify. Trust closes roofs.</p>
     <div class="bands3 rv-group">
       <article class="bcard pess rv">
-        <div class="tag">Pessimistic</div>
-        <div class="yrs"><b class="cu" data-count="6.6" data-decimals="1">6.6</b><small> years</small></div>
-        <p><b>Low sun, flat prices.</b> −8% yield, 0.8%/yr panel degradation, zero electricity inflation. If even this number works, the deal is safe.</p>
+        <div class="tag" data-i18n="v2_042">Pessimistic</div>
+        <div class="yrs" data-i18n="v2_043"><b class="cu" data-count="6.6" data-decimals="1">6.6</b><small> years</small></div>
+        <p data-i18n="v2_044"><b>Low sun, flat prices.</b> −8% yield, 0.8%/yr panel degradation, zero electricity inflation. If even this number works, the deal is safe.</p>
       </article>
       <article class="bcard expc rv">
-        <div class="tag">Expected</div>
-        <div class="yrs"><b class="cu" data-count="6.0" data-decimals="1">6.0</b><small> years</small></div>
-        <p><b>The likeliest outcome.</b> PVGIS yield for the exact roof, 0.5%/yr degradation, 3% price inflation. The number you stand behind.</p>
+        <div class="tag" data-i18n="v2_045">Expected</div>
+        <div class="yrs" data-i18n="v2_046"><b class="cu" data-count="6.0" data-decimals="1">6.0</b><small> years</small></div>
+        <p data-i18n="v2_047"><b>The likeliest outcome.</b> PVGIS yield for the exact roof, 0.5%/yr degradation, 3% price inflation. The number you stand behind.</p>
       </article>
       <article class="bcard opti rv">
-        <div class="tag">Optimistic</div>
-        <div class="yrs"><b class="cu" data-count="5.7" data-decimals="1">5.7</b><small> years</small></div>
-        <p><b>If prices keep climbing.</b> +8% yield, 0.3%/yr degradation, 5% inflation. Shown honestly as the best case — never the headline.</p>
+        <div class="tag" data-i18n="v2_048">Optimistic</div>
+        <div class="yrs" data-i18n="v2_049"><b class="cu" data-count="5.7" data-decimals="1">5.7</b><small> years</small></div>
+        <p data-i18n="v2_050"><b>If prices keep climbing.</b> +8% yield, 0.3%/yr degradation, 5% inflation. Shown honestly as the best case — never the headline.</p>
       </article>
     </div>
     <div class="assump-strip rv">
-      <div class="as-t">Printed on every proposal</div>
+      <div class="as-t" data-i18n="v2_051">Printed on every proposal</div>
       <div class="as-grid">
-        <div class="as-kv"><span class="k">Yield (PVGIS)</span><span class="v">1,168 kWh/kWp</span></div>
-        <div class="as-kv"><span class="k">Degradation</span><span class="v">0.5%/yr</span></div>
-        <div class="as-kv"><span class="k">Price inflation</span><span class="v">3%/yr</span></div>
-        <div class="as-kv"><span class="k">Tariff scheme</span><span class="v">Net metering 1:1</span></div>
+        <div class="as-kv" data-i18n="v2_052"><span class="k">Yield (PVGIS)</span><span class="v">1,168 kWh/kWp</span></div>
+        <div class="as-kv" data-i18n="v2_053"><span class="k">Degradation</span><span class="v">0.5%/yr</span></div>
+        <div class="as-kv" data-i18n="v2_054"><span class="k">Price inflation</span><span class="v">3%/yr</span></div>
+        <div class="as-kv" data-i18n="v2_055"><span class="k">Tariff scheme</span><span class="v">Net metering 1:1</span></div>
       </div>
     </div>
   </div>
@@ -610,31 +607,31 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
 <section class="break-sec">
   <div class="wrap break-grid">
     <div class="break-copy">
-      <span class="sec-eyebrow">Why installers switch</span>
-      <p class="break-q">Not a spreadsheet.<br>A quote your client <em>believes.</em></p>
-      <p class="break-sub">Clients have heard too many perfect promises. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself.</p>
-      <a class="btn btn-amber" href="#pricing">See pricing <span class="arr">→</span></a>
+      <span class="sec-eyebrow" data-i18n="v2_056">Why installers switch</span>
+      <p class="break-q" data-i18n="v2_057">Not a spreadsheet.<br>A quote your client <em>believes.</em></p>
+      <p class="break-sub" data-i18n="v2_058">Clients have heard too many perfect promises. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself.</p>
+      <a class="btn btn-amber" href="#pricing" data-i18n="v2_059">See pricing <span class="arr">→</span></a>
     </div>
     <div class="break-visual">
       <div class="bv-bg" aria-hidden="true"><img src="/landing/cell-texture-bg.jpg" alt=""></div>
       <div class="mock-sheet" aria-hidden="true">
-        <div class="ms-title">export_quotes_final_v3.xlsx</div>
-        <div class="ms-row ms-h"><span>Client</span><span>kW</span><span>Payback</span></div>
-        <div class="ms-row"><span>Popescu I.</span><span>6.0</span><span>7.2 yr</span></div>
-        <div class="ms-row"><span>Rusu V.</span><span>8.4</span><span>6.1 yr</span></div>
-        <div class="ms-row"><span>Ceban A.</span><span>4.5</span><span>9.4 yr</span></div>
-        <div class="ms-row ms-dim"><span>Ionescu M.</span><span>5.2</span><span>&mdash;</span></div>
+        <div class="ms-title" data-i18n="v2_060">export_quotes_final_v3.xlsx</div>
+        <div class="ms-row ms-h" data-i18n="v2_061"><span>Client</span><span>kW</span><span>Payback</span></div>
+        <div class="ms-row" data-i18n="v2_062"><span>Popescu I.</span><span>6.0</span><span>7.2 yr</span></div>
+        <div class="ms-row" data-i18n="v2_063"><span>Rusu V.</span><span>8.4</span><span>6.1 yr</span></div>
+        <div class="ms-row" data-i18n="v2_064"><span>Ceban A.</span><span>4.5</span><span>9.4 yr</span></div>
+        <div class="ms-row ms-dim" data-i18n="v2_065"><span>Ionescu M.</span><span>5.2</span><span>&mdash;</span></div>
       </div>
       <div class="mock-quote" aria-hidden="true">
-        <div class="mq-top"><span class="mq-badge">Solar quote</span><span class="mq-open">Opened 2&times;</span></div>
-        <div class="mq-name">Casa Rusu</div>
-        <div class="mq-sub">8.4 kW &middot; Chi&#537;in&#259;u</div>
+        <div class="mq-top" data-i18n="v2_066"><span class="mq-badge">Solar quote</span><span class="mq-open">Opened 2&times;</span></div>
+        <div class="mq-name" data-i18n="v2_067">Casa Rusu</div>
+        <div class="mq-sub" data-i18n="v2_068">8.4 kW &middot; Chi&#537;in&#259;u</div>
         <div class="mq-bands">
-          <div class="mq-b p"><span>Pessim.</span><b>6.6<small> yr</small></b></div>
-          <div class="mq-b e"><span>Expected</span><b>6.0<small> yr</small></b></div>
-          <div class="mq-b o"><span>Optim.</span><b>5.7<small> yr</small></b></div>
+          <div class="mq-b p" data-i18n="v2_069"><span>Pessim.</span><b>6.6<small> yr</small></b></div>
+          <div class="mq-b e" data-i18n="v2_070"><span>Expected</span><b>6.0<small> yr</small></b></div>
+          <div class="mq-b o" data-i18n="v2_071"><span>Optim.</span><b>5.7<small> yr</small></b></div>
         </div>
-        <div class="mq-accept">Accept quote &#10003;</div>
+        <div class="mq-accept" data-i18n="v2_072">Accept quote &#10003;</div>
       </div>
     </div>
   </div>
@@ -643,46 +640,46 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
 <section id="tracking">
   <div class="wrap track-grid">
     <div>
-      <span class="sec-eyebrow rv">Tracked proposals</span>
-      <h2 class="sec-h rv">Know the moment<br>they open it.</h2>
-      <p class="sec-lead rv" style="margin-bottom:28px">Stop guessing when to follow up. Send a live link instead of a dead PDF — and watch what happens on the other side.</p>
+      <span class="sec-eyebrow rv" data-i18n="v2_073">Tracked proposals</span>
+      <h2 class="sec-h rv" data-i18n="v2_074">Know the moment<br>they open it.</h2>
+      <p class="sec-lead rv" style="margin-bottom:28px" data-i18n="v2_075">Stop guessing when to follow up. Send a live link instead of a dead PDF — and watch what happens on the other side.</p>
       <ul class="feat-list rv">
-        <li><span class="dot">✓</span><span><b>Opens &amp; time viewed</b> — "Ion opened it twice, 3 minutes each" beats "sent last Tuesday, no reply."</span></li>
-        <li><span class="dot">✓</span><span><b>Interaction signals</b> — they toggled the battery on? That's a buying question. Call about batteries.</span></li>
-        <li><span class="dot">✓</span><span><b>Accept from the page</b> — one tap on their phone marks the deal Won in your pipeline.</span></li>
-        <li><span class="dot">✓</span><span><b>Your data stays yours</b> — export every quote and client to CSV in one click, no lock-in.</span></li>
+        <li data-i18n="v2_076"><span class="dot">✓</span><span><b>Opens &amp; time viewed</b> — "Ion opened it twice, 3 minutes each" beats "sent last Tuesday, no reply."</span></li>
+        <li data-i18n="v2_077"><span class="dot">✓</span><span><b>Interaction signals</b> — they toggled the battery on? That's a buying question. Call about batteries.</span></li>
+        <li data-i18n="v2_078"><span class="dot">✓</span><span><b>Accept from the page</b> — one tap on their phone marks the deal Won in your pipeline.</span></li>
+        <li data-i18n="v2_079"><span class="dot">✓</span><span><b>Your data stays yours</b> — export every quote and client to CSV in one click, no lock-in.</span></li>
       </ul>
     </div>
     <div class="feedbox rv">
-      <div class="fb-t">Your activity feed</div>
-      <div class="fev"><span class="ic">◉</span><span class="tx"><b>Ion Popescu</b> opened <b>Casa Popescu</b></span><time>just now</time></div>
-      <div class="fev"><span class="ic">⏱</span><span class="tx">Viewed for <b>3m 34s</b> — longest so far</span><time>2m</time></div>
-      <div class="fev"><span class="ic">⚡</span><span class="tx">Toggled the <b>battery on</b> · payback recalculated</span><time>3m</time></div>
-      <div class="fev"><span class="ic">◉</span><span class="tx">Opened again — <b>2nd visit today</b></span><time>1h</time></div>
-      <div class="fev"><span class="ic g">✓</span><span class="tx"><b>Accepted the quote</b> — project marked Won</span><time>1h</time></div>
+      <div class="fb-t" data-i18n="v2_080">Your activity feed</div>
+      <div class="fev" data-i18n="v2_081"><span class="ic">◉</span><span class="tx"><b>Ion Popescu</b> opened <b>Casa Popescu</b></span><time>just now</time></div>
+      <div class="fev" data-i18n="v2_082"><span class="ic">⏱</span><span class="tx">Viewed for <b>3m 34s</b> — longest so far</span><time>2m</time></div>
+      <div class="fev" data-i18n="v2_083"><span class="ic">⚡</span><span class="tx">Toggled the <b>battery on</b> · payback recalculated</span><time>3m</time></div>
+      <div class="fev" data-i18n="v2_084"><span class="ic">◉</span><span class="tx">Opened again — <b>2nd visit today</b></span><time>1h</time></div>
+      <div class="fev" data-i18n="v2_085"><span class="ic g">✓</span><span class="tx"><b>Accepted the quote</b> — project marked Won</span><time>1h</time></div>
     </div>
   </div>
 </section>
 
 <section class="scale-sec">
   <div class="wrap">
-    <span class="sec-eyebrow rv">From one roof to a whole park</span>
-    <h2 class="sec-h rv">The same honest math,<br>6 kW or 600 kW.</h2>
+    <span class="sec-eyebrow rv" data-i18n="v2_086">From one roof to a whole park</span>
+    <h2 class="sec-h rv" data-i18n="v2_087">The same honest math,<br>6 kW or 600 kW.</h2>
     <div class="scale-photo rv">
       <img src="/landing/commercial-rooftop.jpg" alt="A large commercial rooftop covered edge-to-edge in solar panels">
     </div>
     <div class="scale-cols">
       <div class="scale-it rv">
-        <h4><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></i>Three honest scenarios</h4>
-        <p>Pessimistic, expected, optimistic — every assumption printed on the quote, ready to defend.</p>
+        <h4 data-i18n="v2_148"><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></i>Three honest scenarios</h4>
+        <p data-i18n="v2_088">Pessimistic, expected, optimistic — every assumption printed on the quote, ready to defend.</p>
       </div>
       <div class="scale-it rv">
-        <h4><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg></i>PVGIS data per roof</h4>
-        <p>Satellite yield for the exact coordinates, not a rough national average.</p>
+        <h4 data-i18n="v2_149"><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg></i>PVGIS data per roof</h4>
+        <p data-i18n="v2_089">Satellite yield for the exact coordinates, not a rough national average.</p>
       </div>
       <div class="scale-it rv">
-        <h4><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="2.6"/></svg></i>See when they read it</h4>
-        <p>Opens, minutes viewed, battery toggled — you know exactly when to call.</p>
+        <h4 data-i18n="v2_150"><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="2.6"/></svg></i>See when they read it</h4>
+        <p data-i18n="v2_090">Opens, minutes viewed, battery toggled — you know exactly when to call.</p>
       </div>
     </div>
   </div>
@@ -690,45 +687,45 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
 
 <section id="pricing">
   <div class="wrap">
-    <span class="sec-eyebrow rv">Pricing</span>
-    <h2 class="sec-h rv">Costs less than the coffee<br>at one lost deal.</h2>
-    <p class="sec-lead rv" style="margin-bottom:36px">Free 21-day trial — no card. One extra deal a year pays for VoltMira for ~20 years.</p>
+    <span class="sec-eyebrow rv" data-i18n="v2_091">Pricing</span>
+    <h2 class="sec-h rv" data-i18n="v2_092">Costs less than the coffee<br>at one lost deal.</h2>
+    <p class="sec-lead rv" style="margin-bottom:36px" data-i18n="v2_093">Free 21-day trial — no card. One extra deal a year pays for VoltMira for ~20 years.</p>
     <div class="prices">
       <div class="price hot rv">
-        <h3>Pro</h3>
-        <div class="amt"><b class="cu" data-count="49" data-prefix="€">€49</b><small>/mo</small></div>
-        <div class="for">For the installer who sells</div>
+        <h3 data-i18n="v2_094">Pro</h3>
+        <div class="amt" data-i18n="v2_095"><b class="cu" data-count="49" data-prefix="€">€49</b><small>/mo</small></div>
+        <div class="for" data-i18n="v2_096">For the installer who sells</div>
         <ul>
-          <li>Your logo on every proposal &amp; PDF</li>
-          <li>Tracked proposal links + open alerts</li>
-          <li>Website lead widget</li>
-          <li>Saved clients &amp; full pipeline</li>
+          <li data-i18n="v2_097">Your logo on every proposal &amp; PDF</li>
+          <li data-i18n="v2_098">Tracked proposal links + open alerts</li>
+          <li data-i18n="v2_099">Website lead widget</li>
+          <li data-i18n="v2_100">Saved clients &amp; full pipeline</li>
         </ul>
-        <a href="/login" class="btn btn-amber">Start free trial</a>
+        <a href="/login" class="btn btn-amber" data-i18n="v2_101">Start free trial</a>
       </div>
       <div class="price rv">
-        <h3>Team</h3>
-        <div class="amt"><b class="cu" data-count="119" data-prefix="€">€119</b><small>/mo</small></div>
-        <div class="for">Up to 5 people, one pipeline</div>
+        <h3 data-i18n="v2_102">Team</h3>
+        <div class="amt" data-i18n="v2_103"><b class="cu" data-count="119" data-prefix="€">€119</b><small>/mo</small></div>
+        <div class="for" data-i18n="v2_104">Up to 5 people, one pipeline</div>
         <ul>
-          <li>Everything in Pro</li>
-          <li>5 seats with project owners</li>
-          <li>Shared clients &amp; win-rate analytics</li>
-          <li>Priority support in RO/RU/EN</li>
+          <li data-i18n="v2_105">Everything in Pro</li>
+          <li data-i18n="v2_106">5 seats with project owners</li>
+          <li data-i18n="v2_107">Shared clients &amp; win-rate analytics</li>
+          <li data-i18n="v2_108">Priority support in RO/RU/EN</li>
         </ul>
-        <a href="/login" class="btn btn-primary">Start free trial</a>
+        <a href="/login" class="btn btn-primary" data-i18n="v2_109">Start free trial</a>
       </div>
       <div class="price rv">
-        <h3>Enterprise</h3>
-        <div class="amt"><b style="font-size:22px">Custom</b></div>
-        <div class="for">For multi-branch installers</div>
+        <h3 data-i18n="v2_110">Enterprise</h3>
+        <div class="amt" data-i18n="v2_111"><b style="font-size:22px">Custom</b></div>
+        <div class="for" data-i18n="v2_112">For multi-branch installers</div>
         <ul>
-          <li>Everything in Team, unlimited seats</li>
-          <li>Full audit log of every change</li>
-          <li>Custom subsidy &amp; tariff rules</li>
-          <li>Dedicated manager &amp; SLA</li>
+          <li data-i18n="v2_113">Everything in Team, unlimited seats</li>
+          <li data-i18n="v2_114">Full audit log of every change</li>
+          <li data-i18n="v2_115">Custom subsidy &amp; tariff rules</li>
+          <li data-i18n="v2_116">Dedicated manager &amp; SLA</li>
         </ul>
-        <a href="mailto:voltmiraenergy@gmail.com?subject=VoltMira%20Enterprise" class="btn btn-primary">Talk to us</a>
+        <a href="mailto:voltmiraenergy@gmail.com?subject=VoltMira%20Enterprise" class="btn btn-primary" data-i18n="v2_117">Talk to us</a>
       </div>
     </div>
   </div>
@@ -736,24 +733,24 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
 
 <section id="faq">
   <div class="wrap">
-    <span class="sec-eyebrow rv">Questions installers ask</span>
-    <h2 class="sec-h rv" style="margin-bottom:36px">Fair questions.</h2>
+    <span class="sec-eyebrow rv" data-i18n="v2_118">Questions installers ask</span>
+    <h2 class="sec-h rv" style="margin-bottom:36px" data-i18n="v2_119">Fair questions.</h2>
     <div class="faq rv">
       <details open>
-        <summary>Where do the solar numbers come from?<span class="pl">+</span></summary>
-        <p>Yearly and monthly yield come from PVGIS, the European Commission's satellite-derived solar database, for the exact coordinates of the roof. Tariff schemes are applied automatically per market. Every assumption is printed on the proposal.</p>
+        <summary data-i18n="v2_151">Where do the solar numbers come from?<span class="pl">+</span></summary>
+        <p data-i18n="v2_120">Yearly and monthly yield come from PVGIS, the European Commission's satellite-derived solar database, for the exact coordinates of the roof. Tariff schemes are applied automatically per market. Every assumption is printed on the proposal.</p>
       </details>
       <details>
-        <summary>Why show a pessimistic number? Won't it scare clients?<span class="pl">+</span></summary>
-        <p>The opposite, in practice. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself.</p>
+        <summary data-i18n="v2_152">Why show a pessimistic number? Won't it scare clients?<span class="pl">+</span></summary>
+        <p data-i18n="v2_121">The opposite, in practice. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself.</p>
       </details>
       <details>
-        <summary>Does it work for Moldova's net billing?<span class="pl">+</span></summary>
-        <p>Yes — that's home turf. Moldova's low export price makes self-consumption the whole game, so the engine models it month by month and values battery storage correctly.</p>
+        <summary data-i18n="v2_153">Does it work for Moldova's net billing?<span class="pl">+</span></summary>
+        <p data-i18n="v2_122">Yes — that's home turf. Moldova's low export price makes self-consumption the whole game, so the engine models it month by month and values battery storage correctly.</p>
       </details>
       <details>
-        <summary>How do I start?<span class="pl">+</span></summary>
-        <p>Sign up and you're in — no waitlist, no card. Full access to build quotes and send tracked proposals straight away, free through the beta.</p>
+        <summary data-i18n="v2_154">How do I start?<span class="pl">+</span></summary>
+        <p data-i18n="v2_123">Sign up and you're in — no waitlist, no card. Full access to build quotes and send tracked proposals straight away, free through the beta.</p>
       </details>
     </div>
   </div>
@@ -769,12 +766,12 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
         <path d="M170 208 L222 34" stroke="#3FAE6A" stroke-width="17" stroke-linecap="round"/>
       </svg>
       <div class="final-in">
-        <h2>Be the installer whose<br>numbers hold up.</h2>
-        <p>Start free today in Romania, Moldova and the EU — no waitlist, no card, set up in minutes.</p>
+        <h2 data-i18n="v2_124">Be the installer whose<br>numbers hold up.</h2>
+        <p data-i18n="v2_125">Start free today in Romania, Moldova and the EU — no waitlist, no card, set up in minutes.</p>
         <div class="hero-cta-row">
-          <a class="btn btn-amber btn-lg" href="/login">Start free <span class="arr">→</span></a>
+          <a class="btn btn-amber btn-lg" href="/login" data-i18n="v2_126">Start free <span class="arr">→</span></a>
         </div>
-        <div class="final-chips">
+        <div class="final-chips" data-i18n="v2_127">
           <span>No card required</span><span>Free during beta</span><span>Cancel anytime</span>
         </div>
       </div>
@@ -794,45 +791,45 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
             <path d="M21 25 L27 6.5" stroke="#3FAE6A" stroke-width="2.6" stroke-linecap="round"/>
             <circle cx="20.5" cy="9" r="2.1" fill="#E89B2D"/>
           </svg>
-          <span><b>Volt</b><span>Mira</span></span>
+          <span data-i18n="v2_128"><b>Volt</b><span>Mira</span></span>
         </a>
-        <p>The quoting tool your clients can fact-check. Built for installers in Moldova, Romania and the EU.</p>
+        <p data-i18n="v2_129">The quoting tool your clients can fact-check. Built for installers in Moldova, Romania and the EU.</p>
       </div>
       <div class="foot-col">
         <h5>Product</h5>
         <ul>
-          <li><a href="#honesty">Honesty engine</a></li>
-          <li><a href="#tracking">Tracked proposals</a></li>
-          <li><a href="#pricing">Pricing</a></li>
-          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#honesty" data-i18n="v2_130">Honesty engine</a></li>
+          <li><a href="#tracking" data-i18n="v2_131">Tracked proposals</a></li>
+          <li><a href="#pricing" data-i18n="v2_132">Pricing</a></li>
+          <li><a href="#faq" data-i18n="v2_133">FAQ</a></li>
         </ul>
       </div>
       <div class="foot-col">
         <h5>Company</h5>
         <ul>
-          <li><a href="/login">Sign in</a></li>
-          <li><a href="/login">Start free trial</a></li>
-          <li><a href="/demo">Live demo</a></li>
-          <li><a href="/refer">Refer an installer</a></li>
+          <li><a href="/login" data-i18n="v2_134">Sign in</a></li>
+          <li><a href="/login" data-i18n="v2_135">Start free trial</a></li>
+          <li><a href="/demo" data-i18n="v2_136">Live demo</a></li>
+          <li><a href="/refer" data-i18n="v2_137">Refer an installer</a></li>
         </ul>
       </div>
       <div class="foot-col">
         <h5>Get in touch</h5>
         <ul>
-          <li><a href="mailto:voltmiraenergy@gmail.com">voltmiraenergy@gmail.com</a></li>
-          <li><a href="https://wa.me/37362121019" target="_blank" rel="noopener">WhatsApp</a></li>
-          <li><a href="https://instagram.com/voltmira.energy" target="_blank" rel="noopener">Instagram</a></li>
+          <li><a href="mailto:voltmiraenergy@gmail.com" data-i18n="v2_138">voltmiraenergy@gmail.com</a></li>
+          <li><a href="https://wa.me/37362121019" target="_blank" rel="noopener" data-i18n="v2_139">WhatsApp</a></li>
+          <li><a href="https://instagram.com/voltmira.energy" target="_blank" rel="noopener" data-i18n="v2_140">Instagram</a></li>
         </ul>
       </div>
     </div>
     <div class="foot-bottom">
-      <span>© 2026 VoltMira. All rights reserved.</span>
-      <span class="founder">Founded by <a href="https://voltmira.com/" rel="author">Bogdan Toctarov</a></span>
+      <span data-i18n="v2_141">© 2026 VoltMira. All rights reserved.</span>
+      <span class="founder">Founded by <a href="https://voltmira.com/" rel="author" data-i18n="v2_142">Bogdan Toctarov</a></span>
       <span class="sp"></span>
-      <a href="/privacy">Privacy</a>
-      <a href="/terms">Terms</a>
-      <a href="/refunds">Refunds</a>
-      <a href="/credits">Credits</a>
+      <a href="/privacy" data-i18n="v2_143">Privacy</a>
+      <a href="/terms" data-i18n="v2_144">Terms</a>
+      <a href="/refunds" data-i18n="v2_145">Refunds</a>
+      <a href="/credits" data-i18n="v2_146">Credits</a>
     </div>
   </div>
 </footer>
