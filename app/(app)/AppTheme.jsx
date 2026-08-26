@@ -91,6 +91,30 @@ const CSS = `
   }
   .avatar.sm{width:30px;height:30px;font-size:12px}
   .avatar.green{background:var(--green-tint);color:var(--green)}
+
+  /* Initials tile for projects and clients (lib/Avatar.jsx). Square-ish, to
+     stay visually distinct from the round .avatar that means "a person".
+     Eight tones, picked from the name so a list reads as distinct rows. */
+  .av-sq{
+    flex:none;display:grid;place-items:center;
+    font-family:var(--font-d);font-weight:700;letter-spacing:.01em;
+    color:#fff;line-height:1;user-select:none;
+  }
+  .av-c0{background:#2F6FB3}
+  .av-c1{background:#C9781E}
+  .av-c2{background:#6B54C6}
+  .av-c3{background:#C4543B}
+  .av-c4{background:#2E8C6A}
+  .av-c5{background:#B0417E}
+  .av-c6{background:#3E7D8C}
+  .av-c7{background:#8A6D2F}
+  .av-c8{background:#4E6BA8}
+  .av-c9{background:#A0552B}
+  html[data-theme="dark"] .av-sq{color:#F2F5F0}
+
+  /* project/client row: tile + the existing title/sub stack */
+  .row-id{display:flex;align-items:center;gap:11px;min-width:0}
+  .row-id .row-id-tx{min-width:0}
   .profile .who{line-height:1.3;min-width:0}
   .profile .who b{display:block;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .profile .who span{font-size:11.5px;color:var(--white-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}

@@ -45,7 +45,7 @@ export const I18N_V2 = {
     v2_005: "Întrebări",
     v2_006: "Demo live",
     v2_007: "Autentificare",
-    v2_012: 'Începe gratuit <span class="arr">→</span>',
+    v2_012: 'Începe gratuit',
 
     // hero
     v2_013: "Pentru instalatori fotovoltaici · RO · MD · UE",
@@ -53,7 +53,7 @@ export const I18N_V2 = {
       'Oferte solare<br>pe care clienții<br><span class="hl">le pot verifica.<svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M4 30 C 80 12, 180 34, 260 20 S 380 22, 396 14"/></svg></span>',
     v2_014:
       "Majoritatea programelor de ofertare arată un singur număr măgulitor. VoltMira arată <b>trei scenarii oneste</b>, calculate din date solare reale pentru acoperișul clientului — și îți spune în clipa în care acesta deschide oferta.",
-    v2_015: 'Începe gratuit <span class="arr">→</span>',
+    v2_015: 'Începe gratuit',
     v2_016: "Vezi cum funcționează",
     v2_017: "Fără card bancar · Gratuit în perioada beta · Configurare în 2 minute",
     v2_018:
@@ -116,7 +116,7 @@ export const I18N_V2 = {
     v2_057: "Nu un tabel Excel.<br>O ofertă în care clientul <em>crede.</em>",
     v2_058:
       "Clienții au auzit prea multe promisiuni perfecte. Un interval cu ipoteze vizibile se citește ca inginerie; un singur număr roz se citește ca vânzare. Când până și cel mai prost caz al tău bate factura lor la energie, afacerea se apără singură.",
-    v2_059: 'Vezi prețurile <span class="arr">→</span>',
+    v2_059: 'Vezi prețurile',
     v2_061: "<span>Client</span><span>kW</span><span>Recuperare</span>",
     v2_062: "<span>Popescu I.</span><span>6,0</span><span>7,2 ani</span>",
     v2_063: "<span>Rusu V.</span><span>8,4</span><span>6,1 ani</span>",
@@ -220,7 +220,7 @@ export const I18N_V2 = {
     v2_124: "Fii instalatorul ale cărui<br>numere rezistă.",
     v2_125:
       "Începe gratuit astăzi în România, Moldova și UE — fără listă de așteptare, fără card, configurare în câteva minute.",
-    v2_126: 'Începe gratuit <span class="arr">→</span>',
+    v2_126: 'Începe gratuit',
     v2_127:
       "<span>Fără card bancar</span><span>Gratuit în beta</span><span>Anulezi oricând</span>",
     v2_129:
@@ -252,7 +252,7 @@ export const I18N_V2 = {
     v2_005: "Вопросы",
     v2_006: "Демо",
     v2_007: "Войти",
-    v2_012: 'Начать бесплатно <span class="arr">→</span>',
+    v2_012: 'Начать бесплатно',
 
     // hero
     v2_013: "Для монтажников СЭС · RO · MD · ЕС",
@@ -260,7 +260,7 @@ export const I18N_V2 = {
       'Солнечные расчёты,<br>которые клиент<br><span class="hl">может проверить.<svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M4 30 C 80 12, 180 34, 260 20 S 380 22, 396 14"/></svg></span>',
     v2_014:
       "Большинство программ показывают одну красивую цифру. VoltMira показывает <b>три честных сценария</b>, рассчитанных по реальным солнечным данным для крыши клиента, — и сообщает в тот момент, когда он открыл предложение.",
-    v2_015: 'Начать бесплатно <span class="arr">→</span>',
+    v2_015: 'Начать бесплатно',
     v2_016: "Как это работает",
     v2_017: "Без карты · Бесплатно в бете · Настройка за 2 минуты",
     v2_018:
@@ -323,7 +323,7 @@ export const I18N_V2 = {
     v2_057: "Не таблица Excel.<br>Расчёт, которому клиент <em>верит.</em>",
     v2_058:
       "Клиенты слышали слишком много идеальных обещаний. Диапазон с видимыми допущениями читается как инженерия; одна красивая цифра читается как продажа. Когда даже ваш худший сценарий выгоднее их счёта за электричество, сделка защищает себя сама.",
-    v2_059: 'Смотреть тарифы <span class="arr">→</span>',
+    v2_059: 'Смотреть тарифы',
     v2_061: "<span>Клиент</span><span>кВт</span><span>Окупаемость</span>",
     v2_062: "<span>Popescu I.</span><span>6,0</span><span>7,2 лет</span>",
     v2_063: "<span>Rusu V.</span><span>8,4</span><span>6,1 лет</span>",
@@ -427,7 +427,7 @@ export const I18N_V2 = {
     v2_124: "Станьте монтажником,<br>чьи числа выдерживают проверку.",
     v2_125:
       "Начните бесплатно сегодня в Румынии, Молдове и ЕС — без листа ожидания, без карты, настройка за минуты.",
-    v2_126: 'Начать бесплатно <span class="arr">→</span>',
+    v2_126: 'Начать бесплатно',
     v2_127:
       "<span>Карта не нужна</span><span>Бесплатно в бете</span><span>Отмена в любой момент</span>",
     v2_129:

@@ -19,6 +19,7 @@ import StatusChip from "./StatusChip.jsx";
 import NewQuoteMenu from "./NewQuoteMenu.jsx";
 import TemplateBar from "./TemplateBar.jsx";
 import BulkBar from "./BulkBar.jsx";
+import Avatar, { initials } from "../../../lib/Avatar.jsx";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Quotes — VoltMira" };
@@ -34,14 +35,6 @@ async function bulkStatus(formData) {
   await bulkUpdateStatus(ids, op);
   revalidatePath("/projects");
   revalidatePath("/dashboard");
-}
-
-function initials(s) {
-  s = (s || "").trim();
-  if (!s) return "—";
-  if (s.includes("@")) return s.slice(0, 2).toUpperCase();
-  const p = s.split(/\s+/);
-  return ((p[0]?.[0] || "") + (p[1]?.[0] || "")).toUpperCase() || s.slice(0, 2).toUpperCase();
 }
 
 export default async function Projects({ searchParams }) {
@@ -184,9 +177,14 @@ export default async function Projects({ searchParams }) {
                     <tr key={p.id}>
                       <td className="col-sel"><input type="checkbox" className="bulk-id" name="ids" value={p.id} aria-label={p.title || t("untitled", lang)} /></td>
                       <td>
+                        <div className="row-id">
+                        <Avatar name={p.title || p.client_name} size={36} title={p.title || t("untitled", lang)} />
+                        <div className="row-id-tx">
                         <Link className="t-title" href={`/projects/${p.id}`}>{p.title || t("untitled", lang)}</Link>
                         {p.notes ? <span className="note-dot" title={p.notes} aria-label={t("has_notes", lang)}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h13l3 3v13H4z"/><path d="M8 10h8M8 14h6"/></svg></span> : null}
                         <div className="t-sub">{p.client_name || "—"} · {p.market}</div>
+                        </div>
+                        </div>
                       </td>
                       <td>{(+p.kw).toFixed(1)} kW{p.batt ? " + batt" : ""}</td>
                       <td>{yrsF(qq.payback)} {t("yrs", lang)}</td>

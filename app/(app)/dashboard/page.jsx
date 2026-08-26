@@ -18,6 +18,7 @@ import { mdDayKey, mdMonthKey, fmtDate } from "../../../lib/tz.js";
 import TrendChart from "./TrendChart.jsx";
 import FollowUpStrip from "./FollowUpStrip.jsx";
 import LeadActions from "../leads/LeadActions.jsx";
+import Avatar from "../../../lib/Avatar.jsx";
 
 // Post-sale install stages, mirrored from InstallChecklist.jsx. install_progress
 // is a { step: completedDate } map, so a truthy value means the step is done.
@@ -331,8 +332,13 @@ export default async function Dashboard() {
                     return (
                       <tr key={p.id}>
                         <td>
-                          <Link className="t-title" href={`/projects/${p.id}`}>{p.title || t("untitled", lang)}</Link>
-                          <div className="t-sub">{p.client_name || "—"}</div>
+                          <div className="row-id">
+                            <Avatar name={p.title || p.client_name} size={36} title={p.title || t("untitled", lang)} />
+                            <div className="row-id-tx">
+                              <Link className="t-title" href={`/projects/${p.id}`}>{p.title || t("untitled", lang)}</Link>
+                              <div className="t-sub">{p.client_name || "—"}</div>
+                            </div>
+                          </div>
                         </td>
                         <td>{Number(p.kw).toFixed(1)} kW{p.batt ? t("pp_plus_batt", lang) : ""}</td>
                         <td>{yrsF(q.payback)} {t("yrs", lang)}</td>
