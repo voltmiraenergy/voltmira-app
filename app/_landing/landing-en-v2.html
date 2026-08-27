@@ -451,7 +451,11 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
   .nav-in .btn-amber{flex:none;white-space:nowrap}
   .lang-btn{height:32px;padding:0 6px;font-size:12px;gap:5px}
   .lang-code{display:none}
-  .lang-menu{min-width:170px}
+  /* On desktop the control sits at the right end of the nav, so the menu hangs
+     from its right edge. On a phone it sits near the LEFT (the CTA takes the
+     right), and right:0 pushed a 170px panel to x=-49 — half of it off-screen.
+     Hang it from the left edge here instead. */
+  .lang-menu{left:0;right:auto;min-width:170px}
 }
 @media(max-width:400px){
   /* Last resort before the CTA gives way: the wordmark goes, the mark stays. */
