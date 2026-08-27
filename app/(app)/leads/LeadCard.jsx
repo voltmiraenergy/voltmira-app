@@ -1,7 +1,19 @@
 "use client";
-// app/(app)/leads/LeadCard.jsx — one lead row. Displays the contact + status, and
-// flips to an inline editor (name / phone / email) when you hit Edit — no pop-ups.
-import { useState, useTransition } from "react";
+// app/(app)/leads/LeadCard.jsx — one lead row for the Leads/Inbox tab.
+//
+// The summary is always visible; hitting Edit expands an editor DRAWER beneath
+// it rather than swapping the whole card out. The drawer animates open with a
+// grid-template-rows transition (see .lead-editor in AppTheme), so there is no
+// instant, jarring flip — the fields slide in and the card grows to fit.
+//
+// Two origin signals, deliberately distinct:
+//   • source  — where the lead technically reached us (website form / quote
+//               request / added manually). The app records it; it is read-only
+//               and shown as a badge, because "where did this come from" is the
+//               first thing you want to know about an unfamiliar lead.
+//   • channel — the MARKETING channel the installer assigns for attribution.
+//               Editable, because only they know the ad or post behind it.
+import { useState, useRef, useEffect, useTransition } from "react";
 import { updateLead, setLeadChannel } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
 import { CHANNEL_ORDER, CHANNEL_DOT, leadChannel } from "../../../lib/leadChannels.js";
@@ -14,6 +26,27 @@ const STATUS_STYLE = {
   archived:  { bg: "var(--line,#eee)", fg: "var(--muted,#66756C)" },
 };
 
+// The technical origin, with a small glyph. Anything unexpected falls back to
+// "manual", which is also what a hand-typed lead is.
+const SOURCE_ICON = {
+  widget: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" />
+    </svg>
+  ),
+  proposal: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 3h9l5 5v13H5z" /><path d="M14 3v5h5M8 13h8M8 17h5" />
+    </svg>
+  ),
+  manual: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+    </svg>
+  ),
+};
+const SOURCE_KEY = { widget: "lead_src_widget", proposal: "lead_src_proposal", manual: "lead_src_manual" };
+
 function ago(iso, lang) {
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
   return d <= 0 ? t("lead_ago_today", lang) : t("lead_ago_days", lang, { n: d });
@@ -24,78 +57,103 @@ export default function LeadCard({ lead, lang }) {
   const [name, setName] = useState(lead.name || "");
   const [phone, setPhone] = useState(lead.phone || "");
   const [email, setEmail] = useState(lead.email || "");
+  const [note, setNote] = useState(lead.note || "");
   const [pending, start] = useTransition();
+  const nameRef = useRef(null);
 
   const status = lead.status || "new";
   const ss = STATUS_STYLE[status] || STATUS_STYLE.new;
   const ch = leadChannel(lead);
+  const src = SOURCE_ICON[lead.source] ? lead.source : "manual";
   const setChannel = (v) => start(() => setLeadChannel(lead.id, v));
 
-  function open() { setName(lead.name || ""); setPhone(lead.phone || ""); setEmail(lead.email || ""); setEditing(true); }
-  function save() { start(() => updateLead(lead.id, { name, phone, email }).then(() => setEditing(false))); }
+  // Focus the first field once the drawer has opened, not on the same tick the
+  // class flips — otherwise the browser scroll-jumps to it mid-animation.
+  useEffect(() => {
+    if (!editing) return;
+    const id = setTimeout(() => nameRef.current?.focus(), 120);
+    return () => clearTimeout(id);
+  }, [editing]);
 
-  // Compact single-row editor: the stacked LABEL + input pairs were what made this
-  // taller than the card it replaced. Placeholders carry the same information in a
-  // third of the height (aria-label keeps it readable to screen readers).
-  const input = { padding: "6px 9px", border: "1.5px solid var(--line)", borderRadius: 8,
-    fontSize: 13, fontFamily: "inherit", color: "var(--ink)", background: "var(--paper-2)", minWidth: 0 };
+  function open() {
+    setName(lead.name || ""); setPhone(lead.phone || "");
+    setEmail(lead.email || ""); setNote(lead.note || "");
+    setEditing(true);
+  }
+  function save() {
+    start(() => updateLead(lead.id, { name, phone, email, note }).then(() => setEditing(false)));
+  }
+  function cancel() { setEditing(false); }
 
   return (
-    // Tighter padding while editing so the card shrinks with its contents instead
-    // of leaving the compact row swimming in the old full-size box.
-    <div className="card" style={{ padding: editing ? "10px 12px" : "16px 18px" }}>
-      {editing ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 7, alignItems: "center" }}>
-          <input autoFocus style={{ ...input, flex: "2 1 160px" }} value={name} maxLength={120}
-            placeholder={t("lead_field_name", lang)} aria-label={t("lead_field_name", lang)}
-            onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && save()} />
-          <input style={{ ...input, flex: "1 1 120px" }} value={phone} maxLength={40}
-            placeholder={t("lead_field_phone", lang)} aria-label={t("lead_field_phone", lang)}
-            onChange={e => setPhone(e.target.value)} onKeyDown={e => e.key === "Enter" && save()} />
-          <input style={{ ...input, flex: "1 1 140px" }} value={email} maxLength={160} type="email"
-            placeholder={t("lead_field_email", lang)} aria-label={t("lead_field_email", lang)}
-            onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && save()} />
-          <button className="btn primary sm" disabled={pending} onClick={save}>{t("lead_save", lang)}</button>
-          <button className="btn ghost sm" disabled={pending} onClick={() => setEditing(false)}>{t("lead_cancel", lang)}</button>
-        </div>
-      ) : (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 240px", minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
-              <b style={{ fontSize: 16 }}>{lead.name || "—"}</b>
-              {lead.hot && <span title={t("lead_hot", lang)} aria-label={t("lead_hot", lang)} style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--red)", display: "inline-block", flex: "none" }} />}
-              <span title={t("lead_set_channel", lang)}
-                style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid var(--line)",
-                  borderRadius: 99, padding: "3px 9px 3px 10px", background: "var(--paper-2)", position: "relative" }}>
-                <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", flex: "none",
-                  background: CHANNEL_DOT[ch], boxShadow: `0 0 0 3px ${CHANNEL_DOT[ch]}22` }} />
-                <select value={ch} disabled={pending} onChange={e => setChannel(e.target.value)}
-                  aria-label={t("lead_channel", lang)}
-                  style={{ appearance: "none", WebkitAppearance: "none", MozAppearance: "none", border: "none",
-                    background: "transparent", color: "var(--ink)", fontSize: 12, fontWeight: 600, cursor: "pointer",
-                    fontFamily: "inherit", paddingRight: 13, outline: "none" }}>
-                  {CHANNEL_ORDER.map(k => <option key={k} value={k}>{t("lead_ch_" + k, lang)}</option>)}
-                </select>
-                <span aria-hidden="true" style={{ position: "absolute", right: 9, fontSize: 9, color: "var(--muted)", pointerEvents: "none" }}>▾</span>
-              </span>
-              <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".05em",
-                background: ss.bg, color: ss.fg, borderRadius: 99, padding: "3px 9px" }}>
-                {t("lead_" + status, lang)}
-              </span>
-            </div>
-            <div style={{ marginTop: 6, fontSize: 13.5, color: "var(--ink-soft,#2B4438)", display: "flex", gap: 14, flexWrap: "wrap" }}>
-              {lead.email ? <a href={`mailto:${lead.email}`} style={{ color: "var(--green)" }}>{lead.email}</a> : null}
-              {lead.phone ? <a href={`tel:${lead.phone}`} style={{ color: "var(--green)" }}>{lead.phone}</a> : null}
-              {!lead.email && !lead.phone ? <span style={{ color: "var(--muted)" }}>{t("lead_no_contact", lang)}</span> : null}
-            </div>
-            {lead.note ? <div style={{ marginTop: 7, fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>{lead.note}</div> : null}
+    <div className={`lead-card${editing ? " editing" : ""}`}>
+      <div className="lead-top">
+        <div className="lead-main">
+          <div className="lead-name-row">
+            <span className="lead-name">{lead.name || "—"}</span>
+            {lead.hot && <span className="lead-hot" title={t("lead_hot", lang)} aria-label={t("lead_hot", lang)} />}
+            <span className="lead-status" style={{ background: ss.bg, color: ss.fg }}>{t("lead_" + status, lang)}</span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
-            <span style={{ fontSize: 12, color: "var(--muted)", fontFamily: "var(--font-m,monospace)", whiteSpace: "nowrap" }}>{ago(lead.created_at, lang)}</span>
-            <LeadActions id={lead.id} status={status} projectId={lead.project_id} lang={lang} onEdit={open} />
+
+          <div className="lead-meta">
+            <span className="lead-src" title={t("lead_source", lang)}>
+              {SOURCE_ICON[src]}{t(SOURCE_KEY[src], lang)}
+            </span>
+            <span className="lead-chan" title={t("lead_set_channel", lang)}>
+              <span className="lead-chan-dot" aria-hidden="true"
+                style={{ background: CHANNEL_DOT[ch], boxShadow: `0 0 0 3px ${CHANNEL_DOT[ch]}22` }} />
+              <select value={ch} disabled={pending} aria-label={t("lead_channel", lang)}
+                onChange={e => setChannel(e.target.value)}>
+                {CHANNEL_ORDER.map(k => <option key={k} value={k}>{t("lead_ch_" + k, lang)}</option>)}
+              </select>
+              <span className="caret" aria-hidden="true">▾</span>
+            </span>
+          </div>
+
+          <div className="lead-contact">
+            {lead.email ? <a href={`mailto:${lead.email}`}>{lead.email}</a> : null}
+            {lead.phone ? <a href={`tel:${lead.phone}`}>{lead.phone}</a> : null}
+            {!lead.email && !lead.phone ? <span className="none">{t("lead_no_contact", lang)}</span> : null}
+          </div>
+
+          {lead.note ? <div className="lead-note">{lead.note}</div> : null}
+        </div>
+
+        <div className="lead-side">
+          <span className="lead-time">{ago(lead.created_at, lang)}</span>
+          <LeadActions id={lead.id} status={status} projectId={lead.project_id} lang={lang}
+            onEdit={editing ? cancel : open} editing={editing} />
+        </div>
+      </div>
+
+      {/* Editor drawer — always mounted so it can animate; height is driven by
+          the .editing class on the card, not by conditional rendering. */}
+      <div className="lead-editor" aria-hidden={!editing}>
+        <div className="lead-editor-inner">
+          <div className="lead-ed-fields" role="group" aria-label={t("lead_edit_title", lang)}>
+            <input ref={nameRef} className="lead-ed-input" style={{ flex: "2 1 160px" }} value={name} maxLength={120}
+              placeholder={t("lead_field_name", lang)} aria-label={t("lead_field_name", lang)}
+              tabIndex={editing ? 0 : -1}
+              onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && save()} />
+            <input className="lead-ed-input" style={{ flex: "1 1 130px" }} value={phone} maxLength={40}
+              placeholder={t("lead_field_phone", lang)} aria-label={t("lead_field_phone", lang)}
+              tabIndex={editing ? 0 : -1}
+              onChange={e => setPhone(e.target.value)} onKeyDown={e => e.key === "Enter" && save()} />
+            <input className="lead-ed-input" style={{ flex: "1 1 150px" }} value={email} maxLength={160} type="email"
+              placeholder={t("lead_field_email", lang)} aria-label={t("lead_field_email", lang)}
+              tabIndex={editing ? 0 : -1}
+              onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && save()} />
+            <input className="lead-ed-input" style={{ flex: "1 1 100%" }} value={note} maxLength={500}
+              placeholder={t("lead_field_note", lang)} aria-label={t("lead_field_note", lang)}
+              tabIndex={editing ? 0 : -1}
+              onChange={e => setNote(e.target.value)} onKeyDown={e => e.key === "Enter" && save()} />
+            <div className="lead-ed-actions">
+              <button className="btn ghost sm" disabled={pending} onClick={cancel} tabIndex={editing ? 0 : -1}>{t("lead_cancel", lang)}</button>
+              <button className="btn primary sm" disabled={pending} onClick={save} tabIndex={editing ? 0 : -1}>{t("lead_save", lang)}</button>
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
