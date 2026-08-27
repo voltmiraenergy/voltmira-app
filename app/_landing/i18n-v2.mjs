@@ -30,13 +30,13 @@ export const I18N_V2 = {
   en: {
     meta_title: "VoltMira — Solar quotes your clients can fact-check",
     meta_desc:
-      "Solar quoting software for installers: honest three-band payback from real PVGIS data, tracked proposals with open alerts, WhatsApp sharing, one-tap acceptance and a full pipeline. Free trial. RO · MD · EU.",
+      "Solar quoting software for installers: honest three-band payback from real PVGIS data, tracked proposals with open alerts, WhatsApp sharing, one-tap acceptance and a full pipeline. Free trial. Romania & Moldova.",
   },
 
   ro: {
     meta_title: "VoltMira — Oferte solare pe care clienții le pot verifica",
     meta_desc:
-      "Software de ofertare fotovoltaică pentru instalatori: recuperarea investiției în trei scenarii oneste, din date PVGIS reale, oferte urmărite cu alerte la deschidere, partajare pe WhatsApp și acceptare dintr-o atingere. Probă gratuită. RO · MD · UE.",
+      "Software de ofertare fotovoltaică pentru instalatori: recuperarea investiției în trei scenarii oneste, din date PVGIS reale, oferte urmărite cu alerte la deschidere, partajare pe WhatsApp și acceptare dintr-o atingere. Probă gratuită. România și Moldova.",
 
     // nav
     v2_002: "Motorul onestității",
@@ -48,7 +48,7 @@ export const I18N_V2 = {
     v2_012: 'Începe gratuit',
 
     // hero
-    v2_013: "Pentru instalatori fotovoltaici · RO · MD · UE",
+    v2_013: "Pentru instalatori fotovoltaici · România și Moldova",
     v2_147:
       'Oferte solare<br>pe care clienții<br><span class="hl">le pot verifica.<svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M4 30 C 80 12, 180 34, 260 20 S 380 22, 396 14"/></svg></span>',
     v2_014:
@@ -72,7 +72,7 @@ export const I18N_V2 = {
     // stat strip
     v2_027: "<b>3 scenarii</b><span>Pesimist · așteptat · optimist la fiecare ofertă</span>",
     v2_028: "<b>Date satelitare PVGIS</b><span>Iradianță reală pentru acel acoperiș, nu o medie</span>",
-    v2_029: "<b>RO · MD · UE</b><span>Compensare cantitativă, net billing și tarife feed-in incluse</span>",
+    v2_029: "<b>RO · MD</b><span>Compensare cantitativă, net billing și tarife feed-in incluse</span>",
     v2_030: "<b>&lt; 2 min</b><span>De la adresă la o ofertă gata de trimis</span>",
 
     // how it works
@@ -219,12 +219,12 @@ export const I18N_V2 = {
     // final cta + footer
     v2_124: "Fii instalatorul ale cărui<br>numere rezistă.",
     v2_125:
-      "Începe gratuit astăzi în România, Moldova și UE — fără listă de așteptare, fără card, configurare în câteva minute.",
+      "Începe gratuit astăzi în România și Moldova — fără listă de așteptare, fără card, configurare în câteva minute.",
     v2_126: 'Începe gratuit',
     v2_127:
       "<span>Fără card bancar</span><span>Gratuit în beta</span><span>Anulezi oricând</span>",
     v2_129:
-      "Instrumentul de ofertare pe care clienții tăi îl pot verifica. Construit pentru instalatori din Moldova, România și UE.",
+      "Instrumentul de ofertare pe care clienții tăi îl pot verifica. Construit pentru instalatori din Moldova și România.",
     v2_130: "Motorul onestității",
     v2_131: "Oferte urmărite",
     v2_132: "Prețuri",
@@ -243,7 +243,7 @@ export const I18N_V2 = {
   ru: {
     meta_title: "VoltMira — Солнечные расчёты, которые клиент может проверить",
     meta_desc:
-      "Софт для расчёта солнечных станций: срок окупаемости в трёх честных сценариях на реальных данных PVGIS, отслеживаемые коммерческие предложения с уведомлениями об открытии, отправка в WhatsApp и приём в одно касание. Бесплатный доступ. RO · MD · ЕС.",
+      "Софт для расчёта солнечных станций: срок окупаемости в трёх честных сценариях на реальных данных PVGIS, отслеживаемые коммерческие предложения с уведомлениями об открытии, отправка в WhatsApp и приём в одно касание. Бесплатный доступ. Румыния и Молдова.",
 
     // nav
     v2_002: "Движок честности",
@@ -255,7 +255,7 @@ export const I18N_V2 = {
     v2_012: 'Начать бесплатно',
 
     // hero
-    v2_013: "Для монтажников СЭС · RO · MD · ЕС",
+    v2_013: "Для монтажников СЭС · Румыния и Молдова",
     v2_147:
       'Солнечные расчёты,<br>которые клиент<br><span class="hl">может проверить.<svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M4 30 C 80 12, 180 34, 260 20 S 380 22, 396 14"/></svg></span>',
     v2_014:
@@ -279,7 +279,7 @@ export const I18N_V2 = {
     // stat strip
     v2_027: "<b>3 сценария</b><span>Пессимистичный · ожидаемый · оптимистичный в каждом расчёте</span>",
     v2_028: "<b>Спутниковые данные PVGIS</b><span>Реальная инсоляция для конкретной крыши, а не среднее</span>",
-    v2_029: "<b>RO · MD · ЕС</b><span>Сальдирование, нет-биллинг и зелёный тариф уже учтены</span>",
+    v2_029: "<b>RO · MD</b><span>Сальдирование, нет-биллинг и зелёный тариф уже учтены</span>",
     v2_030: "<b>&lt; 2 мин</b><span>От адреса до готового предложения</span>",
 
     // how it works
@@ -426,12 +426,12 @@ export const I18N_V2 = {
     // final cta + footer
     v2_124: "Станьте монтажником,<br>чьи числа выдерживают проверку.",
     v2_125:
-      "Начните бесплатно сегодня в Румынии, Молдове и ЕС — без листа ожидания, без карты, настройка за минуты.",
+      "Начните бесплатно сегодня в Румынии и Молдове — без листа ожидания, без карты, настройка за минуты.",
     v2_126: 'Начать бесплатно',
     v2_127:
       "<span>Карта не нужна</span><span>Бесплатно в бете</span><span>Отмена в любой момент</span>",
     v2_129:
-      "Инструмент расчёта, который ваши клиенты могут проверить. Сделан для монтажников в Молдове, Румынии и ЕС.",
+      "Инструмент расчёта, который ваши клиенты могут проверить. Сделан для монтажников в Молдове и Румынии.",
     v2_130: "Движок честности",
     v2_131: "Отслеживаемые предложения",
     v2_132: "Тарифы",
