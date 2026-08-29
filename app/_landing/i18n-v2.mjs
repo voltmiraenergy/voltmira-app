@@ -76,7 +76,6 @@ export const I18N_V2 = {
     v2_030: "<b>&lt; 2 min</b><span>De la adresă la o ofertă gata de trimis</span>",
 
     // how it works
-    v2_031: "De la adresă la ofertă semnată",
     v2_032: "Construit pentru instalatorul<br>care stă pe acoperiș.",
     v2_033: "Scrie adresa",
     v2_034:
@@ -89,7 +88,6 @@ export const I18N_V2 = {
       "Un link pe telefonul clientului. Vezi <b>deschideri, minute vizualizate, comutări de baterie</b> — iar Acceptă aduce afacerea în pipeline.",
 
     // honesty engine
-    v2_039: "Motorul onestității",
     v2_040: "Un singur număr e un discurs de vânzare.<br>Trei numere sunt adevărul.",
     v2_041:
       "Fiecare ofertă VoltMira arată perioada de recuperare a investiției în ipoteze pesimiste, așteptate și optimiste — cu fiecare ipoteză tipărită pe ofertă. Clienții au încredere în ce pot verifica. Încrederea închide contracte.",
@@ -112,7 +110,6 @@ export const I18N_V2 = {
     v2_055: '<span class="k">Schema tarifară</span><span class="v">Compensare cantitativă 1:1</span>',
 
     // break section
-    v2_056: "De ce trec instalatorii la VoltMira",
     v2_057: "Nu un tabel Excel.<br>O ofertă în care clientul <em>crede.</em>",
     v2_058:
       "Clienții au auzit prea multe promisiuni perfecte. Un interval cu ipoteze vizibile se citește ca inginerie; un singur număr roz se citește ca vânzare. Când până și cel mai prost caz al tău bate factura lor la energie, afacerea se apără singură.",
@@ -130,7 +127,6 @@ export const I18N_V2 = {
     v2_072: "Acceptă oferta &#10003;",
 
     // tracked proposals
-    v2_073: "Oferte urmărite",
     v2_074: "Află clipa<br>în care o deschid.",
     v2_075:
       "Nu mai ghici când să revii. Trimite un link viu în loc de un PDF mort — și vezi ce se întâmplă de cealaltă parte.",
@@ -155,7 +151,6 @@ export const I18N_V2 = {
       '<span class="ic g">✓</span><span class="tx"><b>A acceptat oferta</b> — proiect marcat Câștigat</span><time>1h</time>',
 
     // scale
-    v2_086: "De la un acoperiș la un parc întreg",
     v2_087: "Aceeași matematică onestă,<br>6 kW sau 600 kW.",
     v2_148:
       '<i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></i>Trei scenarii oneste',
@@ -171,7 +166,6 @@ export const I18N_V2 = {
       "Deschideri, minute vizualizate, baterie comutată — știi exact când să suni.",
 
     // pricing
-    v2_091: "Prețuri",
     v2_092: "Costă mai puțin decât cafeaua<br>de la o afacere pierdută.",
     v2_093:
       "Probă gratuită 21 de zile — fără card. O singură afacere în plus pe an plătește VoltMira pentru ~20 de ani.",
@@ -201,7 +195,6 @@ export const I18N_V2 = {
     v2_117: "Contactează-ne",
 
     // faq
-    v2_118: "Întrebări pe care le pun instalatorii",
     v2_119: "Întrebări corecte.",
     v2_151: 'De unde vin numerele solare?<span class="pl">+</span>',
     v2_120:
@@ -283,7 +276,6 @@ export const I18N_V2 = {
     v2_030: "<b>&lt; 2 мин</b><span>От адреса до готового предложения</span>",
 
     // how it works
-    v2_031: "От адреса до подписанного расчёта",
     v2_032: "Сделано для монтажника,<br>который стоит на крыше.",
     v2_033: "Введите адрес",
     v2_034:
@@ -296,7 +288,6 @@ export const I18N_V2 = {
       "Одна ссылка на телефон клиента. Вы видите <b>открытия, минуты просмотра, включение аккумулятора</b> — а «Принять» переводит сделку в вашу воронку.",
 
     // honesty engine
-    v2_039: "Движок честности",
     v2_040: "Одно число — это продажа.<br>Три числа — это правда.",
     v2_041:
       "Каждый расчёт VoltMira показывает срок окупаемости при пессимистичных, ожидаемых и оптимистичных допущениях — и каждое допущение напечатано в предложении. Клиенты доверяют тому, что могут проверить. Доверие закрывает сделки.",
@@ -319,7 +310,6 @@ export const I18N_V2 = {
     v2_055: '<span class="k">Тарифная схема</span><span class="v">Сальдирование 1:1</span>',
 
     // break section
-    v2_056: "Почему монтажники переходят",
     v2_057: "Не таблица Excel.<br>Расчёт, которому клиент <em>верит.</em>",
     v2_058:
       "Клиенты слышали слишком много идеальных обещаний. Диапазон с видимыми допущениями читается как инженерия; одна красивая цифра читается как продажа. Когда даже ваш худший сценарий выгоднее их счёта за электричество, сделка защищает себя сама.",
@@ -337,7 +327,6 @@ export const I18N_V2 = {
     v2_072: "Принять расчёт &#10003;",
 
     // tracked proposals
-    v2_073: "Отслеживаемые предложения",
     v2_074: "Знайте момент,<br>когда его открыли.",
     v2_075:
       "Хватит гадать, когда напомнить о себе. Отправьте живую ссылку вместо мёртвого PDF — и смотрите, что происходит на той стороне.",
@@ -362,7 +351,6 @@ export const I18N_V2 = {
       '<span class="ic g">✓</span><span class="tx"><b>Принял предложение</b> — проект «Выигран»</span><time>1ч</time>',
 
     // scale
-    v2_086: "От одной крыши до целого парка",
     v2_087: "Та же честная математика,<br>6 кВт или 600 кВт.",
     v2_148:
       '<i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></i>Три честных сценария',
@@ -378,7 +366,6 @@ export const I18N_V2 = {
       "Открытия, минуты просмотра, включение аккумулятора — вы точно знаете, когда звонить.",
 
     // pricing
-    v2_091: "Тарифы",
     v2_092: "Дешевле, чем кофе<br>на одной упущенной сделке.",
     v2_093:
       "21 день бесплатно — без карты. Одна дополнительная сделка в год окупает VoltMira примерно на 20 лет.",
@@ -408,7 +395,6 @@ export const I18N_V2 = {
     v2_117: "Связаться с нами",
 
     // faq
-    v2_118: "Что спрашивают монтажники",
     v2_119: "Честные вопросы.",
     v2_151: 'Откуда берутся солнечные цифры?<span class="pl">+</span>',
     v2_120:

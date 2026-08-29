@@ -42,7 +42,6 @@ export default async function AppLayout({ children }) {
     { href: "/leads", label: t("nav_leads", lang) },
     { href: "/projects", label: t("nav_projects", lang) },
     { href: "/activity", label: t("nav_activity", lang) },
-    { href: "/studio", label: t("nav_studio", lang) },
     { href: "/catalog", label: t("nav_catalog", lang) },
     { href: "/team", label: t("nav_team", lang) },
     { href: "/refer", label: t("nav_refer", lang) },
