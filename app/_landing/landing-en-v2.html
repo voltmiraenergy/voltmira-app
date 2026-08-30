@@ -186,6 +186,10 @@ h1.hh .hl path{fill:none;stroke:var(--amber);stroke-width:5;stroke-linecap:round
 .lead{font-size:18.5px;color:var(--ink-soft);max-width:490px;margin-bottom:30px}
 .lead b{color:var(--ink)}
 .hero-cta-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+/* The nav's "Live demo" link is desktop-only, so on phones the hero carries it:
+   below 860px swap the "See how it works" scroll button for a real Live demo link. */
+.hero-demo{display:none}
+@media(max-width:859px){.hero-see{display:none}.hero-demo{display:inline-flex}}
 .wl-note{font-size:13px;color:var(--muted)}
 
 .hero-visual{position:relative}
@@ -510,12 +514,12 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
 <header class="hero" id="top">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <span class="eyebrow" data-i18n="v2_013">For solar installers · Romania &amp; Moldova</span>
       <h1 class="hh" data-i18n="v2_147">Solar quotes<br>your clients can<br><span class="hl">fact&nbsp;check.<svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M4 30 C 80 12, 180 34, 260 20 S 380 22, 396 14"/></svg></span></h1>
       <p class="lead" data-i18n="v2_014">Most quoting tools show one flattering number. VoltMira shows <b>three honest scenarios</b>, computed from real sun data for the client's roof — and tells you the moment they open your proposal.</p>
       <div class="hero-cta-row">
         <a class="btn btn-primary btn-lg" href="/login" data-i18n="v2_015">Start free trial</a>
-        <a class="btn btn-lg" style="border-color:var(--line)" href="#honesty" data-i18n="v2_016">See how it works</a>
+        <a class="btn btn-lg hero-see" style="border-color:var(--line)" href="#honesty" data-i18n="v2_016">See how it works</a>
+        <a class="btn btn-lg hero-demo" style="border-color:var(--line)" href="/demo" data-i18n="v2_006">Live demo</a>
       </div>
       <p class="wl-note" data-i18n="v2_017">No credit card required · Free during our beta · Set up in 2 minutes</p>
     </div>
