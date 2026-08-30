@@ -420,6 +420,16 @@ html[data-theme="dark"] .pv-tab:hover{border-color:#39443B}
 .cl-grid > label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--muted)}
 .cl-grid > label output{color:var(--green);font-weight:700}
 .cl-summary{margin-top:10px;font-size:13px;color:var(--ink);font-weight:600;line-height:1.5}
+/* Phones: the client editor was a single 750px+ stack, and the surface pill row
+   wrapped to two ragged lines. Put the short fields two-up (name/address/contract
+   still span the row), and make the pill row a clean one-line scroll strip. */
+@media(max-width:520px){
+  .cl-grid{grid-template-columns:1fr 1fr;gap:11px 12px}
+  .cl-grid > *:nth-child(-n+3){grid-column:1 / -1}
+  .pv-tabs:not(.pv-tabs-wide){flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+  .pv-tabs:not(.pv-tabs-wide)::-webkit-scrollbar{display:none}
+  .pv-tabs:not(.pv-tabs-wide) .pv-tab{flex:none}
+}
 
 .pv-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:20px}
 .pv-head-ic{flex:none;width:40px;height:40px;border-radius:11px;display:grid;place-items:center;
