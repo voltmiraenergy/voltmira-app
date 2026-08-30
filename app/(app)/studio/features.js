@@ -23,12 +23,6 @@ export const PREVIEW_FEATURES = [
     ru: { name: "Техническое приложение", nav: "Приложение", short: "Формирует однолинейную схему и спецификацию оборудования для заявки на подключение в ANRE / Premier Energy / Moldelectrica — модули, инвертор, защиты и сечения кабеля из расчёта. Инженер проверяет и заверяет." },
   },
   {
-    slug: "pricing",
-    en: { name: "Distributor pricing", nav: "Pricing", short: "Current panel, inverter and battery prices from RO and MD distributors, with 30-day movement and the gap against your own catalog. A reason to open the app daily — and a revenue-share conversation." },
-    ro: { name: "Prețuri distribuitori", nav: "Prețuri", short: "Prețuri curente la panouri, invertoare și baterii de la distribuitorii din RO și MD, cu variația pe 30 de zile și diferența față de catalogul tău. Un motiv să deschizi aplicația zilnic — și o discuție de revenue-share." },
-    ru: { name: "Цены дистрибьюторов", nav: "Цены", short: "Актуальные цены на панели, инверторы и батареи от дистрибьюторов RO и MD, с динамикой за 30 дней и разницей с вашим каталогом. Повод открывать приложение каждый день." },
-  },
-  {
     slug: "bankability",
     en: { name: "P50 / P90 export", nav: "P50 / P90", short: "The same engine maths, packaged as a P50 / P90 energy-yield assessment and bankability summary — uncertainty budget, 25-year schedule and debt-service coverage, the way a bank or an EBRD-adjacent lender expects it." },
     ro: { name: "Export P50 / P90", nav: "P50 / P90", short: "Aceeași matematică a motorului, împachetată ca o evaluare a producției P50 / P90 și un rezumat de bancabilitate — buget de incertitudine, grafic pe 25 de ani și acoperirea serviciului datoriei, așa cum se așteaptă o bancă sau un creditor tip EBRD." },

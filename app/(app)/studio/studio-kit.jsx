@@ -439,6 +439,13 @@ html[data-theme="dark"] .pv-tab:hover{border-color:#39443B}
 .pv-head-t h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:0}
 .pv-head-tx p{margin:6px 0 0;font-size:13.5px;color:var(--muted);line-height:1.55;max-width:70ch}
 .pv-head-right{flex:none;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+/* Phones: drop the header action buttons to their own full-width row so the
+   title and blurb get the whole width instead of one word per line. Placed
+   after the base .pv-head-right rule so its flex:none cannot reset the basis. */
+@media(max-width:520px){
+  .pv-head{flex-wrap:wrap}
+  .pv-head-right{order:3;flex-basis:100%;margin-top:2px}
+}
 
 .pv-mocknote{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--muted);line-height:1.5;
   background:var(--paper-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin:0 0 18px}
