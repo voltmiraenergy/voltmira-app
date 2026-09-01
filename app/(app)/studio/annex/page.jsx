@@ -5,7 +5,7 @@
 // it's consistent, and it prints.
 import { useEffect, useMemo, useState } from "react";
 import {
-  useLang, makeT, PreviewHeader, MockNote, DEMO_SYSTEM, PROTECTION,
+  useLang, makeT, PreviewHeader, MockNote, DEMO_SYSTEM, protRows,
   useStudioClient, ClientBar,
 } from "../studio-kit.jsx";
 
@@ -23,7 +23,7 @@ const TX = {
   ph3: { en: "Three-phase", ro: "Trifazat", ru: "Трёхфазное" },
   size: { en: "PV size", ro: "Putere PV", ru: "Мощность PV" },
   battery: { en: "Battery", ro: "Baterie", ru: "Батарея" },
-  print: { en: "Print / Export PDF", ro: "Printează / Export PDF", ru: "Печать / PDF" },
+  print: { en: "Print / PDF", ro: "Printează / PDF", ru: "Печать / PDF" },
   note: {
     en: "Every value below is derived from the quote inputs and the equipment catalog — module count, string voltage, breaker sizing, cable cross-sections. An engineer reviews and stamps it; the annex removes the blank-page hour.",
     ro: "Fiecare valoare de mai jos rezultă din datele ofertei și catalogul de echipamente — număr module, tensiune șir, dimensionare disjunctor, secțiuni cablu. Un inginer o verifică și o ștampilează.",
@@ -226,7 +226,7 @@ export default function AnnexPreview() {
         <h2>{d("prot")}</h2>
         <table>
           <thead><tr><th>{d("p_fn")}</th><th style={{ width: 160 }}>{d("p_set")}</th><th style={{ width: 120 }}>{d("p_t")}</th></tr></thead>
-          <tbody>{PROTECTION.map((p) => <tr key={p.fn}><td>{p.fn}</td><td>{p.set}</td><td>{p.time}</td></tr>)}</tbody>
+          <tbody>{protRows(docLang === "en" ? "en" : "ro").map((p, i) => <tr key={i}><td>{p.fn}</td><td>{p.set}</td><td>{p.time}</td></tr>)}</tbody>
         </table>
 
         <h2>{d("cables")}</h2>

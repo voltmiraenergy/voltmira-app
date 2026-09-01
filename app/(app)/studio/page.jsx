@@ -26,9 +26,9 @@ export default function StudioOverview() {
             <PreviewBadge lang={lang} />
           </div>
           <p>{tx({
-            en: "Four tools that carry a signed offer the rest of the way: the connection and Casa Verde file, the technical annex, a bank-ready P50 / P90 export, and your public calculator widget.",
-            ro: "Patru instrumente care duc o ofertă semnată mai departe: dosarul de racordare și Casa Verde, anexa tehnică, un export P50 / P90 pentru bancă și widgetul public de calcul.",
-            ru: "Четыре инструмента, которые доводят подписанное предложение до конца: пакет на подключение и Casa Verde, техническое приложение, банковский экспорт P50 / P90 и публичный виджет-калькулятор.",
+            en: "The whole job, front to back: survey, quote, connection, procurement, money, install, monitoring — in the installer's own workflow order, all on the live VoltMira engine.",
+            ro: "Toată lucrarea, de la cap la coadă: vizită, ofertă, racordare, aprovizionare, bani, montaj, monitorizare — în ordinea fluxului de lucru al instalatorului, pe motorul live VoltMira.",
+            ru: "Вся работа, от начала до конца: осмотр, расчёт, подключение, закупка, деньги, монтаж, мониторинг — в порядке рабочего процесса монтажника, на живом движке VoltMira.",
           }, lang)}</p>
         </div>
       </div>

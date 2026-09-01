@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   useLang, tx, PreviewHeader, MockNote, NUM, printDoc,
-  useStudioClient, ClientBar, engineSettings, DEMO_SYSTEM, PROTECTION,
+  useStudioClient, ClientBar, engineSettings, DEMO_SYSTEM, protRows,
 } from "../studio-kit.jsx";
 import { simulate, FX } from "../_engine.js";
 
@@ -25,7 +25,7 @@ const TX = {
     ro: "Documentele și estimarea grantului sunt reale (motor + datele clientului tău) și se printează în PDF. Fluxul se salvează în acest browser, pe număr de contract. Nimic nu se trimite la operator — depui tu PDF-ul, un electrician autorizat îl semnează.",
     ru: "Документы и оценка гранта реальны (движок + данные клиента) и печатаются в PDF. Процесс сохраняется в этом браузере по номеру договора. Ничего не отправляется оператору.",
   },
-  gen: { en: "Print / Export PDF", ro: "Printează / Export PDF", ru: "Печать / PDF" },
+  gen: { en: "Print / PDF", ro: "Printează / PDF", ru: "Печать / PDF" },
   opTitle: { en: "Operator & area headroom", ro: "Operator și rezervă de zonă", ru: "Оператор и резерв зоны" },
   feermTitle: { en: "Casa Verde (FEERM) — eligibility gate", ro: "Casa Verde (FEERM) — verificare eligibilitate", ru: "Casa Verde (FEERM) — проверка права на грант" },
   flowTitle: { en: "Pipeline — click a stage to advance it", ro: "Flux — apasă o etapă ca s-o avansezi", ru: "Процесс — нажмите на этап, чтобы продвинуть" },
@@ -152,8 +152,28 @@ export default function ConnectionPreview() {
   const phases = client.phases === 3 ? "3~ 400 V" : "1~ 230 V";
   const approvedKw = Math.max(Math.ceil(+client.kw || 0), client.phases === 3 ? 12 : 8);
 
+  // A due date per stage, counted from the signature. If a stage isn't done and
+  // its date has passed, it's overdue and the installer gets a nudge — the piece
+  // the plain checklist is missing.
+  const SIGNED_AGO = 6;                       // days since signature (matches "acum 6 zile")
+  const DUE_DAYS = { signed: 0, atr: 4, aviz: 34, install: 45, racordare: 52, meter: 66, billing: 70 };
+  const fmtDue = (offset) => {
+    const d = new Date(Date.now() + (offset - SIGNED_AGO) * 86400000);
+    return d.toLocaleDateString(loc, { day: "numeric", month: "short" });
+  };
+  const overdueBy = (s) => {
+    const off = DUE_DAYS[s.id];
+    if (off == null || statusOf(s) === "done") return 0;
+    return Math.max(0, SIGNED_AGO - off);
+  };
+
   const baseStages = [
-    { id: "signed", label: { ro: "Ofertă semnată", en: "Offer signed", ru: "Предложение подписано" }, base: "done", docs: [] },
+    {
+      id: "signed", label: { ro: "Ofertă semnată + contract", en: "Offer signed + contract", ru: "Предложение подписано + договор" }, base: "done",
+      docs: [
+        { ro: "Contract de execuție + anexe", en: "Works contract + annexes", ru: "Договор подряда + приложения" },
+      ],
+    },
     {
       id: "atr", label: { ro: "Dosar de racordare (ATR)", en: "Connection file (ATR)", ru: "Пакет на подключение (ATR)" }, base: "active",
       docs: [
@@ -174,7 +194,7 @@ export default function ConnectionPreview() {
     },
     { id: "meter", label: { ro: "Contor bidirecțional", en: "Bidirectional meter", ru: "Двунаправленный счётчик" }, base: "todo", hint: { ro: op.name + " montează contorul", en: op.name + " fits the meter", ru: op.name + " ставит счётчик" }, docs: [] },
     {
-      id: "billing", label: { ro: "Contract & facturare", en: "Contract & invoicing", ru: "Договор и счета" }, base: "todo",
+      id: "billing", label: { ro: "Contract și facturare", en: "Contract & invoicing", ru: "Договор и счета" }, base: "todo",
       docs: commercial
         ? [{ ro: "Contract de racordare", en: "Connection contract", ru: "Договор о подключении" }, { ro: "Act de predare-primire", en: "Handover protocol", ru: "Акт приёма-передачи" }, { ro: "Factură fiscală electronică (e-Factura SFS)", en: "Electronic tax invoice (SFS e-Factura)", ru: "Электронная накладная (e-Factura SFS)" }]
         : [{ ro: "Act de predare-primire", en: "Handover protocol", ru: "Акт приёма-передачи" }, { ro: "Factură fiscală", en: "Tax invoice", ru: "Налоговая накладная" }],
@@ -218,6 +238,18 @@ export default function ConnectionPreview() {
     text: { ro: "Rezerva de plafon în zona " + op.name + " scade (" + headroomMw.toFixed(0) + " MW din " + op.capMw + " MW). Depune dosarul ATR devreme.", en: "Headroom in the " + op.name + " area is shrinking (" + headroomMw.toFixed(0) + " of " + op.capMw + " MW). File the ATR early.", ru: "Резерв в зоне " + op.name + " сокращается (" + headroomMw.toFixed(0) + " из " + op.capMw + " МВт)." },
     cta: null,
   });
+  for (const s of baseStages) {
+    const od = overdueBy(s);
+    if (od >= 2) inbox.push({
+      id: "od-" + s.id, tone: "warn",
+      text: {
+        ro: `„${tx(s.label, lang)}" a depășit termenul cu ${od} zile — ${s.id === "aviz" || s.id === "meter" ? "sună la " + op.name : "urgentează pasul"}.`,
+        en: `"${tx(s.label, lang)}" is ${od} days past its date — ${s.id === "aviz" || s.id === "meter" ? "call " + op.name : "push this step"}.`,
+        ru: `«${tx(s.label, lang)}» просрочен на ${od} дн. — ${s.id === "aviz" || s.id === "meter" ? "позвоните в " + op.name : "ускорьте этап"}.`,
+      },
+      cta: { ro: "Marchează gata", en: "Mark done", ru: "Отметить" }, act: () => { const nt = { ...track, [s.id]: "done" }; setTrack(nt); persist({ track: nt }); },
+    });
+  }
 
   const loc = lang === "en" ? "en-IE" : lang === "ru" ? "ru-RU" : "ro-RO";
   const today = new Date().toLocaleDateString(loc);
@@ -297,16 +329,23 @@ export default function ConnectionPreview() {
         <ol className="rc-steps" style={{ marginTop: 14 }}>
           {baseStages.map((s) => {
             const st = statusOf(s);
+            const od = overdueBy(s);
             return (
               <li key={s.id} className="rc-step">
-                <button className={"rc-mark rc-mark-btn " + (st === "done" ? "done" : st === "active" ? "active" : "")}
+                <button className={"rc-mark rc-mark-btn " + (st === "done" ? "done" : od ? "blocked" : st === "active" ? "active" : "")}
                   onClick={() => cycle(s)} title={tx({ ro: "schimbă starea", en: "change status", ru: "сменить статус" }, lang)}>
-                  {st === "done" ? "✓" : st === "active" ? "•" : ""}
+                  {st === "done" ? "✓" : od ? "!" : st === "active" ? "•" : ""}
                 </button>
                 <div className="rc-step-b">
                   <div className="rc-step-h">
                     <b>{tx(s.label, lang)}</b>
                     <span>· {tx(ST[st], lang)}{s.hint && st !== "done" ? " · " + tx(s.hint, lang) : ""}</span>
+                    {st !== "done" && DUE_DAYS[s.id] != null && (
+                      <span className={"rc-due" + (od ? " od" : "")}>
+                        {od ? tx({ ro: `întârziat ${od}z`, en: `${od}d overdue`, ru: `просрочка ${od}д` }, lang)
+                          : tx({ ro: "termen", en: "due", ru: "срок" }, lang) + " " + fmtDue(DUE_DAYS[s.id])}
+                      </span>
+                    )}
                   </div>
                   {s.docs.length > 0 && (
                     <div className="rc-docs">{s.docs.map((d, i) => <span key={i} className="rc-doc"><DocIcon />{tx(d, lang)}</span>)}</div>
@@ -372,7 +411,7 @@ export default function ConnectionPreview() {
           <h3>{L("2. Protecții de interfață — SR EN 50549-1", "2. Interface protections — SR EN 50549-1")}</h3>
           <table>
             <thead><tr><th>{L("Funcție", "Function")}</th><th style={{ width: 150 }}>{L("Prag", "Setting")}</th><th style={{ width: 110 }}>{L("Timp", "Time")}</th></tr></thead>
-            <tbody>{PROTECTION.map((p) => <tr key={p.fn}><td>{p.fn}</td><td>{p.set}</td><td>{p.time}</td></tr>)}</tbody>
+            <tbody>{protRows(lang === "en" ? "en" : "ro").map((p, i) => <tr key={i}><td>{p.fn}</td><td>{p.set}</td><td>{p.time}</td></tr>)}</tbody>
           </table>
           <p className="doc-note">{L(
             "Invertorul deține certificat de conformitate cu codul de rețea și funcție anti-insularizare (LoM). Instalația nu debitează în rețea în absența tensiunii din rețea. Proiectare conform SR HD 60364-7-712.",
@@ -438,6 +477,10 @@ export default function ConnectionPreview() {
         .rc-step-h{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
         .rc-step-h b{font-size:13.5px;font-weight:700;color:var(--ink)}
         .rc-step-h span{font-size:11.5px;color:var(--muted)}
+        .rc-due{font-family:var(--font-m,monospace);font-size:10px;font-weight:600;border-radius:99px;padding:2px 8px;
+          background:var(--paper-3);color:var(--muted)}
+        .rc-due.od{background:var(--amber-tint);color:#B4472F}
+        .rc-mark.blocked{background:var(--paper-2);border-color:var(--amber);color:#B4472F}
         .rc-docs{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
         .rc-doc{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);
           background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:4px 8px}

@@ -26,8 +26,8 @@ const TX = {
   rate: { en: "Debt rate", ro: "Dobândă", ru: "Ставка" },
   tenor: { en: "Tenor", ro: "Scadență", ru: "Срок" },
   yrs: { en: "yrs", ro: "ani", ru: "лет" },
-  pdf: { en: "Export PDF", ro: "Export PDF", ru: "Экспорт PDF" },
-  csv: { en: "Export data (CSV)", ro: "Export date (CSV)", ru: "Экспорт (CSV)" },
+  pdf: { en: "Export PDF", ro: "Exportă PDF", ru: "Экспорт PDF" },
+  csv: { en: "Export data (CSV)", ro: "Exportă datele (CSV)", ru: "Экспорт данных (CSV)" },
 };
 
 const YIELD_KWP = 1256;   // PVGIS-SARAH3 optimal-plane resource assumption

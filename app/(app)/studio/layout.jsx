@@ -14,9 +14,8 @@ export default function StudioLayout({ children }) {
   return (
     <StudioClientProvider>
       <div className="pv-wrap">
-        {/* AppTheme.jsx already defines the palette; the bundled TOKENS_CSS is
-            dropped to avoid redefining it. This version uses no token AppTheme
-            lacks, so nothing needs re-adding. */}
+        {/* AppTheme.jsx already defines the palette, so the bundled TOKENS_CSS
+            is dropped to avoid redefining it. */}
         <style dangerouslySetInnerHTML={{ __html: PREVIEW_CSS }} />
         <div className="pv-topbar">
           <span className="pv-kicker">{tx({

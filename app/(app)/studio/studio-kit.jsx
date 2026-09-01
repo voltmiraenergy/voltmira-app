@@ -109,16 +109,25 @@ export const DEMO_SYSTEM = {
 
 // Standardised grid-protection settings for the SLD / annex (SR EN 50549-1,
 // aligned with ANRE Ord. 228/2018 and Moldelectrica connection rules).
+// `fn` and the wordy parts of set/time are localised — render with protRows(lang).
 export const PROTECTION = [
-  { fn: "U< (undervoltage, stage 1)", set: "0.85 Un", time: "1.5 s" },
-  { fn: "U< (undervoltage, stage 2)", set: "0.45 Un", time: "0.3 s" },
-  { fn: "U> (overvoltage, stage 1)", set: "1.10 Un", time: "1.5 s" },
-  { fn: "U> (10-min mean)", set: "1.10 Un", time: "3.0 s" },
-  { fn: "f< (underfrequency)", set: "47.5 Hz", time: "0.2 s" },
-  { fn: "f> (overfrequency)", set: "51.5 Hz", time: "0.2 s" },
-  { fn: "Anti-islanding (LoM)", set: "vector shift / RoCoF", time: "≤ 0.15 s" },
-  { fn: "Reconnection after trip", set: "0.90–1.10 Un · 47.5–50.05 Hz", time: "60 s delay" },
+  { fn: { ro: "U< (subtensiune, treapta 1)", en: "U< (undervoltage, stage 1)", ru: "U< (пониж. напряжение, ступень 1)" }, set: "0,85 Un", time: "1,5 s" },
+  { fn: { ro: "U< (subtensiune, treapta 2)", en: "U< (undervoltage, stage 2)", ru: "U< (пониж. напряжение, ступень 2)" }, set: "0,45 Un", time: "0,3 s" },
+  { fn: { ro: "U> (supratensiune, treapta 1)", en: "U> (overvoltage, stage 1)", ru: "U> (повыш. напряжение, ступень 1)" }, set: "1,10 Un", time: "1,5 s" },
+  { fn: { ro: "U> (medie pe 10 min.)", en: "U> (10-min mean)", ru: "U> (среднее за 10 мин.)" }, set: "1,10 Un", time: "3,0 s" },
+  { fn: { ro: "f< (subfrecvență)", en: "f< (underfrequency)", ru: "f< (пониж. частота)" }, set: "47,5 Hz", time: "0,2 s" },
+  { fn: { ro: "f> (suprafrecvență)", en: "f> (overfrequency)", ru: "f> (повыш. частота)" }, set: "51,5 Hz", time: "0,2 s" },
+  { fn: { ro: "Anti-insularizare (LoM)", en: "Anti-islanding (LoM)", ru: "Защита от островного режима (LoM)" }, set: { ro: "salt de vector / RoCoF", en: "vector shift / RoCoF", ru: "векторный сдвиг / RoCoF" }, time: "≤ 0,15 s" },
+  { fn: { ro: "Reconectare după declanșare", en: "Reconnection after trip", ru: "Повторное включение после отключения" }, set: "0,90–1,10 Un · 47,5–50,05 Hz", time: { ro: "temporizare 60 s", en: "60 s delay", ru: "задержка 60 с" } },
 ];
+// Resolve PROTECTION for a language → [{fn, set, time}] of plain strings.
+export function protRows(lang) {
+  return PROTECTION.map((p) => ({
+    fn: typeof p.fn === "string" ? p.fn : (p.fn[lang] || p.fn.en),
+    set: typeof p.set === "string" ? p.set : (p.set[lang] || p.set.en),
+    time: typeof p.time === "string" ? p.time : (p.time[lang] || p.time.en),
+  }));
+}
 
 /* ------------------------------------------------------- editable client ---- */
 // Every Studio surface reads its client + system inputs from here, so the annex,
@@ -163,7 +172,7 @@ export function ClientBar({ lang }) {
   return (
     <div className="pv-panel cl-bar">
       <div className="cl-head">
-        <h3 style={{ margin: 0 }}>{T({ en: "Client & system", ro: "Client & sistem", ru: "Клиент и система" })}</h3>
+        <h3 style={{ margin: 0 }}>{T({ en: "Client & system", ro: "Client și sistem", ru: "Клиент и система" })}</h3>
         <select className="cl-preset" value=""
           onChange={(e) => { const p = CLIENT_PRESETS.find((x) => x.id === e.target.value); if (p) update({ ...p }); }}>
           <option value="">{T({ en: "Load a sample client…", ro: "Încarcă un client exemplu…", ru: "Загрузить пример…" })}</option>
@@ -196,8 +205,10 @@ export function ClientBar({ lang }) {
           <label>{T({ en: "Battery (kWh)", ro: "Baterie (kWh)", ru: "Батарея (кВт·ч)" })}{num("batteryKwh", 0.5)}</label>
           <label>{T({ en: "Connection", ro: "Racordare", ru: "Подключение" })}
             <div className="pv-seg">
-              <button className={client.phases === 1 ? "on" : ""} onClick={() => update({ phases: 1 })}>1~ mono</button>
-              <button className={client.phases === 3 ? "on" : ""} onClick={() => update({ phases: 3 })}>3~ tri</button>
+              <button className={client.phases === 1 ? "on" : ""} onClick={() => update({ phases: 1 })}>
+                {T({ en: "1~ single", ro: "1~ monofazat", ru: "1~ однофазн." })}</button>
+              <button className={client.phases === 3 ? "on" : ""} onClick={() => update({ phases: 3 })}>
+                {T({ en: "3~ three", ro: "3~ trifazat", ru: "3~ трёхфазн." })}</button>
             </div></label>
         </div>
       ) : (
@@ -214,9 +225,14 @@ export function ClientBar({ lang }) {
 const IC = {
   // the VoltMira mark (three rising rays + sun dot), monochrome — Studio's home glyph
   overview: <><path d="M5 19 8.6 9" /><path d="M10.6 19 15 6" /><path d="M16 19 19.4 8" /><circle cx="15" cy="6" r="1.6" fill="currentColor" stroke="none" /></>,
+  survey: <><path d="M3 20h18" /><path d="M5 20V10l7-5 7 5v10" /><path d="M9 20v-5h6v5" /><circle cx="18" cy="6" r="2.2" /></>,
+  quote: <><path d="M7 3h8l4 4v14H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M14 3v5h5" /><path d="M10 13h6M10 17h4" /><path d="M12 9.5V8m0 3.5c1 0 1.6.5 1.6 1.2S13 14 12 14s-1.6.5-1.6 1.2S11 16.5 12 16.5m0-8v1.5m0 8V16.5" /></>,
   connection: <><path d="M6 4v5a3 3 0 0 0 3 3h6a3 3 0 0 1 3 3v5" /><circle cx="6" cy="4" r="1.8" fill="currentColor" stroke="none" /><circle cx="18" cy="20" r="1.8" fill="currentColor" stroke="none" /></>,
   annex: <><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M14 3v5h5M9 13h6M9 17h6M9 9h2" /></>,
   pricing: <><path d="M3 7h18M3 12h18M3 17h18" /><circle cx="8" cy="7" r="1.6" /><circle cx="15" cy="12" r="1.6" /><circle cx="10" cy="17" r="1.6" /></>,
+  payments: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /><path d="M6 15h4" /></>,
+  schedule: <><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4" /><path d="M8 14l2.5 2.5L16 11" /></>,
+  monitoring: <><path d="M3 12h4l3 8 4-16 3 8h4" /></>,
   bankability: <><path d="M4 10h16M6 10v8M18 10v8M4 18h16M12 3 4 7h16z" /></>,
   "lead-widget": <><path d="M3 5h18l-7 8v6l-4 2v-8z" /></>,
 };
@@ -321,11 +337,6 @@ export function printDoc() {
 }
 
 /* --------------------------------------------------------------- styles ---- */
-// Design tokens the .pv-* / .st-* / .cl-* classes rely on. In VoltMira's own app
-// these come from AppTheme.jsx — if you're dropping this package into that app,
-// delete the <style>{TOKENS_CSS}</style> line in layout.jsx. Standalone: keep it.
-// Light values on bare :root, dark values under a data-theme / prefers-color
-// guard so the section follows the host's theme.
 export const TOKENS_CSS = `
 :root{
   --paper:#F6F5F0; --paper-2:#FFFFFF;
@@ -420,9 +431,8 @@ html[data-theme="dark"] .pv-tab:hover{border-color:#39443B}
 .cl-grid > label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--muted)}
 .cl-grid > label output{color:var(--green);font-weight:700}
 .cl-summary{margin-top:10px;font-size:13px;color:var(--ink);font-weight:600;line-height:1.5}
-/* Phones: the client editor was a single 750px+ stack, and the surface pill row
-   wrapped to two ragged lines. Put the short fields two-up (name/address/contract
-   still span the row), and make the pill row a clean one-line scroll strip. */
+/* Phones: 2-up client editor (name/address/contract span the row) and a
+   one-line scrollable pill row instead of a 750px stack and a 2-row wrap. */
 @media(max-width:520px){
   .cl-grid{grid-template-columns:1fr 1fr;gap:11px 12px}
   .cl-grid > *:nth-child(-n+3){grid-column:1 / -1}
@@ -440,8 +450,8 @@ html[data-theme="dark"] .pv-tab:hover{border-color:#39443B}
 .pv-head-tx p{margin:6px 0 0;font-size:13.5px;color:var(--muted);line-height:1.55;max-width:70ch}
 .pv-head-right{flex:none;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 /* Phones: drop the header action buttons to their own full-width row so the
-   title and blurb get the whole width instead of one word per line. Placed
-   after the base .pv-head-right rule so its flex:none cannot reset the basis. */
+   title and blurb get the whole width instead of one word per line. After the
+   base rule so its flex:none cannot reset the basis. */
 @media(max-width:520px){
   .pv-head{flex-wrap:wrap}
   .pv-head-right{order:3;flex-basis:100%;margin-top:2px}
