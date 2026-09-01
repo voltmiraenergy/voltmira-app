@@ -261,13 +261,23 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   }
 
   async function downloadPdf() {
-    // Warm first so the browser launch overlaps with makeProposal()/navigation.
-    fetch("/api/proposal/warm", { method: "POST", keepalive: true }).catch(() => { });
-    const code = propUrl ? propUrl.split("/p/")[1] : await makeProposal();
-    // Server-rendered PDF, not the browser print dialog. The dialog stamped
-    // Chrome's own header (page title + proposal URL) onto every page, which
-    // undid white-labelling, and left paper size up to whoever was exporting.
-    window.open(`/api/proposal/${code}/pdf`, "_blank", "noopener");
+    // Open the tab synchronously, inside the click gesture, so mobile popup
+    // blockers don't swallow it — they do when window.open runs after an await,
+    // which is why "Download PDF" appeared to do nothing on a phone.
+    const tab = window.open("", "_blank");
+    let code = propUrl ? propUrl.split("/p/")[1] : null;
+    if (!code) {
+      // createProposal is idempotent (returns the existing code), so this does
+      // NOT open the share modal — that's why it no longer mirrors "Generate".
+      try { code = await createProposal(initial.id); }
+      catch { if (tab) tab.close(); return; }
+    }
+    if (p.status === "draft") update({ status: "sent" });
+    // Instant client save-as-PDF: /p/<code>?print=1 fires window.print via
+    // AutoPrint — no ~5s server-Chromium wait, and on a phone it opens the
+    // native save / share sheet so the PDF actually saves.
+    const url = `/p/${code}?print=1`;
+    if (tab) tab.location.href = url; else window.location.href = url;
   }
 
   // Chromium's cold launch is ~3.5s. Kick it off when the share modal appears so
