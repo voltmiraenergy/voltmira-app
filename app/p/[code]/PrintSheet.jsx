@@ -35,6 +35,11 @@ function CashflowSVG({ bands, cost, horizon, lang }) {
   const ln = (r) => r.map((v, i) => (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1)).join(" ");
   const zero = Y(0), be = bands.expc.payback;
   const bx = be && be > 0 ? X(be - 1) : null;
+  // When payback lands near an edge, the centred break-even label overprints the
+  // "Year 1" / "Year N" axis label into an unreadable smear. Detect that and
+  // re-anchor the break-even label away from the edge + drop the label it covers.
+  const beNearLeft = bx !== null && bx < PADX + 58;
+  const beNearRight = bx !== null && bx > W - PADX - 58;
   return (
     <svg className="p-chart" viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg">
       <line x1={PADX} y1={zero} x2={W - PADX} y2={zero} stroke="#B9B5A6" strokeWidth="1" strokeDasharray="3 4" />
@@ -44,10 +49,10 @@ function CashflowSVG({ bands, cost, horizon, lang }) {
       {bx !== null && <>
         <line x1={bx} y1={PADT} x2={bx} y2={H - PADB} stroke="#E89B2D" strokeWidth="1.4" strokeDasharray="3 3" />
         <circle cx={bx} cy={zero} r="3.4" fill="#E89B2D" />
-        <text x={bx} y={H - 6} fontSize="9" fill="#C97F14" textAnchor="middle">{t("pdf_breakeven", lang)}</text>
+        <text x={bx} y={H - 6} fontSize="9" fill="#C97F14" textAnchor={beNearLeft ? "start" : beNearRight ? "end" : "middle"}>{t("pdf_breakeven", lang)}</text>
       </>}
-      <text x={PADX} y={H - 6} fontSize="9" fill="#999">{t("pdf_year1", lang)}</text>
-      <text x={W - PADX} y={H - 6} fontSize="9" fill="#999" textAnchor="end">{t("pdf_yearN", lang, { n: horizon })}</text>
+      {!beNearLeft && <text x={PADX} y={H - 6} fontSize="9" fill="#999">{t("pdf_year1", lang)}</text>}
+      {!beNearRight && <text x={W - PADX} y={H - 6} fontSize="9" fill="#999" textAnchor="end">{t("pdf_yearN", lang, { n: horizon })}</text>}
     </svg>
   );
 }
