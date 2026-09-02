@@ -3,6 +3,10 @@
 // The same honesty-engine yield maths, re-packaged as an Energy Yield Assessment
 // & bankability summary — the shape a bank or an EBRD-adjacent lender expects for
 // a commercial deal. Exceedance table, uncertainty budget, 25-yr schedule, DSCR.
+//
+// The document body has its own language toggle (EN default, for the lender's
+// technical adviser; RO so a Romanian installer can present the same report). The
+// surrounding chrome follows the app language like every other surface.
 import { useEffect, useMemo, useState } from "react";
 import {
   useLang, makeT, PreviewHeader, MockNote, EUR, NUM, engineSettings,
@@ -22,6 +26,7 @@ const TX = {
     ro: "P50 este banda „așteptat” a motorului. Valorile P aplică o incertitudine combinată (σ ≈ 7,1%) unei distribuții normale — metoda folosită de consultantul tehnic al unei bănci. Tot ce urmează se construiește din sistemul clientului din bara de sus.",
     ru: "P50 — «ожидаемый» диапазон движка. P-значения применяют суммарную неопределённость (σ ≈ 7,1%) к нормальному распределению. Всё ниже строится из системы клиента в панели выше.",
   },
+  docLangLabel: { en: "Document language", ro: "Limba documentului", ru: "Язык документа" },
   gearing: { en: "Debt gearing", ro: "Grad de îndatorare", ru: "Доля долга" },
   rate: { en: "Debt rate", ro: "Dobândă", ru: "Ставка" },
   tenor: { en: "Tenor", ro: "Scadență", ru: "Срок" },
@@ -34,13 +39,13 @@ const YIELD_KWP = 1256;   // PVGIS-SARAH3 optimal-plane resource assumption
 
 // Combined P50 uncertainty budget (independent, root-sum-square).
 const UNC = [
-  { k: "Long-term solar resource (GHI)", s: 3.5 },
-  { k: "Interannual variability", s: 4.8 },
-  { k: "Transposition & PV model", s: 2.6 },
-  { k: "Soiling & snow losses", s: 1.8 },
-  { k: "System availability (grid + inverter)", s: 1.5 },
-  { k: "Shading & horizon", s: 1.4 },
-  { k: "Year-1 degradation / LID", s: 1.0 },
+  { k: "Long-term solar resource (GHI)", ro: "Resursă solară pe termen lung (GHI)", s: 3.5 },
+  { k: "Interannual variability", ro: "Variabilitate interanuală", s: 4.8 },
+  { k: "Transposition & PV model", ro: "Transpoziție & model PV", s: 2.6 },
+  { k: "Soiling & snow losses", ro: "Pierderi prin murdărire & zăpadă", s: 1.8 },
+  { k: "System availability (grid + inverter)", ro: "Disponibilitatea sistemului (rețea + invertor)", s: 1.5 },
+  { k: "Shading & horizon", ro: "Umbrire & orizont", s: 1.4 },
+  { k: "Year-1 degradation / LID", ro: "Degradare an 1 / LID", s: 1.0 },
 ];
 const SIGMA = Math.sqrt(UNC.reduce((a, x) => a + x.s * x.s, 0));  // ≈ 7.1
 const Z = { P50: 0, P75: 0.6745, P90: 1.2816, P95: 1.6449, P99: 2.3263 };
@@ -50,6 +55,7 @@ const PLEVELS = ["P50", "P75", "P90", "P95", "P99"];
 const degr = (n) => (n <= 1 ? 0.98 : 0.98 * Math.pow(1 - 0.0055, n - 1));
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_RO = ["Ian", "Feb", "Mar", "Apr", "Mai", "Iun", "Iul", "Aug", "Sep", "Oct", "Noi", "Dec"];
 
 function csvDownload(name, rows) {
   const body = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\r\n");
@@ -71,6 +77,10 @@ export default function BankabilityPreview() {
   const [gearing, setGearing] = useState(70);
   const [rate, setRate] = useState(6.5);
   const [tenor, setTenor] = useState(8);
+  // Document language — English by default (lender / technical-adviser audience),
+  // Romanian on demand. Independent of the app-chrome language.
+  const [docLang, setDocLang] = useState("en");
+  const d = (en, ro) => (docLang === "ro" ? ro : en);
 
   const project = useMemo(() => ({
     name: client.name, ref: client.ref || "VM-BNK-2026",
@@ -78,7 +88,9 @@ export default function BankabilityPreview() {
     cons: +client.cons || 0, batt: (+client.batteryKwh || 0) > 0, battKwh: +client.batteryKwh || 0,
     afmSubsidy: false, yieldOverride: YIELD_KWP,
   }), [client]);
-  const schemeLabel = project.market === "MD" ? "Moldova · net billing" : "Romania · net metering 1:1";
+  const schemeLabel = project.market === "MD"
+    ? d("Moldova · net billing", "Moldova · facturare netă")
+    : d("Romania · net metering 1:1", "România · contorizare netă 1:1");
 
   const model = useMemo(() => {
     const E = engineSettings();
@@ -131,7 +143,7 @@ export default function BankabilityPreview() {
     };
   }, [gearing, rate, tenor, project]);
 
-  const loc = "en-IE";
+  const loc = docLang === "ro" ? "ro-RO" : "en-IE";
   const showYears = [1, 2, 3, 5, 10, 15, 20, 25];
 
   function exportCsv() {
@@ -147,6 +159,8 @@ export default function BankabilityPreview() {
     csvDownload(`voltmira-eya-${project.ref}.csv`, rows);
   }
 
+  const months = docLang === "ro" ? MONTHS_RO : MONTHS;
+
   return (
     <>
       <PreviewHeader slug="bankability" lang={lang} title={t("title")} sub={t("sub")}
@@ -160,6 +174,13 @@ export default function BankabilityPreview() {
 
       {/* lender assumptions */}
       <div className="pv-panel pv-noprint" style={{ marginBottom: 16 }}>
+        <div className="bk-doclang">
+          <span>{t("docLangLabel")}</span>
+          <div className="pv-seg">
+            <button className={docLang === "en" ? "on" : ""} onClick={() => setDocLang("en")}>EN</button>
+            <button className={docLang === "ro" ? "on" : ""} onClick={() => setDocLang("ro")}>RO</button>
+          </div>
+        </div>
         <div className="bk-controls">
           <label><span>{t("gearing")} <output>{gearing}%</output></span>
             <input type="range" min="40" max="85" step="5" value={gearing} style={{ "--fill": ((gearing - 40) / 45) * 100 + "%" }}
@@ -176,29 +197,29 @@ export default function BankabilityPreview() {
       {/* the document */}
       <div className="pv-doc-scroll">
       <div className="pv-doc">
-        <div className="doc-co">VoltMira · Energy Yield Assessment & Bankability Summary · {new Date().toLocaleDateString(loc)}</div>
+        <div className="doc-co">VoltMira · {d("Energy Yield Assessment & Bankability Summary", "Evaluarea producției de energie & rezumat de bancabilitate")} · {new Date().toLocaleDateString(loc)}</div>
         <h1>{project.name}</h1>
-        <p className="doc-sub">Ref. {project.ref} · prepared for the lender's technical adviser · methodology: PVGIS-SARAH3 resource + VoltMira honesty engine (P50 = expected band)</p>
+        <p className="doc-sub">Ref. {project.ref} · {d("prepared for the lender's technical adviser", "pregătit pentru consultantul tehnic al finanțatorului")} · {d("methodology", "metodologie")}: PVGIS-SARAH3 {d("resource", "resursă")} + VoltMira {d("honesty engine", "motor de onestitate")} (P50 = {d("expected band", "banda așteptată")})</p>
 
-        <h2>Project summary</h2>
+        <h2>{d("Project summary", "Rezumatul proiectului")}</h2>
         <div className="doc-grid">
-          <div className="doc-kv"><span>Installed DC capacity</span><b>{project.kw.toFixed(1)} kWp</b></div>
-          <div className="doc-kv"><span>Market / scheme</span><b>{schemeLabel}</b></div>
-          <div className="doc-kv"><span>Optimal-plane resource</span><b>{project.yieldOverride} kWh/kWp/yr</b></div>
-          <div className="doc-kv"><span>Assessment horizon</span><b>25 years</b></div>
-          <div className="doc-kv"><span>CAPEX (turnkey)</span><b>{EUR(model.capex)}</b></div>
-          <div className="doc-kv"><span>Combined P50 uncertainty (σ)</span><b>{SIGMA.toFixed(1)}%</b></div>
+          <div className="doc-kv"><span>{d("Installed DC capacity", "Putere DC instalată")}</span><b>{project.kw.toFixed(1)} kWp</b></div>
+          <div className="doc-kv"><span>{d("Market / scheme", "Piață / schemă")}</span><b>{schemeLabel}</b></div>
+          <div className="doc-kv"><span>{d("Optimal-plane resource", "Resursă în plan optim")}</span><b>{project.yieldOverride} kWh/kWp/{d("yr", "an")}</b></div>
+          <div className="doc-kv"><span>{d("Assessment horizon", "Orizont de evaluare")}</span><b>{d("25 years", "25 de ani")}</b></div>
+          <div className="doc-kv"><span>{d("CAPEX (turnkey)", "CAPEX (la cheie)")}</span><b>{EUR(model.capex)}</b></div>
+          <div className="doc-kv"><span>{d("Combined P50 uncertainty (σ)", "Incertitudine P50 combinată (σ)")}</span><b>{SIGMA.toFixed(1)}%</b></div>
         </div>
 
-        <h2>Energy yield — exceedance probabilities (year 1)</h2>
+        <h2>{d("Energy yield — exceedance probabilities (year 1)", "Producția de energie — probabilități de depășire (anul 1)")}</h2>
         <table>
-          <thead><tr><th>Exceedance</th><th>Annual energy</th><th>Specific yield</th><th>Capacity factor</th><th>vs P50</th></tr></thead>
+          <thead><tr><th>{d("Exceedance", "Depășire")}</th><th>{d("Annual energy", "Energie anuală")}</th><th>{d("Specific yield", "Producție specifică")}</th><th>{d("Capacity factor", "Factor de capacitate")}</th><th>{d("vs P50", "față de P50")}</th></tr></thead>
           <tbody>
             {PLEVELS.map((L) => {
               const v = model.byLevel[L];
               return (
                 <tr key={L} style={L === "P90" ? { background: "#F0EEE6" } : undefined}>
-                  <td><b>{L}</b>{L === "P50" ? " (expected)" : L === "P90" ? " (bank case)" : ""}</td>
+                  <td><b>{L}</b>{L === "P50" ? d(" (expected)", " (așteptat)") : L === "P90" ? d(" (bank case)", " (caz bancar)") : ""}</td>
                   <td>{NUM(v.annual / 1000, 1)} MWh</td>
                   <td>{v.spec.toFixed(0)} kWh/kWp</td>
                   <td>{(v.cf * 100).toFixed(1)}%</td>
@@ -208,21 +229,21 @@ export default function BankabilityPreview() {
             })}
           </tbody>
         </table>
-        <ExceedanceCurve model={model} />
+        <ExceedanceCurve model={model} docLang={docLang} />
 
-        <h2>Uncertainty budget</h2>
+        <h2>{d("Uncertainty budget", "Buget de incertitudine")}</h2>
         <table>
-          <thead><tr><th>Source</th><th>σ (%)</th></tr></thead>
+          <thead><tr><th>{d("Source", "Sursă")}</th><th>σ (%)</th></tr></thead>
           <tbody>
-            {UNC.map((u) => <tr key={u.k}><td>{u.k}</td><td>{u.s.toFixed(1)}</td></tr>)}
-            <tr style={{ background: "#F0EEE6" }}><td><b>Combined (RSS)</b></td><td><b>{SIGMA.toFixed(1)}</b></td></tr>
+            {UNC.map((u) => <tr key={u.k}><td>{d(u.k, u.ro)}</td><td>{u.s.toFixed(1)}</td></tr>)}
+            <tr style={{ background: "#F0EEE6" }}><td><b>{d("Combined (RSS)", "Combinat (RSS)")}</b></td><td><b>{SIGMA.toFixed(1)}</b></td></tr>
           </tbody>
         </table>
 
-        <h2>Monthly P50 production (year 1)</h2>
+        <h2>{d("Monthly P50 production (year 1)", "Producție lunară P50 (anul 1)")}</h2>
         <div style={{ overflowX: "auto" }}>
           <table>
-            <thead><tr><th>Month</th>{MONTHS.map((m) => <th key={m} style={{ textAlign: "right" }}>{m}</th>)}<th style={{ textAlign: "right" }}>Year</th></tr></thead>
+            <thead><tr><th>{d("Month", "Luna")}</th>{months.map((m) => <th key={m} style={{ textAlign: "right" }}>{m}</th>)}<th style={{ textAlign: "right" }}>{d("Year", "An")}</th></tr></thead>
             <tbody>
               <tr><td>MWh</td>
                 {SOLAR_SEASON.map((f, i) => {
@@ -235,9 +256,9 @@ export default function BankabilityPreview() {
           </table>
         </div>
 
-        <h2>25-year performance schedule</h2>
+        <h2>{d("25-year performance schedule", "Grafic de performanță pe 25 de ani")}</h2>
         <table>
-          <thead><tr><th>Year</th><th>Degradation</th><th>P50 energy</th><th>P90 energy</th><th>P50 net cash</th><th>P90 net cash</th></tr></thead>
+          <thead><tr><th>{d("Year", "An")}</th><th>{d("Degradation", "Degradare")}</th><th>{d("P50 energy", "Energie P50")}</th><th>{d("P90 energy", "Energie P90")}</th><th>{d("P50 net cash", "Flux net P50")}</th><th>{d("P90 net cash", "Flux net P90")}</th></tr></thead>
           <tbody>
             {model.sched.filter((s) => showYears.includes(s.n)).map((s) => (
               <tr key={s.n}>
@@ -248,38 +269,39 @@ export default function BankabilityPreview() {
             ))}
           </tbody>
         </table>
-        <p className="doc-note">Full year-by-year table in the CSV export. Net cash = energy value less O&amp;M, escalated at the expected-band inflation assumption.</p>
+        <p className="doc-note">{d("Full year-by-year table in the CSV export. Net cash = energy value less O&M, escalated at the expected-band inflation assumption.", "Tabelul complet, an cu an, în exportul CSV. Flux net = valoarea energiei minus O&M, indexat cu ipoteza de inflație a benzii așteptate.")}</p>
 
-        <h2>Lender view — debt service coverage</h2>
+        <h2>{d("Lender view — debt service coverage", "Perspectiva finanțatorului — acoperirea serviciului datoriei")}</h2>
         <div className="doc-grid">
-          <div className="doc-kv"><span>Gearing / debt amount</span><b>{gearing}% · {EUR(model.debt)}</b></div>
-          <div className="doc-kv"><span>Rate / tenor</span><b>{rate.toFixed(2)}% · {tenor} yrs</b></div>
-          <div className="doc-kv"><span>Annual debt service</span><b>{EUR(model.annuity)}</b></div>
-          <div className="doc-kv"><span>Payback — P50 / P90</span><b>{model.paybackP50 == null ? "25+" : model.paybackP50.toFixed(1)} / {model.paybackP90 == null ? "25+" : model.paybackP90.toFixed(1)} yrs</b></div>
-          <div className="doc-kv"><span>DSCR year 1 — P50 / P90</span><b>{model.dscrY1P50.toFixed(2)}x / {model.dscrY1P90.toFixed(2)}x</b></div>
-          <div className="doc-kv"><span>Min DSCR over tenor — P50 / P90</span><b>{model.dscrMinP50.toFixed(2)}x / {model.dscrMinP90.toFixed(2)}x</b></div>
+          <div className="doc-kv"><span>{d("Gearing / debt amount", "Grad de îndatorare / sumă credit")}</span><b>{gearing}% · {EUR(model.debt)}</b></div>
+          <div className="doc-kv"><span>{d("Rate / tenor", "Dobândă / scadență")}</span><b>{rate.toFixed(2)}% · {tenor} {d("yrs", "ani")}</b></div>
+          <div className="doc-kv"><span>{d("Annual debt service", "Serviciul anual al datoriei")}</span><b>{EUR(model.annuity)}</b></div>
+          <div className="doc-kv"><span>{d("Payback — P50 / P90", "Amortizare — P50 / P90")}</span><b>{model.paybackP50 == null ? "25+" : model.paybackP50.toFixed(1)} / {model.paybackP90 == null ? "25+" : model.paybackP90.toFixed(1)} {d("yrs", "ani")}</b></div>
+          <div className="doc-kv"><span>{d("DSCR year 1 — P50 / P90", "DSCR anul 1 — P50 / P90")}</span><b>{model.dscrY1P50.toFixed(2)}x / {model.dscrY1P90.toFixed(2)}x</b></div>
+          <div className="doc-kv"><span>{d("Min DSCR over tenor — P50 / P90", "DSCR minim pe durată — P50 / P90")}</span><b>{model.dscrMinP50.toFixed(2)}x / {model.dscrMinP90.toFixed(2)}x</b></div>
         </div>
         <p className="doc-note" style={{ marginTop: 8 }}>
           {model.dscrMinP90 >= 1.2
-            ? "P90 minimum DSCR clears a conventional 1.20x covenant across the tenor."
-            : "P90 minimum DSCR is below a 1.20x covenant — reduce gearing or extend tenor to reach bankability."}
+            ? d("P90 minimum DSCR clears a conventional 1.20x covenant across the tenor.", "DSCR-ul minim P90 depășește un covenant convențional de 1,20x pe toată durata.")
+            : d("P90 minimum DSCR is below a 1.20x covenant — reduce gearing or extend tenor to reach bankability.", "DSCR-ul minim P90 este sub covenantul de 1,20x — reduceți gradul de îndatorare sau prelungiți scadența pentru a atinge bancabilitatea.")}
         </p>
 
-        <h2>Methodology & limitations</h2>
+        <h2>{d("Methodology & limitations", "Metodologie și limitări")}</h2>
         <p style={{ fontSize: "11px" }}>
-          Resource from PVGIS-SARAH3 (2005–2023) for the site coordinates. Energy model and losses per the VoltMira engine
-          (SR EN 50549-1 export scheme, per-market tariff rules). P-values assume a normal distribution of annual energy
-          about P50 with the combined σ above. This is a screening assessment for financing discussions — not a substitute
-          for an independent engineer's report where required by the facility.
+          {d(
+            "Resource from PVGIS-SARAH3 (2005–2023) for the site coordinates. Energy model and losses per the VoltMira engine (SR EN 50549-1 export scheme, per-market tariff rules). P-values assume a normal distribution of annual energy about P50 with the combined σ above. This is a screening assessment for financing discussions — not a substitute for an independent engineer's report where required by the facility.",
+            "Resursă din PVGIS-SARAH3 (2005–2023) pentru coordonatele sitului. Model energetic și pierderi conform motorului VoltMira (schemă de export SR EN 50549-1, reguli tarifare per piață). Valorile P presupun o distribuție normală a energiei anuale în jurul P50, cu σ combinat de mai sus. Este o evaluare de screening pentru discuții de finanțare — nu înlocuiește raportul unui inginer independent, acolo unde este cerut de facilitate."
+          )}
         </p>
         <div className="doc-sign">
-          <div>Prepared by — VoltMira (automated) · {new Date().toLocaleDateString(loc)}</div>
-          <div>Reviewed by — [independent engineer]</div>
+          <div>{d("Prepared by — VoltMira (automated)", "Întocmit de — VoltMira (automat)")} · {new Date().toLocaleDateString(loc)}</div>
+          <div>{d("Reviewed by — [independent engineer]", "Verificat de — [inginer independent]")}</div>
         </div>
       </div>
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
+        .bk-doclang{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:12px;font-weight:600;color:var(--muted)}
         .bk-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px 20px}
         .bk-controls label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--muted)}
         .bk-controls output{color:var(--green);font-family:var(--font-d);font-weight:700}
@@ -288,7 +310,7 @@ export default function BankabilityPreview() {
   );
 }
 
-function ExceedanceCurve({ model }) {
+function ExceedanceCurve({ model, docLang }) {
   const W = 520, H = 150, PADL = 40, PADB = 24, PADT = 8, PADR = 10;
   // x = annual MWh across P99..P50 range, y = probability of exceedance
   const lo = model.byLevel.P99.annual / 1000, hi = model.byLevel.P50.annual / 1000;
@@ -299,6 +321,9 @@ function ExceedanceCurve({ model }) {
   const pts = [["P50", 50], ["P75", 25], ["P90", 10], ["P95", 5], ["P99", 1]]
     .map(([L, ex]) => [X(model.byLevel[L].annual / 1000), Y(ex)]);
   const d = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const axisLabel = docLang === "ro"
+    ? "energie anuală (MWh) — probabilitate de depășire"
+    : "annual energy (MWh) — probability of exceedance";
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: 520, margin: "4px 0 2px" }}>
       <line x1={PADL} y1={Y(0)} x2={W - PADR} y2={Y(0)} stroke="#ccc" strokeWidth="1" />
@@ -313,7 +338,7 @@ function ExceedanceCurve({ model }) {
       {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="3" fill={i === 2 ? "#E89B2D" : "#1E6B4E"} />)}
       <text x={pts[0][0]} y={pts[0][1] - 7} fontSize="8" fill="#1E6B4E" textAnchor="middle">P50</text>
       <text x={pts[2][0]} y={pts[2][1] - 7} fontSize="8" fill="#C97F14" textAnchor="middle">P90</text>
-      <text x={(W) / 2} y={H - 4} textAnchor="middle" fontSize="8" fill="#888">annual energy (MWh) — probability of exceedance</text>
+      <text x={(W) / 2} y={H - 4} textAnchor="middle" fontSize="8" fill="#888">{axisLabel}</text>
     </svg>
   );
 }
