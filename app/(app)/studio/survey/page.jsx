@@ -134,9 +134,9 @@ export default function SurveyPreview() {
         <h3>{T(TX.roof)}</h3>
         <div className="sv-grid">
           <label>{T(TX.pitch)} <output>{pitch}°</output>
-            <input type="range" min="0" max="90" value={pitch} onChange={(e) => setPitch(+e.target.value)} /></label>
+            <input type="range" min="0" max="90" value={pitch} style={{ "--fill": (pitch / 90) * 100 + "%" }} onChange={(e) => setPitch(+e.target.value)} /></label>
           <label>{T(TX.azimuth)} <output>{az}° · {dirLabel(az)}</output>
-            <input type="range" min="-180" max="180" step="5" value={az} onChange={(e) => setAz(+e.target.value)} /></label>
+            <input type="range" min="-180" max="180" step="5" value={az} style={{ "--fill": ((az + 180) / 360) * 100 + "%" }} onChange={(e) => setAz(+e.target.value)} /></label>
           <label style={{ gridColumn: "1 / -1" }}>{T(TX.shading)}
             <div className="pv-seg" style={{ marginTop: 6 }}>
               {["none", "light", "mod", "heavy"].map((s) => (

@@ -23,7 +23,7 @@
 // responses never reveal whether an email address has an account.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { supabaseBrowser, supabaseRecovery } from "../../lib/supabase-browser.js";
+import { supabaseBrowser } from "../../lib/supabase-browser.js";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
@@ -81,18 +81,6 @@ export default function LoginForm() {
   const tsRef = useRef(null);          // container div
   const tsWidget = useRef(null);       // widget id for reset()
   const tsToken = useRef("");          // latest token
-
-  // Referral capture: if the visitor arrived via …/login?ref=CODE, remember it in
-  // a 30-day cookie. After they create their workspace, the dashboard attributes
-  // the signup to that referrer. Survives the Google OAuth round-trip (same domain).
-  useEffect(() => {
-    try {
-      const ref = new URLSearchParams(window.location.search).get("ref");
-      if (ref && /^[a-z0-9]{4,16}$/i.test(ref)) {
-        document.cookie = `vm_ref=${encodeURIComponent(ref)}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
-      }
-    } catch {}
-  }, []);
 
   useEffect(() => {
     if (!TURNSTILE_SITE_KEY) return;
@@ -165,13 +153,13 @@ export default function LoginForm() {
     if (TURNSTILE_SITE_KEY && !tsToken.current) return toast(MSG.captcha);
     setBusy(true);
     try {
-      // Asked for over the IMPLICIT flow on purpose: PKCE would tie the link to
-      // this browser's code_verifier, so opening the mail on a phone after
-      // requesting it on a laptop dead-ended at /login?error=auth. Implicit puts
-      // the session in the URL hash, which /reset-password adopts on any device.
-      await supabaseRecovery().auth.resetPasswordForEmail(addr, {
-        captchaToken: tsToken.current || undefined,
-        redirectTo: `${location.origin}/reset-password`,
+      // We mint + send the reset email ourselves via /api/forgot-password so it's
+      // branded and comes from "VoltMira Support" instead of Supabase's bare
+      // default template. The server uses an admin recovery link (implicit flow),
+      // which /reset-password adopts on any device — laptop-request, phone-open works.
+      await fetch("/api/forgot-password", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: addr, token: tsToken.current || undefined }),
       });
     } catch { /* ignore — same message either way */ } finally {
       resetCaptcha();   // Turnstile tokens are single-use — clear it for the next action

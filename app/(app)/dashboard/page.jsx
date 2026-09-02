@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { supabaseServer } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
-import { createProject, cycleProjectStatus, maybeClaimReferral } from "../../../lib/actions.js";
+import { createProject, cycleProjectStatus } from "../../../lib/actions.js";
 import { quote } from "@voltmira/engine";
 import { companyEngine } from "../../../lib/engineSettings.js";
 import { t, normLang } from "../../../lib/i18n.js";
@@ -80,9 +80,6 @@ function feedIcon(kind) {
 }
 
 export default async function Dashboard() {
-  // If this account arrived via a referral link, attribute it once (best-effort;
-  // never allowed to break the dashboard).
-  try { await maybeClaimReferral(); } catch {}
   const sb = supabaseServer();
   const [co, { data: projects }, { data: leads }, { data: acts }, stats] = await Promise.all([
     currentCompany(),

@@ -568,7 +568,7 @@ const CSS = `
   }
   @media(max-width:520px){.team-hero{grid-template-columns:minmax(0,1fr)}.th-item{border-left:none}}
 
-  .team-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;align-items:start}
+  .team-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;align-items:start}
   /* minmax(0,1fr), not 1fr: a bare 1fr is minmax(auto,1fr), so one long
      unbreakable string (a member email) sets the track min-content and pushes
      every card past the viewport. At 375px this blew the cards out to 469px. */

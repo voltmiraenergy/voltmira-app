@@ -2,7 +2,7 @@
 // app/(app)/SideNav.jsx — sidebar nav with icons + active-page highlight (amber).
 // Desktop: a full vertical list of every tab. Mobile: a 4-tab bottom bar
 // (Dashboard, Leads, Quotes, Activity) + a "More" button that opens a bottom
-// sheet with the rest (Catalog, Team, Refer, Settings, Guide). The desktop/mobile
+// sheet with the rest (Catalog, Team, Settings, Guide). The desktop/mobile
 // split is CSS-driven; the sheet toggle is the only client state.
 import { useState } from "react";
 import Link from "next/link";
@@ -48,12 +48,6 @@ const ICONS = {
   "/guide": (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v16H5.5A1.5 1.5 0 0 0 4 20.5z" /><path d="M4 20.5A1.5 1.5 0 0 1 5.5 19H19v2H5.5A1.5 1.5 0 0 1 4 20.5z" />
-    </svg>
-  ),
-  "/refer": (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="8" width="18" height="4" rx="1" /><path d="M12 8v13M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" />
-      <path d="M12 8S10.5 3.5 8 4.2C6.3 4.7 6.4 7 8 7.6 9.6 8.2 12 8 12 8ZM12 8s1.5-4.5 4-3.8c1.7.5 1.6 2.8 0 3.4C14.4 8.2 12 8 12 8Z" />
     </svg>
   ),
   "/team": (
