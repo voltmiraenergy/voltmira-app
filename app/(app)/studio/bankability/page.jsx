@@ -9,7 +9,7 @@
 // surrounding chrome follows the app language like every other surface.
 import { useEffect, useMemo, useState } from "react";
 import {
-  useLang, makeT, PreviewHeader, MockNote, EUR, NUM, engineSettings,
+  useLang, makeT, PreviewHeader, MockNote, EUR, NUM, engineSettings, downloadStudioDoc,
   useStudioClient, ClientBar,
 } from "../studio-kit.jsx";
 import { simulate, SOLAR_SEASON } from "../_engine.js";
@@ -166,7 +166,7 @@ export default function BankabilityPreview() {
       <PreviewHeader slug="bankability" lang={lang} title={t("title")} sub={t("sub")}
         right={<>
           <button className="btn ghost sm" onClick={exportCsv}>{t("csv")}</button>
-          <button className="btn ghost sm" onClick={() => window.print()}>{t("pdf")}</button>
+          <button className="btn ghost sm" onClick={() => downloadStudioDoc("bankability-P50-P90")}>{t("pdf")}</button>
         </>} />
       <MockNote>{t("note")}</MockNote>
 

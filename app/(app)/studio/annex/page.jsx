@@ -5,7 +5,7 @@
 // it's consistent, and it prints.
 import { useEffect, useMemo, useState } from "react";
 import {
-  useLang, makeT, PreviewHeader, MockNote, DEMO_SYSTEM, protRows,
+  useLang, makeT, PreviewHeader, MockNote, DEMO_SYSTEM, protRows, downloadStudioDoc,
   useStudioClient, ClientBar,
 } from "../studio-kit.jsx";
 
@@ -153,7 +153,7 @@ export default function AnnexPreview() {
   return (
     <>
       <PreviewHeader slug="annex" lang={lang} title={t("title")} sub={t("sub")}
-        right={<button className="btn ghost sm" onClick={() => window.print()}>{t("print")}</button>} />
+        right={<button className="btn ghost sm" onClick={() => downloadStudioDoc("anexa-tehnica")}>{t("print")}</button>} />
       <MockNote>{t("note")}</MockNote>
 
       <ClientBar lang={lang} />
@@ -281,8 +281,8 @@ function SLD({ phases, batt, strings, mcb, invKw, modules, docLang }) {
   const boxY = yMain - BH / 2;
   const wire = (x1, x2, y = yMain) => <line x1={x1} y1={y} x2={x2} y2={y} stroke="#14211b" strokeWidth="1.3" />;
   return (
-    <div style={{ overflowX: "auto" }}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ minWidth: 680, background: "#FCFBF7", border: "1px solid #E5E2D6", borderRadius: 8 }}>
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", maxWidth: "100%", background: "#FCFBF7", border: "1px solid #E5E2D6", borderRadius: 8 }}>
         {/* PV array */}
         <rect x={cols[0]} y={yMain - 34} width={118} height={68} rx="5" fill="#fff" stroke="#14211b" strokeWidth="1.3" />
         {[0, 1, 2].map((i) => [0, 1, 2].map((j) => (

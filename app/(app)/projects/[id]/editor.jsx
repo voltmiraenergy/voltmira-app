@@ -273,10 +273,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       catch { if (tab) tab.close(); return; }
     }
     if (p.status === "draft") update({ status: "sent" });
-    // Instant client save-as-PDF: /p/<code>?print=1 fires window.print via
-    // AutoPrint — no ~5s server-Chromium wait, and on a phone it opens the
-    // native save / share sheet so the PDF actually saves.
-    const url = `/p/${code}?print=1`;
+    // Clean, server-rendered PDF: headless Chromium with displayHeaderFooter:false,
+    // so there's NO browser header/footer stamp (page title, URL, date) the way
+    // a client-side window.print() leaves. Chromium is pre-warmed when the share
+    // panel opens (see the effect below), so this is a short wait, and the tab
+    // shows the actual PDF — saveable on desktop and on a phone.
+    const url = `/api/proposal/${code}/pdf`;
     if (tab) tab.location.href = url; else window.location.href = url;
   }
 

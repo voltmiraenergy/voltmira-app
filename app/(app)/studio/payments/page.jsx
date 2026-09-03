@@ -6,7 +6,7 @@
 // the XML are derived from the engine + the client bar.
 import { useEffect, useMemo, useState } from "react";
 import {
-  useLang, tx, PreviewHeader, MockNote, NUM,
+  useLang, tx, PreviewHeader, MockNote, NUM, downloadStudioDoc,
   useStudioClient, ClientBar, engineSettings,
 } from "../studio-kit.jsx";
 import { simulate, FX } from "../_engine.js";
@@ -118,7 +118,7 @@ export default function PaymentsPreview() {
   return (
     <>
       <PreviewHeader slug="payments" lang={lang} title={T(TX.title)} sub={T(TX.sub)}
-        right={<button className="btn ghost sm" onClick={() => window.print()}>{T(TX.print)}</button>} />
+        right={<button className="btn ghost sm" onClick={() => downloadStudioDoc("factura")}>{T(TX.print)}</button>} />
       <MockNote>{T(TX.note)}</MockNote>
 
       <ClientBar lang={lang} />

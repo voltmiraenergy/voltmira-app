@@ -8,7 +8,7 @@
 // Still self-contained: nothing is submitted to an operator or written to Supabase.
 import { useEffect, useMemo, useState, useCallback } from "react";
 import {
-  useLang, tx, PreviewHeader, MockNote, NUM, printDoc,
+  useLang, tx, PreviewHeader, MockNote, NUM, downloadStudioDoc,
   useStudioClient, ClientBar, engineSettings, DEMO_SYSTEM, protRows,
 } from "../studio-kit.jsx";
 import { simulate, FX } from "../_engine.js";
@@ -259,7 +259,7 @@ export default function ConnectionPreview() {
   return (
     <>
       <PreviewHeader slug="connection" lang={lang} title={T(TX.title)} sub={T(TX.sub)}
-        right={<button className="btn ghost sm" onClick={printDoc}>{T(TX.gen)}</button>} />
+        right={<button className="btn ghost sm" onClick={() => downloadStudioDoc("cerere-racordare")}>{T(TX.gen)}</button>} />
       <MockNote>{T(TX.note)}</MockNote>
 
       <ClientBar lang={lang} />

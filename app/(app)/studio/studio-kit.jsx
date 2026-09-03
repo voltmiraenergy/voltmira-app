@@ -336,6 +336,43 @@ export function printDoc() {
   if (typeof window !== "undefined") window.print();
 }
 
+// Download the current document surface as a CLEAN PDF (no browser header/footer
+// stamp). We grab the rendered .pv-doc + its own CSS and post them to the server,
+// which renders them with headless Chromium. Falls back to window.print() if the
+// server render is unavailable, so the button always does something.
+export async function downloadStudioDoc(filename = "voltmira-document", label) {
+  if (typeof document === "undefined") return;
+  const doc = document.querySelector(".pv-wrap .pv-doc");
+  if (!doc) { window.print(); return; }
+  // Every rule scoped to the document sheet. Inline styles (the single-line
+  // diagram, the charts) already travel with outerHTML; palette tokens are added
+  // server-side, so this renders identically off the live page.
+  let css = "";
+  for (const ss of document.styleSheets) {
+    let rules; try { rules = ss.cssRules; } catch { continue; }
+    for (const r of rules) {
+      if (r.selectorText && /\.pv-doc/.test(r.selectorText)) css += r.cssText + "\n";
+    }
+  }
+  try {
+    const res = await fetch("/api/studio/pdf", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ html: doc.outerHTML, css, title: label || filename, filename }),
+    });
+    if (!res.ok) throw new Error("pdf_" + res.status);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = /\.pdf$/i.test(filename) ? filename : filename + ".pdf";
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+  } catch {
+    // Server render unavailable — fall back to the browser's own print dialog.
+    window.print();
+  }
+}
+
 /* --------------------------------------------------------------- styles ---- */
 export const TOKENS_CSS = `
 :root{
