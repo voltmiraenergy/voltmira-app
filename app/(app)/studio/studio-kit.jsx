@@ -567,12 +567,23 @@ html[data-theme="dark"] .pv-code{background:#080B09}
 .pv-doc-scroll{overflow-x:auto}
 
 @media print{
-  .sidebar,.skip-link,.demo-bar,.pv-tabs,.pv-topbar,.pv-head-right,.pv-noprint,.pv-toast{display:none!important}
+  /* Only the white document sheet prints. Every piece of the editor around it —
+     the section heading, the "these numbers are real" note, the client/system
+     control panel, the pill nav, sidebar and buttons — is app chrome, not part
+     of the client-facing document, so it's all dropped. The document already
+     restates the client + system figures the control bar holds. */
+  .sidebar,.skip-link,.demo-bar,.pv-topbar,.pv-tabs,.pv-head,.cl-bar,.pv-mocknote,
+  .pv-head-right,.pv-noprint,.pv-toast{display:none!important}
   .app .main{margin:0!important;padding:0!important;background:#fff!important}
-  .pv-wrap,.pv-doc{max-width:none;margin:0}
-  .pv-doc{border:none;padding:0}
-  .pv-head{margin-bottom:10px}
+  .pv-wrap{max-width:none;margin:0;padding:0}
+  .pv-doc-scroll{overflow:visible!important}
+  .pv-doc{max-width:none;margin:0;border:none;border-radius:0;box-shadow:none;padding:0}
+  /* keep the green headings, highlighted rows and coloured figures on paper */
+  .pv-doc,.pv-doc *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* don't split a table row, a key/value pair or the signature block across pages */
+  .pv-doc table,.pv-doc tr,.pv-doc .doc-kv,.pv-doc .doc-sign,.pv-doc .doc-grid{break-inside:avoid}
+  .pv-doc h2,.pv-doc h3{break-after:avoid}
   body{background:#fff!important}
-  @page{size:A4;margin:14mm}
+  @page{size:A4;margin:16mm}
 }
 `;
