@@ -28,6 +28,22 @@ export const MARKETS = {
   RO: { name: "Romania", scheme: "Net metering 1:1", feed: 0.036, oneToOne: true,  defaultPrice: 0.21, subsidyKey: "subsidyAmountRon", subsidyFx: "RON", prosumer: true },
 };
 
+// Single source of truth for the base specific yield (kWh/kWp/yr), optimal plane
+// (~35° south), PVGIS-SARAH3 ballpark. Every Studio surface derives its yield
+// from this × the site's roof factor (see effectiveYield) so the quote, annex,
+// P50/P90 and connection file can never quote three different production numbers
+// for the same system.
+export const OPTIMAL_YIELD = { MD: 1250, RO: 1300 };
+
+// The yield actually used for a client: the optimal-plane resource for their
+// market, scaled by the roof factor the site survey produces (pitch × azimuth ×
+// shading, 1.0 = ideal). Falls back to the optimal plane when no survey has run.
+export function effectiveYield(client) {
+  const base = OPTIMAL_YIELD[client?.market] || OPTIMAL_YIELD.MD;
+  const f = Number(client?.roofFactor);
+  return Math.round(base * (f > 0 ? f : 1));
+}
+
 export const SOLAR_SEASON = [0.30,0.40,0.60,0.80,1.00,1.10,1.10,1.00,0.80,0.60,0.40,0.25];
 
 export const FX = { EUR: 1, RON: 4.97, MDL: 19.8 };

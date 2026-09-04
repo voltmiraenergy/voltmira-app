@@ -12,7 +12,7 @@ import {
   useLang, makeT, PreviewHeader, MockNote, EUR, NUM, engineSettings, downloadStudioDoc,
   useStudioClient, ClientBar,
 } from "../studio-kit.jsx";
-import { simulate, SOLAR_SEASON } from "../_engine.js";
+import { simulate, SOLAR_SEASON, effectiveYield } from "../_engine.js";
 
 const TX = {
   title: { en: "P50 / P90 export", ro: "Export P50 / P90", ru: "Экспорт P50 / P90" },
@@ -31,11 +31,23 @@ const TX = {
   rate: { en: "Debt rate", ro: "Dobândă", ru: "Ставка" },
   tenor: { en: "Tenor", ro: "Scadență", ru: "Срок" },
   yrs: { en: "yrs", ro: "ani", ru: "лет" },
+  disc: { en: "Discount rate", ro: "Rată de actualizare", ru: "Ставка дисконт." },
   pdf: { en: "Export PDF", ro: "Exportă PDF", ru: "Экспорт PDF" },
   csv: { en: "Export data (CSV)", ro: "Exportă datele (CSV)", ru: "Экспорт данных (CSV)" },
 };
 
-const YIELD_KWP = 1256;   // PVGIS-SARAH3 optimal-plane resource assumption
+// Internal rate of return by bisection on the P50 cashflow series (cf[0] = −capex).
+function irrOf(cf) {
+  const npvAt = (r) => cf.reduce((s, c, n) => s + c / Math.pow(1 + r, n), 0);
+  let lo = -0.9, hi = 1.5, fLo = npvAt(lo);
+  if (fLo * npvAt(hi) > 0) return null;          // no sign change in range
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2, fMid = npvAt(mid);
+    if (Math.abs(fMid) < 1e-4) return mid;
+    if (fLo * fMid < 0) hi = mid; else { lo = mid; fLo = fMid; }
+  }
+  return (lo + hi) / 2;
+}
 
 // Combined P50 uncertainty budget (independent, root-sum-square).
 const UNC = [
@@ -77,6 +89,7 @@ export default function BankabilityPreview() {
   const [gearing, setGearing] = useState(70);
   const [rate, setRate] = useState(6.5);
   const [tenor, setTenor] = useState(8);
+  const [disc, setDisc] = useState(6);   // real discount rate for NPV / IRR / LCOE
   // Document language — English by default (lender / technical-adviser audience),
   // Romanian on demand. Independent of the app-chrome language.
   const [docLang, setDocLang] = useState("en");
@@ -86,7 +99,7 @@ export default function BankabilityPreview() {
     name: client.name, ref: client.ref || "VM-BNK-2026",
     market: client.market, kw: +client.kw || 0, price: +client.price || 0.15,
     cons: +client.cons || 0, batt: (+client.batteryKwh || 0) > 0, battKwh: +client.batteryKwh || 0,
-    afmSubsidy: false, yieldOverride: YIELD_KWP,
+    afmSubsidy: false, yieldOverride: effectiveYield(client),
   }), [client]);
   const schemeLabel = project.market === "MD"
     ? d("Moldova · net billing", "Moldova · facturare netă")
@@ -135,13 +148,32 @@ export default function BankabilityPreview() {
         p50Net, p90Net, ds,
       });
     }
+
+    // Discounted investment metrics on the P50 case. NPV and IRR run on the net
+    // cashflow (energy value less O&M) against CAPEX; LCOE divides discounted
+    // lifetime cost (CAPEX + escalating O&M) by discounted lifetime energy.
+    const dr = disc / 100;
+    const opexRate = (Number(E.opexPct) || 0.5) / 100;
+    const cfP50 = [-capex];
+    let npv = -capex, pvEnergy = 0, pvCost = capex;
+    for (const s of sched) {
+      const dn = Math.pow(1 + dr, s.n);
+      npv += s.p50Net / dn;
+      cfP50.push(s.p50Net);
+      pvEnergy += (s.p50MWh * 1000) / dn;
+      pvCost += (capex * opexRate * Math.pow(1 + infl, s.n - 1)) / dn;
+    }
+    const irr = irrOf(cfP50);
+    const lcoe = pvEnergy > 0 ? pvCost / pvEnergy : null;
+
     return {
       capex, debt, annuity, byLevel, cv, p50Annual,
       paybackP50: p50sim.payback, paybackP90: p90sim.payback,
       netY1, p90NetY1, sched, dscrMinP50, dscrMinP90,
       dscrY1P50: netY1 / annuity, dscrY1P90: p90NetY1 / annuity,
+      npv, irr, lcoe,
     };
-  }, [gearing, rate, tenor, project]);
+  }, [gearing, rate, tenor, disc, project]);
 
   const loc = docLang === "ro" ? "ro-RO" : "en-IE";
   const showYears = [1, 2, 3, 5, 10, 15, 20, 25];
@@ -152,6 +184,12 @@ export default function BankabilityPreview() {
       [],
       ["Exceedance", "Annual MWh", "Specific yield kWh/kWp", "Capacity factor %"],
       ...PLEVELS.map((L) => [L, (model.byLevel[L].annual / 1000).toFixed(1), model.byLevel[L].spec.toFixed(0), (model.byLevel[L].cf * 100).toFixed(1)]),
+      [],
+      ["Investment metrics (P50, discounted)"],
+      ["Discount rate %", disc.toFixed(1)],
+      ["NPV EUR", Math.round(model.npv)],
+      ["IRR %", model.irr == null ? "n/a" : (model.irr * 100).toFixed(1)],
+      ["LCOE EUR/kWh", model.lcoe == null ? "n/a" : model.lcoe.toFixed(3)],
       [],
       ["Year", "Degradation %", "P50 MWh", "P90 MWh", "P50 net cash EUR", "P90 net cash EUR", "Debt service EUR"],
       ...model.sched.map((s) => [s.n, s.degrPct.toFixed(2), s.p50MWh.toFixed(1), s.p90MWh.toFixed(1), Math.round(s.p50Net), Math.round(s.p90Net), Math.round(s.ds)]),
@@ -191,6 +229,9 @@ export default function BankabilityPreview() {
           <label><span>{t("tenor")} <output>{tenor} {t("yrs")}</output></span>
             <input type="range" min="5" max="15" step="1" value={tenor} style={{ "--fill": ((tenor - 5) / 10) * 100 + "%" }}
               onChange={(e) => setTenor(+e.target.value)} /></label>
+          <label><span>{t("disc")} <output>{disc.toFixed(1)}%</output></span>
+            <input type="range" min="3" max="12" step="0.5" value={disc} style={{ "--fill": ((disc - 3) / 9) * 100 + "%" }}
+              onChange={(e) => setDisc(+e.target.value)} /></label>
         </div>
       </div>
 
@@ -205,7 +246,7 @@ export default function BankabilityPreview() {
         <div className="doc-grid">
           <div className="doc-kv"><span>{d("Installed DC capacity", "Putere DC instalată")}</span><b>{project.kw.toFixed(1)} kWp</b></div>
           <div className="doc-kv"><span>{d("Market / scheme", "Piață / schemă")}</span><b>{schemeLabel}</b></div>
-          <div className="doc-kv"><span>{d("Optimal-plane resource", "Resursă în plan optim")}</span><b>{project.yieldOverride} kWh/kWp/{d("yr", "an")}</b></div>
+          <div className="doc-kv"><span>{d("Specific yield (site, P50)", "Producție specifică (sit, P50)")}</span><b>{project.yieldOverride} kWh/kWp/{d("yr", "an")}</b></div>
           <div className="doc-kv"><span>{d("Assessment horizon", "Orizont de evaluare")}</span><b>{d("25 years", "25 de ani")}</b></div>
           <div className="doc-kv"><span>{d("CAPEX (turnkey)", "CAPEX (la cheie)")}</span><b>{EUR(model.capex)}</b></div>
           <div className="doc-kv"><span>{d("Combined P50 uncertainty (σ)", "Incertitudine P50 combinată (σ)")}</span><b>{SIGMA.toFixed(1)}%</b></div>
@@ -284,6 +325,20 @@ export default function BankabilityPreview() {
           {model.dscrMinP90 >= 1.2
             ? d("P90 minimum DSCR clears a conventional 1.20x covenant across the tenor.", "DSCR-ul minim P90 depășește un covenant convențional de 1,20x pe toată durata.")
             : d("P90 minimum DSCR is below a 1.20x covenant — reduce gearing or extend tenor to reach bankability.", "DSCR-ul minim P90 este sub covenantul de 1,20x — reduceți gradul de îndatorare sau prelungiți scadența pentru a atinge bancabilitatea.")}
+        </p>
+
+        <h2>{d("Investment metrics (P50, discounted)", "Indicatori de investiție (P50, actualizați)")}</h2>
+        <div className="doc-grid">
+          <div className="doc-kv"><span>{d("Discount rate (real)", "Rată de actualizare (reală)")}</span><b>{disc.toFixed(1)}%</b></div>
+          <div className="doc-kv"><span>{d("Net present value (NPV)", "Valoare actualizată netă (VAN)")}</span><b>{EUR(model.npv)}</b></div>
+          <div className="doc-kv"><span>{d("Internal rate of return (IRR)", "Rata internă de rentabilitate (RIR)")}</span><b>{model.irr == null ? "—" : (model.irr * 100).toFixed(1) + "%"}</b></div>
+          <div className="doc-kv"><span>{d("LCOE — levelised cost of energy", "LCOE — cost nivelat al energiei")}</span><b>{model.lcoe == null ? "—" : "€" + model.lcoe.toFixed(3) + "/kWh"}</b></div>
+        </div>
+        <p className="doc-note" style={{ marginTop: 8 }}>
+          {d(
+            "NPV and IRR are computed on the P50 net cashflow (energy value less O&M) over 25 years against CAPEX, at the discount rate above. LCOE = discounted lifetime cost (CAPEX + O&M) per discounted kWh produced — compare it to the retail tariff to see the margin.",
+            "VAN și RIR sunt calculate pe fluxul net P50 (valoarea energiei minus O&M) pe 25 de ani față de CAPEX, la rata de actualizare de mai sus. LCOE = costul actualizat pe durata de viață (CAPEX + O&M) pe kWh actualizat produs — comparați-l cu tariful de la rețea pentru a vedea marja."
+          )}
         </p>
 
         <h2>{d("Methodology & limitations", "Metodologie și limitări")}</h2>

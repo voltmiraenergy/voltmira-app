@@ -8,7 +8,7 @@ import {
   useLang, tx, PreviewHeader, MockNote, NUM,
   useStudioClient, ClientBar, engineSettings, DEMO_SYSTEM,
 } from "../studio-kit.jsx";
-import { simulate, FX } from "../_engine.js";
+import { simulate, FX, effectiveYield } from "../_engine.js";
 
 const TX = {
   title: { en: "Moldova quote", ro: "Ofertă Moldova", ru: "Расчёт для Молдовы" },
@@ -98,7 +98,7 @@ export default function QuotePreview() {
     const mkt = regime === "netmet" ? "RO" : "MD";
     const base = {
       market: mkt, kw, price: +client.price || 0.185, cons: +client.cons || 0,
-      batt: (+client.batteryKwh || 0) > 0, battKwh: +client.batteryKwh || 0, yieldOverride: 1235,
+      batt: (+client.batteryKwh || 0) > 0, battKwh: +client.batteryKwh || 0, yieldOverride: effectiveYield(client),
     };
     const q = {
       p: simulate(base, E, "pess"), e: simulate(base, E, "expc"), o: simulate(base, E, "opti"),

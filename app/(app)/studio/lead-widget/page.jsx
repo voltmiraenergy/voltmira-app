@@ -9,7 +9,7 @@ import {
   useLang, tx, PreviewHeader, MockNote, NUM,
   CopyButton, engineSettings,
 } from "../studio-kit.jsx";
-import { quote, FX } from "../_engine.js";
+import { quote, FX, OPTIMAL_YIELD } from "../_engine.js";
 
 const TX = {
   title: { en: "Public calculator widget", ro: "Widget calculator public", ru: "Публичный калькулятор" },
@@ -94,7 +94,7 @@ export default function LeadWidgetPreview() {
     const kw = Math.min(10, Math.max(2, Math.round(rawKw * 2) / 2));
     const project = {
       market: "MD", kw, price, cons: Math.round(annualKwh), batt: false, battKwh: 0,
-      yieldOverride: roof === "flat" ? 1120 : 1180,
+      yieldOverride: Math.round(OPTIMAL_YIELD.MD * (roof === "flat" ? 0.90 : 0.95)),
     };
     const q = quote(project, E);
     const life = q.e.rows[q.e.rows.length - 1] + q.e.cost; // gross 25-yr savings, EUR

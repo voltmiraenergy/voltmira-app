@@ -8,7 +8,7 @@ import {
   useLang, tx, PreviewHeader, MockNote, NUM,
   useStudioClient, ClientBar, engineSettings, DEMO_SYSTEM,
 } from "../studio-kit.jsx";
-import { simulate } from "../_engine.js";
+import { simulate, OPTIMAL_YIELD } from "../_engine.js";
 
 const TX = {
   title: { en: "Site survey", ro: "Vizită tehnică", ru: "Техобследование" },
@@ -32,7 +32,7 @@ const TX = {
   sh_heavy: { en: "Heavy", ro: "Puternică", ru: "Сильное" },
   std: { en: "PVGIS standard (35° / S)", ro: "PVGIS standard (35° / S)", ru: "PVGIS стандарт (35° / Ю)" },
   thisRoof: { en: "This roof", ro: "Acoperișul acesta", ru: "Эта крыша" },
-  delta: { en: "vs the number the quote uses today", ro: "față de numărul folosit azi în ofertă", ru: "против числа, что расчёт берёт сейчас" },
+  delta: { en: "vs the optimal-plane ideal — now used across the quote & documents", ro: "față de planul optim ideal — acum folosit în ofertă și documente", ru: "против идеальной плоскости — теперь во всём расчёте и документах" },
   pbShift: { en: "payback moves", ro: "amortizarea se mută", ru: "окупаемость сдвигается" },
   elec: { en: "Buildability check", ro: "Verificare de fezabilitate", ru: "Проверка реализуемости" },
   conn: { en: "Connection", ro: "Racordare", ru: "Подключение" },
@@ -81,7 +81,7 @@ function dirLabel(az) {
 export default function SurveyPreview() {
   const lang = useLang();
   const T = (o) => tx(o, lang);
-  const { client } = useStudioClient();
+  const { client, update } = useStudioClient();
   useEffect(() => { document.title = "Site survey — VoltMira Studio"; }, []);
 
   const [pitch, setPitch] = useState(18);
@@ -89,10 +89,15 @@ export default function SurveyPreview() {
   const [shade, setShade] = useState("light");
   const [photos, setPhotos] = useState({ roof: true, board: true, meter: false, access: false });
 
-  const baseOptimal = client.market === "RO" ? 1210 : 1255;   // optimal-plane kWh/kWp/yr
+  const baseOptimal = OPTIMAL_YIELD[client.market] || OPTIMAL_YIELD.MD;   // optimal-plane kWh/kWp/yr
   const roofFactor = lerpPts(TILT_PTS, pitch) * lerpPts(AZ_PTS, az) * SHADE[shade];
   const roofYield = Math.round(baseOptimal * roofFactor);
   const deltaPct = (roofYield / baseOptimal - 1) * 100;
+
+  // Feed this real-roof factor into the shared client so the quote, connection
+  // file, P50/P90 and monitoring all use THIS site's yield — one number across
+  // the whole pipeline, not an optimal-plane guess that only the survey corrects.
+  useEffect(() => { update({ roofFactor }); }, [roofFactor]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const eng = useMemo(() => {
     const E = engineSettings();

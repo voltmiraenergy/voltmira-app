@@ -11,7 +11,7 @@ import {
   useLang, tx, PreviewHeader, MockNote, NUM, downloadStudioDoc,
   useStudioClient, ClientBar, engineSettings, DEMO_SYSTEM, protRows,
 } from "../studio-kit.jsx";
-import { simulate, FX } from "../_engine.js";
+import { simulate, FX, effectiveYield } from "../_engine.js";
 
 const TX = {
   title: { en: "Connection pipeline", ro: "Flux de racordare", ru: "Процесс подключения" },
@@ -127,7 +127,7 @@ export default function ConnectionPreview() {
     const project = {
       market: "MD", kw, price: +client.price || 0.185,
       cons: +client.cons || 0, batt: (+client.batteryKwh || 0) > 0, battKwh: +client.batteryKwh || 0,
-      yieldOverride: 1180,
+      yieldOverride: effectiveYield(client),
     };
     const sim = simulate(project, E, "expc");
     const panel = DEMO_SYSTEM.panel;

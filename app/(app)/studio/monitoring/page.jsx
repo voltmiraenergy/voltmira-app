@@ -8,7 +8,7 @@ import {
   useLang, tx, PreviewHeader, MockNote, NUM, seeded,
   useStudioClient, ClientBar, engineSettings,
 } from "../studio-kit.jsx";
-import { simulate, SOLAR_SEASON } from "../_engine.js";
+import { simulate, SOLAR_SEASON, effectiveYield } from "../_engine.js";
 
 const TX = {
   title: { en: "Fleet monitoring", ro: "Monitorizare parc", ru: "Мониторинг парка" },
@@ -74,7 +74,7 @@ export default function MonitoringPreview() {
     const E = engineSettings();
     const sim = simulate({
       market: client.market, kw: +client.kw || 0, price: +client.price || 0.185,
-      cons: +client.cons || 0, batt: false, yieldOverride: 1235,
+      cons: +client.cons || 0, batt: false, yieldOverride: effectiveYield(client),
     }, E, "expc");
     const seasonSum = SOLAR_SEASON.reduce((a, b) => a + b, 0);
     const rnd = seeded(Math.round((+client.kw || 6) * 97) + 13);

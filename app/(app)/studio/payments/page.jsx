@@ -9,7 +9,7 @@ import {
   useLang, tx, PreviewHeader, MockNote, NUM, downloadStudioDoc,
   useStudioClient, ClientBar, engineSettings,
 } from "../studio-kit.jsx";
-import { simulate, FX } from "../_engine.js";
+import { simulate, FX, effectiveYield } from "../_engine.js";
 
 const TX = {
   title: { en: "Payments & cashflow", ro: "Încasări & flux de numerar", ru: "Оплаты и денежный поток" },
@@ -77,7 +77,7 @@ export default function PaymentsPreview() {
     const sim = simulate({
       market: client.market, kw: +client.kw || 0, price: +client.price || 0.185,
       cons: +client.cons || 0, batt: (+client.batteryKwh || 0) > 0, battKwh: +client.batteryKwh || 0,
-      yieldOverride: 1235,
+      yieldOverride: effectiveYield(client),
     }, E, "expc");
     return sim.grossCost;
   }, [client]);
