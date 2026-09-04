@@ -5,9 +5,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { t } from "../../../lib/i18n.js";
 
-export default function TeamActions({ lang, meId, me, members, counts = {}, pending = [], stats = {}, currency = "EUR" }) {
+export default function TeamActions({ lang, meId, me, members, counts = {}, pending = [], stats = {}, currency = "EUR", seatCap = null }) {
   const router = useRouter();
   const isOwner = me?.role === "owner";
+  // seatCap is null for unlimited plans. atCap gates the invite so it can never
+  // present a form that the server will only reject with a "no seats" error.
+  const cap = seatCap;
+  const atCap = cap != null && members.length >= cap;
   const [openMember, setOpenMember] = useState(null);
   const money = (n) => "€" + Math.round(n || 0).toLocaleString("en-IE");
   const [email, setEmail] = useState("");
@@ -191,7 +195,7 @@ export default function TeamActions({ lang, meId, me, members, counts = {}, pend
             )}
           </div>
         ); })}
-        <div className="seat-note"><b>{t("seats_used", lang, { n: members.length })}</b> · {t("team_plan_note", lang)}</div>
+        <div className="seat-note"><b>{cap == null ? t("seats_used_unl", lang, { n: members.length }) : t("seats_used", lang, { n: members.length, cap })}</b> · {t("team_plan_note", lang)}</div>
       </section>
 
       {isOwner ? (
@@ -225,10 +229,11 @@ export default function TeamActions({ lang, meId, me, members, counts = {}, pend
               <input className="input" id="tmMail" type="email" required value={email}
                 placeholder={t("ph_company_mail", lang)} onChange={e => setEmail(e.target.value)} />
             </div>
-            <button className="btn primary" style={{ width: "100%" }} disabled={busy}>
+            <button className="btn primary" style={{ width: "100%" }} disabled={busy || atCap}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
               {busy ? t("tm_inviting", lang) : t("add_to_team", lang)}
             </button>
+            {atCap && <p style={{ fontSize: 12.5, fontWeight: 600, margin: "10px 0 0", color: "var(--muted)" }}>{t("tm_seats_full", lang, { cap })}</p>}
           </form>
           {msg && <p style={{ fontSize: 13, fontWeight: 600, margin: "12px 0 0",
             color: msg.ok ? "var(--green)" : "var(--red)" }}>{msg.text}</p>}

@@ -64,7 +64,10 @@ const Z = { P50: 0, P75: 0.6745, P90: 1.2816, P95: 1.6449, P99: 2.3263 };
 const PLEVELS = ["P50", "P75", "P90", "P95", "P99"];
 
 // degradation factor for year n (LID year 1, then linear)
-const degr = (n) => (n <= 1 ? 0.98 : 0.98 * Math.pow(1 - 0.0055, n - 1));
+// Degradation factor for year n: 2% LID in year 1, then `rate`/yr linear.
+const degrAt = (n, rate) => (n <= 1 ? 0.98 : 0.98 * Math.pow(1 - rate, n - 1));
+const DEGR_BASE = 0.0055;
+const degr = (n) => degrAt(n, DEGR_BASE);
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MONTHS_RO = ["Ian", "Feb", "Mar", "Apr", "Mai", "Iun", "Iul", "Aug", "Sep", "Oct", "Noi", "Dec"];
@@ -166,12 +169,41 @@ export default function BankabilityPreview() {
     const irr = irrOf(cfP50);
     const lcoe = pvEnergy > 0 ? pvCost / pvEnergy : null;
 
+    // Sensitivity (tornado): swing one NPV driver low/high, hold the rest at
+    // base. NPV from first principles so the base call reproduces `npv` exactly.
+    const npvOf = (net, cx, drv, iflv, degRate) => {
+      const g1 = degrAt(1, degRate);
+      let v = -cx;
+      for (let n = 1; n <= 25; n++) {
+        const g = degrAt(n, degRate) / g1;
+        v += (net * g * Math.pow(1 + iflv, n - 1)) / Math.pow(1 + drv, n);
+      }
+      return v;
+    };
+    // Re-simulate only for the drivers that change the yearly net (yield, price);
+    // CAPEX/discount/degradation/inflation are analytic on the same net.
+    const netAt = (yMul, pMul) => simulate(
+      { ...project, yieldOverride: project.yieldOverride * yMul, price: project.price * pMul }, E, "expc"
+    ).year1;
+    const opexBase = capex * opexRate;
+    const raw = [
+      { key: "yield", a: npvOf(netAt(0.90, 1), capex, dr, infl, DEGR_BASE), b: npvOf(netAt(1.10, 1), capex, dr, infl, DEGR_BASE) },
+      { key: "price", a: npvOf(netAt(1, 0.80), capex, dr, infl, DEGR_BASE), b: npvOf(netAt(1, 1.20), capex, dr, infl, DEGR_BASE) },
+      { key: "capex", a: npvOf(netY1 + opexBase * (1 - 1.15), capex * 1.15, dr, infl, DEGR_BASE), b: npvOf(netY1 + opexBase * (1 - 0.85), capex * 0.85, dr, infl, DEGR_BASE) },
+      { key: "disc", a: npvOf(netY1, capex, (disc + 3) / 100, infl, DEGR_BASE), b: npvOf(netY1, capex, Math.max(0, disc - 3) / 100, infl, DEGR_BASE) },
+      { key: "degr", a: npvOf(netY1, capex, dr, infl, 0.0085), b: npvOf(netY1, capex, dr, infl, 0.0025) },
+      { key: "infl", a: npvOf(netY1, capex, dr, Math.max(0, infl - 0.02), DEGR_BASE), b: npvOf(netY1, capex, dr, infl + 0.02, DEGR_BASE) },
+    ];
+    const tornado = raw
+      .map((r) => ({ key: r.key, lo: Math.min(r.a, r.b), hi: Math.max(r.a, r.b), span: Math.abs(r.a - r.b) }))
+      .sort((x, y) => y.span - x.span);
+
     return {
       capex, debt, annuity, byLevel, cv, p50Annual,
       paybackP50: p50sim.payback, paybackP90: p90sim.payback,
       netY1, p90NetY1, sched, dscrMinP50, dscrMinP90,
       dscrY1P50: netY1 / annuity, dscrY1P90: p90NetY1 / annuity,
-      npv, irr, lcoe,
+      npv, irr, lcoe, tornado,
     };
   }, [gearing, rate, tenor, disc, project]);
 
@@ -341,6 +373,26 @@ export default function BankabilityPreview() {
           )}
         </p>
 
+        <h2>{d("Sensitivity — NPV drivers (P50)", "Sensibilitate — factori VAN (P50)")}</h2>
+        <TornadoSVG
+          rows={model.tornado} base={model.npv}
+          label={(k) => ({
+            yield: d("Specific yield ±10%", "Producție specifică ±10%"),
+            price: d("Electricity price ±20%", "Preț energie ±20%"),
+            capex: d("CAPEX ±15%", "CAPEX ±15%"),
+            disc: d("Discount rate ±3pp", "Rată de actualizare ±3pp"),
+            degr: d("Degradation 0.25–0.85%/yr", "Degradare 0,25–0,85%/an"),
+            infl: d("Energy inflation ±2pp", "Inflație energetică ±2pp"),
+          }[k] || k)}
+          baseLabel={d("base", "bază")}
+        />
+        <p className="doc-note">
+          {d(
+            "Each bar swings one driver to its low and high while the rest stay at base, ordered by impact on NPV. The dashed line is the base-case NPV; a bar reaching left of it is where that driver alone turns the project NPV-negative.",
+            "Fiecare bară variază un factor la valorile mică și mare, restul rămânând la bază, ordonate după impactul asupra VAN. Linia punctată e VAN-ul de bază; o bară care trece la stânga ei arată unde acel factor singur face proiectul VAN-negativ."
+          )}
+        </p>
+
         <h2>{d("Methodology & limitations", "Metodologie și limitări")}</h2>
         <p style={{ fontSize: "11px" }}>
           {d(
@@ -362,6 +414,37 @@ export default function BankabilityPreview() {
         .bk-controls output{color:var(--green);font-family:var(--font-d);font-weight:700}
       ` }} />
     </>
+  );
+}
+
+// Tornado chart: horizontal bars, one per NPV driver, centred on the base-case
+// NPV. Downside (below base) in terracotta, upside (above base) in green.
+function TornadoSVG({ rows, base, label, baseLabel }) {
+  const fmt = (v) => (v < 0 ? "−" : "") + "€" + Math.abs(Math.round(v / 1000)) + "k";
+  const W = 560, rowH = 30, PADT = 10, PADB = 30, LBL = 168, xR = W - 10;
+  const H = PADT + rows.length * rowH + PADB;
+  const lo = Math.min(base, ...rows.map((r) => r.lo));
+  const hi = Math.max(base, ...rows.map((r) => r.hi));
+  const span = (hi - lo) || 1;
+  const X = (v) => LBL + ((v - lo) / span) * (xR - LBL);
+  const bx = X(base);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: 560, margin: "4px 0 2px" }} xmlns="http://www.w3.org/2000/svg">
+      <line x1={bx} y1={PADT} x2={bx} y2={H - PADB} stroke="#14211b" strokeWidth="1" strokeDasharray="3 3" />
+      {rows.map((r, i) => {
+        const y = PADT + i * rowH + 5, bh = 17;
+        return (
+          <g key={r.key}>
+            <text x={LBL - 8} y={y + bh / 2 + 3} textAnchor="end" fontSize="9" fill="#333">{label(r.key)}</text>
+            <rect x={X(r.lo)} y={y} width={Math.max(0, bx - X(r.lo))} height={bh} fill="#E3C0B3" />
+            <rect x={bx} y={y} width={Math.max(0, X(r.hi) - bx)} height={bh} fill="#B4D3C2" />
+            <text x={X(r.lo) - 3} y={y + bh / 2 + 3} textAnchor="end" fontSize="7.5" fill="#9A5A46">{fmt(r.lo)}</text>
+            <text x={X(r.hi) + 3} y={y + bh / 2 + 3} textAnchor="start" fontSize="7.5" fill="#2F6A49">{fmt(r.hi)}</text>
+          </g>
+        );
+      })}
+      <text x={bx} y={H - 10} textAnchor="middle" fontSize="8" fill="#14211b">{baseLabel} {fmt(base)}</text>
+    </svg>
   );
 }
 

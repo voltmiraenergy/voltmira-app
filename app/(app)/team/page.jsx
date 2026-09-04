@@ -129,7 +129,7 @@ export default async function Team() {
       <TeamActions lang={lang} meId={user?.id}
         me={(members || []).find(m => m.id === user?.id) || null}
         members={members || []} counts={counts} pending={pending} stats={stats}
-        currency={co?.currency || "EUR"} />
+        currency={co?.currency || "EUR"} seatCap={seatCap} />
     </div>
   );
 }
