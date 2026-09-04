@@ -282,7 +282,7 @@ function SLD({ phases, batt, strings, mcb, invKw, modules, docLang }) {
   const wire = (x1, x2, y = yMain) => <line x1={x1} y1={y} x2={x2} y2={y} stroke="#14211b" strokeWidth="1.3" />;
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", maxWidth: "100%", background: "#FCFBF7", border: "1px solid #E5E2D6", borderRadius: 8 }}>
+      <svg className="sld-svg" viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", maxWidth: "100%", background: "#FCFBF7", border: "1px solid #E5E2D6", borderRadius: 8 }}>
         {/* PV array */}
         <rect x={cols[0]} y={yMain - 34} width={118} height={68} rx="5" fill="#fff" stroke="#14211b" strokeWidth="1.3" />
         {[0, 1, 2].map((i) => [0, 1, 2].map((j) => (

@@ -5,7 +5,7 @@
 // shown first, and design sanity checks. Mock chrome; payback is the engine.
 import { useEffect, useMemo, useState } from "react";
 import {
-  useLang, tx, PreviewHeader, MockNote, NUM,
+  useLang, tx, PreviewHeader, MockNote, NUM, downloadStudioDoc,
   useStudioClient, ClientBar, engineSettings, DEMO_SYSTEM,
 } from "../studio-kit.jsx";
 import { simulate, FX, effectiveYield } from "../_engine.js";
@@ -133,10 +133,16 @@ export default function QuotePreview() {
   const netEur = Math.max(0, eng.grossEur - grant.amtEur);
   const pbTxt = (v) => (v == null ? "25+" : v.toFixed(1));
   const life = eng.q.e.rows.length ? eng.q.e.rows[eng.q.e.rows.length - 1] + eng.q.e.cost : 0;
+  // The client-facing offer renders in the language chosen for THIS client, not
+  // the installer's working language — that's the promise the surface makes.
+  const oc = (o) => tx(o, clientLang);
+  const effY = effectiveYield(client);
+  const ocLoc = clientLang === "ru" ? "ru-RU" : clientLang === "en" ? "en-IE" : "ro-RO";
 
   return (
     <>
-      <PreviewHeader slug="quote" lang={lang} title={T(TX.title)} sub={T(TX.sub)} />
+      <PreviewHeader slug="quote" lang={lang} title={T(TX.title)} sub={T(TX.sub)}
+        right={<button className="btn ghost sm" onClick={() => downloadStudioDoc("oferta-" + (client.ref || "voltmira"))}>{tx({ en: "Download PDF", ro: "Descarcă PDF", ru: "Скачать PDF" }, lang)}</button>} />
       <MockNote>{T(TX.note)}</MockNote>
 
       <ClientBar lang={lang} />
@@ -229,6 +235,46 @@ export default function QuotePreview() {
               <div className="qt-band-y">{pbTxt(b.payback)} <small>{T(TX.yrs)}</small></div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Client-facing offer document — this is what "Download PDF" exports
+          (downloadStudioDoc extracts only the .pv-doc), rendered in the client's
+          language. The cockpit panels above stay on screen, out of the PDF. */}
+      <div className="pv-doc-scroll">
+        <div className="pv-doc">
+          <div className="doc-co">VoltMira · {new Date().toLocaleDateString(ocLoc)} · {oc({ ro: "ofertă solară", en: "solar offer", ru: "солнечное предложение" })}</div>
+          <h1>{oc({ ro: "Ofertă sistem fotovoltaic", en: "Solar system offer", ru: "Предложение по солнечной системе" })}</h1>
+          <p className="doc-sub">{client.name}{client.address ? " · " + client.address : ""}</p>
+
+          <h2>{oc({ ro: "Sistemul", en: "The system", ru: "Система" })}</h2>
+          <div className="doc-grid">
+            <div className="doc-kv"><span>{oc({ ro: "Putere instalată", en: "Installed power", ru: "Мощность" })}</span><b>{kw.toFixed(1)} kW{battKwh > 0 ? ` · ${battKwh} kWh` : ""}</b></div>
+            <div className="doc-kv"><span>{oc({ ro: "Producție estimată", en: "Estimated yield", ru: "Оценка выработки" })}</span><b>{NUM(kw * effY)} kWh/{oc({ ro: "an", en: "yr", ru: "год" })}</b></div>
+            <div className="doc-kv"><span>{oc({ ro: "Preț la cheie", en: "Turnkey price", ru: "Цена под ключ" })}</span><b>{lei(eng.grossEur)} · {eur(eng.grossEur)}</b></div>
+            {grant.eligible && <div className="doc-kv"><span>{oc({ ro: "După grant", en: "After grant", ru: "После гранта" })}</span><b>{lei(netEur)} · {eur(netEur)}</b></div>}
+            <div className="doc-kv"><span>{oc({ ro: "Economie brută pe 25 de ani", en: "25-year gross savings", ru: "Экономия за 25 лет" })}</span><b>{lei(life)}</b></div>
+            <div className="doc-kv"><span>{oc({ ro: "Schemă de compensare", en: "Compensation scheme", ru: "Схема компенсации" })}</span><b>{client.market === "MD" ? oc({ ro: "facturare netă", en: "net billing", ru: "нетто-биллинг" }) : oc({ ro: "contorizare netă 1:1", en: "net metering 1:1", ru: "нетто-учёт 1:1" })}</b></div>
+          </div>
+
+          <h2>{oc({ ro: "Amortizare — trei scenarii oneste", en: "Payback — three honest scenarios", ru: "Окупаемость — три честных сценария" })}</h2>
+          <table>
+            <thead><tr><th>{oc({ ro: "Scenariu", en: "Scenario", ru: "Сценарий" })}</th><th>{oc({ ro: "Amortizare", en: "Payback", ru: "Окупаемость" })}</th><th>{oc({ ro: "Ipoteze", en: "Assumptions", ru: "Допущения" })}</th></tr></thead>
+            <tbody>
+              <tr><td>{oc({ ro: "Pesimist", en: "Pessimistic", ru: "Пессимистичный" })}</td><td>{pbTxt(eng.q.p.payback)} {oc({ ro: "ani", en: "yrs", ru: "лет" })}</td><td>{oc({ ro: "randament −8%, inflație 0%", en: "yield −8%, inflation 0%", ru: "выработка −8%, инфляция 0%" })}</td></tr>
+              <tr style={{ background: "#F0EEE6" }}><td><b>{oc({ ro: "Așteptat", en: "Expected", ru: "Ожидаемый" })}</b></td><td><b>{pbTxt(eng.q.e.payback)} {oc({ ro: "ani", en: "yrs", ru: "лет" })}</b></td><td>{oc({ ro: "randament de bază, degr. 0,5%/an, inflație 3%", en: "base yield, degr. 0.5%/yr, inflation 3%", ru: "базовая выработка, деград. 0,5%/год, инфляция 3%" })}</td></tr>
+              <tr><td>{oc({ ro: "Optimist", en: "Optimistic", ru: "Оптимистичный" })}</td><td>{pbTxt(eng.q.o.payback)} {oc({ ro: "ani", en: "yrs", ru: "лет" })}</td><td>{oc({ ro: "randament +8%, inflație 5%", en: "yield +8%, inflation 5%", ru: "выработка +8%, инфляция 5%" })}</td></tr>
+            </tbody>
+          </table>
+          <p className="doc-note">{oc({
+            ro: "Cifrele sunt estimări pe motorul VoltMira, la ipotezele de mai sus și la randamentul specific al acestui sit. Ofertă orientativă până la vizita tehnică.",
+            en: "Figures are estimates on the VoltMira engine at the assumptions above and this site's specific yield. Indicative until the site survey.",
+            ru: "Цифры — оценки на движке VoltMira при указанных допущениях и удельной выработке этого объекта. Ориентировочно до техобследования.",
+          })}</p>
+          <div className="doc-sign">
+            <div>{oc({ ro: "Instalator (nume, semnătură)", en: "Installer (name, signature)", ru: "Установщик (имя, подпись)" })}</div>
+            <div>{oc({ ro: "Client (nume, semnătură)", en: "Client (name, signature)", ru: "Клиент (имя, подпись)" })}</div>
+          </div>
         </div>
       </div>
 

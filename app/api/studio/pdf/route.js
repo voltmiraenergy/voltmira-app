@@ -57,14 +57,29 @@ export async function POST(req) {
 <style>
   @page{size:A4;margin:16mm}
   html,body{background:#fff;margin:0;padding:0}
-  body{font-family:Inter,system-ui,sans-serif;color:#14211b;font-size:12.7px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-family:Inter,system-ui,sans-serif;color:#14211b;font-size:11.8px;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   ${TOKENS}
   ${css}
   /* the on-screen card chrome becomes a plain full-page document */
-  .pv-doc{max-width:none!important;margin:0!important;border:none!important;border-radius:0!important;box-shadow:none!important;padding:0!important;background:#fff!important}
-  .pv-doc table,.pv-doc tr,.pv-doc .doc-kv,.pv-doc .doc-sign,.pv-doc .doc-grid{break-inside:avoid}
+  .pv-doc{max-width:none!important;margin:0!important;border:none!important;border-radius:0!important;box-shadow:none!important;padding:0!important;background:#fff!important;font-size:11.8px!important;line-height:1.4!important}
+  /* Tighter print rhythm than the screen so a long doc (the annex) packs into
+     full pages instead of spilling a couple of trailing lines + the signature
+     onto a near-empty extra page. */
+  .pv-doc h1{margin:0 0 3px!important}
+  .pv-doc h2{margin:12px 0 5px!important;font-size:12.5px!important}
+  .pv-doc h3{margin:9px 0 4px!important}
+  .pv-doc p{margin:0 0 5px!important}
+  .pv-doc table{margin:2px 0 4px!important;font-size:10.8px!important}
+  .pv-doc td,.pv-doc th{padding:4px 7px!important}
+  .pv-doc .doc-kv{padding:3px 0!important}
+  .pv-doc .doc-sign{margin-top:14px!important}
+  .pv-doc table,.pv-doc tr,.pv-doc .doc-kv,.pv-doc .doc-grid{break-inside:avoid}
+  .pv-doc .doc-sign > div{break-inside:avoid}
   .pv-doc h2,.pv-doc h3{break-after:avoid}
   svg{max-width:100%}
+  /* the single-line diagram is the tallest block — cap it so it never eats a
+     third of a page and push the following sections up */
+  .pv-doc .sld-svg{max-width:600px!important;display:block;margin:0 auto}
 </style></head><body>${html}</body></html>`;
 
   try {

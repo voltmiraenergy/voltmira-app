@@ -5,7 +5,7 @@
 // that works offline. All mock.
 import { useEffect, useMemo, useState } from "react";
 import {
-  useLang, tx, PreviewHeader, MockNote,
+  useLang, tx, PreviewHeader, MockNote, downloadStudioDoc,
   useStudioClient, ClientBar,
 } from "../studio-kit.jsx";
 
@@ -81,7 +81,8 @@ export default function SchedulePreview() {
 
   return (
     <>
-      <PreviewHeader slug="schedule" lang={lang} title={T(TX.title)} sub={T(TX.sub)} />
+      <PreviewHeader slug="schedule" lang={lang} title={T(TX.title)} sub={T(TX.sub)}
+        right={<button className="btn ghost sm" onClick={() => downloadStudioDoc("proces-verbal-" + (client.ref || "voltmira"))}>{tx({ en: "Handover certificate", ro: "Proces-verbal PDF", ru: "Акт приёмки PDF" }, lang)}</button>} />
       <MockNote>{T(TX.note)}</MockNote>
 
       <ClientBar lang={lang} />
@@ -163,6 +164,46 @@ export default function SchedulePreview() {
                 {signed ? "✓ " + T(TX.fld_signed) : T(TX.fld_sign) + " — " + T(TX.tap)}
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* The deliverable this stage produces: the signed commissioning /
+          handover certificate. "Handover certificate" exports just this .pv-doc,
+          filled from the field checklist above. */}
+      <div className="pv-doc-scroll">
+        <div className="pv-doc">
+          <div className="doc-co">VoltMira · {new Date().toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "en" ? "en-IE" : "ro-RO")} · {tx({ ro: "proces-verbal de recepție", en: "commissioning record", ru: "акт приёмки" }, lang)}</div>
+          <h1>{tx({ ro: "Proces-verbal de punere în funcțiune", en: "Commissioning & handover certificate", ru: "Акт ввода в эксплуатацию и приёмки" }, lang)}</h1>
+          <p className="doc-sub">{client.name}{client.address ? " · " + client.address : ""}</p>
+
+          <h2>{tx({ ro: "Instalația", en: "The installation", ru: "Установка" }, lang)}</h2>
+          <div className="doc-grid">
+            <div className="doc-kv"><span>{tx({ ro: "Putere instalată", en: "Installed power", ru: "Мощность" }, lang)}</span><b>{kw.toFixed(1)} kW{(+client.batteryKwh || 0) > 0 ? ` · ${client.batteryKwh} kWh` : ""}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Module", en: "Modules", ru: "Модули" }, lang)}</span><b>{modules} × 435 W</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Invertor", en: "Inverter", ru: "Инвертор" }, lang)}</span><b>Deye {tx({ ro: "hibrid", en: "hybrid", ru: "гибрид" }, lang)} · {client.phases === 3 ? "3~ 400 V" : "1~ 230 V"}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Data recepției", en: "Handover date", ru: "Дата приёмки" }, lang)}</span><b>{new Date().toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "en" ? "en-IE" : "ro-RO")}</b></div>
+          </div>
+
+          <h2>{tx({ ro: "Verificări la punere în funcțiune", en: "Commissioning checks", ru: "Проверки при вводе" }, lang)}</h2>
+          <table>
+            <tbody>
+              {FIELD_STEPS.map((s) => (
+                <tr key={s}>
+                  <td>{T(TX[s])}</td>
+                  <td style={{ width: 120 }}><b style={{ color: steps[s] ? "var(--green)" : "#B4700F" }}>{steps[s] ? tx({ ro: "✓ efectuat", en: "✓ done", ru: "✓ выполнено" }, lang) : tx({ ro: "în curs", en: "pending", ru: "в процессе" }, lang)}</b></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="doc-note">{tx({
+            ro: "Invertorul deține funcție anti-insularizare (LoM); prima pornire și măsurătorile au fost efectuate conform SR EN 50549-1. Instalația a fost predată în stare de funcționare.",
+            en: "The inverter has loss-of-mains (anti-islanding) protection; first power and readings were performed per SR EN 50549-1. The installation was handed over in working order.",
+            ru: "Инвертор имеет защиту от островного режима (LoM); первый пуск и замеры выполнены по SR EN 50549-1. Установка передана в рабочем состоянии.",
+          }, lang)}</p>
+          <div className="doc-sign">
+            <div>{tx({ ro: "Instalator autorizat (nume, semnătură, ștampilă)", en: "Authorised installer (name, signature, stamp)", ru: "Уполномоченный установщик (имя, подпись, печать)" }, lang)}</div>
+            <div>{signed ? "✓ " + client.name : tx({ ro: "Beneficiar (nume, semnătură)", en: "Beneficiary (name, signature)", ru: "Получатель (имя, подпись)" }, lang)}</div>
           </div>
         </div>
       </div>

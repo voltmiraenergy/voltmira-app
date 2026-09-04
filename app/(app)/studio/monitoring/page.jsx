@@ -5,7 +5,7 @@
 // P50 line is the engine.
 import { useEffect, useMemo, useState } from "react";
 import {
-  useLang, tx, PreviewHeader, MockNote, NUM, seeded,
+  useLang, tx, PreviewHeader, MockNote, NUM, seeded, downloadStudioDoc,
   useStudioClient, ClientBar, engineSettings,
 } from "../studio-kit.jsx";
 import { simulate, SOLAR_SEASON, effectiveYield } from "../_engine.js";
@@ -93,7 +93,8 @@ export default function MonitoringPreview() {
 
   return (
     <>
-      <PreviewHeader slug="monitoring" lang={lang} title={T(TX.title)} sub={T(TX.sub)} />
+      <PreviewHeader slug="monitoring" lang={lang} title={T(TX.title)} sub={T(TX.sub)}
+        right={<button className="btn ghost sm" onClick={() => downloadStudioDoc("raport-performanta-" + (client.ref || "voltmira"))}>{tx({ en: "Performance report", ro: "Raport PDF", ru: "Отчёт PDF" }, lang)}</button>} />
       <MockNote>{T(TX.note)}</MockNote>
 
       <ClientBar lang={lang} />
@@ -165,6 +166,51 @@ export default function MonitoringPreview() {
       <div className="pv-callout">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 2v20M2 12h20" /></svg>
         <div><b>{T(TX.moat_t)}</b><p>{T(TX.moat_p)}</p></div>
+      </div>
+
+      {/* The deliverable: an annual performance report (real vs the promised P50)
+          the installer sends the client. "Performance report" exports this .pv-doc. */}
+      <div className="pv-doc-scroll">
+        <div className="pv-doc">
+          <div className="doc-co">VoltMira · {new Date().toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "en" ? "en-IE" : "ro-RO")} · {tx({ ro: "raport de performanță", en: "performance report", ru: "отчёт о производительности" }, lang)}</div>
+          <h1>{tx({ ro: "Raport de performanță", en: "Performance report", ru: "Отчёт о производительности" }, lang)}</h1>
+          <p className="doc-sub">{client.name} · {(+client.kw || 0).toFixed(1)} kW</p>
+
+          <h2>{tx({ ro: "Producție reală față de P50", en: "Actual production vs P50", ru: "Факт против P50" }, lang)}</h2>
+          <div className="doc-grid">
+            <div className="doc-kv"><span>{tx({ ro: "Producție reală (an curent)", en: "Actual (year to date)", ru: "Факт (с начала года)" }, lang)}</span><b>{NUM(data.ytdAct)} kWh</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Estimare P50 (an curent)", en: "P50 estimate (YTD)", ru: "Оценка P50 (с начала года)" }, lang)}</span><b>{NUM(data.ytdP50)} kWh</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Realizat din P50", en: "Delivered vs P50", ru: "Выполнено от P50" }, lang)}</span><b style={{ color: data.pct >= 100 ? "var(--green)" : "#B4700F" }}>{data.pct}%</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Ultima lună", en: "Last month", ru: "Последний месяц" }, lang)}</span><b>{NUM(data.lastMonth.actual)} kWh</b></div>
+          </div>
+
+          <h2>{tx({ ro: "Lunar (MWh)", en: "Monthly (MWh)", ru: "Помесячно (МВт·ч)" }, lang)}</h2>
+          <table>
+            <thead><tr><th>{tx({ ro: "Luna", en: "Month", ru: "Месяц" }, lang)}</th><th>{tx({ ro: "P50", en: "P50", ru: "P50" }, lang)}</th><th>{tx({ ro: "Real", en: "Actual", ru: "Факт" }, lang)}</th><th>{tx({ ro: "vs P50", en: "vs P50", ru: "vs P50" }, lang)}</th></tr></thead>
+            <tbody>
+              {data.rows.filter((r) => r.actual != null).map((r) => (
+                <tr key={r.i}>
+                  <td>{months[r.i]}</td>
+                  <td>{(r.p50 / 1000).toFixed(2)}</td>
+                  <td>{(r.actual / 1000).toFixed(2)}</td>
+                  <td><b style={{ color: r.actual >= r.p50 ? "var(--green)" : "#B4700F" }}>{Math.round((r.actual / r.p50) * 100)}%</b></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h2>{tx({ ro: "Garanții", en: "Warranties", ru: "Гарантии" }, lang)}</h2>
+          <div className="doc-grid">
+            <div className="doc-kv"><span>{T(TX.w_work)}</span><b>{T(TX.until)} 2028</b></div>
+            <div className="doc-kv"><span>{T(TX.w_inv)}</span><b>{T(TX.until)} 2036</b></div>
+            <div className="doc-kv"><span>{T(TX.w_panel)}</span><b>{T(TX.until)} 2051</b></div>
+          </div>
+          <p className="doc-note">{tx({
+            ro: "Producția reală vine din portalul invertorului; linia P50 este aceeași estimare din ofertă. Un sistem sănătos oscilează în jurul valorii de 100% pe an, cu sezonalitate lunară.",
+            en: "Actual production is pulled from the inverter portal; the P50 line is the same estimate from the original quote. A healthy system tracks around 100% over the year, with monthly seasonality.",
+            ru: "Факт берётся из портала инвертора; линия P50 — та же оценка из расчёта. Здоровая система держится около 100% за год с помесячной сезонностью.",
+          }, lang)}</p>
+        </div>
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
