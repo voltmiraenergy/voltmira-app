@@ -18,9 +18,9 @@ export const PREVIEW_FEATURES = [
   },
   {
     slug: "quote",
-    en: { name: "Commercial offer (C&I)", nav: "Ofertă", short: "The offer for mega projects — factory, warehouse and agri rooftops from 100 kW up. Self-consumption, a full capex breakdown, NPV / IRR / LCOE, a payment schedule and delivery timeline on the live engine, exported as a real multi-page offer dossier in the client's language." },
-    ro: { name: "Ofertă comercială (C&I)", nav: "Ofertă", short: "Oferta pentru proiecte mari — hale, depozite și ferme de la 100 kW în sus. Autoconsum, defalcarea completă a investiției, VAN / RIR / LCOE, grafic de plăți și de execuție pe motorul live, exportate ca dosar de ofertă real, pe mai multe pagini, în limba clientului." },
-    ru: { name: "Коммерческое предложение (C&I)", nav: "Расчёт", short: "Предложение для мегапроектов — заводы, склады и агрокрыши от 100 кВт. Самопотребление, полная разбивка капзатрат, NPV / IRR / LCOE, график платежей и сроков на живом движке, выгрузка как настоящий многостраничный пакет на языке клиента." },
+    en: { name: "Offer — residential & C&I", nav: "Ofertă", short: "Two offer modes on one engine. Residential enforces the 10 kW cap, net metering vs billing per client and the real Casa Verde / FEERM maths. C&I handles mega projects (100 kW+) with self-consumption, a full capex breakdown, NPV / IRR / LCOE, a payment schedule and delivery timeline — each exported as an offer document in the client's language." },
+    ro: { name: "Ofertă — rezidențial & C&I", nav: "Ofertă", short: "Două moduri de ofertă pe un singur motor. Rezidențial impune plafonul de 10 kW, contorizare vs facturare netă per client și matematica reală Casa Verde / FEERM. C&I acoperă proiectele mari (100 kW+) cu autoconsum, defalcarea investiției, VAN / RIR / LCOE, grafic de plăți și de execuție — fiecare exportat ca document de ofertă în limba clientului." },
+    ru: { name: "Предложение — жилое и C&I", nav: "Расчёт", short: "Два режима на одном движке. Жилой применяет лимит 10 кВт, нетто-учёт/биллинг по клиенту и математику Casa Verde / FEERM. C&I — мегапроекты (100 кВт+) с самопотреблением, разбивкой капзатрат, NPV / IRR / LCOE, графиком платежей и сроков — каждый выгружается как документ на языке клиента." },
   },
   {
     slug: "connection",
