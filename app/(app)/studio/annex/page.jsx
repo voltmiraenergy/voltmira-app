@@ -144,8 +144,8 @@ export default function AnnexPreview() {
 
   const cables = [
     [docLang === "en" ? "DC string cable" : "Cablu șir DC", "H1Z2Z2-K 1×6 mm² Cu", "≤ 12 m/string"],
-    [docLang === "en" ? "AC connection cable" : "Cablu racord AC", eng.acCable + " Cu", "inverter → tablou / panou"],
-    [docLang === "en" ? "Protective earthing conductor" : "Conductor de protecție (PE)", "16 mm² Cu", "→ bară principală de egalizare"],
+    [docLang === "en" ? "AC connection cable" : "Cablu racord AC", eng.acCable + " Cu", docLang === "en" ? "inverter to panel / board" : "invertor la tablou / panou"],
+    [docLang === "en" ? "Protective earthing conductor" : "Conductor de protecție (PE)", "16 mm² Cu", docLang === "en" ? "to main earthing bar" : "la bara principală de egalizare"],
     [docLang === "en" ? "Equipotential bonding (frames/rails)" : "Egalizare potențial (rame/șine)", "6 mm² Cu", "IEC 60364-5-54"],
     [docLang === "en" ? "Earthing arrangement" : "Priză de pământ", `TN-S, R ≤ 4 Ω`, "PE 155 / IEC 62305 (LPS if present)"],
   ];

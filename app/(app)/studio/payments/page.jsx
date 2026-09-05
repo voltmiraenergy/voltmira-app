@@ -19,9 +19,9 @@ const TX = {
     ru: "Аванс, остаток, сроки и флаги просрочки по объекту — плюс за месяц получено / к получению / законтрактовано и налоговая накладная из расчёта.",
   },
   note: {
-    en: "The active client's contract value comes from the engine; the e-Factura XML is built from the client bar and your invoicing details in Settings.",
-    ro: "Valoarea contractului clientului activ vine din motor; XML-ul e-Factura se construiește din bara de client și datele tale de facturare din Setări.",
-    ru: "Стоимость контракта активного клиента из движка; XML e-Factura строится из панели клиента и ваших реквизитов в Настройках.",
+    en: "The active client's contract value comes from the engine; the fiscal invoice below is built from the client bar and your invoicing details in Settings.",
+    ro: "Valoarea contractului clientului activ vine din motor; factura fiscală de mai jos se construiește din bara de client și datele tale de facturare din Setări.",
+    ru: "Стоимость контракта активного клиента из движка; налоговая накладная ниже строится из панели клиента и ваших реквизитов в Настройках.",
   },
   month: { en: "This month", ro: "Luna aceasta", ru: "Этот месяц" },
   received: { en: "Received", ro: "Încasat", ru: "Получено" },
@@ -46,15 +46,6 @@ const TX = {
   invNet: { en: "Net", ro: "Fără TVA", ru: "Без НДС" },
   invVat: { en: "VAT 20%", ro: "TVA 20%", ru: "НДС 20%" },
   invTot: { en: "Total", ro: "Total", ru: "Итого" },
-  xml: { en: "Generate e-Factura XML (SFS)", ro: "Generează XML e-Factura (SFS)", ru: "Сформировать XML e-Factura (SFS)" },
-  xmlDone: { en: "XML generated ✓", ro: "XML generat ✓", ru: "XML сформирован ✓" },
-  xmlNote: {
-    en: "e-Factura is mandatory for VAT-payer B2B in Moldova; a residential job also just needs the printed invoice above.",
-    ro: "e-Factura e obligatorie pentru B2B plătitor de TVA în Moldova; pentru o lucrare rezidențială e suficientă și factura printată de mai sus.",
-    ru: "e-Factura обязательна для B2B плательщиков НДС в Молдове; для жилого объекта достаточно и печатной накладной выше.",
-  },
-  xmlReady: { en: "XML ready — 1 invoice line, VAT 20%, buyer IDNO filled — ready to upload to the SFS portal", ro: "XML gata — 1 linie factură, TVA 20%, IDNO cumpărător completat — gata de încărcat pe portalul SFS", ru: "XML готов — 1 строка, НДС 20%, IDNO покупателя заполнен — можно загружать на портал SFS" },
-  xmlResid: { en: "XML generated. Not required for this residential job — keep it if you're a VAT payer.", ro: "XML generat. Nu e obligatoriu pentru această lucrare rezidențială — păstrează-l dacă ești plătitor de TVA.", ru: "XML сформирован. Для этого жилого объекта не обязателен — сохраните, если вы плательщик НДС." },
   print: { en: "Print / PDF", ro: "Printează / PDF", ru: "Печать / PDF" },
 };
 
@@ -82,7 +73,6 @@ export default function PaymentsPreview() {
     return sim.grossCost;
   }, [client]);
 
-  const [xml, setXml] = useState(false);
   const dayU = tx({ en: "days", ro: "zile", ru: "дн." }, lang);
 
   const jobs = [
@@ -110,59 +100,8 @@ export default function PaymentsPreview() {
     return ["due", "due"];
   }
 
-  const net = client.market === "MD" || true; // MD VAT 20%
   const gross = activeEur * FX.MDL;
   const netMdl = gross / 1.2, vatMdl = gross - netMdl;
-  const commercial = (+client.kw || 0) >= 30;
-
-  // Build and download a well-formed UBL 2.1 invoice — the shape Moldova's SFS
-  // e-Factura is based on — so the button produces a real, inspectable file
-  // instead of just flipping a label.
-  function downloadXml() {
-    const esc = (s) => String(s ?? "").replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
-    const today = new Date().toISOString().slice(0, 10);
-    const line = `${T(TX.invLine)} — ${(+client.kw || 0).toFixed(1)} kW${+client.batteryKwh > 0 ? ` + ${client.batteryKwh} kWh` : ""}`;
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
-  <cbc:CustomizationID>mdl:efactura:sfs:1.0</cbc:CustomizationID>
-  <cbc:ID>FF-2026-0148</cbc:ID>
-  <cbc:IssueDate>${today}</cbc:IssueDate>
-  <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
-  <cbc:DocumentCurrencyCode>MDL</cbc:DocumentCurrencyCode>
-  <cac:AccountingSupplierParty><cac:Party><cac:PartyName><cbc:Name>VoltMira</cbc:Name></cac:PartyName></cac:Party></cac:AccountingSupplierParty>
-  <cac:AccountingCustomerParty><cac:Party>
-    <cac:PartyName><cbc:Name>${esc(client.name)}</cbc:Name></cac:PartyName>
-    <cac:PostalAddress><cbc:StreetName>${esc(client.address)}</cbc:StreetName></cac:PostalAddress>
-  </cac:Party></cac:AccountingCustomerParty>
-  <cac:TaxTotal>
-    <cbc:TaxAmount currencyID="MDL">${vatMdl.toFixed(2)}</cbc:TaxAmount>
-    <cac:TaxSubtotal>
-      <cbc:TaxableAmount currencyID="MDL">${netMdl.toFixed(2)}</cbc:TaxableAmount>
-      <cbc:TaxAmount currencyID="MDL">${vatMdl.toFixed(2)}</cbc:TaxAmount>
-      <cac:TaxCategory><cbc:ID>S</cbc:ID><cbc:Percent>20</cbc:Percent><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:TaxCategory>
-    </cac:TaxSubtotal>
-  </cac:TaxTotal>
-  <cac:LegalMonetaryTotal>
-    <cbc:LineExtensionAmount currencyID="MDL">${netMdl.toFixed(2)}</cbc:LineExtensionAmount>
-    <cbc:TaxExclusiveAmount currencyID="MDL">${netMdl.toFixed(2)}</cbc:TaxExclusiveAmount>
-    <cbc:TaxInclusiveAmount currencyID="MDL">${gross.toFixed(2)}</cbc:TaxInclusiveAmount>
-    <cbc:PayableAmount currencyID="MDL">${gross.toFixed(2)}</cbc:PayableAmount>
-  </cac:LegalMonetaryTotal>
-  <cac:InvoiceLine>
-    <cbc:ID>1</cbc:ID>
-    <cbc:InvoicedQuantity unitCode="C62">1</cbc:InvoicedQuantity>
-    <cbc:LineExtensionAmount currencyID="MDL">${netMdl.toFixed(2)}</cbc:LineExtensionAmount>
-    <cac:Item><cbc:Name>${esc(line)}</cbc:Name></cac:Item>
-  </cac:InvoiceLine>
-</Invoice>`;
-    try {
-      const blob = new Blob([xml], { type: "application/xml;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = "efactura-FF-2026-0148.xml"; document.body.appendChild(a); a.click();
-      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 800);
-    } catch { /* preview-only, non-fatal */ }
-  }
 
   return (
     <>
@@ -238,18 +177,6 @@ export default function PaymentsPreview() {
             <div className="doc-kv"><span>{T(TX.invTot)}</span><b>{NUM(gross)} lei</b></div>
           </div>
           <p className="doc-note">{tx({ ro: `Echivalent €${NUM(activeEur)} la cursul BNM. Plata prin transfer în contul din antet, ref. FF-2026-0148.`, en: `€${NUM(activeEur)} equivalent at the BNM rate. Payment by transfer to the account in the header, ref. FF-2026-0148.`, ru: `Эквивалент €${NUM(activeEur)} по курсу BNM. Оплата переводом на счёт в шапке, реф. FF-2026-0148.` }, lang)}</p>
-
-          <div className="pv-noprint" style={{ marginTop: 16 }}>
-            <button className={"btn sm " + (xml ? "ghost" : "primary")} onClick={() => { downloadXml(); setXml(true); }}>
-              {xml ? T(TX.xmlDone) : T(TX.xml)}
-            </button>
-            {xml && (
-              <div className="qt-flag ok" style={{ marginTop: 10 }}>
-                {commercial ? T(TX.xmlReady) : T(TX.xmlResid)}
-              </div>
-            )}
-            <p className="doc-note" style={{ marginTop: 8 }}>{T(TX.xmlNote)}</p>
-          </div>
         </div>
       </div>
 

@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   useLang, tx, PreviewHeader, MockNote, downloadStudioDoc,
-  useStudioClient, ClientBar,
+  useStudioClient, ClientBar, DEMO_SYSTEM, protRows,
 } from "../studio-kit.jsx";
 
 const TX = {
@@ -78,6 +78,30 @@ export default function SchedulePreview() {
 
   const FIELD_STEPS = ["fld_arrive", "fld_mount", "fld_dc", "fld_ac", "fld_test"];
   const doneN = FIELD_STEPS.filter((s) => steps[s]).length;
+
+  // Concrete commissioning measurements, derived from the system so they read as
+  // real test results rather than boilerplate: string layout → string Voc, and a
+  // set of measured-vs-limit electrical checks per SR EN 50549-1 / IEC 60364-6.
+  const panel = DEMO_SYSTEM.panel;
+  const dcKw = (modules * panel.watt) / 1000;
+  const strings = Math.max(1, Math.round(dcKw / 5.5));
+  const mps = Math.ceil(modules / strings);
+  const stringVoc = Math.round(mps * panel.voc * 1.03); // ~ +3% cold-morning margin
+  const dateLoc = lang === "ru" ? "ru-RU" : lang === "en" ? "en-IE" : "ro-RO";
+  const measRows = [
+    [tx({ ro: "Rezistență de izolație DC (Riso)", en: "DC insulation resistance (Riso)", ru: "Сопротивление изоляции DC (Riso)" }, lang), "> 1 MΩ", "18 MΩ", true],
+    [tx({ ro: `Tensiune șir Voc (${strings} × ${mps} module)`, en: `String Voc (${strings} × ${mps} modules)`, ru: `Voc цепочки (${strings} × ${mps})` }, lang), `≤ ${client.phases === 3 ? 800 : 500} V`, `${stringVoc} V`, stringVoc <= (client.phases === 3 ? 800 : 500)],
+    [tx({ ro: "Rezistență priză de pământ", en: "Earth electrode resistance", ru: "Сопротивление заземления" }, lang), "≤ 4 Ω", "2,7 Ω", true],
+    [tx({ ro: "Declanșare diferențial (RCD 30 mA)", en: "RCD trip (30 mA)", ru: "Срабатывание УЗО (30 мА)" }, lang), "< 40 ms", "28 ms", true],
+    [tx({ ro: "Anti-insularizare (LoM)", en: "Anti-islanding (LoM)", ru: "Защита от островн. режима (LoM)" }, lang), tx({ ro: "declanșare", en: "trip", ru: "отключение" }, lang), tx({ ro: "≤ 0,15 s ✓", en: "≤ 0.15 s ✓", ru: "≤ 0,15 с ✓" }, lang), true],
+    [tx({ ro: "Polaritate DC + succesiune faze", en: "DC polarity + phase sequence", ru: "Полярность DC + чередование фаз" }, lang), tx({ ro: "corect", en: "correct", ru: "верно" }, lang), "✓", true],
+  ];
+  const HANDED = [
+    tx({ ro: "Manual de utilizare și acces la portalul de monitorizare", en: "User manual and monitoring-portal access", ru: "Руководство и доступ к порталу мониторинга" }, lang),
+    tx({ ro: "Certificate de garanție (module, invertor, montaj)", en: "Warranty certificates (modules, inverter, workmanship)", ru: "Гарантийные сертификаты (модули, инвертор, монтаж)" }, lang),
+    tx({ ro: "Schema electrică monofilară (as-built)", en: "Single-line diagram (as-built)", ru: "Однолинейная схема (as-built)" }, lang),
+    tx({ ro: "Declarația de conformitate a electricianului", en: "Electrician's declaration of conformity", ru: "Декларация электрика о соответствии" }, lang),
+  ];
 
   return (
     <>
@@ -173,16 +197,32 @@ export default function SchedulePreview() {
           filled from the field checklist above. */}
       <div className="pv-doc-scroll">
         <div className="pv-doc">
-          <div className="doc-co">VoltMira · {new Date().toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "en" ? "en-IE" : "ro-RO")} · {tx({ ro: "proces-verbal de recepție", en: "commissioning record", ru: "акт приёмки" }, lang)}</div>
+          <div className="doc-co">VoltMira · {new Date().toLocaleDateString(dateLoc)} · {tx({ ro: "proces-verbal de recepție", en: "commissioning record", ru: "акт приёмки" }, lang)}</div>
           <h1>{tx({ ro: "Proces-verbal de punere în funcțiune", en: "Commissioning & handover certificate", ru: "Акт ввода в эксплуатацию и приёмки" }, lang)}</h1>
           <p className="doc-sub">{client.name}{client.address ? " · " + client.address : ""}</p>
+          <div className="doc-grid" style={{ marginTop: 10 }}>
+            <div className="doc-kv"><span>{tx({ ro: "Nr. proces-verbal", en: "Certificate no.", ru: "№ акта" }, lang)}</span><b>PV-{(client.ref || "VM-2026").replace(/^VM-?/, "")}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Nr. contract", en: "Contract no.", ru: "№ договора" }, lang)}</span><b>{client.contractNo || "—"}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Data recepției", en: "Handover date", ru: "Дата приёмки" }, lang)}</span><b>{new Date().toLocaleDateString(dateLoc)}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Loc", en: "Place", ru: "Место" }, lang)}</span><b>{String(client.address || "").split(",").slice(-1)[0].trim() || "—"}</b></div>
+          </div>
+
+          <h2>{tx({ ro: "Părți", en: "Parties", ru: "Стороны" }, lang)}</h2>
+          <div className="doc-grid">
+            <div className="doc-kv"><span>{tx({ ro: "Instalator", en: "Installer", ru: "Установщик" }, lang)}</span><b>VoltMira SRL</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Atestat", en: "Licence", ru: "Аттестат" }, lang)}</span><b>{client.atestat || "ANRE-MC"}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Beneficiar", en: "Beneficiary", ru: "Получатель" }, lang)}</span><b>{client.name}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Echipa de montaj", en: "Install crew", ru: "Бригада" }, lang)}</span><b>{CREWS[0].who}</b></div>
+          </div>
 
           <h2>{tx({ ro: "Instalația", en: "The installation", ru: "Установка" }, lang)}</h2>
           <div className="doc-grid">
             <div className="doc-kv"><span>{tx({ ro: "Putere instalată", en: "Installed power", ru: "Мощность" }, lang)}</span><b>{kw.toFixed(1)} kW{(+client.batteryKwh || 0) > 0 ? ` · ${client.batteryKwh} kWh` : ""}</b></div>
-            <div className="doc-kv"><span>{tx({ ro: "Module", en: "Modules", ru: "Модули" }, lang)}</span><b>{modules} × 435 W</b></div>
-            <div className="doc-kv"><span>{tx({ ro: "Invertor", en: "Inverter", ru: "Инвертор" }, lang)}</span><b>Deye {tx({ ro: "hibrid", en: "hybrid", ru: "гибрид" }, lang)} · {client.phases === 3 ? "3~ 400 V" : "1~ 230 V"}</b></div>
-            <div className="doc-kv"><span>{tx({ ro: "Data recepției", en: "Handover date", ru: "Дата приёмки" }, lang)}</span><b>{new Date().toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "en" ? "en-IE" : "ro-RO")}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Module", en: "Modules", ru: "Модули" }, lang)}</span><b>{modules} × {panel.watt} W · {panel.brand}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Invertor", en: "Inverter", ru: "Инвертор" }, lang)}</span><b>{DEMO_SYSTEM.inverter.brand} · {client.phases === 3 ? "3~ 400 V" : "1~ 230 V"}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Structură de montaj", en: "Mounting", ru: "Крепёж" }, lang)}</span><b>{DEMO_SYSTEM.mount.brand}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Configurație șiruri", en: "String layout", ru: "Схема цепочек" }, lang)}</span><b>{strings} × {mps} {tx({ ro: "module", en: "modules", ru: "модулей" }, lang)}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Contor", en: "Meter", ru: "Счётчик" }, lang)}</span><b>{tx({ ro: "bidirecțional, 4 cadrane", en: "bidirectional, 4-quadrant", ru: "двунаправленный" }, lang)}</b></div>
           </div>
 
           <h2>{tx({ ro: "Verificări la punere în funcțiune", en: "Commissioning checks", ru: "Проверки при вводе" }, lang)}</h2>
@@ -191,19 +231,45 @@ export default function SchedulePreview() {
               {FIELD_STEPS.map((s) => (
                 <tr key={s}>
                   <td>{T(TX[s])}</td>
-                  <td style={{ width: 120 }}><b style={{ color: steps[s] ? "var(--green)" : "#B4700F" }}>{steps[s] ? tx({ ro: "✓ efectuat", en: "✓ done", ru: "✓ выполнено" }, lang) : tx({ ro: "în curs", en: "pending", ru: "в процессе" }, lang)}</b></td>
+                  <td className="r" style={{ width: 130 }}><b style={{ color: steps[s] ? "var(--green)" : "#B4700F" }}>{steps[s] ? tx({ ro: "✓ efectuat", en: "✓ done", ru: "✓ выполнено" }, lang) : tx({ ro: "în curs", en: "pending", ru: "в процессе" }, lang)}</b></td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          <h2>{tx({ ro: "Măsurători electrice", en: "Electrical measurements", ru: "Электрические измерения" }, lang)}</h2>
+          <table>
+            <thead><tr><th>{tx({ ro: "Verificare", en: "Test", ru: "Проверка" }, lang)}</th><th className="r">{tx({ ro: "Limită", en: "Limit", ru: "Предел" }, lang)}</th><th className="r">{tx({ ro: "Măsurat", en: "Measured", ru: "Измерено" }, lang)}</th></tr></thead>
+            <tbody>
+              {measRows.map(([name, lim, meas, ok], i) => (
+                <tr key={i}><td>{name}</td><td className="r dim">{lim}</td><td className="r"><b style={{ color: ok ? "var(--green)" : "#B4472F" }}>{meas}</b></td></tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h2>{tx({ ro: "Reglaje protecție de interfață (SR EN 50549-1)", en: "Interface protection settings (SR EN 50549-1)", ru: "Уставки защиты интерфейса (SR EN 50549-1)" }, lang)}</h2>
+          <table>
+            <thead><tr><th>{tx({ ro: "Funcție", en: "Function", ru: "Функция" }, lang)}</th><th className="r">{tx({ ro: "Prag", en: "Setting", ru: "Уставка" }, lang)}</th><th className="r">{tx({ ro: "Timp", en: "Time", ru: "Время" }, lang)}</th></tr></thead>
+            <tbody>
+              {protRows(lang === "ru" ? "ru" : lang === "en" ? "en" : "ro").slice(0, 5).map((p, i) => (
+                <tr key={i}><td>{p.fn}</td><td className="r dim">{p.set}</td><td className="r">{p.time}</td></tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h2>{tx({ ro: "Documente predate beneficiarului", en: "Documents handed to the beneficiary", ru: "Переданные документы" }, lang)}</h2>
+          <ul className="doc-list">
+            {HANDED.map((h, i) => <li key={i}>{h}</li>)}
+          </ul>
+
           <p className="doc-note">{tx({
-            ro: "Invertorul deține funcție anti-insularizare (LoM); prima pornire și măsurătorile au fost efectuate conform SR EN 50549-1. Instalația a fost predată în stare de funcționare.",
-            en: "The inverter has loss-of-mains (anti-islanding) protection; first power and readings were performed per SR EN 50549-1. The installation was handed over in working order.",
-            ru: "Инвертор имеет защиту от островного режима (LoM); первый пуск и замеры выполнены по SR EN 50549-1. Установка передана в рабочем состоянии.",
+            ro: "Invertorul deține funcție anti-insularizare (LoM); prima pornire și măsurătorile au fost efectuate conform SR EN 50549-1 și IEC 60364-6. Instalația a fost verificată și predată în stare de funcționare, iar beneficiarul a fost instruit privind operarea și oprirea de urgență.",
+            en: "The inverter has loss-of-mains (anti-islanding) protection; first power and measurements were performed per SR EN 50549-1 and IEC 60364-6. The installation was verified and handed over in working order, and the beneficiary was instructed on operation and emergency shutdown.",
+            ru: "Инвертор имеет защиту от островного режима (LoM); первый пуск и измерения выполнены по SR EN 50549-1 и IEC 60364-6. Установка проверена и передана в рабочем состоянии, получатель проинструктирован по эксплуатации и аварийному отключению.",
           }, lang)}</p>
           <div className="doc-sign">
             <div>{tx({ ro: "Instalator autorizat (nume, semnătură, ștampilă)", en: "Authorised installer (name, signature, stamp)", ru: "Уполномоченный установщик (имя, подпись, печать)" }, lang)}</div>
-            <div>{signed ? "✓ " + client.name : tx({ ro: "Beneficiar (nume, semnătură)", en: "Beneficiary (name, signature)", ru: "Получатель (имя, подпись)" }, lang)}</div>
+            <div>{signed ? "✓ " + client.name + tx({ ro: " (semnat pe teren)", en: " (signed on site)", ru: " (подписано на объекте)" }, lang) : tx({ ro: "Beneficiar (nume, semnătură)", en: "Beneficiary (name, signature)", ru: "Получатель (имя, подпись)" }, lang)}</div>
           </div>
         </div>
       </div>
@@ -247,6 +313,11 @@ export default function SchedulePreview() {
         .sc-sign{width:100%;font-family:inherit;font-size:12px;font-weight:600;padding:14px;border-radius:10px;border:1.5px dashed var(--line);
           background:var(--paper);color:var(--muted);cursor:pointer}
         .sc-sign.on{border-style:solid;border-color:var(--green);background:var(--green-tint);color:var(--green)}
+        /* handover-document helpers (selectors carry .pv-doc so they travel into the PDF) */
+        .pv-doc td.r,.pv-doc th.r{text-align:right;font-variant-numeric:tabular-nums}
+        .pv-doc td.dim{color:#777;font-size:10.5px}
+        .pv-doc .doc-list{margin:2px 0 6px;padding-left:18px;font-size:11.5px;color:#333;line-height:1.6}
+        .pv-doc .doc-list li{margin:0 0 2px}
       ` }} />
     </>
   );

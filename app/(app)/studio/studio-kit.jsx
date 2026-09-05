@@ -137,6 +137,7 @@ export const CLIENT_PRESETS = [
   { id: "ionescu", name: "Familia Ionescu", address: "str. Petru Zadnipru 12, Chișinău, MD-2044", lat: 47.0509, lng: 28.8785, contractNo: "PE-CHI-2026-04417", ref: "VM-2026-0417", market: "MD", kw: 6.5, cons: 6200, price: 0.185, batteryKwh: 9.6, phases: 3, atestat: "ANRE-MC nr. 2026/PV-0148" },
   { id: "popescu", name: "Familie Popescu", address: "str. Donath 128, Cluj-Napoca", lat: 46.7623, lng: 23.5558, contractNo: "DEER-CJ-2026-11832", ref: "VM-2026-1183", market: "RO", kw: 8.5, cons: 8000, price: 0.21, batteryKwh: 0, phases: 1, atestat: "ANRE tip B nr. 2026/24417" },
   { id: "logipark", name: "Hala Chiajna — LogiPark SRL", address: "DN7 km 12, Chiajna, jud. Ilfov", lat: 44.4682, lng: 25.9760, contractNo: "EDMuntenia-2026-55901", ref: "VM-BNK-2026-0093", market: "RO", kw: 180, cons: 240000, price: 0.142, batteryKwh: 0, phases: 3, atestat: "ANRE tip B nr. 2026/24417" },
+  { id: "agronord", name: "Fabrica AgroNord SRL", address: "str. Uzinelor 210, Chișinău, MD-2036", lat: 47.0304, lng: 28.8912, contractNo: "PE-CHI-2026-09920", ref: "VM-CI-2026-0300", market: "MD", kw: 300, cons: 540000, price: 0.16, batteryKwh: 0, phases: 3, atestat: "ANRE-MC nr. 2026/PV-0300" },
 ];
 const StudioClientCtx = createContext(null);
 export function StudioClientProvider({ children }) {

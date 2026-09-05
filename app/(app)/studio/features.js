@@ -18,9 +18,9 @@ export const PREVIEW_FEATURES = [
   },
   {
     slug: "quote",
-    en: { name: "Moldova quote", nav: "Ofertă", short: "The quote with every Moldovan rule in it — the 10 kW residential cap enforced, net metering vs net billing chosen per client, the real Casa Verde / FEERM maths (50% capped at 200,000 MDL, insulation first), lei shown first with euro alongside, and sanity checks for clipping and string voltage." },
-    ro: { name: "Ofertă Moldova", nav: "Ofertă", short: "Oferta cu toate regulile din Moldova în ea — plafonul rezidențial de 10 kW impus, contorizare netă vs facturare netă alese per client, matematica reală Casa Verde / FEERM (50% plafon 200 000 MDL, întâi izolația), lei afișați primii cu euro alături, și verificări de clipping și tensiune șir." },
-    ru: { name: "Расчёт для Молдовы", nav: "Расчёт", short: "Расчёт со всеми молдавскими правилами — лимит 10 кВт для жилья, нетто-учёт или нетто-биллинг по клиенту, реальная математика Casa Verde / FEERM (50%, потолок 200 000 MDL, сначала утепление), лей первым, евро рядом, проверки клиппинга и напряжения цепочки." },
+    en: { name: "Commercial offer (C&I)", nav: "Ofertă", short: "The offer for mega projects — factory, warehouse and agri rooftops from 100 kW up. Self-consumption, a full capex breakdown, NPV / IRR / LCOE, a payment schedule and delivery timeline on the live engine, exported as a real multi-page offer dossier in the client's language." },
+    ro: { name: "Ofertă comercială (C&I)", nav: "Ofertă", short: "Oferta pentru proiecte mari — hale, depozite și ferme de la 100 kW în sus. Autoconsum, defalcarea completă a investiției, VAN / RIR / LCOE, grafic de plăți și de execuție pe motorul live, exportate ca dosar de ofertă real, pe mai multe pagini, în limba clientului." },
+    ru: { name: "Коммерческое предложение (C&I)", nav: "Расчёт", short: "Предложение для мегапроектов — заводы, склады и агрокрыши от 100 кВт. Самопотребление, полная разбивка капзатрат, NPV / IRR / LCOE, график платежей и сроков на живом движке, выгрузка как настоящий многостраничный пакет на языке клиента." },
   },
   {
     slug: "connection",
