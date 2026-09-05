@@ -26,7 +26,7 @@ const TX = {
     ru: "Документы и оценка гранта реальны (движок + данные клиента) и печатаются в PDF. Процесс сохраняется в этом браузере по номеру договора. Ничего не отправляется оператору.",
   },
   gen: { en: "Print / PDF", ro: "Printează / PDF", ru: "Печать / PDF" },
-  opTitle: { en: "Operator & area headroom", ro: "Operator și rezervă de zonă", ru: "Оператор и резерв зоны" },
+  opTitle: { en: "Distribution operator", ro: "Operator de distribuție", ru: "Оператор распределения" },
   feermTitle: { en: "Casa Verde (FEERM) — eligibility gate", ro: "Casa Verde (FEERM) — verificare eligibilitate", ru: "Casa Verde (FEERM) — проверка права на грант" },
   flowTitle: { en: "Pipeline — click a stage to advance it", ro: "Flux — apasă o etapă ca s-o avansezi", ru: "Процесс — нажмите на этап, чтобы продвинуть" },
   inboxTitle: { en: "Waiting on your decision", ro: "Așteaptă decizia ta", ru: "Ждёт вашего решения" },
@@ -145,10 +145,6 @@ export default function ConnectionPreview() {
     return { eligible, grantMdl, capexMdl, sharePct: capexMdl > 0 ? (grantMdl / capexMdl) * 100 : 0, blocker };
   }, [env, eng]);
 
-  const usedPct = Math.min(100, (op.usedMw / op.capMw) * 100);
-  const headroomMw = op.capMw - op.usedMw;
-  const tight = headroomMw < op.capMw * 0.18;
-
   const phases = client.phases === 3 ? "3~ 400 V" : "1~ 230 V";
   const approvedKw = Math.max(Math.ceil(+client.kw || 0), client.phases === 3 ? 12 : 8);
 
@@ -233,11 +229,6 @@ export default function ConnectionPreview() {
       : { ro: "Dosarul Casa Verde este blocat: ferestrele trebuie înlocuite înainte de panouri.", en: "The Casa Verde file is blocked: the windows must be replaced before the panels.", ru: "Заявка Casa Verde заблокирована: сначала замена окон." },
     cta: null,
   });
-  if (tight) inbox.push({
-    id: "slot", tone: "warn",
-    text: { ro: "Rezerva de plafon în zona " + op.name + " scade (" + headroomMw.toFixed(0) + " MW din " + op.capMw + " MW). Depune dosarul ATR devreme.", en: "Headroom in the " + op.name + " area is shrinking (" + headroomMw.toFixed(0) + " of " + op.capMw + " MW). File the ATR early.", ru: "Резерв в зоне " + op.name + " сокращается (" + headroomMw.toFixed(0) + " из " + op.capMw + " МВт)." },
-    cta: null,
-  });
   for (const s of baseStages) {
     const od = overdueBy(s);
     if (od >= 2) inbox.push({
@@ -270,14 +261,9 @@ export default function ConnectionPreview() {
         <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>
           {tx({ ro: op.areaRo, en: op.areaEn, ru: op.areaRu }, lang)} · {String(client.address).split(",").slice(-2).join(",").trim() || client.address}
         </div>
-        <div className="rc-slot"><i style={{ width: usedPct + "%" }} /></div>
-        <div className="rc-slot-lg">
-          <span>{T(TX.allocated)} ~{op.usedMw.toFixed(1)} MW</span>
-          <span>{T(TX.cap)} {op.capMw} MW</span>
-        </div>
         <div className="pv-metrics" style={{ marginTop: 14 }}>
-          <div className={"pv-metric" + (tight ? " warn" : " good")}><b>{headroomMw.toFixed(1)} MW</b><span>{T(TX.headroom)}</span></div>
           <div className="pv-metric"><b>{(+client.kw || 0).toFixed(1)} kW</b><span>{tx({ ro: "acest proiect", en: "this project", ru: "этот проект" }, lang)}</span></div>
+          <div className="pv-metric"><b>{approvedKw} kW</b><span>{tx({ ro: "putere aprobată consum", en: "approved consumption power", ru: "разрешённая мощность" }, lang)}</span></div>
           <div className="pv-metric"><b>{eng.payback == null ? "25+" : eng.payback.toFixed(1)}</b><span>{tx({ ro: "ani amortizare (P50)", en: "yr payback (P50)", ru: "лет окупаемости (P50)" }, lang)}</span></div>
           <div className="pv-metric"><b>{doneCount}/{baseStages.length}</b><span>{tx({ ro: "etape finalizate", en: "stages done", ru: "этапов готово" }, lang)}</span></div>
         </div>
@@ -371,11 +357,6 @@ export default function ConnectionPreview() {
         </div>
       )}
 
-      <div className="pv-callout pv-noprint">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-        <p>{T(TX.reframe)}</p>
-      </div>
-
       {/* ---- the real documents (print → PDF) ---- */}
       <div className="pv-doc-scroll">
         <div className="pv-doc">
@@ -438,7 +419,7 @@ export default function ConnectionPreview() {
                 [L("Dovada înlocuirii ferestrelor", "Proof of replaced windows"), env.windows],
                 [L("Ofertă tehnică + schemă monofilară", "Technical offer + single-line diagram"), true],
                 [L("Extras de cont bancar", "Bank account statement"), true],
-              ].map((r, i) => <tr key={i}><td>{r[0]}</td><td>{r[1] ? "✓ " + L("gata", "ready") : "— " + L("lipsă", "missing")}</td></tr>)}
+              ].map((r, i) => <tr key={i}><td>{r[0]}</td><td><b style={{ color: r[1] ? "#1E6B4E" : "#B4700F" }}>{r[1] ? L("gata", "ready") : L("lipsă", "missing")}</b></td></tr>)}
             </tbody>
           </table>
           <p className="doc-note">{L(

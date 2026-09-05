@@ -18,10 +18,14 @@ const TX = {
     ru: "Реальные кВт·ч из портала инвертора против обещанного P50 — плюс гарантии, сервисные заявки и региональные данные на выходе.",
   },
   note: {
-    en: "VoltMira pulls read-only data from Deye/Solarman, Huawei FusionSolar or SolarEdge; the P50 line is the same engine that built the quote, so every month is a live honesty check.",
-    ro: "VoltMira ia date read-only din Deye/Solarman, Huawei FusionSolar sau SolarEdge; linia P50 e același motor care a făcut oferta, deci fiecare lună e o verificare de onestitate.",
-    ru: "VoltMira тянет read-only данные из Deye/Solarman, Huawei FusionSolar или SolarEdge; линия P50 — тот же движок, что делал расчёт.",
+    en: "Enter each month's real kWh (from the Deye/Solarman, Huawei FusionSolar or SolarEdge portal) below — it's saved in this browser per client and drives the chart and the report. The P50 line is the same engine that built the quote, so every month is a live honesty check.",
+    ro: "Introdu mai jos kWh reali ai fiecărei luni (din portalul Deye/Solarman, Huawei FusionSolar sau SolarEdge) — se salvează în acest browser pe client și alimentează graficul și raportul. Linia P50 e același motor care a făcut oferta, deci fiecare lună e o verificare de onestitate.",
+    ru: "Введите ниже реальные кВт·ч каждого месяца (из портала Deye/Solarman, Huawei FusionSolar или SolarEdge) — сохраняется в этом браузере по клиенту и питает график и отчёт. Линия P50 — тот же движок, что делал расчёт.",
   },
+  enterActual: { en: "Actual production — enter kWh per month", ro: "Producție reală — introdu kWh pe lună", ru: "Факт выработки — введите кВт·ч за месяц" },
+  loadSample: { en: "Fill with a realistic sample", ro: "Completează cu un exemplu realist", ru: "Заполнить примером" },
+  clearAll: { en: "Clear", ro: "Golește", ru: "Очистить" },
+  noData: { en: "No readings yet — enter a month's kWh below, or load a sample.", ro: "Încă fără citiri — introdu kWh pentru o lună mai jos, sau încarcă un exemplu.", ru: "Пока нет данных — введите кВт·ч за месяц ниже или загрузите пример." },
   fleet: { en: "Fleet", ro: "Parc", ru: "Парк" },
   systems: { en: "systems", ro: "sisteme", ru: "систем" },
   totalKw: { en: "total kW", ro: "kW total", ru: "всего кВт" },
@@ -47,10 +51,6 @@ const TX = {
     ro: "Fiecare sistem monitorizat alimentează un set anonimizat real-vs-P50 pe Moldova, pe raion și tip de montaj. Într-o țară cu câteva mii de prosumatori, asta devine repede cel mai solid randament de pe piață.",
     ru: "Каждая система в мониторинге пополняет анонимный набор факт-против-P50 по Молдове, по районам и типу монтажа. В стране с несколькими тысячами просьюмеров это быстро становится самым надёжным числом выработки на рынке.",
   },
-  msg: { en: "Message the client", ro: "Scrie clientului", ru: "Написать клиенту" },
-  msgDone: { en: "Message sent ✓", ro: "Mesaj trimis ✓", ru: "Сообщение отправлено ✓" },
-  msgToast: { en: "WhatsApp message queued to the client", ro: "Mesaj WhatsApp pregătit pentru client", ru: "Сообщение WhatsApp подготовлено клиенту" },
-  msgTxt: { en: '"Your system produced {k} kWh last month — {p}% of what we estimated. All good."', ro: '„Sistemul tău a produs {k} kWh luna trecută — {p}% din cât am estimat. Totul e în regulă."', ru: '«Ваша система выработала {k} кВт·ч за месяц — {p}% от оценки. Всё хорошо.»' },
 };
 
 const MONTHS = { ro: ["ian", "feb", "mar", "apr", "mai", "iun", "iul", "aug", "sep", "oct", "nov", "dec"], en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], ru: ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"] };
@@ -67,29 +67,53 @@ export default function MonitoringPreview() {
   useEffect(() => { document.title = "Fleet monitoring — VoltMira Studio"; }, []);
 
   const months = MONTHS[lang] || MONTHS.en;
-  const nowM = 7; // through August
-  const [msgSent, setMsgSent] = useState(false);
 
-  const data = useMemo(() => {
+  // Per-client actual monthly production (kWh), entered by the installer and saved
+  // in this browser — this is what makes the report real, not a demo example.
+  const actKey = "voltmira_studio_actuals_" + (String(client.ref || client.contractNo || "default").replace(/[^\w-]/g, "") || "default");
+  const [actuals, setActuals] = useState(Array(12).fill(""));
+  useEffect(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem(actKey) || "null");
+      setActuals(Array.isArray(s) && s.length === 12 ? s : Array(12).fill(""));
+    } catch { setActuals(Array(12).fill("")); }
+  }, [actKey]);
+  const saveActuals = (next) => {
+    setActuals(next);
+    try { localStorage.setItem(actKey, JSON.stringify(next)); } catch { /* private mode */ }
+  };
+  const setMonth = (i, v) => { const n = actuals.slice(); n[i] = v; saveActuals(n); };
+
+  const p50Row = useMemo(() => {
     const E = engineSettings();
     const sim = simulate({
       market: client.market, kw: +client.kw || 0, price: +client.price || 0.185,
       cons: +client.cons || 0, batt: false, yieldOverride: effectiveYield(client),
     }, E, "expc");
     const seasonSum = SOLAR_SEASON.reduce((a, b) => a + b, 0);
-    const rnd = seeded(Math.round((+client.kw || 6) * 97) + 13);
-    const rows = SOLAR_SEASON.map((f, i) => {
-      const p50 = (sim.prod0 * f) / seasonSum;
-      const wob = i <= nowM ? 0.90 + rnd() * 0.22 : null;   // 0.90–1.12
-      return { i, p50, actual: wob == null ? null : p50 * wob };
-    });
-    const ytdP50 = rows.slice(0, nowM + 1).reduce((a, r) => a + r.p50, 0);
-    const ytdAct = rows.slice(0, nowM + 1).reduce((a, r) => a + (r.actual || 0), 0);
-    const lastMonth = rows[nowM];
-    return { rows, ytdP50, ytdAct, pct: Math.round((ytdAct / ytdP50) * 100), lastMonth };
+    return SOLAR_SEASON.map((f) => (sim.prod0 * f) / seasonSum);
   }, [client]);
 
-  const maxV = Math.max(...data.rows.map((r) => Math.max(r.p50, r.actual || 0)));
+  const data = useMemo(() => {
+    const rows = p50Row.map((p50, i) => {
+      const raw = actuals[i];
+      const actual = raw === "" || raw == null || isNaN(+raw) ? null : +raw;
+      return { i, p50, actual };
+    });
+    const filled = rows.filter((r) => r.actual != null);
+    const ytdP50 = filled.reduce((a, r) => a + r.p50, 0);
+    const ytdAct = filled.reduce((a, r) => a + r.actual, 0);
+    const lastMonth = filled.length ? filled[filled.length - 1] : null;
+    return { rows, filled, ytdP50, ytdAct, pct: ytdP50 > 0 ? Math.round((ytdAct / ytdP50) * 100) : 0, lastMonth };
+  }, [p50Row, actuals]);
+
+  // A realistic starting set the installer can then edit — first 8 months around P50.
+  const loadSample = () => {
+    const rnd = seeded(Math.round((+client.kw || 6) * 97) + 13);
+    saveActuals(p50Row.map((p50, i) => (i <= 7 ? String(Math.round(p50 * (0.90 + rnd() * 0.22))) : "")));
+  };
+
+  const maxV = Math.max(1, ...data.rows.map((r) => Math.max(r.p50, r.actual || 0)));
 
   return (
     <>
@@ -114,7 +138,7 @@ export default function MonitoringPreview() {
       <div className="pv-panel">
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
           <h3 style={{ margin: 0, flex: 1 }}>{T(TX.prod)} · {client.name}</h3>
-          <span style={{ fontSize: 12.5, color: "var(--muted)" }}>{T(TX.ytd)}: <b style={{ color: data.pct >= 100 ? "var(--green)" : "#B4700F" }}>{data.pct}% {T(TX.ofP50)}</b></span>
+          <span style={{ fontSize: 12.5, color: "var(--muted)" }}>{T(TX.ytd)}: <b style={{ color: data.filled.length === 0 ? "var(--muted)" : data.pct >= 100 ? "var(--green)" : "#B4700F" }}>{data.filled.length === 0 ? "—" : `${data.pct}% ${T(TX.ofP50)}`}</b></span>
         </div>
         <div className="mn-chart" style={{ marginTop: 14 }}>
           {data.rows.map((r, i) => (
@@ -131,14 +155,24 @@ export default function MonitoringPreview() {
           <span><i className="mn-sw p50" />{T(TX.estimate)}</span>
           <span><i className="mn-sw act" />{T(TX.actual)}</span>
         </div>
-        <div className="pv-callout" style={{ marginTop: 14 }}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 4v16h16M8 14l3-3 3 2 4-6" /></svg>
-          <p>{tx(TX.msgTxt, lang).replace("{k}", NUM(data.lastMonth.actual)).replace("{p}", Math.round((data.lastMonth.actual / data.lastMonth.p50) * 100))}
-            <button className={"btn sm " + (msgSent ? "primary" : "ghost")} disabled={msgSent} style={{ marginLeft: 10, verticalAlign: "middle" }}
-              onClick={() => setMsgSent(true)}>{msgSent ? T(TX.msgDone) : T(TX.msg)}</button></p>
+
+        {/* editable per-month actuals — saved in this browser per client */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", margin: "18px 0 8px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".09em", color: "var(--muted)", flex: 1 }}>{T(TX.enterActual)}</div>
+          <button className="btn ghost sm" onClick={loadSample}>{T(TX.loadSample)}</button>
+          <button className="btn ghost sm" onClick={() => saveActuals(Array(12).fill(""))}>{T(TX.clearAll)}</button>
         </div>
+        <div className="mn-entry">
+          {months.map((m, i) => (
+            <label key={i} className="mn-in">
+              <span>{m}</span>
+              <input type="number" min="0" inputMode="numeric" placeholder="—" value={actuals[i]}
+                onChange={(e) => setMonth(i, e.target.value)} />
+            </label>
+          ))}
+        </div>
+        {data.filled.length === 0 && <p className="pv-mocknote" style={{ marginTop: 12 }}>{T(TX.noData)}</p>}
       </div>
-      {msgSent && <div className="pv-toast show">{T(TX.msgToast)}</div>}
 
       {/* warranty + tickets */}
       <div className="pv-2col">
@@ -180,8 +214,8 @@ export default function MonitoringPreview() {
           <div className="doc-grid">
             <div className="doc-kv"><span>{tx({ ro: "Producție reală (an curent)", en: "Actual (year to date)", ru: "Факт (с начала года)" }, lang)}</span><b>{NUM(data.ytdAct)} kWh</b></div>
             <div className="doc-kv"><span>{tx({ ro: "Estimare P50 (an curent)", en: "P50 estimate (YTD)", ru: "Оценка P50 (с начала года)" }, lang)}</span><b>{NUM(data.ytdP50)} kWh</b></div>
-            <div className="doc-kv"><span>{tx({ ro: "Realizat din P50", en: "Delivered vs P50", ru: "Выполнено от P50" }, lang)}</span><b style={{ color: data.pct >= 100 ? "var(--green)" : "#B4700F" }}>{data.pct}%</b></div>
-            <div className="doc-kv"><span>{tx({ ro: "Ultima lună", en: "Last month", ru: "Последний месяц" }, lang)}</span><b>{NUM(data.lastMonth.actual)} kWh</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Realizat din P50", en: "Delivered vs P50", ru: "Выполнено от P50" }, lang)}</span><b style={{ color: data.filled.length === 0 ? "#777" : data.pct >= 100 ? "var(--green)" : "#B4700F" }}>{data.filled.length === 0 ? "—" : data.pct + "%"}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Ultima lună", en: "Last month", ru: "Последний месяц" }, lang)}</span><b>{data.lastMonth ? months[data.lastMonth.i] + ": " + NUM(data.lastMonth.actual) + " kWh" : "—"}</b></div>
           </div>
 
           <h2>{tx({ ro: "Lunar (MWh)", en: "Monthly (MWh)", ru: "Помесячно (МВт·ч)" }, lang)}</h2>
@@ -236,6 +270,13 @@ export default function MonitoringPreview() {
           border-radius:99px;padding:3px 8px;margin-top:1px}
         .mn-tst.open{background:var(--amber-tint);color:#B4472F}
         .mn-tst.res{background:var(--green-tint);color:var(--green)}
+        .mn-entry{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+        @media(max-width:640px){.mn-entry{grid-template-columns:repeat(4,1fr)}}
+        @media(max-width:420px){.mn-entry{grid-template-columns:repeat(3,1fr)}}
+        .mn-in{display:flex;flex-direction:column;gap:4px}
+        .mn-in span{font-family:var(--font-m,monospace);font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+        .mn-in input{width:100%;background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:12.5px;font-family:inherit;color:var(--ink)}
+        .mn-in input:focus{border-color:var(--green);outline:none;box-shadow:0 0 0 3px rgba(30,107,78,.12)}
       ` }} />
     </>
   );

@@ -19,10 +19,22 @@ const TX = {
     ru: "Аванс, остаток, сроки и флаги просрочки по объекту — плюс за месяц получено / к получению / законтрактовано и налоговая накладная из расчёта.",
   },
   note: {
-    en: "The active client's contract value comes from the engine; the fiscal invoice below is built from the client bar and your invoicing details in Settings.",
-    ro: "Valoarea contractului clientului activ vine din motor; factura fiscală de mai jos se construiește din bara de client și datele tale de facturare din Setări.",
-    ru: "Стоимость контракта активного клиента из движка; налоговая накладная ниже строится из панели клиента и ваших реквизитов в Настройках.",
+    en: "Add your real jobs below — deposit, balance and status are yours to set, and the month's cashflow adds them up live. The list is saved in this browser. The active client (green row) comes straight from the client bar and the engine.",
+    ro: "Adaugă lucrările tale reale mai jos — avansul, restul și starea le setezi tu, iar fluxul lunii le însumează live. Lista se salvează în acest browser. Clientul activ (rândul verde) vine direct din bara de client și din motor.",
+    ru: "Добавляйте свои реальные объекты ниже — аванс, остаток и статус задаёте вы, а денежный поток месяца суммирует их вживую. Список сохраняется в этом браузере. Активный клиент (зелёная строка) — из панели клиента и движка.",
   },
+  addJob: { en: "Add a job", ro: "Adaugă o lucrare", ru: "Добавить объект" },
+  add: { en: "Add", ro: "Adaugă", ru: "Добавить" },
+  cancel: { en: "Cancel", ro: "Anulează", ru: "Отмена" },
+  remove: { en: "Delete", ro: "Șterge", ru: "Удалить" },
+  loadSample: { en: "Load sample jobs", ro: "Încarcă lucrări exemplu", ru: "Загрузить примеры" },
+  jName: { en: "Client / job", ro: "Client / lucrare", ru: "Клиент / объект" },
+  jLoc: { en: "Location", ro: "Localitate", ru: "Локация" },
+  jContract: { en: "Contract (lei)", ro: "Contract (lei)", ru: "Контракт (лей)" },
+  jDep: { en: "Deposit %", ro: "Avans %", ru: "Аванс %" },
+  emptyJobs: { en: "No jobs yet — add one above, or load a few samples.", ro: "Încă nicio lucrare — adaugă una mai sus, sau încarcă câteva exemple.", ru: "Пока нет объектов — добавьте выше или загрузите примеры." },
+  markPaidDep: { en: "deposit paid", ro: "avans plătit", ru: "аванс оплачен" },
+  markDone: { en: "settled", ro: "achitat", ru: "закрыт" },
   month: { en: "This month", ro: "Luna aceasta", ru: "Этот месяц" },
   received: { en: "Received", ro: "Încasat", ru: "Получено" },
   owed: { en: "Owed to you", ro: "De încasat", ru: "К получению" },
@@ -75,10 +87,33 @@ export default function PaymentsPreview() {
 
   const dayU = tx({ en: "days", ro: "zile", ru: "дн." }, lang);
 
-  const jobs = [
-    { name: client.name, loc: String(client.address).split(",")[0], eur: activeEur, depPct: 30, depPaid: false, balDays: null, done: false, active: true },
-    ...MOCK_JOBS,
-  ];
+  // The jobs ledger is real and editable — saved in this browser. The active
+  // client (from the client bar + engine) is always pinned as the first row.
+  const [saved, setSaved] = useState([]);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: "", loc: "", lei: "", depPct: 30 });
+  useEffect(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem("voltmira_studio_jobs") || "null");
+      if (Array.isArray(s)) setSaved(s);
+    } catch { /* private mode */ }
+  }, []);
+  const persist = (next) => {
+    setSaved(next);
+    try { localStorage.setItem("voltmira_studio_jobs", JSON.stringify(next)); } catch { /* private mode */ }
+  };
+  const addJob = () => {
+    const eur = (+form.lei || 0) / FX.MDL;
+    if (!form.name.trim() || eur <= 0) return;
+    persist([...saved, { id: Date.now(), name: form.name.trim(), loc: form.loc.trim(), eur, depPct: +form.depPct || 30, depPaid: false, balDays: null, done: false }]);
+    setForm({ name: "", loc: "", lei: "", depPct: 30 }); setAdding(false);
+  };
+  const patchJob = (id, p) => persist(saved.map((j) => (j.id === id ? { ...j, ...p } : j)));
+  const delJob = (id) => persist(saved.filter((j) => j.id !== id));
+  const loadSampleJobs = () => persist(MOCK_JOBS.map((m, i) => ({ ...m, id: Date.now() + i })));
+
+  const activeJob = { id: "active", name: client.name, loc: String(client.address).split(",")[0], eur: activeEur, depPct: 30, depPaid: false, balDays: null, done: false, active: true };
+  const jobs = [activeJob, ...saved];
 
   const lei = (e) => NUM(e * FX.MDL) + " lei";
   let received = 0, owed = 0;
@@ -124,20 +159,35 @@ export default function PaymentsPreview() {
 
       {/* jobs ledger */}
       <div className="pv-panel pv-noprint">
-        <h3>{T(TX.jobs)}</h3>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+          <h3 style={{ margin: 0, flex: 1 }}>{T(TX.jobs)}</h3>
+          {saved.length === 0 && <button className="btn ghost sm" onClick={loadSampleJobs}>{T(TX.loadSample)}</button>}
+          <button className="btn primary sm" onClick={() => setAdding((v) => !v)}>{adding ? T(TX.cancel) : "+ " + T(TX.addJob)}</button>
+        </div>
+
+        {adding && (
+          <div className="pmt-form">
+            <label>{T(TX.jName)}<input className="pv-input" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></label>
+            <label>{T(TX.jLoc)}<input className="pv-input" value={form.loc} onChange={(e) => setForm((f) => ({ ...f, loc: e.target.value }))} /></label>
+            <label>{T(TX.jContract)}<input className="pv-input" type="number" min="0" value={form.lei} onChange={(e) => setForm((f) => ({ ...f, lei: e.target.value }))} /></label>
+            <label>{T(TX.jDep)}<input className="pv-input" type="number" min="0" max="100" value={form.depPct} onChange={(e) => setForm((f) => ({ ...f, depPct: e.target.value }))} /></label>
+            <button className="btn primary sm" onClick={addJob}>{T(TX.add)}</button>
+          </div>
+        )}
+
         <div className="pv-tbl-wrap">
           <table className="pv-tbl">
             <thead><tr>
               <th>{T(TX.c_client)}</th><th className="th-r">{T(TX.c_value)}</th>
-              <th className="th-r">{T(TX.c_dep)}</th><th className="th-r">{T(TX.c_bal)}</th><th>{T(TX.c_state)}</th>
+              <th className="th-r">{T(TX.c_dep)}</th><th className="th-r">{T(TX.c_bal)}</th><th>{T(TX.c_state)}</th><th></th>
             </tr></thead>
             <tbody>
-              {jobs.map((j, i) => {
+              {jobs.map((j) => {
                 const dep = j.eur * j.depPct / 100;
                 const bal = j.eur - dep;
                 const [lbl, cls] = stateOf(j);
                 return (
-                  <tr key={i} style={j.active ? { background: "var(--green-tint)" } : undefined}>
+                  <tr key={j.id} style={j.active ? { background: "var(--green-tint)" } : undefined}>
                     <td><b>{j.name}</b><div style={{ color: "var(--muted)", fontSize: 11.5 }}>{j.loc}</div></td>
                     <td className="num">{lei(j.eur)}</td>
                     <td className="num">{lei(dep)}<div style={{ fontSize: 10.5, color: j.depPaid ? "var(--green)" : "var(--muted)" }}>{j.depPct}% · {j.depPaid ? T(TX.paid) : T(TX.awaiting)}</div></td>
@@ -146,9 +196,21 @@ export default function PaymentsPreview() {
                         {j.balDays < 0 ? `${-j.balDays} ${dayU} · ${T(TX.overdue)}` : `${T(TX.due)} · +${j.balDays} ${dayU}`}</div>}
                     </td>
                     <td><span className={"pmt-st " + cls}>{T(TX[lbl])}</span></td>
+                    <td>
+                      {j.active ? <span style={{ color: "var(--muted)", fontSize: 10.5 }}>—</span> : (
+                        <div className="pmt-acts">
+                          <button className={"pmt-mini" + (j.depPaid ? " on" : "")} title={T(TX.markPaidDep)} onClick={() => patchJob(j.id, { depPaid: !j.depPaid })}>{T(TX.markPaidDep)}</button>
+                          <button className={"pmt-mini" + (j.done ? " on" : "")} title={T(TX.markDone)} onClick={() => patchJob(j.id, { done: !j.done, depPaid: j.done ? j.depPaid : true })}>{T(TX.markDone)}</button>
+                          <button className="pmt-mini del" title={T(TX.remove)} onClick={() => delJob(j.id)}>×</button>
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
+              {saved.length === 0 && (
+                <tr><td colSpan={6} style={{ color: "var(--muted)", fontSize: 12, padding: "14px 10px" }}>{T(TX.emptyJobs)}</td></tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -190,6 +252,17 @@ export default function PaymentsPreview() {
         .pmt-st.bad{background:var(--amber-tint);color:#B4472F}
         .qt-flag{border-radius:9px;padding:10px 13px;font-size:12.5px;font-weight:600}
         .qt-flag.ok{background:var(--green-tint);color:var(--green)}
+        .pmt-form{display:grid;grid-template-columns:2fr 1.4fr 1.2fr .8fr auto;gap:10px;align-items:end;
+          background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:13px;margin-bottom:14px}
+        @media(max-width:720px){.pmt-form{grid-template-columns:1fr 1fr}}
+        .pmt-form label{display:flex;flex-direction:column;gap:5px;font-size:11.5px;font-weight:600;color:var(--muted)}
+        .pmt-acts{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+        .pmt-mini{font-family:inherit;font-size:10.5px;font-weight:600;border:1px solid var(--line);background:var(--paper-2);
+          color:var(--muted);border-radius:7px;padding:4px 8px;cursor:pointer;white-space:nowrap;transition:all .14s}
+        .pmt-mini:hover{border-color:var(--green);color:var(--green)}
+        .pmt-mini.on{background:var(--green);border-color:var(--green);color:#fff}
+        .pmt-mini.del{color:var(--red);font-size:13px;line-height:1;padding:4px 9px}
+        .pmt-mini.del:hover{border-color:var(--red);background:var(--red);color:#fff}
       ` }} />
     </>
   );

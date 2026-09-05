@@ -62,8 +62,28 @@ export default function SchedulePreview() {
   useEffect(() => { document.title = "Install schedule — VoltMira Studio"; }, []);
 
   const days = DAYS[lang] || DAYS.en;
-  const [steps, setSteps] = useState({ fld_arrive: true, fld_mount: true, fld_dc: false, fld_ac: false, fld_test: false });
+
+  // The on-site checklist + signature are real per-client state, saved in this
+  // browser — so the handover certificate reflects the actual job, not a demo.
+  const BLANK_STEPS = { fld_arrive: false, fld_mount: false, fld_dc: false, fld_ac: false, fld_test: false };
+  const jobKey = "voltmira_studio_install_" + (String(client.ref || client.contractNo || "default").replace(/[^\w-]/g, "") || "default");
+  const [steps, setSteps] = useState(BLANK_STEPS);
   const [signed, setSigned] = useState(false);
+  useEffect(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem(jobKey) || "null");
+      setSteps(s && s.steps ? { ...BLANK_STEPS, ...s.steps } : BLANK_STEPS);
+      setSigned(!!(s && s.signed));
+    } catch { setSteps(BLANK_STEPS); setSigned(false); }
+  }, [jobKey]);
+  const saveInstall = (patch) => {
+    try {
+      const cur = JSON.parse(localStorage.getItem(jobKey) || "{}");
+      localStorage.setItem(jobKey, JSON.stringify({ steps, signed, ...cur, ...patch }));
+    } catch { /* private mode */ }
+  };
+  const toggleStep = (s) => { const n = { ...steps, [s]: !steps[s] }; setSteps(n); saveInstall({ steps: n, signed }); };
+  const toggleSigned = () => { const v = !signed; setSigned(v); saveInstall({ steps, signed: v }); };
 
   const kw = +client.kw || 0;
   const modules = Math.max(1, Math.ceil((kw * 1000) / 435));
@@ -93,8 +113,8 @@ export default function SchedulePreview() {
     [tx({ ro: `Tensiune șir Voc (${strings} × ${mps} module)`, en: `String Voc (${strings} × ${mps} modules)`, ru: `Voc цепочки (${strings} × ${mps})` }, lang), `≤ ${client.phases === 3 ? 800 : 500} V`, `${stringVoc} V`, stringVoc <= (client.phases === 3 ? 800 : 500)],
     [tx({ ro: "Rezistență priză de pământ", en: "Earth electrode resistance", ru: "Сопротивление заземления" }, lang), "≤ 4 Ω", "2,7 Ω", true],
     [tx({ ro: "Declanșare diferențial (RCD 30 mA)", en: "RCD trip (30 mA)", ru: "Срабатывание УЗО (30 мА)" }, lang), "< 40 ms", "28 ms", true],
-    [tx({ ro: "Anti-insularizare (LoM)", en: "Anti-islanding (LoM)", ru: "Защита от островн. режима (LoM)" }, lang), tx({ ro: "declanșare", en: "trip", ru: "отключение" }, lang), tx({ ro: "≤ 0,15 s ✓", en: "≤ 0.15 s ✓", ru: "≤ 0,15 с ✓" }, lang), true],
-    [tx({ ro: "Polaritate DC + succesiune faze", en: "DC polarity + phase sequence", ru: "Полярность DC + чередование фаз" }, lang), tx({ ro: "corect", en: "correct", ru: "верно" }, lang), "✓", true],
+    [tx({ ro: "Anti-insularizare (LoM)", en: "Anti-islanding (LoM)", ru: "Защита от островн. режима (LoM)" }, lang), tx({ ro: "declanșare", en: "trip", ru: "отключение" }, lang), tx({ ro: "≤ 0,15 s", en: "≤ 0.15 s", ru: "≤ 0,15 с" }, lang), true],
+    [tx({ ro: "Polaritate DC + succesiune faze", en: "DC polarity + phase sequence", ru: "Полярность DC + чередование фаз" }, lang), tx({ ro: "corect", en: "correct", ru: "верно" }, lang), tx({ ro: "conform", en: "OK", ru: "норма" }, lang), true],
   ];
   const HANDED = [
     tx({ ro: "Manual de utilizare și acces la portalul de monitorizare", en: "User manual and monitoring-portal access", ru: "Руководство и доступ к порталу мониторинга" }, lang),
@@ -102,6 +122,17 @@ export default function SchedulePreview() {
     tx({ ro: "Schema electrică monofilară (as-built)", en: "Single-line diagram (as-built)", ru: "Однолинейная схема (as-built)" }, lang),
     tx({ ro: "Declarația de conformitate a electricianului", en: "Electrician's declaration of conformity", ru: "Декларация электрика о соответствии" }, lang),
   ];
+
+  // The week is editable and saved in this browser — schedule the active client
+  // on a day with a crew, or remove an install.
+  const [installs, setInstalls] = useState(SCHED);
+  const [plan, setPlan] = useState({ day: 4, crew: 0 });
+  useEffect(() => {
+    try { const s = JSON.parse(localStorage.getItem("voltmira_studio_week") || "null"); if (Array.isArray(s)) setInstalls(s); } catch { /* private mode */ }
+  }, []);
+  const persistWeek = (n) => { setInstalls(n); try { localStorage.setItem("voltmira_studio_week", JSON.stringify(n)); } catch { /* private mode */ } };
+  const addActive = () => persistWeek([...installs, { day: +plan.day, client: client.name, loc: String(client.address).split(",")[0], kw: +(+client.kw || 0).toFixed(1), crew: +plan.crew }]);
+  const delInstall = (idx) => persistWeek(installs.filter((_, i) => i !== idx));
 
   return (
     <>
@@ -113,24 +144,28 @@ export default function SchedulePreview() {
 
       {/* week calendar */}
       <div className="pv-panel">
-        <h3>{T(TX.week)}</h3>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+          <h3 style={{ margin: 0, flex: 1 }}>{T(TX.week)}</h3>
+          <select className="cl-preset" value={plan.day} onChange={(e) => setPlan((p) => ({ ...p, day: +e.target.value }))}>
+            {days.map((d, di) => <option key={di} value={di}>{d}</option>)}
+          </select>
+          <select className="cl-preset" value={plan.crew} onChange={(e) => setPlan((p) => ({ ...p, crew: +e.target.value }))}>
+            {CREWS.map((c, i) => <option key={i} value={i}>{c.name}</option>)}
+          </select>
+          <button className="btn primary sm" onClick={addActive}>+ {tx({ ro: "Programează clientul activ", en: "Schedule active client", ru: "Запланировать клиента" }, lang)}</button>
+        </div>
         <div className="sc-week">
           {days.map((d, di) => (
             <div key={di} className="sc-day">
               <div className="sc-day-h">{d}</div>
-              {SCHED.filter((s) => s.day === di).map((s, i) => (
-                <div key={i} className="sc-job" style={{ borderLeftColor: CREWS[s.crew].color }}>
+              {installs.map((s, i) => [s, i]).filter(([s]) => s.day === di).map(([s, i]) => (
+                <div key={i} className="sc-job" style={{ borderLeftColor: CREWS[s.crew]?.color || "var(--green)" }}>
+                  <button className="sc-job-x" title={tx({ ro: "elimină", en: "remove", ru: "убрать" }, lang)} onClick={() => delInstall(i)}>×</button>
                   <b>{s.client}</b>
                   <span>{s.loc} · {s.kw} kW</span>
-                  <em>{CREWS[s.crew].name}</em>
+                  <em>{CREWS[s.crew]?.name || "—"}</em>
                 </div>
               ))}
-              {di === 4 && (
-                <div className="sc-job sc-job-new" style={{ borderLeftColor: "var(--amber)" }}>
-                  <b>{client.name}</b><span>{String(client.address).split(",")[0]} · {kw.toFixed(1)} kW</span>
-                  <em>{tx({ ro: "de planificat", en: "to schedule", ru: "запланировать" }, lang)}</em>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -145,7 +180,7 @@ export default function SchedulePreview() {
               <div key={i} className="sc-crew">
                 <span className="sc-dot" style={{ background: c.color }} />
                 <div><b>{c.name}</b><div style={{ fontSize: 12, color: "var(--muted)" }}>{c.who}</div></div>
-                <span className="sc-crew-n">{tx({ ...TX.jobsN }, lang).replace("{n}", SCHED.filter((s) => s.crew === i).length)}</span>
+                <span className="sc-crew-n">{tx({ ...TX.jobsN }, lang).replace("{n}", installs.filter((s) => s.crew === i).length)}</span>
               </div>
             ))}
           </div>
@@ -178,13 +213,13 @@ export default function SchedulePreview() {
               <div className="sc-phone-t">{client.name} · {kw.toFixed(1)} kW · {doneN}/5</div>
               {FIELD_STEPS.map((s) => (
                 <button key={s} className={"sc-step" + (steps[s] ? " on" : "")}
-                  onClick={() => setSteps((p) => ({ ...p, [s]: !p[s] }))}>
+                  onClick={() => toggleStep(s)}>
                   <span>{steps[s] ? "✓" : ""}</span>{T(TX[s])}
                 </button>
               ))}
               <div className="sc-phone-t" style={{ marginTop: 12 }}>{T(TX.fld_photos)} · 6</div>
               <div className="sc-thumbs">{[0, 1, 2, 3].map((i) => <div key={i} className="sc-thumb" />)}</div>
-              <button className={"sc-sign" + (signed ? " on" : "")} onClick={() => setSigned((v) => !v)}>
+              <button className={"sc-sign" + (signed ? " on" : "")} onClick={toggleSigned}>
                 {signed ? "✓ " + T(TX.fld_signed) : T(TX.fld_sign) + " — " + T(TX.tap)}
               </button>
             </div>
@@ -231,7 +266,7 @@ export default function SchedulePreview() {
               {FIELD_STEPS.map((s) => (
                 <tr key={s}>
                   <td>{T(TX[s])}</td>
-                  <td className="r" style={{ width: 130 }}><b style={{ color: steps[s] ? "var(--green)" : "#B4700F" }}>{steps[s] ? tx({ ro: "✓ efectuat", en: "✓ done", ru: "✓ выполнено" }, lang) : tx({ ro: "în curs", en: "pending", ru: "в процессе" }, lang)}</b></td>
+                  <td className="r" style={{ width: 130 }}><b style={{ color: steps[s] ? "var(--green)" : "#B4700F" }}>{steps[s] ? tx({ ro: "efectuat", en: "done", ru: "выполнено" }, lang) : tx({ ro: "în curs", en: "pending", ru: "в процессе" }, lang)}</b></td>
                 </tr>
               ))}
             </tbody>
@@ -269,7 +304,7 @@ export default function SchedulePreview() {
           }, lang)}</p>
           <div className="doc-sign">
             <div>{tx({ ro: "Instalator autorizat (nume, semnătură, ștampilă)", en: "Authorised installer (name, signature, stamp)", ru: "Уполномоченный установщик (имя, подпись, печать)" }, lang)}</div>
-            <div>{signed ? "✓ " + client.name + tx({ ro: " (semnat pe teren)", en: " (signed on site)", ru: " (подписано на объекте)" }, lang) : tx({ ro: "Beneficiar (nume, semnătură)", en: "Beneficiary (name, signature)", ru: "Получатель (имя, подпись)" }, lang)}</div>
+            <div>{signed ? client.name + tx({ ro: " — semnat pe teren", en: " — signed on site", ru: " — подписано на объекте" }, lang) : tx({ ro: "Beneficiar (nume, semnătură)", en: "Beneficiary (name, signature)", ru: "Получатель (имя, подпись)" }, lang)}</div>
           </div>
         </div>
       </div>
@@ -280,9 +315,13 @@ export default function SchedulePreview() {
         .sc-day{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:8px;min-height:96px;display:flex;flex-direction:column;gap:6px}
         .sc-day-h{font-family:var(--font-m,monospace);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
         .sc-job{background:var(--paper-2);border:1px solid var(--line);border-left:3px solid var(--green);border-radius:7px;padding:7px 8px}
-        .sc-job b{display:block;font-size:12px;font-weight:700;color:var(--ink);line-height:1.25}
+        .sc-job{position:relative}
+        .sc-job b{display:block;font-size:12px;font-weight:700;color:var(--ink);line-height:1.25;padding-right:14px}
         .sc-job span{display:block;font-size:10.5px;color:var(--muted);margin-top:1px}
         .sc-job em{display:block;font-size:10px;font-style:normal;color:var(--green);margin-top:3px;font-weight:600}
+        .sc-job-x{position:absolute;top:4px;right:4px;border:none;background:none;color:var(--muted);font-size:14px;line-height:1;
+          cursor:pointer;padding:2px 4px;border-radius:5px}
+        .sc-job-x:hover{color:var(--red);background:var(--red-tint)}
         .sc-job-new{border-style:dashed}
         .sc-crew{display:flex;gap:10px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
         .sc-dot{width:9px;height:9px;border-radius:50%;flex:none}

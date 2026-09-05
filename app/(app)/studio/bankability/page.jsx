@@ -93,9 +93,11 @@ export default function BankabilityPreview() {
   const [rate, setRate] = useState(6.5);
   const [tenor, setTenor] = useState(8);
   const [disc, setDisc] = useState(6);   // real discount rate for NPV / IRR / LCOE
-  // Document language — English by default (lender / technical-adviser audience),
-  // Romanian on demand. Independent of the app-chrome language.
-  const [docLang, setDocLang] = useState("en");
+  // Document language follows the workspace by default (so a Romanian workspace
+  // doesn't get an English document beside Romanian chrome); switch to EN on
+  // demand for a lender / technical-adviser audience. EN/RO only.
+  const [docLang, setDocLang] = useState(lang === "en" ? "en" : "ro");
+  useEffect(() => { setDocLang(lang === "en" ? "en" : "ro"); }, [lang]);
   const d = (en, ro) => (docLang === "ro" ? ro : en);
 
   const project = useMemo(() => ({
