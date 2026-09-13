@@ -4,6 +4,7 @@
 // real product photo (or a clean kind icon when none is set). Prices here feed
 // the bill of materials that drives a quote's real cost.
 import { useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { addProduct, updateProduct, deleteProduct, seedStarterCatalog } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
 import SupplierCatalogBrowser from "./SupplierCatalogBrowser.jsx";
@@ -102,34 +103,89 @@ const CSS = `
 
 /* supplier catalog browser — "Sunny Design"-style database, one click into
    your own catalog via the same addProduct() the manual form uses */
-.cat-suppliers{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:14px 0}
-.cat-sup-card{text-align:left;font-family:inherit;background:var(--paper);border:1px solid var(--line);border-radius:11px;
+.cat-sup-card{width:100%;text-align:left;font-family:inherit;background:var(--paper);border:1px solid var(--line);border-radius:11px;
   padding:11px 13px;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:border-color .14s,background .14s}
 .cat-sup-card:hover{border-color:var(--green)}
 .cat-sup-card.on{border-color:var(--green);background:rgba(30,107,78,.08)}
 .cat-sup-card b{font-size:13px;color:var(--ink)}
 .cat-sup-card span{font-size:11px;color:#1E6B4E;font-weight:600}
 .cat-sup-card em{font-style:normal;font-size:11px;color:var(--muted);line-height:1.4;margin-top:2px}
-.supbrowser-toolbar{display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:6px}
 .supbrowser-kinds{display:flex;gap:6px;flex-wrap:wrap}
 .supbrowser-chip{font-family:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:99px;
   background:var(--paper-2);border:1px solid var(--line);color:var(--muted);cursor:pointer;transition:all .14s}
 .supbrowser-chip:hover{border-color:var(--green);color:var(--green)}
 .supbrowser-chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
-.supbrowser-search{max-width:240px}
-.supbrowser-filterline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-top:10px}
-.supbrowser-filterline button{font-family:inherit;font-size:11px;font-weight:600;color:#1E6B4E;background:none;
-  border:none;cursor:pointer;text-decoration:underline}
+.supbrowser-search{width:100%;margin-bottom:16px}
 .supbrowser-card .cat-body{gap:5px}
 .supbrowser-stockrow{display:flex;align-items:center;gap:8px;margin-top:2px}
 .supbrowser-lead{font-size:10.5px;color:var(--muted);background:var(--paper);border:1px solid var(--line);
   border-radius:99px;padding:2px 8px}
 .supbrowser-supname{font-size:10.5px;color:var(--muted);margin-top:-1px}
+.supbrowser-compat{font-size:10.5px;font-weight:600;color:var(--green)}
+.supbrowser-compat.none{color:#B4472F}
+
+/* filter sidebar + grid layout */
+.supbrowser-layout{display:grid;grid-template-columns:230px 1fr;gap:22px;margin-top:14px;align-items:start}
+.supbrowser-sidebar{position:sticky;top:12px;display:flex;flex-direction:column}
+.supbrowser-sb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.supbrowser-sb-head b{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.supbrowser-clear{font-family:inherit;font-size:11px;font-weight:600;color:#1E6B4E;background:none;
+  border:none;cursor:pointer;text-decoration:underline;padding:0}
+.supbrowser-sb-group{margin-bottom:18px}
+.supbrowser-sb-group h3{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+  font-weight:700;margin:0 0 8px}
+.supbrowser-check{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);
+  cursor:pointer;padding:3px 0}
+.supbrowser-check input{width:15px;height:15px;accent-color:var(--green);cursor:pointer}
+.supbrowser-range{margin-bottom:8px}
+.supbrowser-range span{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;
+  font-variant-numeric:tabular-nums}
+.supbrowser-range input[type=range]{width:100%}
+.supbrowser-range-summary{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:8px;font-variant-numeric:tabular-nums}
+.supbrowser-resultline{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);margin-bottom:10px}
+.supbrowser-cmphint{font-style:normal}
+.supbrowser-main .cat-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.supbrowser-imgbtn{display:block;width:100%;padding:0;border:none;background:var(--paper);cursor:pointer;
+  border-bottom:1px solid var(--line);overflow:hidden}
+@keyframes catImgIn{from{opacity:0}to{opacity:1}}
+.supbrowser-img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;animation:catImgIn .3s ease}
+.supbrowser-filtertoggle{display:none}
+.supbrowser-namebtn{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;
+  font-family:inherit;background:none;border:none;padding:0;cursor:pointer}
+.supbrowser-cmp{position:absolute;top:8px;left:8px;z-index:1;display:flex;align-items:center;gap:5px;
+  font-size:10.5px;font-weight:700;color:var(--ink);background:rgba(255,255,255,.92);border-radius:99px;
+  padding:3px 9px 3px 6px;cursor:pointer;box-shadow:0 2px 6px rgba(20,42,33,.18)}
+.supbrowser-cmp input{width:13px;height:13px;accent-color:var(--green);cursor:pointer}
+.supbrowser-card{position:relative}
+.supbrowser-cmpbar{position:sticky;bottom:12px;display:flex;align-items:center;gap:10px;margin-top:14px;
+  background:var(--ink);color:#fff;border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;
+  box-shadow:var(--shadow-lg)}
+.supbrowser-cmpbar-hint{font-size:11px;font-weight:500;opacity:.7}
+.supbrowser-toptabs{display:flex;gap:6px;margin-top:12px;border-bottom:1px solid var(--line)}
+.supbrowser-toptab{font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);background:none;
+  border:none;border-bottom:2px solid transparent;padding:9px 4px;margin-bottom:-1px;cursor:pointer;transition:color .14s}
+.supbrowser-toptab:hover{color:var(--ink)}
+.supbrowser-toptab.on{color:var(--green);border-bottom-color:var(--green)}
+@media(max-width:860px){
+  .supbrowser-layout{grid-template-columns:1fr}
+  .supbrowser-sidebar{position:static;flex-direction:column}
+  .supbrowser-filtertoggle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+    font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);background:var(--paper-2);
+    border:1px solid var(--line);border-radius:11px;padding:11px 14px;cursor:pointer;margin-top:12px}
+  .supbrowser-filtertoggle svg{transition:transform .18s;flex:none}
+  .supbrowser-filtertoggle.open svg{transform:rotate(180deg)}
+  .supbrowser-sidebar{display:none}
+  .supbrowser-sidebar.open{display:flex;margin-top:12px}
+}
 `;
 
 export default function CatalogManager({ initial, lang, committed = {}, reserved = {}, usedIn = {} }) {
+  const searchParams = useSearchParams();
   const [items, setItems] = useState(initial);
-  const [browsing, setBrowsing] = useState(false);
+  // ?browse=1 opens the supplier browser straight away — a one-hop deep link
+  // (see /demo?next=/catalog?browse=1) instead of "land on /catalog, then
+  // click Catalog furnizori yourself".
+  const [browsing, setBrowsing] = useState(() => searchParams.get("browse") === "1");
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);

@@ -12,9 +12,10 @@
 //   signed out          -> seed a workspace and drop them on the dashboard
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { createDemoWorkspace } from "../../lib/demoSeed.js";
+import { createDemoWorkspace, resolvePdfDemoDest, resolveEditorDemoDest, resolveWidgetDemoDest } from "../../lib/demoSeed.js";
 import { isDemoEmail } from "../../lib/demo.js";
 import { isRateLimited, clientIp } from "../../lib/ratelimit.js";
+import { safeNext } from "../../lib/safeRedirect.js";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,34 @@ const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 400;
 
 const LANGS = new Set(["en", "ro", "ru"]);
+
+// One-hop deep links to specific, hard-to-address states — not real paths
+// (safeNext() rejects each of these like any other non-"/" value, so they're
+// compared by strict equality against these fixed literals, never
+// attacker-influenced content) resolved server-side into the actual path for
+// whichever tenant this visitor ends up in. A hardcoded path can't work for
+// either of these: proposal codes are random per tenant by design
+// (createProposal's codes are globally unique, so a shared literal would
+// collide across concurrent demo sessions), and project ids are equally
+// tenant-specific.
+//   pdf-annex           -> the enriched proposal PDF (equipment datasheet,
+//                          per-MPPT-input compliance matrix, backup-power
+//                          callout, and — once a roof's been drawn — the
+//                          real measured roof area/orientation)
+//   hybrid-demo         -> the same demo project's editor, to see the hybrid
+//                          system-type UI (segmented Rețea/Hibrid control)
+//   site-designer-demo  -> the SAME editor (Site Designer is a button on that
+//                          page) — a separate, self-explanatory name since
+//                          it's what this link is actually for; this project
+//                          is the only seeded one with a resolved address, so
+//                          the button is enabled with no typing first
+//   widget-demo         -> the public quick-estimate widget for this tenant
+const NEXT_RESOLVERS = {
+  "pdf-annex": resolvePdfDemoDest,
+  "hybrid-demo": resolveEditorDemoDest,
+  "site-designer-demo": resolveEditorDemoDest,
+  "widget-demo": resolveWidgetDemoDest,
+};
 
 function page(title, body, status = 200) {
   return new NextResponse(
@@ -53,7 +82,8 @@ export async function GET(req) {
 
   const url = new URL(req.url);
   const lang = LANGS.has(url.searchParams.get("lang")) ? url.searchParams.get("lang") : "ro";
-  const dest = new URL("/dashboard", req.url);
+  const nextParam = url.searchParams.get("next");
+  let dest = new URL(safeNext(nextParam) || "/dashboard", req.url);
 
   // ---- is someone already signed in here? ----------------------------
   // Read-only client: we only need getUser(), and we must NOT write auth
@@ -66,15 +96,29 @@ export async function GET(req) {
   if (user) {
     // Already inside a demo tenant — reuse it. This is what stops a refresh (or
     // a second click on the demo link) from provisioning another workspace.
-    if (isDemoEmail(user.email)) return NextResponse.redirect(dest);
+    if (isDemoEmail(user.email)) {
+      if (NEXT_RESOLVERS[nextParam]) {
+        const resolved = await NEXT_RESOLVERS[nextParam](user.id);
+        if (resolved) dest = new URL(resolved, req.url);
+      }
+      return NextResponse.redirect(dest);
+    }
 
     // A real account. Signing in as the demo owner would replace their session
     // and quietly log them out of their own workspace, so make it a choice.
     if (!url.searchParams.get("confirm")) {
+      // Carry the intended destination through the confirmation click too —
+      // otherwise a `next=` deep link silently drops to /dashboard the moment
+      // this interstitial is in the way. A known NEXT_RESOLVERS sentinel is
+      // carried through as-is (safeNext would reject it, same as it rejects
+      // any non-"/" value) since it's a fixed literal, not attacker-influenced
+      // content.
+      const nextQ = NEXT_RESOLVERS[nextParam] ? nextParam : safeNext(nextParam);
+      const confirmHref = `/demo?confirm=1&lang=${lang}${nextQ ? `&next=${encodeURIComponent(nextQ)}` : ""}`;
       return page("Start the demo",
         `<h1>You're signed in to your own workspace</h1>
          <p>Starting the demo signs you out of it. You can sign back in straight after — or open the demo in a private window to keep both.</p>
-         <a class="go" href="/demo?confirm=1&lang=${lang}">Start the demo anyway</a>
+         <a class="go" href="${confirmHref}">Start the demo anyway</a>
          <a class="alt" href="/dashboard">Back to my dashboard</a>`);
     }
   }
@@ -108,11 +152,15 @@ export async function GET(req) {
       setAll: (list) => list.forEach(({ name, value, options }) => res.cookies.set(name, value, options)),
     },
   });
-  const { error } = await sb.auth.signInWithPassword(creds);
+  const { data: signInData, error } = await sb.auth.signInWithPassword(creds);
   if (error) {
     console.error("[demo] sign-in failed:", error.message);
     return page("Demo unavailable",
       `<h1>Couldn't start the demo</h1><p>The workspace was created but sign-in failed. Please try again.</p><a class="alt" href="/">Back to the site</a>`, 500);
+  }
+  if (NEXT_RESOLVERS[nextParam]) {
+    const resolved = await NEXT_RESOLVERS[nextParam](signInData?.user?.id);
+    if (resolved) res.headers.set("location", new URL(resolved, req.url).toString());
   }
   return res;
 }

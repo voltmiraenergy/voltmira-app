@@ -8,26 +8,32 @@ import WidgetForm from "./WidgetForm.jsx";
 
 export const dynamic = "force-dynamic";
 
-async function companyLang(companyId) {
-  if (!companyId) return "en";
+async function companyInfo(companyId) {
+  if (!companyId) return { lang: "en", market: "MD" };
   try {
     const { data } = await supabaseAdmin()
-      .from("companies").select("lang").eq("id", companyId).single();
-    return normLang(data?.lang);
+      .from("companies").select("lang, default_market").eq("id", companyId).single();
+    return { lang: normLang(data?.lang), market: data?.default_market || "MD" };
   } catch {
-    return "en"; // a lookup failure must never break the form
+    return { lang: "en", market: "MD" }; // a lookup failure must never break the form
   }
 }
 
 export default async function WidgetPage({ searchParams }) {
   const companyId = String(searchParams?.c || "");
   const override = String(searchParams?.lang || "");
-  const lang = LANGS.includes(override) ? override : await companyLang(companyId);
+  const co = await companyInfo(companyId);
+  const lang = LANGS.includes(override) ? override : co.lang;
 
   return (
-    <main lang={lang} style={{ maxWidth: 380, margin: "0 auto", padding: 18,
-      fontFamily: "Inter, system-ui, sans-serif", color: "#142A21" }}>
-      <WidgetForm companyId={companyId} lang={lang} />
+    // Explicit light background+color scheme: this renders in an <iframe> on
+    // an arbitrary installer's own site, so it must look right on its own,
+    // not follow whatever dark-mode default the visitor's OS/browser or this
+    // app's own root layout would otherwise leak in — every color the form
+    // itself uses (WidgetForm.jsx) assumes a light background.
+    <main lang={lang} style={{ maxWidth: 380, margin: "0 auto", padding: 18, minHeight: "100vh",
+      fontFamily: "Inter, system-ui, sans-serif", color: "#142A21", background: "#fff", colorScheme: "light" }}>
+      <WidgetForm companyId={companyId} lang={lang} market={co.market} />
     </main>
   );
 }

@@ -8,8 +8,10 @@ import Link from "next/link";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
 import { createProposal, saveQuoteTemplate } from "../../../../lib/actions.js";
 import AddressField from "../../../../components/AddressField.jsx";
+import SiteDesigner from "../../../../components/SiteDesigner.jsx";
 import BomCard from "../../../../components/BomCard.jsx";
 import DesignChecks from "../../../../components/DesignChecks.jsx";
+import DesignSuggestions from "../../../../components/DesignSuggestions.jsx";
 import BatterySizingPanel from "../../../../components/BatterySizingPanel.jsx";
 import SurplusPanel, { useBuyback } from "../../../../components/SurplusPanel.jsx";
 import InstallChecklist from "./InstallChecklist.jsx";
@@ -19,10 +21,13 @@ import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
 import { financials } from "../../../../lib/quoteAnalysis.js";
 import { applyCalibration } from "../../../../lib/yieldCalibration.js";
 import { t } from "../../../../lib/i18n.js";
+import { autoBom } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
 
-// System-size slider range — raised to 50 kW for larger commercial projects.
-const KW_MIN = 2, KW_MAX = 50;
+// System-size slider range — raised to 500 kW: Site Designer's own real,
+// drawn-roof panel counts can land well past a "residential" size for a large
+// commercial roof, and the slider must be able to show whatever it applied.
+const KW_MIN = 2, KW_MAX = 500;
 
 // Short month labels in the app's language, via Intl — no extra i18n keys needed.
 function monthLabels(lang) {
@@ -99,6 +104,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     batt: initial.batt, battKwh: initial.batt_kwh != null ? +initial.batt_kwh : 10,
     options: Array.isArray(initial.options) ? initial.options : [],
     bom: Array.isArray(initial.bom) ? initial.bom : [],
+    siteDesign: initial.site_design && typeof initial.site_design === "object" ? initial.site_design : {},
     loan: +initial.loan_monthly,
     yieldOverride: initial.yield_per_kwp ? +initial.yield_per_kwp : undefined,
     monthlyYieldShape: initial.monthly_yield_shape || undefined,
@@ -122,6 +128,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // of a proforma (asking for money up front) was reachable only by hand-editing
   // the URL. 0 = invoice the full amount.
   const [invOpen, setInvOpen] = useState(false);
+  const [siteDesignerOpen, setSiteDesignerOpen] = useState(false);
+  const [siteDesignApplying, setSiteDesignApplying] = useState(false);
   const [depPct, setDepPct] = useState(30);
   const [invTo, setInvTo] = useState("");
   const [invBusy, setInvBusy] = useState(false);
@@ -237,6 +245,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           .then(({ error: e4 }) => { if (e4) console.warn("bom not stored (run add-quote-bom.sql?):", e4.message); });
         sb.from("projects").update({ lat: next.lat ?? null, lon: next.lon ?? null }).eq("id", initial.id)
           .then(({ error: e5 }) => { if (e5) console.warn("coordinates not stored (run add-project-coords.sql?):", e5.message); });
+        sb.from("projects").update({ site_design: next.siteDesign || {} }).eq("id", initial.id)
+          .then(({ error: e6 }) => { if (e6) console.warn("site design not stored (run add-site-design.sql?):", e6.message); });
       }
     } catch (e) {
       setSaved("error");
@@ -281,6 +291,20 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const removeOption = (i) => update({ options: p.options.filter((_, j) => j !== i) });
   useEffect(() => () => clearTimeout(timer.current), []);
 
+  // A row picked from Design Suggestions replaces whatever inverter line(s)
+  // are already in the BOM — never adds a second, competing one alongside it.
+  // Supplier-sourced, like autoBom's own lines: no productId, since this isn't
+  // the installer's own stocked catalog.
+  function applyInverterChoice(row) {
+    const kept = (Array.isArray(p.bom) ? p.bom : []).filter((l) => l.kind !== "inverter");
+    const line = {
+      kind: "inverter", brand: row.inverter.brand, model: row.inverter.model,
+      spec: `${row.inverter.kw} kW ${row.inverter.type}`,
+      qty: row.count, unit_price: row.inverter.price, source: "supplier",
+    };
+    update({ bom: [...kept, line] });
+  }
+
   // Picking a different place invalidates a PVGIS yield fetched for the old one
   // — keeping it would quote this roof with another town's sunshine. Moving the
   // pin within ~1 km is the same PVGIS cache cell, so that keeps the yield.
@@ -308,6 +332,47 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       if (j.yieldPerKwp) update({ yieldOverride: j.yieldPerKwp, monthlyYieldShape: j.monthlyShape });
       else alert(j.error || "PVGIS lookup failed");
     } finally { setPvgisBusy(false); }
+  }
+
+  // The Site Designer hands back a real, physical panel count per roof plane
+  // (lib/roofLayout.js's fitPanels), each with its own drawn tilt/azimuth —
+  // so this is the one place that actually exercises /api/pvgis's angle/
+  // aspect params instead of always taking the route's 35°/south default.
+  // Per-plane yields are combined panel-count-weighted into the single
+  // yieldOverride/monthlyYieldShape the engine already consumes.
+  async function applySiteDesignLayout(layout) {
+    if (!layout || !layout.totalCount) return;
+    setSiteDesignApplying(true);
+    try {
+      const results = await Promise.all(layout.perPlane.filter((pl) => pl.count > 0).map(async (pl) => {
+        try {
+          const r = await fetch(`/api/pvgis?lat=${pl.lat}&lon=${pl.lon}&angle=${pl.tiltDeg}&aspect=${pl.azimuthDeg}`);
+          const j = await r.json();
+          return { ...pl, yieldPerKwp: j.yieldPerKwp, monthlyShape: j.monthlyShape };
+        } catch { return { ...pl, yieldPerKwp: null }; }
+      }));
+      const valid = results.filter((r) => r.yieldPerKwp);
+      let patch = { kw: layout.kw };
+      if (valid.length) {
+        const totalCount = valid.reduce((s, r) => s + r.count, 0) || 1;
+        patch.yieldOverride = valid.reduce((s, r) => s + r.yieldPerKwp * r.count, 0) / totalCount;
+        if (valid.every((r) => Array.isArray(r.monthlyShape) && r.monthlyShape.length === 12)) {
+          patch.monthlyYieldShape = Array.from({ length: 12 },
+            (_, i) => valid.reduce((s, r) => s + r.monthlyShape[i] * r.count, 0) / totalCount);
+        }
+      }
+      const bomArr = Array.isArray(p.bom) ? p.bom : [];
+      const hasPanelLine = bomArr.some((l) => l.kind === "panel");
+      patch.bom = hasPanelLine
+        ? bomArr.map((l) => l.kind === "panel" ? { ...l, qty: layout.totalCount, brand: layout.panelBrand, model: layout.panelModel } : l)
+        : bomArr.length === 0
+          ? autoBom(layout.kw, p.battKwh).map((l) => l.kind === "panel" ? { ...l, qty: layout.totalCount } : l)
+          : bomArr; // has other lines but no panel line — an unusual manual BOM; leave it rather than guess
+      update(patch);
+      setSiteDesignerOpen(false);
+    } finally {
+      setSiteDesignApplying(false);
+    }
   }
 
   async function makeProposal() {
@@ -464,11 +529,21 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 value={p.address}
                 lat={p.lat}
                 lng={p.lon}
-                mapSize={168}
+                mapSize={260}
                 onText={(s) => update({ address: s, lat: null, lon: null })}
                 onPick={pickAddress}
               />
             </div>
+
+            {/* Draw the roof on real satellite imagery instead of assuming one
+                flat 35°-south plane — see components/SiteDesigner.jsx. Needs a
+                resolved pin, same requirement as the PVGIS fetch below. */}
+            <button className="btn ghost" style={{ width: "100%", marginBottom: 10 }}
+              disabled={p.lat == null || p.lon == null}
+              title={p.lat == null || p.lon == null ? tr("site_designer_need_address") : undefined}
+              onClick={() => setSiteDesignerOpen(true)}>
+              {tr("site_designer_open")}
+            </button>
 
             <button className={p.yieldOverride ? "btn amber" : "btn ghost"} style={{ width: "100%" }}
               onClick={fetchPVGIS} disabled={pvgisBusy}>
@@ -480,6 +555,13 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               <div className="pvgis-data">
                 <span className="pvg-k">{Math.round(p.yieldOverride)}</span> {tr("unit_kwp_yr")}
                 {Array.isArray(p.monthlyYieldShape) && p.monthlyYieldShape.length === 12 && <> · {tr("pvgis_monthly")}</>}
+                {/* Sunny Design names a "site for meteorological data" and a
+                    distance to it — SMA runs on a network of physical
+                    stations, so that number means something for them. PVGIS is
+                    gridded satellite irradiance, not station lookups, so a
+                    fabricated "X km away" would be a made-up number wearing
+                    their UI's clothes. This states what the source actually is. */}
+                <div className="pvgis-src">{tr("pvgis_src")}</div>
               </div>
             )}
 
@@ -538,9 +620,17 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <h3>{tr("system")}</h3>
             <div className="field">
               <label>{tr("system_size")}<output>{p.kw.toFixed(1)} kW</output></label>
-              <input type="range" min={KW_MIN} max={KW_MAX} step="0.5" value={p.kw} style={{ "--fill": kwFill + "%" }}
-                aria-valuemin={KW_MIN} aria-valuemax={KW_MAX} aria-valuenow={p.kw}
-                onChange={e => update({ kw: +e.target.value })} />
+              <div className="slider-row">
+                <input type="range" min={KW_MIN} max={KW_MAX} step="0.5" value={p.kw} style={{ "--fill": kwFill + "%" }}
+                  aria-valuemin={KW_MIN} aria-valuemax={KW_MAX} aria-valuenow={p.kw}
+                  onChange={e => update({ kw: +e.target.value })} />
+                {/* A drag is imprecise once the range spans 2-500 kW — this
+                    lets an exact figure (from a real design, a client ask) be
+                    typed directly instead of hunted for on the slider. */}
+                <input type="number" className="slider-num" inputMode="decimal" step="0.1"
+                  aria-label={tr("system_size")} value={p.kw}
+                  onChange={e => update({ kw: +e.target.value || KW_MIN })} />
+              </div>
             </div>
             <div className="field"><label>{tr("elec_price")}</label>
               <input className="input" type="number" step="0.01" value={p.price}
@@ -598,7 +688,23 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 </div>
               </div>
             )}
-            {check(p.batt, tr("battery_label"), tr("battery_sub"), v => update({ batt: v }))}
+            {/* System type as a real, first-class choice — grid-tied and
+                hybrid are different products (different pitch: bill savings
+                vs. bill savings + backup resilience), not one checkbox among
+                many sizing inputs. Still just p.batt underneath, so the
+                capacity input below and the rest of the app (engine, PDF,
+                design checks) are unchanged. */}
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>{tr("sys_type_label")}</label>
+              <div className="seg2">
+                <button type="button" className={!p.batt ? "on" : ""} onClick={() => update({ batt: false })}>
+                  {tr("sys_type_grid")}
+                </button>
+                <button type="button" className={p.batt ? "on" : ""} onClick={() => update({ batt: true })}>
+                  {tr("sys_type_hybrid")}
+                </button>
+              </div>
+            </div>
             {p.batt && (() => {
               const battCost = (Number(p.battKwh) || 0) * (Number(E.batteryCostPerKwh) || 500);
               return (
@@ -761,7 +867,16 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             kw={p.kw}
             battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
             consKwh={consEff}
-            selfPct={Math.round(q.e.self * 100)}
+          />
+
+          {/* Compare every inverter that could serve this array, not just the
+              one in the BOM — applying a row swaps the BOM's inverter line. */}
+          <DesignSuggestions
+            lang={lang}
+            bom={p.bom}
+            kw={p.kw}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            onApply={applyInverterChoice}
           />
 
           {/* Battery sizing and the surplus price: the two questions an offer in
@@ -814,6 +929,21 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           )}
         </div>
       </div>
+
+      {/* site designer modal: draw the roof on satellite imagery */}
+      {siteDesignerOpen && p.lat != null && p.lon != null && (
+        <div className="overlay" onClick={() => setSiteDesignerOpen(false)}>
+          <div className="modal sd-modal" onClick={e => e.stopPropagation()}>
+            <h4>{tr("site_designer_title")}</h4>
+            <SiteDesigner lang={lang} lat={p.lat} lon={p.lon} siteDesign={p.siteDesign}
+              onChange={(sd) => update({ siteDesign: sd })}
+              onApply={applySiteDesignLayout} applying={siteDesignApplying} />
+            <div className="modal-acts" style={{ marginTop: 14 }}>
+              <button className="btn ghost" onClick={() => setSiteDesignerOpen(false)}>{tr("close")}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* proforma modal: pick a deposit, then open the document */}
       {invOpen && (

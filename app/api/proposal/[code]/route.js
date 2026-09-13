@@ -171,6 +171,11 @@ export async function GET(req, { params }) {
     },
     options,
     bom: Array.isArray(prop.snapshot.bom) ? prop.snapshot.bom : [],
+    // Real, drawn roof area/orientation (Site Designer), frozen at "Generate
+    // offer" time same as everything else here — undefined on any proposal
+    // made before that plane existed, or with no single unambiguous plane.
+    roofAreaM2: prop.snapshot.roofAreaM2 || undefined,
+    roofOrientation: prop.snapshot.roofOrientation || undefined,
   });
 }
 

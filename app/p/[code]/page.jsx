@@ -37,7 +37,8 @@ export default async function ProposalPage({ params, searchParams }) {
     return <main style={S.wrap}><h1 style={S.h1}>{t("pp_not_found", "en")}</h1>
       <p style={S.muted}>{t("pp_expired", "en")}</p></main>;
   }
-  const { company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null } = data;
+  const { company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null,
+    roofAreaM2 = null, roofOrientation = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
   const signedDate = signedAt
@@ -53,7 +54,8 @@ export default async function ProposalPage({ params, searchParams }) {
     // which is the rarer case, so it was cost with no payoff on the common one.
     return (
       <main lang={lang} style={{ background: "#fff", minHeight: "100vh" }}>
-        <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom} />
+        <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom}
+          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} />
         {/* The PDF route drives printing through CDP and passes auto=0:
             window.print() inside headless Chromium blocks rather than returns. */}
         {searchParams?.auto !== "0" && <AutoPrint />}

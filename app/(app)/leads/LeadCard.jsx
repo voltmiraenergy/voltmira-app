@@ -57,6 +57,7 @@ export default function LeadCard({ lead, lang }) {
   const [name, setName] = useState(lead.name || "");
   const [phone, setPhone] = useState(lead.phone || "");
   const [email, setEmail] = useState(lead.email || "");
+  const [address, setAddress] = useState(lead.address || "");
   const [note, setNote] = useState(lead.note || "");
   const [pending, start] = useTransition();
   const nameRef = useRef(null);
@@ -77,11 +78,12 @@ export default function LeadCard({ lead, lang }) {
 
   function open() {
     setName(lead.name || ""); setPhone(lead.phone || "");
-    setEmail(lead.email || ""); setNote(lead.note || "");
+    setEmail(lead.email || ""); setAddress(lead.address || "");
+    setNote(lead.note || "");
     setEditing(true);
   }
   function save() {
-    start(() => updateLead(lead.id, { name, phone, email, note }).then(() => setEditing(false)));
+    start(() => updateLead(lead.id, { name, phone, email, address, note }).then(() => setEditing(false)));
   }
   function cancel() { setEditing(false); }
 
@@ -116,6 +118,10 @@ export default function LeadCard({ lead, lang }) {
             {!lead.email && !lead.phone ? <span className="none">{t("lead_no_contact", lang)}</span> : null}
           </div>
 
+          {/* Shown even collapsed: whether a lead HAS an address is exactly
+              what decides if "Generate offer" sizes a real system or just
+              opens a blank quote — worth seeing without opening Edit. */}
+          {lead.address ? <div className="lead-address">📍 {lead.address}</div> : null}
           {lead.note ? <div className="lead-note">{lead.note}</div> : null}
         </div>
 
@@ -143,6 +149,14 @@ export default function LeadCard({ lead, lang }) {
               placeholder={t("lead_field_email", lang)} aria-label={t("lead_field_email", lang)}
               tabIndex={editing ? 0 : -1}
               onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && save()} />
+            {/* Free text, not the geocoding picker used elsewhere (AddressField):
+                this just needs to be good enough to feed "Generate offer",
+                which geocodes it at that point — a full picker here would be
+                one more thing standing between a phone call and a saved lead. */}
+            <input className="lead-ed-input" style={{ flex: "1 1 100%" }} value={address} maxLength={200}
+              placeholder={t("lead_field_address", lang)} aria-label={t("lead_field_address", lang)}
+              tabIndex={editing ? 0 : -1}
+              onChange={e => setAddress(e.target.value)} onKeyDown={e => e.key === "Enter" && save()} />
             <input className="lead-ed-input" style={{ flex: "1 1 100%" }} value={note} maxLength={500}
               placeholder={t("lead_field_note", lang)} aria-label={t("lead_field_note", lang)}
               tabIndex={editing ? 0 : -1}

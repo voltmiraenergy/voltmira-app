@@ -35,9 +35,14 @@ export default function ClientAudit({ inputs, assumptions: E, lang }) {
   const touched = priceMul !== 1 || inflDelta !== 0;
 
   const bands = [["pp_pess", q.p, "#C4543B"], ["pp_expc", q.e, "#E89B2D"], ["pp_opti", q.o, "#1E6B4E"]];
-  const slider = { width: "100%", accentColor: "#E89B2D", height: 6, cursor: "pointer" };
+  const slider = { flex: 1, minWidth: 0, accentColor: "#E89B2D", height: 6, cursor: "pointer" };
   const lbl = { display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13, color: "#66756C", marginBottom: 8, fontWeight: 500 };
   const val = { fontFamily: "Inter, system-ui, sans-serif", fontWeight: 700, color: "#1E6B4E", fontSize: 15 };
+  const row = { display: "flex", alignItems: "center", gap: 10 };
+  // A drag can't land on an exact figure — this lets the number itself (from
+  // an actual bill, or an inflation figure the client has in mind) be typed.
+  const numBox = { width: 68, flex: "none", textAlign: "right", fontVariantNumeric: "tabular-nums",
+    padding: "5px 7px", borderRadius: 8, border: "1px solid #E3E1D6", fontSize: 13, fontFamily: "inherit" };
 
   return (
     <section style={{ background: "#fff", border: "1px solid #E89B2D", borderRadius: 14, padding: 20, margin: "16px 0",
@@ -48,13 +53,23 @@ export default function ClientAudit({ inputs, assumptions: E, lang }) {
       <div style={{ display: "grid", gap: 18, marginBottom: 18 }}>
         <div>
           <div style={lbl}><span>{t("audit_price", lang)}</span><output style={val}>€{(basePrice * priceMul).toFixed(3)}/kWh</output></div>
-          <input type="range" min="0.6" max="1.8" step="0.05" value={priceMul} style={slider}
-            onChange={e => setPriceMul(+e.target.value)} aria-label={t("audit_price", lang)} />
+          <div style={row}>
+            <input type="range" min="0.6" max="1.8" step="0.05" value={priceMul} style={slider}
+              onChange={e => setPriceMul(+e.target.value)} aria-label={t("audit_price", lang)} />
+            <input type="number" step="0.001" min="0" style={numBox} value={(basePrice * priceMul).toFixed(3)}
+              aria-label={t("audit_price", lang)}
+              onChange={e => { const v = +e.target.value; if (!Number.isNaN(v) && basePrice > 0) setPriceMul(v / basePrice); }} />
+          </div>
         </div>
         <div>
           <div style={lbl}><span>{t("audit_infl", lang)}</span><output style={val}>{(E.bands.expc.infl + inflDelta).toFixed(1)}%/yr</output></div>
-          <input type="range" min="-3" max="6" step="0.5" value={inflDelta} style={slider}
-            onChange={e => setInflDelta(+e.target.value)} aria-label={t("audit_infl", lang)} />
+          <div style={row}>
+            <input type="range" min="-3" max="6" step="0.5" value={inflDelta} style={slider}
+              onChange={e => setInflDelta(+e.target.value)} aria-label={t("audit_infl", lang)} />
+            <input type="number" step="0.1" style={numBox} value={(E.bands.expc.infl + inflDelta).toFixed(1)}
+              aria-label={t("audit_infl", lang)}
+              onChange={e => { const v = +e.target.value; if (!Number.isNaN(v)) setInflDelta(v - E.bands.expc.infl); }} />
+          </div>
         </div>
       </div>
 

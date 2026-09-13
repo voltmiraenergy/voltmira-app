@@ -5,13 +5,16 @@
 // client's proposal PDF prints these same rows as an engineering annex. This
 // file is only the on-screen presentation of them.
 import { useMemo } from "react";
-import { designCheck, designCheckRows, designCheckLead } from "../lib/designCheck.js";
+import { designCheck, designCheckRows, designCheckLead, stringInputs } from "../lib/designCheck.js";
 
 const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
 
-export default function DesignChecks({ lang, bom, kw, battKwh, consKwh, phases, selfPct, className = "card" }) {
+export default function DesignChecks({ lang, bom, kw, battKwh, consKwh, phases, className = "card" }) {
   const d = useMemo(() => designCheck({ bom, kw, battKwh, consKwh, phases }), [bom, kw, battKwh, consKwh, phases]);
-  const rows = useMemo(() => designCheckRows(d, { lang, battKwh, selfPct }), [d, lang, battKwh, selfPct]);
+  const rows = useMemo(() => designCheckRows(d, { lang, battKwh }), [d, lang, battKwh]);
+  // Per-MPPT-input breakdown — "Input A / Input B" — only worth its own table
+  // once there's an actual split to show; one string is just the row above.
+  const inputs = useMemo(() => (d.strings > 1 ? stringInputs(d) : []), [d]);
 
   const allClear = rows.every((r) => r.ok);
 
@@ -35,6 +38,21 @@ export default function DesignChecks({ lang, bom, kw, battKwh, consKwh, phases, 
           </li>
         ))}
       </ul>
+
+      {inputs.length > 1 && (
+        <div className="dc-inputs">
+          <div className="dc-in-cap">{t3(lang, "Repartizare pe intrări MPPT", "Split across MPPT inputs", "Разбивка по входам MPPT")}</div>
+          <div className="dc-in-grid" style={{ gridTemplateColumns: `repeat(${inputs.length}, 1fr)` }}>
+            {inputs.map((r) => (
+              <div key={r.label} className={"dc-in" + (r.ok ? "" : " bad")}>
+                <span className="dc-in-label">{t3(lang, "Intrare", "Input", "Вход")} {r.label}</span>
+                <b>{r.strings} × {r.modulesPerString} {t3(lang, "module", "modules", "модулей")}</b>
+                <span className="dc-in-v">{Math.round(r.vString)} V</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {allClear && (
         <div className="dc-clear">
@@ -60,6 +78,16 @@ export default function DesignChecks({ lang, bom, kw, battKwh, consKwh, phases, 
         .dc-detail i{font-style:normal;color:var(--green)}
         .dc-clear{margin-top:13px;padding:9px 12px;background:var(--green-tint);color:var(--green);
           border-radius:9px;font-size:12.5px;font-weight:600}
+        .dc-inputs{margin-top:12px}
+        .dc-in-cap{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+        .dc-in-grid{display:grid;gap:8px}
+        .dc-in{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:9px 11px;
+          display:flex;flex-direction:column;gap:2px}
+        .dc-in.bad{border-color:#E3C0B3;background:var(--amber-tint)}
+        .dc-in-label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+        .dc-in b{font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
+        .dc-in-v{font-size:11px;color:var(--muted)}
+        .dc-in.bad .dc-in-v{color:#B4472F;font-weight:600}
       ` }} />
     </section>
   );

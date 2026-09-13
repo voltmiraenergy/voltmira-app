@@ -7,8 +7,10 @@
 import { t } from "../../../lib/i18n.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { SOLAR_SEASON, FX, effectiveConsumption } from "@voltmira/engine";
-import { designCheck, designCheckRows, designCheckLead } from "../../../lib/designCheck.js";
+import { designCheck, designCheckRows, designCheckLead, stringInputs } from "../../../lib/designCheck.js";
 import { kindLabel, bomLineText, surplusRevenue } from "../../../lib/quoteAnalysis.js";
+import { backupHours } from "../../../lib/batteryBackup.js";
+import { compassLabel } from "../../../lib/roofLayout.js";
 import {
   latestSeasonalMdl, weightedExportPriceMdl, weightedExportPriceEur,
   flatAverageMdl, storageSpreadMdl, MONTHS_RO, BUYBACK_SOURCE,
@@ -26,6 +28,15 @@ const MKT = {
 // would be a tofu box on a container with no system fonts. The ordinary "2" IS
 // in Inter, so subscript it with markup instead of relying on a glyph we don't
 // ship.
+// "1 fază" vs "3 faze" — the catalog only ever ships 1-phase or 3-phase gear,
+// so this doesn't need the full Slavic plural-form ladder, just singular vs.
+// the one plural each language actually uses here.
+function t3phase(n, lang) {
+  if (lang === "en") return n === 1 ? "phase" : "phases";
+  if (lang === "ru") return n === 1 ? "фаза" : "фазы";
+  return n === 1 ? "fază" : "faze";
+}
+
 function co2(text) {
   const i = (text || "").indexOf("CO2");
   if (i < 0) return text;
@@ -236,6 +247,14 @@ const CSS = `
   .print-sheet .p-hero b{display:block;font-size:23px;font-family:'Inter',system-ui,sans-serif;letter-spacing:-.02em;color:#C97F14}
   .print-sheet .p-hero .net b{color:#1E6B4E}
   .print-sheet .p-hero span{font-size:10.5px;color:#666;display:block;margin-top:2px;line-height:1.35}
+  /* Hybrid systems' own pitch: a distinct callout, not folded into the money
+     band above — a battery is a different product (resilience), not just
+     another number in the savings math. */
+  .print-sheet .p-backup{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;
+    background:#EFF1E9;border:1px solid #D9DEC9;border-radius:9px;padding:10px 14px;margin:-6px 0 20px}
+  .print-sheet .p-backup b{font-size:16px;color:#3D5A2E;font-family:'Inter',system-ui,sans-serif;letter-spacing:-.01em}
+  .print-sheet .p-backup span{font-size:11.5px;color:#333}
+  .print-sheet .p-backup em{font-style:normal;font-size:10px;color:#777;flex-basis:100%}
   /* Numbered spine: the document reads as a sequence of answers, not a pile of
      tables. The number is muted so the title still carries. */
   .print-sheet h2{font-size:14.5px;margin:22px 0 8px;color:#1E6B4E;
@@ -340,7 +359,7 @@ const CSS = `
   @media print{ .print-sheet{width:auto;padding:0;margin:0} }
 `;
 
-export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [] }) {
+export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null }) {
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-IE";
   // Minus ahead of the currency symbol. "€-31" reads as a broken string; a
   // client seeing it on a monthly cashflow line reads it twice before believing
@@ -374,7 +393,16 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   const trees = Math.max(1, Math.round(co2Year / 21));
   const carKm = Math.round(co2Year / 0.17);
   const panels = Math.max(1, Math.round(inputs.kw / 0.44));
-  const roofArea = Math.round(inputs.kw * 5.5);
+  // Site Designer's own measured area/orientation beat the flat kw*5.5 rule
+  // of thumb and the "South, 35° (assumed)" placeholder once they exist —
+  // undefined on any quote that never had a roof drawn, which keeps every
+  // proposal made before this feature (or without it) exactly as it was.
+  const roofArea = roofAreaM2 ? Math.round(roofAreaM2) : Math.round(inputs.kw * 5.5);
+  const orientText = roofOrientation
+    ? `${Math.round(roofOrientation.tiltDeg)}°, ${compassLabel(roofOrientation.azimuthDeg, lang)}`
+    : roofAreaM2
+      ? t("pdf_orient_varies", lang)
+      : t("pdf_orient_v", lang);
 
   // ---- what the client is actually buying, and whether it can be built ------
   // The bill of materials names the real parts; with no BOM the document keeps
@@ -382,8 +410,22 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   const lines = (Array.isArray(bom) ? bom : []).filter((l) => (Number(l.qty) || 0) > 0);
   const battKwh = inputs.batt ? (Number(inputs.battKwh) || 0) : 0;
   const consEff = Math.max(0, Number(effectiveConsumption(inputs)) || 0);
+  // Hybrid systems get their own pitch, not just an add-on line item: real
+  // hours of backup at this household's own average draw (lib/batteryBackup.js)
+  // — never a monetized "avoided blackout" figure, since there's no reliable
+  // RO/MD outage-frequency data to price that against.
+  const backupHrs = battKwh > 0 ? backupHours(battKwh, consEff) : null;
   const dc = designCheck({ bom: lines, kw: Number(inputs.kw) || 0, battKwh, consKwh: consEff });
-  const checks = designCheckRows(dc, { lang, battKwh, selfPct: q.self != null ? Math.round(q.self * 100) : null });
+  const checks = designCheckRows(dc, { lang, battKwh });
+  // Shown for any real BOM inverter, even a single MPPT input in use — a
+  // genuine per-input compliance table (peak power, both ends of the voltage
+  // window, the current limit) is exactly what a real inverter-design report
+  // prints regardless of string count. Without a real inverter (representative
+  // fallback gear) there's no per-input electrical limit to check, so it only
+  // falls back to the old bare split once there's actually more than one input
+  // to show — see hasRealInverter below.
+  const mpptInputs = dc.strings >= 1 ? stringInputs(dc) : [];
+  const hasRealInverter = !!dc.stringRangeInfo;
 
   // ---- what the exported surplus is worth (Moldova / net billing only) ------
   // Romania credits exports 1:1 at the retail price, so there is no separate
@@ -469,6 +511,21 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         <div className="net"><b>{fmt(lifeNet)}</b><span>{tr("pdf_net_gain")}</span></div>
       </div>
 
+      {/* Hybrid systems get their own pitch here, right at the top next to the
+          headline money figures — a battery isn't just an add-on that shifts
+          self-consumption, it's a different product with its own value:
+          keeping the lights on. Only the honest, computable claim (hours at
+          this household's own average draw), never a monetized "avoided
+          blackout cost" — no reliable RO/MD outage data exists to price that
+          against. */}
+      {backupHrs != null && (
+        <div className="p-backup">
+          <b>~{Math.round(backupHrs)} {tr("pdf_backup_hunit")}</b>
+          <span>{tr("pdf_backup_body", { kwh: battKwh })}</span>
+          <em>{tr("pdf_backup_caveat")}</em>
+        </div>
+      )}
+
       {/* 1 — what they are actually buying. Moved ahead of the money: a serious
           buyer compares equipment first, and leading with the hardware is what
           separates a proposal from a price list. */}
@@ -488,16 +545,51 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
                 <td className="p-qty">× {Number(l.qty)}</td>
               </tr>
             ))}
-            <tr><td className="p-kind">{tr("pdf_roof")}</td><td colSpan={2}>~{roofArea} m² · {tr("pdf_orient_v")}</td></tr>
+            <tr><td className="p-kind">{tr(roofAreaM2 ? "pdf_roof_real" : "pdf_roof")}</td><td colSpan={2}>~{roofArea} m² · {orientText}</td></tr>
           </tbody></table>
         ) : (
           <table><tbody>
             <tr><td>{tr("pdf_panels")}</td><td>{tr("pdf_panels_v", { n: panels })}</td></tr>
             <tr><td>{tr("pdf_inverter")}</td><td>~{Number(inputs.kw).toFixed(1)} kW</td></tr>
             {inputs.batt && <tr><td>{tr("pdf_batt_row")}</td><td>{tr("pdf_included")}</td></tr>}
-            <tr><td>{tr("pdf_roof")}</td><td>~{roofArea} m²</td></tr>
-            <tr><td>{tr("pdf_orient")}</td><td>{tr("pdf_orient_v")}</td></tr>
+            <tr><td>{tr(roofAreaM2 ? "pdf_roof_real" : "pdf_roof")}</td><td>~{roofArea} m²</td></tr>
+            <tr><td>{tr("pdf_orient")}</td><td>{orientText}</td></tr>
           </tbody></table>
+        )}
+
+        {/* The panel/inverter's own datasheet figures, straight from the
+            supplier catalogue — only once the BOM names real gear, so this
+            never prints numbers for equipment nobody chose. Sunny Design's
+            module/inverter pages show exactly this; ours is two compact
+            tables rather than two dedicated pages, but the numbers are the
+            same real, checkable ones the annex validates against below. */}
+        {(dc.fromBom.panel || dc.fromBom.inverter) && (
+          <>
+            <h3>{tr("pdf_specs_h")}</h3>
+            <table><tbody>
+              <tr><th>{tr("pdf_specs_panel_h")}</th><th></th></tr>
+              <tr><td>{tr("pdf_specs_model")}</td><td>{dc.panel.brand} {dc.panel.model}</td></tr>
+              <tr><td>{tr("pdf_specs_power")}</td><td>{dc.panel.watt} W</td></tr>
+              <tr><td>{tr("pdf_specs_voc_vmp")}</td><td>{dc.panel.voc} V / {dc.panel.vmp} V</td></tr>
+              <tr><td>{tr("pdf_specs_isc_imp")}</td><td>{dc.panel.isc} A / {dc.panel.imp} A</td></tr>
+              <tr><td>{tr("pdf_specs_eff")}</td><td>{dc.panel.eff}% · {dc.panel.cells} {tr("pdf_specs_cells")}</td></tr>
+            </tbody></table>
+            <table style={{ marginTop: 8 }}><tbody>
+              <tr><th>{tr("pdf_specs_inv_h")}</th><th></th></tr>
+              {dc.inverter ? (
+                <>
+                  <tr><td>{tr("pdf_specs_model")}</td><td>{dc.inverter.brand} {dc.inverter.model}</td></tr>
+                  <tr><td>{tr("pdf_specs_ac")}</td><td>{dc.inverter.kw} kW · {dc.inverter.type}</td></tr>
+                  <tr><td>{tr("pdf_specs_maxdc")}</td><td>{dc.inverter.maxDcV} V</td></tr>
+                  <tr><td>{tr("pdf_specs_minmppt")}</td><td>{dc.inverter.minMpptV ? `${dc.inverter.minMpptV} V` : "—"}</td></tr>
+                  <tr><td>{tr("pdf_specs_maxcur")}</td><td>{dc.inverter.maxInputCurrentA ? `${dc.inverter.maxInputCurrentA} A` : "—"}</td></tr>
+                  <tr><td>{tr("pdf_specs_mppt_n")}</td><td>{dc.inverter.mppt} · {dc.inverter.phases} {t3phase(dc.inverter.phases, lang)}</td></tr>
+                </>
+              ) : (
+                <tr><td colSpan={2}>{tr("pdf_specs_na")}</td></tr>
+              )}
+            </tbody></table>
+          </>
         )}
       </section>
 
@@ -615,6 +707,65 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
             </tr>
           ))}
         </tbody></table>
+
+        {/* Per-MPPT-input compliance matrix — a real inverter-design report's
+            level of detail: peak power on that input, and each electrical
+            limit (voltage ceiling AND floor, current) checked against the
+            SAME real inverter rating the summary check above already used.
+            Every figure here comes from stringInputs() in lib/designCheck.js,
+            so the annex above and this table can never disagree. Without a
+            real inverter matched, there's no per-input rating to check
+            against, so this only shows the bare split once there's actually
+            more than one input to name. */}
+        {mpptInputs.length > 0 && (hasRealInverter || mpptInputs.length > 1) && (
+          <>
+            <h3>{tr("pdf_mppt_h")}</h3>
+            <table><tbody>
+              <tr>
+                <th></th>
+                {mpptInputs.map((r) => <th key={r.label}>{tr("pdf_input_n", { n: r.label })}</th>)}
+              </tr>
+              <tr>
+                <td>{tr("pdf_strings")}</td>
+                {mpptInputs.map((r) => <td key={r.label}>{r.strings} × {r.modulesPerString}</td>)}
+              </tr>
+              {hasRealInverter && (
+                <tr>
+                  <td>{tr("pdf_peak_input")}</td>
+                  {mpptInputs.map((r) => <td key={r.label}>{r.peakKw.toFixed(2)} kWp</td>)}
+                </tr>
+              )}
+              <tr>
+                <td>{tr("pdf_vstring")}</td>
+                {mpptInputs.map((r) => (
+                  <td key={r.label} className={r.vocOk ? "" : "p-chk bad"}>
+                    {Math.round(r.vString)} / {r.maxDcV} V
+                  </td>
+                ))}
+              </tr>
+              {hasRealInverter && mpptInputs[0].vmppOk !== null && (
+                <tr>
+                  <td>{tr("pdf_vmpp_hot")}</td>
+                  {mpptInputs.map((r) => (
+                    <td key={r.label} className={r.vmppOk ? "" : "p-chk bad"}>
+                      {Math.round(r.vmppHotActual)} / {r.minMpptV} V
+                    </td>
+                  ))}
+                </tr>
+              )}
+              {hasRealInverter && mpptInputs[0].maxInputCurrentA !== null && (
+                <tr>
+                  <td>{tr("pdf_isc_input")}</td>
+                  {mpptInputs.map((r) => (
+                    <td key={r.label} className={r.currentOk ? "" : "p-chk bad"}>
+                      {r.iscTotalA.toFixed(1)} / {r.maxInputCurrentA} A
+                    </td>
+                  ))}
+                </tr>
+              )}
+            </tbody></table>
+          </>
+        )}
       </section>
 
       {/* 4 — what the exported surplus actually earns, from the operator's own

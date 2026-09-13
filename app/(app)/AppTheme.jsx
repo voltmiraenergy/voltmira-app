@@ -283,6 +283,15 @@ const CSS = `
   .app input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--amber);border:3px solid var(--paper-2);box-shadow:0 0 0 1px var(--amber),0 2px 8px rgba(20,42,33,.25);cursor:grab}
   .app input[type=range]::-moz-range-progress{height:6px;border-radius:99px;background:var(--amber)}
 
+  /* A slider alone can't hit an exact value once its range is wide — pair it
+     with a plain number box wherever precision matters. */
+  .slider-row{display:flex;align-items:center;gap:10px}
+  .slider-row input[type=range]{flex:1;min-width:0}
+  .slider-num{width:78px;flex:none;text-align:right;font-variant-numeric:tabular-nums;
+    padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--paper-2);
+    color:var(--ink);font-size:13px}
+  .slider-num:focus{outline:2px solid var(--amber);outline-offset:1px}
+
   .check{
     display:flex;align-items:center;gap:12px;cursor:pointer;
     background:var(--paper-2);border:1px solid var(--line);
@@ -297,6 +306,15 @@ const CSS = `
   .check input:focus-visible + .toggle-pill{outline:2px solid var(--amber);outline-offset:2px}
   .check .txt{font-size:13.5px;font-weight:500;line-height:1.35}
   .check .txt small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+
+  /* A 2-way segmented choice — e.g. grid-tied vs hybrid system type — where a
+     toggle switch undersells the fact that these are two distinct options,
+     not an on/off modifier. */
+  .seg2{display:flex;border:1px solid var(--line);border-radius:11px;padding:3px;gap:3px;margin-top:10px;background:var(--paper)}
+  .seg2 button{flex:1;padding:9px 10px;border:none;border-radius:8px;background:none;color:var(--muted);
+    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
+  .seg2 button:hover{color:var(--ink)}
+  .seg2 button.on{background:var(--green);color:#fff}
 
   /* Tables */
   .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -419,6 +437,7 @@ const CSS = `
   .proj-title:hover{border-color:var(--line)}
   .proj-title:focus{border-color:var(--green);background:var(--paper-2);outline:none}
   .pvgis-data{margin-top:9px;padding:9px 12px;border:1px solid var(--green);background:var(--green-tint);border-radius:10px;font-size:12.5px;color:var(--muted);text-align:center}
+  .pvgis-src{margin-top:4px;font-size:10.5px;color:var(--muted);opacity:.8}
   .pvgis-data .pvg-k{font-family:var(--font-d);font-weight:700;color:var(--green);font-size:15px}
   /* Headline figures sit in one tight row. They used to be gap:24px with a
      flex spacer pushing the donut to the far edge, which opened a dead band
@@ -532,6 +551,7 @@ const CSS = `
   .lead-contact a{color:var(--green);text-decoration:none;font-weight:500}
   .lead-contact a:hover{text-decoration:underline;text-underline-offset:2px}
   .lead-contact .none{color:var(--muted)}
+  .lead-address{margin-top:8px;font-size:12.5px;color:var(--muted);line-height:1.4}
   .lead-note{margin-top:10px;font-size:13px;color:var(--ink-soft);line-height:1.55;
     padding:8px 12px;background:var(--paper);border-radius:9px;border-left:2px solid var(--amber)}
 
@@ -709,11 +729,19 @@ const CSS = `
     .app{grid-template-columns:1fr}
     .input,.proj-title{font-size:16px}
     /* Bottom nav (option A): a tidy single row of the 4 primary tabs + a "More"
-       button that opens a bottom sheet with the rest. No cramming 9 tabs. */
+       button that opens a bottom sheet with the rest. No cramming 9 tabs.
+       --mnav-h is the bar's own content height (icons+labels+its padding,
+       measured, not counting the home-indicator inset) — a couple of extra
+       px above the raw measurement so the row sits with a little breathing
+       room instead of pressed right against the inset. Anything that needs
+       to clear the bar (the page's own bottom padding, a toast) adds
+       env(safe-area-inset-bottom) to this same number rather than guessing
+       at a second, easily-stale constant. */
+    :root{--mnav-h:66px}
     .sidebar{
       position:fixed;inset:auto 0 0 0;height:auto;z-index:60;
       flex-direction:row;align-items:stretch;
-      padding:6px 6px env(safe-area-inset-bottom);
+      padding:8px 6px calc(env(safe-area-inset-bottom) + 8px);
       border-top:1px solid rgba(255,255,255,.14);
     }
     .logo,.side-foot{display:none}
@@ -752,9 +780,12 @@ const CSS = `
     .more-sheet .side-theme,.more-sheet .reset-link{display:flex;align-items:center;gap:14px;width:100%;justify-content:flex-start;text-align:left;padding:14px;border-radius:11px;background:none;border:none;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--white-dim)}
     .more-sheet .side-theme svg{width:20px;height:20px;flex:none;opacity:.9}
     .more-sheet .reset-link{color:#E88E7A}
-    .view{padding:18px 16px 92px}
+    .view{padding:18px 16px calc(var(--mnav-h) + env(safe-area-inset-bottom) + 20px)}
     .filters .input{width:100%}
     .proj-title{width:170px;font-size:18px}
+    /* Otherwise a save/copy toast lands behind the bottom nav instead of
+       above it — the one other fixed-bottom element on the page. */
+    .toast{bottom:calc(var(--mnav-h) + env(safe-area-inset-bottom) + 14px)}
   }
 `;
 

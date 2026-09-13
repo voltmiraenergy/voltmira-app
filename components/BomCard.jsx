@@ -20,38 +20,17 @@
 import { useMemo, useState } from "react";
 import {
   ALL_SUPPLIER_PRODUCTS, recommendInverter, recommendBattery, recommendPanel,
-  findMount, findSupplier, DEFAULT_IDS,
+  findMount, findSupplier, DEFAULT_IDS, autoBom,
 } from "../lib/supplierCatalog.js";
 import { bomTotal, kindLabel } from "../lib/quoteAnalysis.js";
 
 const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
 
-
-/**
- * Size a complete system for this kW / battery target.
- * Single-phase under 6 kW, three-phase above — the split every MD/RO installer
- * uses, and what decides which inverters are even eligible.
- */
-export function autoBom(kw, battKwh) {
-  const panel = recommendPanel();
-  const nPanels = Math.max(1, Math.round((kw * 1000) / panel.watt));
-  const phases = kw > 6 ? 3 : 1;
-  const inv = recommendInverter({ kw, phases, wantHybrid: battKwh > 0 });
-  const mount = findMount(DEFAULT_IDS.mount);
-  const lines = [
-    { kind: "panel", brand: panel.brand, model: panel.model, spec: `${panel.watt} W`, qty: nPanels, unit_price: panel.price, source: "supplier" },
-    { kind: "inverter", brand: inv.brand, model: inv.model, spec: `${inv.kw} kW ${inv.type}`, qty: Math.max(1, Math.ceil(kw / (inv.kw * 1.35))), unit_price: inv.price, source: "supplier" },
-    { kind: "mounting", brand: mount.brand, model: mount.model, spec: mount.type, qty: Math.round(kw * 10) / 10, unit_price: mount.eurPerKw, source: "supplier" },
-  ];
-  if (battKwh > 0) {
-    const bat = recommendBattery(battKwh);
-    if (bat) lines.splice(2, 0, {
-      kind: "battery", brand: bat.brand, model: bat.model, spec: `${bat.kwh} kWh ${bat.chem}`,
-      qty: Math.max(1, Math.round(battKwh / bat.kwh)), unit_price: bat.price, source: "supplier",
-    });
-  }
-  return lines;
-}
+// autoBom itself now lives in lib/supplierCatalog.js (pure, no React) so a
+// server action can size a lead's first draft without importing a "use client"
+// component. Re-exported here so nothing that already imports it from this
+// file needs to change.
+export { autoBom };
 
 /**
  * @param {Array}  bom       current lines
