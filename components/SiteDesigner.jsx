@@ -94,6 +94,7 @@ export default function SiteDesigner({ lang, lat, lon, siteDesign, onChange, onA
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [counts, setCounts] = useState({ planes: 0, obstacles: 0 });
   const [layout, setLayout] = useState(null);
 
@@ -130,11 +131,20 @@ export default function SiteDesigner({ lang, lat, lon, siteDesign, onChange, onA
       obstacleLayers.current.set(id, layer);
     }
 
-    (async () => {
-      const [{ default: L }] = await Promise.all([
-        import("leaflet"),
-        import("@geoman-io/leaflet-geoman-free"),
-      ]);
+    async function init() {
+      // leaflet-geoman-free's dist bundle references a bare, unimported `L`
+      // (it's built to run after Leaflet's own <script> tag, which used to set
+      // window.L as a side effect) — it never imports Leaflet itself. Loading
+      // it as an ES module via a bundler skips that side effect, so its
+      // top-level `L.PM.initialize()` throws "L is not defined" the instant
+      // it's evaluated, aborting this whole function before setReady(true)
+      // ever runs — the map then sits on "Loading satellite imagery…" forever
+      // with no visible error. Leaflet must be imported AND published to
+      // window.L first, in that order, before geoman is imported at all.
+      const { default: L } = await import("leaflet");
+      if (cancelled || !mapEl.current) return;
+      window.L = L;
+      await import("@geoman-io/leaflet-geoman-free");
       await import("@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css");
       if (cancelled || !mapEl.current) return;
       Lref.current = L;
@@ -227,7 +237,13 @@ export default function SiteDesigner({ lang, lat, lon, siteDesign, onChange, onA
 
       mapRef.current = map;
       setReady(true);
-    })();
+    }
+
+    init().catch((e) => {
+      if (cancelled) return;
+      console.error("SiteDesigner failed to load:", e?.message || e);
+      setLoadError(true);
+    });
 
     return () => {
       cancelled = true;
@@ -301,7 +317,9 @@ export default function SiteDesigner({ lang, lat, lon, siteDesign, onChange, onA
       <div ref={mapEl} className="sd-map" />
       {!ready && (
         <div className="sd-loading">
-          {t3(lang, "Se încarcă imaginea satelitară…", "Loading satellite imagery…", "Загрузка изображения…")}
+          {loadError
+            ? t3(lang, "Harta nu s-a putut încărca. Reîncearcă.", "The map failed to load. Try again.", "Не удалось загрузить карту. Попробуйте снова.")
+            : t3(lang, "Se încarcă imaginea satelitară…", "Loading satellite imagery…", "Загрузка изображения…")}
         </div>
       )}
       {layout && (
