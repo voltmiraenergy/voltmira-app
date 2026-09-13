@@ -45,19 +45,14 @@ const TX = {
   tickets: { en: "Service tickets", ro: "Tichete de service", ru: "Сервисные заявки" },
   open: { en: "open", ro: "deschis", ru: "открыт" },
   resolved: { en: "resolved", ro: "rezolvat", ru: "решён" },
-  moat_t: { en: "The data nobody else has", ro: "Datele pe care nu le are nimeni", ru: "Данные, которых нет ни у кого" },
-  moat_p: {
-    en: "Every monitored system feeds an anonymised Moldova actual-vs-P50 dataset by raion and mounting type. In a country of a few thousand prosumers, that quickly becomes the most defensible yield number in the market.",
-    ro: "Fiecare sistem monitorizat alimentează un set anonimizat real-vs-P50 pe Moldova, pe raion și tip de montaj. Într-o țară cu câteva mii de prosumatori, asta devine repede cel mai solid randament de pe piață.",
-    ru: "Каждая система в мониторинге пополняет анонимный набор факт-против-P50 по Молдове, по районам и типу монтажа. В стране с несколькими тысячами просьюмеров это быстро становится самым надёжным числом выработки на рынке.",
-  },
 };
 
 const MONTHS = { ro: ["ian", "feb", "mar", "apr", "mai", "iun", "iul", "aug", "sep", "oct", "nov", "dec"], en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], ru: ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"] };
+// The installed jobs from the payments ledger, now generating service tickets.
 const TICKETS = [
-  { client: "Familia Rusu", issue: { ro: "Invertor — eroare F13 (izolație)", en: "Inverter — F13 fault (isolation)", ru: "Инвертор — ошибка F13 (изоляция)" }, open: true },
-  { client: "Elena C.", issue: { ro: "Șir 2 sub producție — verificat, conector", en: "String 2 underproducing — checked, connector", ru: "Цепочка 2 недовырабатывает — разъём" }, open: false },
-  { client: "Familia Ceban", issue: { ro: "Wi-Fi datalogger reconfigurat", en: "Datalogger Wi-Fi reconfigured", ru: "Wi-Fi даталоггера перенастроен" }, open: false },
+  { client: "Elena Ciobanu", issue: { ro: "Invertor — eroare F13 (izolație)", en: "Inverter — F13 fault (isolation)", ru: "Инвертор — ошибка F13 (изоляция)" }, open: true },
+  { client: "Familia Ceban", issue: { ro: "Șir 2 sub producție — verificat, conector", en: "String 2 underproducing — checked, connector", ru: "Цепочка 2 недовырабатывает — разъём" }, open: false },
+  { client: "Vasile Rotaru", issue: { ro: "Wi-Fi datalogger reconfigurat", en: "Datalogger Wi-Fi reconfigured", ru: "Wi-Fi даталоггера перенастроен" }, open: false },
 ];
 
 export default function MonitoringPreview() {
@@ -195,11 +190,6 @@ export default function MonitoringPreview() {
             ))}
           </ul>
         </div>
-      </div>
-
-      <div className="pv-callout">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 2v20M2 12h20" /></svg>
-        <div><b>{T(TX.moat_t)}</b><p>{T(TX.moat_p)}</p></div>
       </div>
 
       {/* The deliverable: an annual performance report (real vs the promised P50)

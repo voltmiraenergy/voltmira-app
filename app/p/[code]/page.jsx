@@ -7,6 +7,7 @@ import PrintSheet from "./PrintSheet.jsx";
 import ClientAudit from "./ClientAudit.jsx";
 import { t, normLang } from "../../../lib/i18n.js";
 import { fmtDate } from "../../../lib/tz.js";
+import { kindLabel, bomLineText } from "../../../lib/quoteAnalysis.js";
 
 async function getProposal(code) {
   const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -52,7 +53,7 @@ export default async function ProposalPage({ params, searchParams }) {
     // which is the rarer case, so it was cost with no payoff on the common one.
     return (
       <main lang={lang} style={{ background: "#fff", minHeight: "100vh" }}>
-        <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} />
+        <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom} />
         {/* The PDF route drives printing through CDP and passes auto=0:
             window.print() inside headless Chromium blocks rather than returns. */}
         {searchParams?.auto !== "0" && <AutoPrint />}
@@ -106,10 +107,6 @@ export default async function ProposalPage({ params, searchParams }) {
               <td style={S.atV}>{Math.round(q.yieldPerKwp || q.assumptions.baseYield)} kWh/kWp·yr</td></tr>
             <tr><td style={S.atK}>{t("pa_cost", lang)}</td>
               <td style={S.atV}>€{q.assumptions.costPerKw}/kW + €{q.assumptions.batteryCost} {t("pa_battery", lang)}</td></tr>
-            {q.afmSubsidy && (
-              <tr><td style={S.atK}>{t("pa_subsidy", lang)}</td>
-                <td style={S.atV}>{t("pa_yes", lang)} — {(q.assumptions.subsidyAmountRon || 20000).toLocaleString()} RON</td></tr>
-            )}
             <tr><td style={S.atK}>{t("pa_opex", lang)}</td>
               <td style={S.atV}>{t("pa_opex_v", lang, { n: q.assumptions.opexPct })}</td></tr>
             <tr><td style={S.atK}>{t("pa_horizon", lang)}</td>
@@ -147,16 +144,23 @@ export default async function ProposalPage({ params, searchParams }) {
         </section>
       )}
 
+      {/* A bill-of-materials line is {kind, brand, model, spec, qty} — this read
+          `l.label`, a field no BOM line has ever carried, so every row rendered
+          as a blank name. Never caught because the demo seeds an empty BOM and
+          there was no editor UI to build one until the offer tab got it. */}
       {bom.length > 0 && (
         <section style={S.card}>
           <h2 style={S.h2}>{t("pp_equipment_h", lang)}</h2>
           <table style={S.atbl}><tbody>
-            {bom.map((l, i) => (
+            {bom.filter((l) => (Number(l.qty) || 0) > 0).map((l, i) => (
               <tr key={i}>
                 <td style={{ ...S.atK, color: "#142A21", fontWeight: 600 }}>
-                  {l.label}{l.spec ? <span style={{ color: "#66756C", fontWeight: 400 }}> · {l.spec}</span> : null}
+                  {bomLineText(l)}
+                  <span style={{ display: "block", color: "#66756C", fontWeight: 400, fontSize: 11.5 }}>
+                    {kindLabel(l.kind, lang)}
+                  </span>
                 </td>
-                <td style={{ ...S.atV, textAlign: "right", whiteSpace: "nowrap" }}>× {l.qty}</td>
+                <td style={{ ...S.atV, textAlign: "right", whiteSpace: "nowrap", verticalAlign: "top" }}>× {Number(l.qty)}</td>
               </tr>
             ))}
           </tbody></table>

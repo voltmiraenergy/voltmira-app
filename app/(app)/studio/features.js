@@ -17,16 +17,10 @@ export const PREVIEW_FEATURES = [
     ru: { name: "Техобследование", nav: "Осмотр", short: "До расчёта: реальный уклон крыши, азимут и затенение дают скорректированную выработку PVGIS, проверка 1~/3~ и напряжения цепочки ловит нереализуемую схему, а фото объекта хранятся при заявке — чтобы окупаемость была честной для этой крыши." },
   },
   {
-    slug: "quote",
-    en: { name: "Offer — residential & C&I", nav: "Ofertă", short: "Two offer modes on one engine. Residential enforces the 10 kW cap, net metering vs billing per client and the real Casa Verde / FEERM maths. C&I handles mega projects (100 kW+) with self-consumption, a full capex breakdown, NPV / IRR / LCOE, a payment schedule and delivery timeline — each exported as an offer document in the client's language." },
-    ro: { name: "Ofertă — rezidențial & C&I", nav: "Ofertă", short: "Două moduri de ofertă pe un singur motor. Rezidențial impune plafonul de 10 kW, contorizare vs facturare netă per client și matematica reală Casa Verde / FEERM. C&I acoperă proiectele mari (100 kW+) cu autoconsum, defalcarea investiției, VAN / RIR / LCOE, grafic de plăți și de execuție — fiecare exportat ca document de ofertă în limba clientului." },
-    ru: { name: "Предложение — жилое и C&I", nav: "Расчёт", short: "Два режима на одном движке. Жилой применяет лимит 10 кВт, нетто-учёт/биллинг по клиенту и математику Casa Verde / FEERM. C&I — мегапроекты (100 кВт+) с самопотреблением, разбивкой капзатрат, NPV / IRR / LCOE, графиком платежей и сроков — каждый выгружается как документ на языке клиента." },
-  },
-  {
-    slug: "connection",
-    en: { name: "Connection pipeline", nav: "Racordare", short: "From the signed offer to the bidirectional meter as one tracked flow — VoltMira drafts the connection file for Premier Energy or RED Nord, the contract, the handover and commissioning acts and the electrician's declaration, tracks each stage with a due date and an overdue nudge, and runs the Casa Verde (FEERM) eligibility gate." },
-    ro: { name: "Flux de racordare", nav: "Racordare", short: "De la oferta semnată la contorul bidirecțional, într-un singur flux urmărit — VoltMira pregătește dosarul de racordare pentru Premier Energy sau RED Nord, contractul, procesele-verbale de predare-primire și de punere în funcțiune și declarația electricianului, urmărește fiecare etapă cu termen și alertă de întârziere, și rulează verificarea de eligibilitate Casa Verde (FEERM)." },
-    ru: { name: "Процесс подключения", nav: "Подключение", short: "От подписанного предложения до счётчика — один отслеживаемый процесс: VoltMira готовит пакет для Premier Energy или RED Nord, договор, акты приёма-передачи и ввода, декларацию электрика, ведёт каждый этап со сроком и напоминанием о просрочке и проверяет право на грант Casa Verde (FEERM)." },
+    slug: "catalog",
+    en: { name: "Equipment catalog", nav: "Catalog", short: "Panels, inverters, batteries and mounting — every SKU with real specifications, stock and lead time, filterable by class. The quote, the annex and the install schedule all read from this one catalog, so a system is never quoted from a fictional part." },
+    ro: { name: "Catalog echipamente", nav: "Catalog", short: "Panouri, invertoare, baterii și structuri — fiecare SKU cu specificații reale, stoc și termen de livrare, filtrabil pe clasă. Oferta, anexa și planificarea de montaj citesc din acest catalog, ca un sistem să nu fie ofertat pe un echipament fictiv." },
+    ru: { name: "Каталог оборудования", nav: "Каталог", short: "Панели, инверторы, батареи и крепления — каждый SKU с реальными характеристиками, наличием и сроком поставки. Расчёт, приложение и график монтажа читают из этого каталога." },
   },
   {
     slug: "annex",

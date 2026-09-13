@@ -326,10 +326,8 @@ export default function Settings() {
           {numField("eHorizon", t("pdf_horizon", lang), eng.horizon, 1, t("unit_years", lang), setEng("horizon"))}
         </div>
 
-        <div className="st-glabel">{t("st_grp_subs", lang)}</div>
+        <div className="st-glabel">{t("st_grp_limits", lang)}</div>
         <div className="set-grid">
-          {numField("eSubsidy", t("afm_amount", lang), co.subsidy_amount_ron, 500, null, setCoNum("subsidy_amount_ron"))}
-          {numField("eSubsidyMdl", t("s_subsidy_mdl", lang), eng.subsidyAmountMdl, 500, null, setEng("subsidyAmountMdl"))}
           {numField("eProsumer", t("prosumer_limit", lang), co.prosumer_limit_kw, 0.1, null, setCoNum("prosumer_limit_kw"))}
         </div>
 

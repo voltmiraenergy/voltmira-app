@@ -5,7 +5,7 @@
 // it's consistent, and it prints.
 import { useEffect, useMemo, useState } from "react";
 import {
-  useLang, makeT, PreviewHeader, MockNote, DEMO_SYSTEM, protRows, downloadStudioDoc,
+  useLang, makeT, PreviewHeader, MockNote, systemFor, protRows, downloadStudioDoc,
   useStudioClient, ClientBar,
 } from "../studio-kit.jsx";
 
@@ -93,6 +93,7 @@ export default function AnnexPreview() {
   const t = makeT(TX, lang);
   const { client } = useStudioClient();
   useEffect(() => { document.title = "Technical annex — VoltMira Studio"; }, []);
+  const sys = useMemo(() => systemFor(client), [client]);
 
   const market = client.market, phases = client.phases;
   const kw = +client.kw || 0;
@@ -107,7 +108,7 @@ export default function AnnexPreview() {
   const d = (k) => D[k]?.[docLang] || D[k]?.ro || k;
 
   const eng = useMemo(() => {
-    const panel = DEMO_SYSTEM.panel;
+    const panel = sys.panel;
     const modules = Math.max(1, Math.ceil((kw * 1000) / panel.watt));
     const dcKw = (modules * panel.watt) / 1000;
     const strings = dcKw > 5.2 ? Math.max(2, Math.ceil(dcKw / 5.5)) : 1;
@@ -121,7 +122,7 @@ export default function AnnexPreview() {
       : (mcb <= 20 ? "3G4 mm²" : "3G6 mm²");
     const filingLabel = (FILINGS[market].find((f) => f.id === filing) || FILINGS[market][0]).label;
     return { panel, modules, dcKw, strings, perString, vocCold, invKw, acCurrent, mcb, acCable, filingLabel };
-  }, [kw, phases, market, filing]);
+  }, [kw, phases, market, filing, sys]);
 
   const loc = docLang === "en" ? "en-IE" : "ro-RO";
   const kv = (label, value) => (
@@ -129,9 +130,9 @@ export default function AnnexPreview() {
   );
 
   const schedule = [
-    ["A1", `${d("modules")}: ${DEMO_SYSTEM.panel.brand} ${DEMO_SYSTEM.panel.model}, ${DEMO_SYSTEM.panel.watt} Wp, ${eng.dcKw.toFixed(2)} kWp total`, `${eng.modules}`, "IEC 61215 / IEC 61730"],
-    ["A2", `${d("inverter")} ${docLang === "en" ? "hybrid" : "hibrid"}: ${DEMO_SYSTEM.inverter.brand} ${DEMO_SYSTEM.inverter.model}, ${eng.invKw} kW, ${phases === 3 ? "3~ 400 V" : "1~ 230 V"}`, "1", "IEC 62109-1/-2 · SR EN 50549-1"],
-    ...(batt ? [["A3", `${d("storage")}: ${DEMO_SYSTEM.battery.brand} ${DEMO_SYSTEM.battery.model}, ${battKwh} kWh, ${DEMO_SYSTEM.battery.chem}`, "1", "IEC 62619 · IEC 63056"]] : []),
+    ["A1", `${d("modules")}: ${sys.panel.brand} ${sys.panel.model}, ${sys.panel.watt} Wp, ${eng.dcKw.toFixed(2)} kWp total`, `${eng.modules}`, "IEC 61215 / IEC 61730"],
+    ["A2", `${d("inverter")} ${docLang === "en" ? "hybrid" : "hibrid"}: ${sys.inverter.brand} ${sys.inverter.model}, ${eng.invKw} kW, ${phases === 3 ? "3~ 400 V" : "1~ 230 V"}`, "1", "IEC 62109-1/-2 · SR EN 50549-1"],
+    ...(batt ? [["A3", `${d("storage")}: ${sys.battery.brand} ${sys.battery.model}, ${battKwh} kWh, ${sys.battery.chem}`, "1", "IEC 62619 · IEC 63056"]] : []),
     ["B1", `${docLang === "en" ? "DC string fuses" : "Siguranțe fuzibile șir DC"} gPV 15 A / 1000 V DC`, `${eng.strings * 2}`, "IEC 60269-6"],
     ["B2", `${docLang === "en" ? "DC switch-disconnector" : "Separator de sarcină DC"} 1000 V DC / 25 A`, "1", "IEC 60947-3"],
     ["B3", `${docLang === "en" ? "DC surge arrester" : "Descărcător supratensiuni DC"} Type 2, Ucpv 1000 V`, "1", "IEC 61643-31"],
@@ -139,7 +140,7 @@ export default function AnnexPreview() {
     ["C2", `${docLang === "en" ? "Residual-current device, Type B" : "Diferențial Tip B"} ${eng.mcb <= 40 ? 40 : 63} A / 30 mA`, "1", "IEC 62423 / IEC 61008"],
     ["C3", `${docLang === "en" ? "AC surge arrester" : "Descărcător supratensiuni AC"} Type 2, ${phases === 3 ? "4P" : "2P"}`, "1", "IEC 61643-11"],
     ["D1", `${docLang === "en" ? "Bidirectional metering, 4-quadrant, class 1" : "Contor bidirecțional, 4 cadrane, clasa 1"}`, "1", `${market === "MD" ? "SM SR EN 50470" : "SR EN 50470-3"}`],
-    ["E1", `${docLang === "en" ? "Mounting system" : "Sistem de montaj"}: ${DEMO_SYSTEM.mount.brand} ${DEMO_SYSTEM.mount.model}`, "1 set", "EN 1991-1-3/-4 (loads)"],
+    ["E1", `${docLang === "en" ? "Mounting system" : "Sistem de montaj"}: ${sys.mount.brand} ${sys.mount.model}`, "1 set", "EN 1991-1-3/-4 (loads)"],
   ];
 
   const cables = [
@@ -205,17 +206,17 @@ export default function AnnexPreview() {
         <div className="doc-grid">
           {kv(d("pdc"), `${eng.dcKw.toFixed(2)} kWp`)}
           {kv(d("pac"), `${Math.min(eng.invKw, eng.dcKw).toFixed(2)} kW · ${phases === 3 ? "3~ 400 V / 50 Hz" : "1~ 230 V / 50 Hz"}`)}
-          {kv(d("modules"), `${eng.modules} × ${DEMO_SYSTEM.panel.brand} ${DEMO_SYSTEM.panel.model} (${DEMO_SYSTEM.panel.watt} Wp)`)}
+          {kv(d("modules"), `${eng.modules} × ${sys.panel.brand} ${sys.panel.model} (${sys.panel.watt} Wp)`)}
           {kv(d("strings"), `${eng.strings} × ${eng.perString} ${docLang === "en" ? "modules/string" : "module/șir"}`)}
           {kv(d("voc"), `${eng.vocCold.toFixed(0)} V DC`)}
-          {kv(d("isc"), `${(DEMO_SYSTEM.panel.isc * 1.25).toFixed(1)} A`)}
-          {kv(d("inverter"), `${DEMO_SYSTEM.inverter.brand} ${DEMO_SYSTEM.inverter.model} · ${eng.invKw} kW · ${DEMO_SYSTEM.inverter.mppt} MPPT`)}
-          {batt && kv(d("storage"), `${DEMO_SYSTEM.battery.brand} ${DEMO_SYSTEM.battery.model} · ${battKwh} kWh · ${DEMO_SYSTEM.battery.vdc} V`)}
+          {kv(d("isc"), `${(sys.panel.isc * 1.25).toFixed(1)} A`)}
+          {kv(d("inverter"), `${sys.inverter.brand} ${sys.inverter.model} · ${eng.invKw} kW · ${sys.inverter.mppt} MPPT`)}
+          {batt && kv(d("storage"), `${sys.battery.brand} ${sys.battery.model} · ${battKwh} kWh · ${sys.battery.vdc} V`)}
         </div>
 
         <h2>{d("sld")}</h2>
         <SLD phases={phases} batt={batt} strings={eng.strings} mcb={eng.mcb} invKw={eng.invKw}
-          modules={eng.modules} docLang={docLang} market={market} />
+          modules={eng.modules} docLang={docLang} market={market} invBrand={sys.inverter.brand} />
 
         <h2>{d("sched")}</h2>
         <table>
@@ -272,7 +273,7 @@ function SldBox({ x, y, w, h, title, sub, sub2 }) {
     </g>
   );
 }
-function SLD({ phases, batt, strings, mcb, invKw, modules, docLang }) {
+function SLD({ phases, batt, strings, mcb, invKw, modules, docLang, invBrand }) {
   const L = (ro, en) => (docLang === "en" ? en : ro);
   const BW = 140, BH = 64, yMain = 92;
   const H = batt ? 270 : 196, W = 902;
@@ -298,7 +299,7 @@ function SLD({ phases, batt, strings, mcb, invKw, modules, docLang }) {
         {wire(cols[1] + BW, cols[2])}
 
         {/* Inverter (+ battery branch) */}
-        <SldBox x={cols[2]} y={boxY} w={BW} h={BH} title={`${DEMO_SYSTEM.inverter.brand} ${L("invertor", "inverter")}`} sub={`${invKw} kW · ${phases === 3 ? "3~" : "1~"} · MPPT`} sub2="SR EN 50549-1 · LoM" />
+        <SldBox x={cols[2]} y={boxY} w={BW} h={BH} title={`${invBrand} ${L("invertor", "inverter")}`} sub={`${invKw} kW · ${phases === 3 ? "3~" : "1~"} · MPPT`} sub2="SR EN 50549-1 · LoM" />
         {batt && (
           <>
             <line x1={cols[2] + BW / 2} y1={boxY + BH} x2={cols[2] + BW / 2} y2={yMain + 78} stroke="#14211b" strokeWidth="1.3" />

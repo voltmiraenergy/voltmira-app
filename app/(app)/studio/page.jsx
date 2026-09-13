@@ -34,11 +34,12 @@ export default function StudioOverview() {
       </div>
 
       <div className="st-list">
-        {PREVIEW_FEATURES.map((f) => {
+        {PREVIEW_FEATURES.map((f, i) => {
           const L = f[lang] || f.en;
           return (
             <Link key={f.slug} href={`${PREVIEW_BASE}/${f.slug}`} className="st-row">
-              <span className="st-row-ic"><FeatureIcon slug={f.slug} size={17} /></span>
+              <span className="st-row-n">{i + 1}</span>
+              <span className="st-row-ic"><FeatureIcon slug={f.slug} size={16} /></span>
               <span className="st-row-tx"><b>{L.name}</b><span>{L.short}</span></span>
               <Chevron />
             </Link>

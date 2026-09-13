@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   useLang, tx, PreviewHeader, MockNote, downloadStudioDoc,
-  useStudioClient, ClientBar, DEMO_SYSTEM, protRows,
+  useStudioClient, ClientBar, systemFor, protRows,
 } from "../studio-kit.jsx";
 
 const TX = {
@@ -48,11 +48,12 @@ const CREWS = [
   { name: "Echipa A", who: "Vadim · Sergiu", color: "var(--green)" },
   { name: "Echipa B", who: "Ion · Petru · Radu", color: "var(--blue)" },
 ];
+// Same jobs as the payments ledger and the service log.
 const SCHED = [
-  { day: 0, client: "Familia Rusu", loc: "Ialoveni", kw: 6.5, crew: 0 },
-  { day: 1, client: "Elena C.", loc: "Botanica", kw: 8, crew: 1 },
+  { day: 0, client: "Elena Ciobanu", loc: "Botanica", kw: 8, crew: 1 },
+  { day: 1, client: "Andrei Postică", loc: "Strășeni", kw: 5, crew: 0 },
   { day: 2, client: "Hala AgroNord", loc: "Chișinău", kw: 120, crew: 1 },
-  { day: 3, client: "Andrei P.", loc: "Strășeni", kw: 5, crew: 0 },
+  { day: 3, client: "Igor Pîslaru", loc: "Bălți", kw: 6.5, crew: 0 },
 ];
 
 export default function SchedulePreview() {
@@ -85,13 +86,16 @@ export default function SchedulePreview() {
   const toggleStep = (s) => { const n = { ...steps, [s]: !steps[s] }; setSteps(n); saveInstall({ steps: n, signed }); };
   const toggleSigned = () => { const v = !signed; setSigned(v); saveInstall({ steps, signed: v }); };
 
+  const sys = useMemo(() => systemFor(client), [client]);
+  const panel = sys.panel;
   const kw = +client.kw || 0;
-  const modules = Math.max(1, Math.ceil((kw * 1000) / 435));
+  const modules = Math.max(1, Math.ceil((kw * 1000) / panel.watt));
+  const battReady = sys.battery.stock > 0 && sys.battery.leadDays === 0;
   const mats = [
-    { label: tx({ ro: `Panou 435 W × ${modules}`, en: `435 W panel × ${modules}`, ru: `Панель 435 Вт × ${modules}` }, lang), st: "in" },
-    { label: tx({ ro: "Invertor Deye hibrid", en: "Deye hybrid inverter", ru: "Гибридный инвертор Deye" }, lang), st: "in" },
-    ...((+client.batteryKwh || 0) > 0 ? [{ label: tx({ ro: `Baterie ${client.batteryKwh} kWh`, en: `Battery ${client.batteryKwh} kWh`, ru: `Батарея ${client.batteryKwh} кВт·ч` }, lang), st: "arr" }] : []),
-    { label: tx({ ro: "Structură montaj K2", en: "K2 mounting", ru: "Крепёж K2" }, lang), st: "in" },
+    { label: tx({ ro: `Panou ${panel.brand} ${panel.watt} W × ${modules}`, en: `${panel.brand} ${panel.watt} W panel × ${modules}`, ru: `Панель ${panel.brand} ${panel.watt} Вт × ${modules}` }, lang), st: panel.stock > modules ? "in" : "ord" },
+    { label: tx({ ro: `Invertor ${sys.inverter.brand} hibrid`, en: `${sys.inverter.brand} hybrid inverter`, ru: `Гибридный инвертор ${sys.inverter.brand}` }, lang), st: sys.inverter.stock > 0 ? "in" : "ord" },
+    ...((+client.batteryKwh || 0) > 0 ? [{ label: tx({ ro: `Baterie ${sys.battery.brand} ${client.batteryKwh} kWh`, en: `${sys.battery.brand} battery ${client.batteryKwh} kWh`, ru: `Батарея ${sys.battery.brand} ${client.batteryKwh} кВт·ч` }, lang), st: battReady ? "in" : "arr" }] : []),
+    { label: tx({ ro: `Structură montaj ${sys.mount.brand}`, en: `${sys.mount.brand} mounting`, ru: `Крепёж ${sys.mount.brand}` }, lang), st: "in" },
     { label: tx({ ro: "Cablu DC/AC + protecții", en: "DC/AC cable + protections", ru: "Кабель DC/AC + защиты" }, lang), st: "in" },
   ];
   const allReady = mats.every((m) => m.st === "in");
@@ -102,7 +106,6 @@ export default function SchedulePreview() {
   // Concrete commissioning measurements, derived from the system so they read as
   // real test results rather than boilerplate: string layout → string Voc, and a
   // set of measured-vs-limit electrical checks per SR EN 50549-1 / IEC 60364-6.
-  const panel = DEMO_SYSTEM.panel;
   const dcKw = (modules * panel.watt) / 1000;
   const strings = Math.max(1, Math.round(dcKw / 5.5));
   const mps = Math.ceil(modules / strings);
@@ -254,8 +257,8 @@ export default function SchedulePreview() {
           <div className="doc-grid">
             <div className="doc-kv"><span>{tx({ ro: "Putere instalată", en: "Installed power", ru: "Мощность" }, lang)}</span><b>{kw.toFixed(1)} kW{(+client.batteryKwh || 0) > 0 ? ` · ${client.batteryKwh} kWh` : ""}</b></div>
             <div className="doc-kv"><span>{tx({ ro: "Module", en: "Modules", ru: "Модули" }, lang)}</span><b>{modules} × {panel.watt} W · {panel.brand}</b></div>
-            <div className="doc-kv"><span>{tx({ ro: "Invertor", en: "Inverter", ru: "Инвертор" }, lang)}</span><b>{DEMO_SYSTEM.inverter.brand} · {client.phases === 3 ? "3~ 400 V" : "1~ 230 V"}</b></div>
-            <div className="doc-kv"><span>{tx({ ro: "Structură de montaj", en: "Mounting", ru: "Крепёж" }, lang)}</span><b>{DEMO_SYSTEM.mount.brand}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Invertor", en: "Inverter", ru: "Инвертор" }, lang)}</span><b>{sys.inverter.brand} · {client.phases === 3 ? "3~ 400 V" : "1~ 230 V"}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Structură de montaj", en: "Mounting", ru: "Крепёж" }, lang)}</span><b>{sys.mount.brand}</b></div>
             <div className="doc-kv"><span>{tx({ ro: "Configurație șiruri", en: "String layout", ru: "Схема цепочек" }, lang)}</span><b>{strings} × {mps} {tx({ ro: "module", en: "modules", ru: "модулей" }, lang)}</b></div>
             <div className="doc-kv"><span>{tx({ ro: "Contor", en: "Meter", ru: "Счётчик" }, lang)}</span><b>{tx({ ro: "bidirecțional, 4 cadrane", en: "bidirectional, 4-quadrant", ru: "двунаправленный" }, lang)}</b></div>
           </div>

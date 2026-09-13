@@ -7,10 +7,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
 import { createProposal, saveQuoteTemplate } from "../../../../lib/actions.js";
+import AddressField from "../../../../components/AddressField.jsx";
+import BomCard from "../../../../components/BomCard.jsx";
+import DesignChecks from "../../../../components/DesignChecks.jsx";
+import BatterySizingPanel from "../../../../components/BatterySizingPanel.jsx";
+import SurplusPanel, { useBuyback } from "../../../../components/SurplusPanel.jsx";
 import InstallChecklist from "./InstallChecklist.jsx";
 import SignedContract from "./SignedContract.jsx";
 import ShareCard from "./ShareCard.jsx";
 import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
+import { financials } from "../../../../lib/quoteAnalysis.js";
+import { applyCalibration } from "../../../../lib/yieldCalibration.js";
 import { t } from "../../../../lib/i18n.js";
 import { fmtDate } from "../../../../lib/tz.js";
 
@@ -78,16 +85,21 @@ function Donut({ self, prod0, cons, lang }) {
 }
 
 /* ---------- editor ---------- */
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", signed = null }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", signed = null, calibration = null }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, address: initial.address,
+    // Coordinates of the resolved address pick. Null until someone picks a
+    // suggestion (or until add-project-coords.sql has been run); PVGIS then
+    // uses them directly instead of re-geocoding the text every time.
+    lat: initial.lat != null ? +initial.lat : null,
+    lon: initial.lon != null ? +initial.lon : null,
     market: initial.market, status: initial.status,
     kw: +initial.kw, price: +initial.price, cons: +initial.cons,
     batt: initial.batt, battKwh: initial.batt_kwh != null ? +initial.batt_kwh : 10,
     options: Array.isArray(initial.options) ? initial.options : [],
     bom: Array.isArray(initial.bom) ? initial.bom : [],
-    afmSubsidy: initial.afm_subsidy, loan: +initial.loan_monthly,
+    loan: +initial.loan_monthly,
     yieldOverride: initial.yield_per_kwp ? +initial.yield_per_kwp : undefined,
     monthlyYieldShape: initial.monthly_yield_shape || undefined,
     useMonthly: initial.use_monthly, consMonthly: initial.cons_monthly,
@@ -121,6 +133,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const [tplOpen, setTplOpen] = useState(false);
   const [tplName, setTplName] = useState("");
   const [tplBusy, setTplBusy] = useState(false);
+  const [disc, setDisc] = useState(6);   // % real discount rate, for NPV/LCOE
   const timer = useRef(null);
 
   function openTemplate() { setTplName(p.title || "Template"); setTplOpen(true); }
@@ -134,9 +147,22 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     } catch { /* non-fatal */ } finally { setTplBusy(false); }
   }
 
-  // Quote price is driven entirely by system size (kW × rate + battery).
-  const q = useMemo(() => quote({ ...p, costOverride: 0 }, E), [p, E]);
+  // Moldova's exported surplus is bought back at the operator's published
+  // monthly price, weighted by the months this system actually exports in — not
+  // the market's flat constant. Same figure Studio and the bankability export
+  // use, so an offer and its supporting documents never disagree.
+  const buyback = useBuyback(Number(p.price) || 0.18, FX.MDL);
+  const isMD = p.market === "MD";
+  const feedOverride = isMD ? buyback.weightedEur : undefined;
+
+  // Quote price is driven entirely by system size (kW × rate + battery); the
+  // bill of materials is the installer's cost, not a price override (see
+  // lib/quoteInput.js).
+  const q = useMemo(
+    () => quote({ ...p, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) }, E),
+    [p, E, feedOverride]);
   const fmt = n => "€" + Math.round(n).toLocaleString("en-IE");
+  const num = n => Math.round(Number(n) || 0).toLocaleString("en-IE");
   const yrs = n => n === null ? "25+" : n === 0 ? tr("pp_immediate") : n.toFixed(1);
   // per-kWh prices need decimals, and 0.036 must not print as "0.04"
   const eurKwh = v => "€" + Number(v).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
@@ -166,6 +192,17 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const grants = Math.max(0, q.e.grossCost - q.e.cost);
   const cbMax = Math.max(q.e.cost, lifetime, 1);
 
+  /* ---- commercial metrics: what payback alone doesn't answer ---- */
+  const fin = useMemo(() => financials(q.e, q.e.grossCost, disc, E), [q.e, disc, E]);
+
+  // Inputs for the battery sweep: the same project WITHOUT a battery, so the
+  // curve measures what each added kWh is worth rather than re-stating the
+  // current pick.
+  const sweepBase = useMemo(() => {
+    const { batt, battKwh, ...rest } = p;
+    return { ...rest, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) };
+  }, [p, feedOverride]);
+
   /* debounced autosave — MUST surface failure: a false "Saved" while the write
      was rejected (expired session, offline, RLS) silently loses the edit. */
   async function persist(next) {
@@ -176,7 +213,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         market: next.market, status: next.status,
         kw: next.kw, price: next.price, cons: next.cons,
         batt: next.batt,
-        afm_subsidy: next.afmSubsidy, loan_monthly: next.loan,
+        loan_monthly: next.loan,
         use_monthly: !!next.useMonthly,
         cons_monthly: (next.useMonthly && Array.isArray(next.consMonthly) && next.consMonthly.length === 12)
           ? next.consMonthly : null,
@@ -198,6 +235,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           .then(({ error: e3 }) => { if (e3) console.warn("options not stored (run add-quote-options.sql?):", e3.message); });
         sb.from("projects").update({ bom: next.bom }).eq("id", initial.id)
           .then(({ error: e4 }) => { if (e4) console.warn("bom not stored (run add-quote-bom.sql?):", e4.message); });
+        sb.from("projects").update({ lat: next.lat ?? null, lon: next.lon ?? null }).eq("id", initial.id)
+          .then(({ error: e5 }) => { if (e5) console.warn("coordinates not stored (run add-project-coords.sql?):", e5.message); });
       }
     } catch (e) {
       setSaved("error");
@@ -242,11 +281,29 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const removeOption = (i) => update({ options: p.options.filter((_, j) => j !== i) });
   useEffect(() => () => clearTimeout(timer.current), []);
 
+  // Picking a different place invalidates a PVGIS yield fetched for the old one
+  // — keeping it would quote this roof with another town's sunshine. Moving the
+  // pin within ~1 km is the same PVGIS cache cell, so that keeps the yield.
+  function pickAddress(a) {
+    const moved = p.lat == null || p.lon == null
+      || Math.abs(p.lat - a.lat) > 0.01 || Math.abs(p.lon - a.lng) > 0.01;
+    update({
+      address: a.address, lat: a.lat, lon: a.lng,
+      ...(moved && p.yieldOverride ? { yieldOverride: undefined, monthlyYieldShape: undefined } : {}),
+    });
+  }
+
   async function fetchPVGIS() {
-    if (!p.address) return alert(tr("add_address"));
+    if (!p.address && p.lat == null) return alert(tr("add_address"));
     setPvgisBusy(true);
     try {
-      const r = await fetch(`/api/pvgis?address=${encodeURIComponent(p.address)}`);
+      // Coordinates from a picked address beat re-geocoding its text: the same
+      // street name exists in several towns, and the text lookup can resolve to
+      // a different one than the installer saw on the pin.
+      const query = p.lat != null && p.lon != null
+        ? `lat=${p.lat}&lon=${p.lon}`
+        : `address=${encodeURIComponent(p.address)}`;
+      const r = await fetch(`/api/pvgis?${query}`);
       const j = await r.json();
       if (j.yieldPerKwp) update({ yieldOverride: j.yieldPerKwp, monthlyYieldShape: j.monthlyShape });
       else alert(j.error || "PVGIS lookup failed");
@@ -336,13 +393,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // app timezone, so this matches the date printed on the client's PDF
   const validUntilStr = validUntilDate ? fmtDate(validUntilDate, { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB") : null;
 
-  // Local subsidy is market-aware: RO = AFM/Casa Verde (RON), MD = prosumer grant
-  // (MDL). DE has none, so the toggle hides there. Amount converts to EUR for the
-  // "−€X" hint, using the same FX the engine uses.
-  const subKey = mkt.subsidyKey;                 // e.g. "subsidyAmountRon" | "subsidyAmountMdl" | null
-  const subAmountEur = subKey ? (Number(E[subKey]) || 0) / (FX[mkt.subsidyFx] || 1) : 0;
-  const subLabel = p.market === "MD" ? tr("md_subsidy_label") : tr("afm_label");
-
   // Switching market pre-fills the electricity price with the new market's
   // regional default — but only when the user hasn't typed a custom price yet
   // (i.e. it still equals the old market's default).
@@ -409,7 +459,16 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <div className="field"><label>{tr("client_name")}</label>
               <input className="input" value={p.client} onChange={e => update({ client: e.target.value })} /></div>
             <div className="field"><label>{tr("address")}</label>
-              <input className="input" value={p.address} onChange={e => update({ address: e.target.value })} /></div>
+              <AddressField
+                lang={lang}
+                value={p.address}
+                lat={p.lat}
+                lng={p.lon}
+                mapSize={168}
+                onText={(s) => update({ address: s, lat: null, lon: null })}
+                onPick={pickAddress}
+              />
+            </div>
 
             <button className={p.yieldOverride ? "btn amber" : "btn ghost"} style={{ width: "100%" }}
               onClick={fetchPVGIS} disabled={pvgisBusy}>
@@ -423,6 +482,29 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 {Array.isArray(p.monthlyYieldShape) && p.monthlyYieldShape.length === 12 && <> · {tr("pvgis_monthly")}</>}
               </div>
             )}
+
+            {/* What the installed base measured. Offered, never applied on its
+                own: a yield that drifts by itself is the opposite of the
+                promise this product is sold on. */}
+            {calibration?.confident && p.yieldOverride && (() => {
+              const tuned = Math.round(applyCalibration(p.yieldOverride, calibration));
+              const deltaPct = (calibration.factor - 1) * 100;
+              const applied = Math.abs(tuned - Math.round(p.yieldOverride)) < 1;
+              return (
+                <div className="cal-note">
+                  <div className="cal-h">
+                    {tr("cal_title", { n: Math.abs(deltaPct).toFixed(0), d: tr(deltaPct >= 0 ? "cal_above" : "cal_below") })}
+                  </div>
+                  <div className="cal-s">{tr("cal_basis", { s: calibration.systems, m: calibration.months })}</div>
+                  {!applied && (
+                    <button className="btn ghost sm" style={{ marginTop: 8 }}
+                      onClick={() => update({ yieldOverride: tuned })}>
+                      {tr("cal_apply", { n: tuned })}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
 
             {team.length >= 1 && (
               <div className="field" style={{ marginTop: 15 }}><label>{tr("proj_owner")}</label>
@@ -530,10 +612,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 </div>
               );
             })()}
-            {subKey &&
-              check(p.afmSubsidy, subLabel,
-                subAmountEur > 0 ? tr("afm_sub", { x: fmt(subAmountEur) }) : tr("afm_sub_unset"),
-                v => update({ afmSubsidy: v }))}
           </section>
 
           <section className="card">
@@ -559,6 +637,17 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             )}
           </section>
 
+          <BomCard
+            lang={lang}
+            bom={p.bom}
+            onChange={(bom) => update({ bom })}
+            catalog={catalog}
+            kw={p.kw}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            quotePrice={q.e.grossCost}
+            money={fmt}
+          />
+
         </div>
 
         {/* right: results */}
@@ -567,7 +656,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <h3>{tr("sys_investment")}</h3>
             <div className="cost-line">
               <div className="k"><b>{fmt(q.e.cost)}</b>
-                <span>{tr("total_invest")}{p.afmSubsidy && <span className="mini-badge">{tr("with_subsidy")}</span>}</span></div>
+                <span>{tr("total_invest")}</span></div>
               <div className="k"><b>{Math.round(q.e.prod0).toLocaleString()} kWh</b>
                 <span>{tr("prod_year")}{p.yieldOverride ? " " + tr("tag_pvgis") : " " + tr("tag_default")}</span></div>
               <div className="k"><b>{fmt(q.e.year1)}</b><span>{tr("savings_y1")}</span></div>
@@ -647,7 +736,59 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               ))}
             </div>
             <div style={{ marginTop: 14 }}><Chart q={q} lang={lang} /></div>
+
+            {/* NPV / IRR / LCOE — what a commercial client or a lender asks for
+                once payback alone stops being the whole question. */}
+            <div className="fin-metrics">
+              <div className="fm"><b>{fmt(fin.npv)}</b><span>{tr("m_npv")} @ {disc.toFixed(0)}%</span></div>
+              <div className="fm"><b>{fin.irr == null ? "—" : (fin.irr * 100).toFixed(1) + "%"}</b><span>{tr("m_irr")}</span></div>
+              <div className="fm"><b>€{fin.lcoe.toFixed(3)}</b>
+                <span>{tr("m_lcoe")} · {tr("m_vs_price")} {eurKwh(Number(p.price) || 0)}</span></div>
+            </div>
+            <label className="disc-row">
+              {tr("m_disc")}<output>{disc.toFixed(1)}%</output>
+              <input type="range" min="3" max="12" step="0.5" value={disc}
+                style={{ "--fill": ((disc - 3) / 9) * 100 + "%" }}
+                onChange={e => setDisc(+e.target.value)} />
+            </label>
           </section>
+
+          {/* Whether the thing is buildable, before whether it's profitable —
+              run against the equipment actually picked in the bill of materials. */}
+          <DesignChecks
+            lang={lang}
+            bom={p.bom}
+            kw={p.kw}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            consKwh={consEff}
+            selfPct={Math.round(q.e.self * 100)}
+          />
+
+          {/* Battery sizing and the surplus price: the two questions an offer in
+              Moldova actually turns on. Both computed by the engine for THIS
+              client — the same panels Studio shows, not a second implementation. */}
+          <BatterySizingPanel
+            lang={lang}
+            base={sweepBase}
+            E={E}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            onApply={(kwh) => update({ batt: kwh > 0, battKwh: kwh })}
+            money={fmt}
+            spread={isMD ? buyback.spread : null}
+            netMetering={mkt.oneToOne}
+          />
+
+          {isMD && (
+            <SurplusPanel
+              lang={lang}
+              buyback={buyback}
+              prodKwh={q.e.prod0}
+              selfRatio={q.e.self}
+              mdlPerEur={FX.MDL}
+              money={fmt}
+              num={num}
+            />
+          )}
 
           <section className="card">
             <h3>{tr("financing")}</h3>

@@ -94,6 +94,29 @@ test("markets: RO 1:1 credit is capped at what the household imports", () => {
 });
 
 /* ------------------------------------------------------------------ *
+ * feedOverride — pricing exports at a contracted rate.
+ * MD, 6 kW, cons 5000, expc:
+ *   solar0 = 6 * 1100 = 6600; selfRatio = (5000/6600)*.55 = 0.4166666…
+ *   selfK  = 2750; expK = 3850; opex = 6300 * .005 = 31.5
+ * ------------------------------------------------------------------ */
+test("feedOverride prices exports at a contracted rate, not the market default", () => {
+  // default MD feed .127 → 2750*.21 + 3850*.127 − 31.5 = 577.5 + 488.95 − 31.5
+  const def = simulate({ ...BASE, market: "MD" }, E, "expc");
+  assert.ok(Math.abs(def.year1 - 1034.95) < 0.05, `default=${def.year1}`);
+  // override .05      → 2750*.21 + 3850*.05  − 31.5 = 577.5 + 192.50 − 31.5
+  const low = simulate({ ...BASE, market: "MD", feedOverride: 0.05 }, E, "expc");
+  assert.ok(Math.abs(low.year1 - 738.50) < 0.05, `override=${low.year1}`);
+});
+
+test("feedOverride ignores junk and falls back to the market feed", () => {
+  const base = simulate({ ...BASE, market: "MD" }, E, "expc").year1;
+  for (const junk of [0, -0.1, null, undefined, "", NaN, "abc", {}]) {
+    const r = simulate({ ...BASE, market: "MD", feedOverride: junk }, E, "expc").year1;
+    assert.equal(r, base, `feedOverride=${String(junk)} changed year1`);
+  }
+});
+
+/* ------------------------------------------------------------------ *
  * AFM subsidy
  * ------------------------------------------------------------------ */
 test("defaults: quoteValidityDays is 30", () => {

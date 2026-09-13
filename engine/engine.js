@@ -14,12 +14,20 @@
 // each proposal freezes the numbers it was built with.
 // Moldova is the primary market (net billing since 2024-01-01: surplus paid at the
 // low producer price, consumption billed at retail — which is why a battery pays
-// off here). Numbers sourced 2026-07 from ANRE / Premier Energy / pv-magazine:
-//   MD retail ≈ 3.59 lei/kWh (Premier, central/south) ≈ €0.18; producer/export
-//   price ≈ 1.16–1.44 lei (solar auction €0.064 / ceiling €0.073) ≈ €0.07.
+// off here). MD retail ≈ 3.59 lei/kWh (Premier, central/south) ≈ €0.18.
+//
+// MD `feed` was €0.07, taken from the solar AUCTION ceiling (€0.064–0.073). That
+// is the wrong series for a prosumer: an auction PPA prices utility-scale
+// generation, while a rooftop's surplus is bought at the operator's published
+// "preț mediu lunar de procurare a energiei livrate de prosumatori". Premier
+// Energy Distribution's own table (see lib/prosumerPrice.js) gives 2.13–3.06
+// lei/kWh over the trailing twelve months. Weighted by when a PV system actually
+// exports — the price bottoms out in spring, exactly when surplus peaks — that
+// is 2.51 lei/kWh ≈ €0.127, which is what ships here. Pass `feedOverride` to
+// price a specific contract instead.
 // RO stays 1:1 net metering. All values are editable per company in Settings.
 export const MARKETS = {
-  MD: { name: "Moldova", scheme: "Net billing",      feed: 0.07,  oneToOne: false, defaultPrice: 0.18, subsidyKey: "subsidyAmountMdl", subsidyFx: "MDL", prosumer: true },
+  MD: { name: "Moldova", scheme: "Net billing",      feed: 0.127, oneToOne: false, defaultPrice: 0.18, subsidyKey: "subsidyAmountMdl", subsidyFx: "MDL", prosumer: true },
   RO: { name: "Romania", scheme: "Net metering 1:1", feed: 0.036, oneToOne: true,  defaultPrice: 0.21, subsidyKey: "subsidyAmountRon", subsidyFx: "RON", prosumer: true },
 };
 
@@ -61,12 +69,16 @@ export function effectiveConsumption(p) {
  *   useMonthly, consMonthly[12], afmSubsidy,
  *   yieldOverride?  — kWh/kWp/yr from PVGIS for this exact location (replaces baseYield)
  *   monthlyYieldShape? — optional 12 monthly fractions from PVGIS (replaces SOLAR_SEASON)
+ *   feedOverride?   — EUR/kWh paid for exported surplus, replacing the market default.
+ *                     Use it to price a specific supply contract, or the operator's
+ *                     published monthly buy-back weighted by this site's export shape.
  * @param {object} E engine settings (defaultEngineSettings shape)
  * @param {'pess'|'expc'|'opti'} bandKey
  */
 export function simulate(p, E, bandKey) {
   const b = E.bands[bandKey] || E.bands.expc;
   const mkt = MARKETS[p.market] || MARKETS.MD;
+  const feed = Number(p.feedOverride) > 0 ? Number(p.feedOverride) : mkt.feed;
   // Sanitize numeric inputs: a blank editor field, a stale DB value or a missing
   // param must never leak NaN into a proposal or PDF. Clamp to non-negative — a
   // negative system size or price is meaningless, not a discount.
@@ -171,9 +183,9 @@ export function simulate(p, E, bandKey) {
     if (mkt.oneToOne) {
       const imports = Math.max(0, cons - selfK);
       const credited = Math.min(expK, imports);
-      val = selfK * priceY + credited * priceY + (expK - credited) * mkt.feed;
+      val = selfK * priceY + credited * priceY + (expK - credited) * feed;
     } else {
-      val = selfK * priceY + expK * mkt.feed;
+      val = selfK * priceY + expK * feed;
     }
     const opexY = opexEur0 * Math.pow(1 + b.infl / 100, y - 1);
     const net = val - opexY;

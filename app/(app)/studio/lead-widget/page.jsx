@@ -10,6 +10,7 @@ import {
   CopyButton, engineSettings,
 } from "../studio-kit.jsx";
 import { quote, FX, OPTIMAL_YIELD } from "../_engine.js";
+import AddressField from "../address-field.jsx";
 
 const TX = {
   title: { en: "Public calculator widget", ro: "Widget calculator public", ru: "Публичный калькулятор" },
@@ -58,11 +59,13 @@ const W = {
   },
 };
 
+// The top lead is Familia Rusu — the same client you then follow through the
+// survey, quote, connection, payments and monitoring surfaces.
 const SEED_LEADS = [
-  { name: "Andrei M.", loc: "Ialoveni", kw: 5.5, ago: { ro: "acum 2 ore", en: "2 h ago", ru: "2 ч назад" } },
-  { name: "Elena R.", loc: "Chișinău, Botanica", kw: 8, ago: { ro: "acum 5 ore", en: "5 h ago", ru: "5 ч назад" } },
-  { name: "Игорь П.", loc: "Bălți", kw: 6.5, ago: { ro: "ieri", en: "yesterday", ru: "вчера" } },
-  { name: "Vasile C.", loc: "Strășeni", kw: 10, ago: { ro: "ieri", en: "yesterday", ru: "вчера" } },
+  { name: "Familia Rusu", loc: "Ialoveni", kw: 6.5, ago: { ro: "acum 2 ore", en: "2 h ago", ru: "2 ч назад" } },
+  { name: "Ana Cebotari", loc: "Chișinău, Râșcani", kw: 5.5, ago: { ro: "acum 5 ore", en: "5 h ago", ru: "5 ч назад" } },
+  { name: "Igor Pîslaru", loc: "Bălți", kw: 6.5, ago: { ro: "ieri", en: "yesterday", ru: "вчера" } },
+  { name: "Sergiu Moraru", loc: "Strășeni", kw: 10, ago: { ro: "ieri", en: "yesterday", ru: "вчера" } },
 ];
 
 const MDL = (eur) => NUM(Math.round(eur * FX.MDL)) + " MDL";
@@ -77,6 +80,7 @@ export default function LeadWidgetPreview() {
   const w = W[wl];
 
   const [addr, setAddr] = useState("Chișinău");
+  const [addrGeo, setAddrGeo] = useState({ lat: null, lng: null });
   const [bill, setBill] = useState(1400);
   const [roof, setRoof] = useState("pitched");
   const [shown, setShown] = useState(true);
@@ -140,7 +144,8 @@ export default function LeadWidgetPreview() {
             <p className="lw-headline">{w.headline}</p>
 
             <label className="lw-field"><span>{w.addr}</span>
-              <input className="pv-input" value={addr} onChange={(e) => setAddr(e.target.value)} /></label>
+              <AddressField lang={wl} client={{ address: addr, ...addrGeo }}
+                onPick={(p) => { setAddr(p.address); setAddrGeo({ lat: p.lat, lng: p.lng }); }} /></label>
             <label className="lw-field"><span>{w.bill}</span>
               <input className="pv-input" type="number" min="0" step="50" value={bill} onChange={(e) => setBill(+e.target.value || 0)} /></label>
             <label className="lw-field"><span>{w.roof}</span>

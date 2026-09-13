@@ -61,10 +61,11 @@ const TX = {
   print: { en: "Print / PDF", ro: "Printează / PDF", ru: "Печать / PDF" },
 };
 
+// Same cast as the install schedule and the service log — loaded on demand via
+// "load sample jobs", never duplicating the active client's own row above it.
 const MOCK_JOBS = [
-  { name: "Familia Rusu", loc: "Ialoveni", eur: 8100, depPct: 40, depPaid: true, balDays: -3, done: false },
-  { name: "Elena C.", loc: "Chișinău, Botanica", eur: 12400, depPct: 30, depPaid: true, balDays: 8, done: false },
-  { name: "Andrei P.", loc: "Strășeni", eur: 6600, depPct: 30, depPaid: false, balDays: null, done: false },
+  { name: "Elena Ciobanu", loc: "Chișinău, Botanica", eur: 12400, depPct: 30, depPaid: true, balDays: 8, done: false },
+  { name: "Andrei Postică", loc: "Strășeni", eur: 6600, depPct: 30, depPaid: false, balDays: null, done: false },
   { name: "Hala AgroNord SRL", loc: "Chișinău", eur: 46000, depPct: 30, depPaid: true, balDays: null, done: false },
   { name: "Familia Ceban", loc: "Bălți", eur: 7250, depPct: 50, depPaid: true, balDays: null, done: true },
 ];

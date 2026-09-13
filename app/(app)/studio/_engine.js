@@ -19,12 +19,16 @@
 // each proposal freezes the numbers it was built with.
 // Moldova is the primary market (net billing since 2024-01-01: surplus paid at the
 // low producer price, consumption billed at retail — which is why a battery pays
-// off here). Numbers sourced 2026-07 from ANRE / Premier Energy / pv-magazine:
-//   MD retail ≈ 3.59 lei/kWh (Premier, central/south) ≈ €0.18; producer/export
-//   price ≈ 1.16–1.44 lei (solar auction €0.064 / ceiling €0.073) ≈ €0.07.
+// off here). MD retail ≈ 3.59 lei/kWh (Premier, central/south) ≈ €0.18.
+//
+// MD `feed` was €0.07, taken from the solar AUCTION ceiling (€0.064–0.073) — the
+// wrong series for a rooftop. A prosumer's surplus is bought at the operator's
+// published monthly purchase price (lib/prosumerPrice.js): 2.13–3.06 lei/kWh over
+// the trailing year, which weighted by when a PV system actually exports is
+// 2.51 lei/kWh ≈ €0.127. Pass `feedOverride` to price a specific contract.
 // RO stays 1:1 net metering. All values are editable per company in Settings.
 export const MARKETS = {
-  MD: { name: "Moldova", scheme: "Net billing",      feed: 0.07,  oneToOne: false, defaultPrice: 0.18, subsidyKey: "subsidyAmountMdl", subsidyFx: "MDL", prosumer: true },
+  MD: { name: "Moldova", scheme: "Net billing",      feed: 0.127, oneToOne: false, defaultPrice: 0.18, subsidyKey: "subsidyAmountMdl", subsidyFx: "MDL", prosumer: true },
   RO: { name: "Romania", scheme: "Net metering 1:1", feed: 0.036, oneToOne: true,  defaultPrice: 0.21, subsidyKey: "subsidyAmountRon", subsidyFx: "RON", prosumer: true },
 };
 
@@ -82,6 +86,9 @@ export function effectiveConsumption(p) {
  *   useMonthly, consMonthly[12], afmSubsidy,
  *   yieldOverride?  — kWh/kWp/yr from PVGIS for this exact location (replaces baseYield)
  *   monthlyYieldShape? — optional 12 monthly fractions from PVGIS (replaces SOLAR_SEASON)
+ *   feedOverride?   — EUR/kWh export buy-back price (replaces the market constant);
+ *                     lib/prosumerPrice.js derives the real one from the operator's
+ *                     published monthly table, weighted by when surplus occurs
  * @param {object} E engine settings (defaultEngineSettings shape)
  * @param {'pess'|'expc'|'opti'} bandKey
  */
@@ -181,6 +188,13 @@ export function simulate(p, E, bandKey) {
   const opexEur0 = grossCost * (E.opexPct / 100);
   const horizon = E.horizon || 25;
 
+  // The export (buy-back) price. `feedOverride` lets a caller substitute a real,
+  // published figure for the market default — see lib/prosumerPrice.js, which
+  // derives it from Premier Energy's monthly prosumer buy-back table, weighted
+  // by the months the surplus actually lands in. Falls back to the market
+  // constant when not supplied, so existing behaviour is unchanged.
+  const feed = Number(p.feedOverride) > 0 ? Number(p.feedOverride) : mkt.feed;
+
   let cum = -cost, payback = null, total = 0, year1 = 0;
   const rows = [];
   for (let y = 1; y <= horizon; y++) {
@@ -192,9 +206,9 @@ export function simulate(p, E, bandKey) {
     if (mkt.oneToOne) {
       const imports = Math.max(0, cons - selfK);
       const credited = Math.min(expK, imports);
-      val = selfK * priceY + credited * priceY + (expK - credited) * mkt.feed;
+      val = selfK * priceY + credited * priceY + (expK - credited) * feed;
     } else {
-      val = selfK * priceY + expK * mkt.feed;
+      val = selfK * priceY + expK * feed;
     }
     const opexY = opexEur0 * Math.pow(1 + b.infl / 100, y - 1);
     const net = val - opexY;

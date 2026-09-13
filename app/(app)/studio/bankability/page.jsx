@@ -10,9 +10,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   useLang, makeT, PreviewHeader, MockNote, EUR, NUM, engineSettings, downloadStudioDoc,
-  useStudioClient, ClientBar,
+  useStudioClient, ClientBar, systemFor,
 } from "../studio-kit.jsx";
-import { simulate, SOLAR_SEASON, effectiveYield } from "../_engine.js";
+import { simulate, SOLAR_SEASON, effectiveYield, FX } from "../_engine.js";
+import {
+  weightedExportPriceMdl, weightedExportPriceEur, annualAverages, BUYBACK_SOURCE,
+} from "../../../../lib/prosumerPrice.js";
 
 const TX = {
   title: { en: "P50 / P90 export", ro: "Export P50 / P90", ru: "Экспорт P50 / P90" },
@@ -100,15 +103,38 @@ export default function BankabilityPreview() {
   useEffect(() => { setDocLang(lang === "en" ? "en" : "ro"); }, [lang]);
   const d = (en, ro) => (docLang === "ro" ? ro : en);
 
+  // A bank reads this doc next to the offer, so both have to price exported kWh
+  // the same way: Moldova's surplus is bought back at the operator's published
+  // monthly price, weighted by the months the system actually exports in.
+  const buyback = useMemo(() => ({
+    weightedMdl: weightedExportPriceMdl(SOLAR_SEASON),
+    weightedEur: weightedExportPriceEur(SOLAR_SEASON, FX.MDL),
+    years: annualAverages(),
+  }), []);
+
   const project = useMemo(() => ({
     name: client.name, ref: client.ref || "VM-BNK-2026",
     market: client.market, kw: +client.kw || 0, price: +client.price || 0.15,
     cons: +client.cons || 0, batt: (+client.batteryKwh || 0) > 0, battKwh: +client.batteryKwh || 0,
     afmSubsidy: false, yieldOverride: effectiveYield(client),
-  }), [client]);
+    ...(client.market === "MD" ? { feedOverride: buyback.weightedEur } : {}),
+  }), [client, buyback.weightedEur]);
   const schemeLabel = project.market === "MD"
     ? d("Moldova · net billing", "Moldova · facturare netă")
     : d("Romania · net metering 1:1", "România · contorizare netă 1:1");
+
+  // Chemistry-aware storage life: LiFePO₄ at a solar duty-cycle (~330 full
+  // cycles/yr) comfortably clears 25 years; a shorter-lived chemistry (NMC)
+  // needs a pack replacement in the cashflow, not a promise nobody checks.
+  const battInfo = useMemo(() => {
+    if (!(+client.batteryKwh > 0)) return null;
+    const battery = systemFor(client).battery;
+    const CYCLES_PER_YEAR = 330;
+    const lifeYears = battery.cycles / CYCLES_PER_YEAR;
+    const replaceYear = battery.chemClass !== "LFP" && lifeYears < 25 ? Math.min(24, Math.max(1, Math.round(lifeYears))) : null;
+    const units = Math.max(1, Math.ceil((+client.batteryKwh || 0) / battery.kwh));
+    return { battery, lifeYears, replaceYear, replaceCostEur: replaceYear ? units * battery.price : 0 };
+  }, [client]);
 
   const model = useMemo(() => {
     const E = engineSettings();
@@ -139,8 +165,9 @@ export default function BankabilityPreview() {
     for (let n = 1; n <= 25; n++) {
       const g = degr(n) / degr(1);
       const escal = Math.pow(1 + infl, n - 1);
-      const p50Net = netY1 * g * escal;
-      const p90Net = p90NetY1 * g * escal;
+      const battReplace = battInfo?.replaceYear === n ? battInfo.replaceCostEur : 0;
+      const p50Net = netY1 * g * escal - battReplace;
+      const p90Net = p90NetY1 * g * escal - battReplace;
       const ds = n <= tenor ? annuity : 0;
       if (n <= tenor) {
         dscrMinP50 = Math.min(dscrMinP50, p50Net / annuity);
@@ -150,7 +177,7 @@ export default function BankabilityPreview() {
         n, degrPct: (1 - degr(n)) * 100,
         p50MWh: p50Annual * degr(n) / 1000,
         p90MWh: p50Annual * p90ratio * degr(n) / 1000,
-        p50Net, p90Net, ds,
+        p50Net, p90Net, ds, battReplace,
       });
     }
 
@@ -207,10 +234,11 @@ export default function BankabilityPreview() {
       dscrY1P50: netY1 / annuity, dscrY1P90: p90NetY1 / annuity,
       npv, irr, lcoe, tornado,
     };
-  }, [gearing, rate, tenor, disc, project]);
+  }, [gearing, rate, tenor, disc, project, battInfo]);
 
   const loc = docLang === "ro" ? "ro-RO" : "en-IE";
-  const showYears = [1, 2, 3, 5, 10, 15, 20, 25];
+  const showYears = [1, 2, 3, 5, 10, 15, 20, 25, ...(battInfo?.replaceYear ? [battInfo.replaceYear] : [])]
+    .filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
 
   function exportCsv() {
     const rows = [
@@ -336,8 +364,8 @@ export default function BankabilityPreview() {
           <thead><tr><th>{d("Year", "An")}</th><th>{d("Degradation", "Degradare")}</th><th>{d("P50 energy", "Energie P50")}</th><th>{d("P90 energy", "Energie P90")}</th><th>{d("P50 net cash", "Flux net P50")}</th><th>{d("P90 net cash", "Flux net P90")}</th></tr></thead>
           <tbody>
             {model.sched.filter((s) => showYears.includes(s.n)).map((s) => (
-              <tr key={s.n}>
-                <td>{s.n}</td><td>−{s.degrPct.toFixed(1)}%</td>
+              <tr key={s.n} style={s.battReplace > 0 ? { background: "#F7E6E1" } : undefined}>
+                <td>{s.n}{s.battReplace > 0 ? " *" : ""}</td><td>−{s.degrPct.toFixed(1)}%</td>
                 <td>{s.p50MWh.toFixed(1)} MWh</td><td>{s.p90MWh.toFixed(1)} MWh</td>
                 <td>{EUR(s.p50Net)}</td><td>{EUR(s.p90Net)}</td>
               </tr>
@@ -345,6 +373,23 @@ export default function BankabilityPreview() {
           </tbody>
         </table>
         <p className="doc-note">{d("Full year-by-year table in the CSV export. Net cash = energy value less O&M, escalated at the expected-band inflation assumption.", "Tabelul complet, an cu an, în exportul CSV. Flux net = valoarea energiei minus O&M, indexat cu ipoteza de inflație a benzii așteptate.")}</p>
+
+        <h2>{d("Storage life & chemistry", "Durata de viață a stocării & chimia")}</h2>
+        {battInfo ? (
+          <p style={{ fontSize: "11.5px" }}>
+            {battInfo.replaceYear
+              ? d(
+                  `The selected battery (${battInfo.battery.brand} ${battInfo.battery.model}, ${battInfo.battery.chem}, rated ${NUM(battInfo.battery.cycles)} cycles) is projected to reach end-of-life at a solar duty cycle of ~330 full cycles/yr around year ${battInfo.replaceYear} (marked * above) — a full-pack replacement (≈ ${EUR(battInfo.replaceCostEur)}) is included in that year's net cashflow, not left off the page.`,
+                  `Bateria aleasă (${battInfo.battery.brand} ${battInfo.battery.model}, ${battInfo.battery.chem}, ${NUM(battInfo.battery.cycles)} cicluri) atinge sfârșitul de viață, la un regim solar de ~330 cicluri complete/an, în jurul anului ${battInfo.replaceYear} (marcat * mai sus) — o înlocuire completă (≈ ${EUR(battInfo.replaceCostEur)}) e inclusă în fluxul net al acelui an, nu ascunsă.`
+                )
+              : d(
+                  `The selected battery (${battInfo.battery.brand} ${battInfo.battery.model}, ${battInfo.battery.chem}, rated ${NUM(battInfo.battery.cycles)} cycles) comfortably clears 25 years at a solar duty cycle of ~330 full cycles/yr (≈ ${Math.round(battInfo.lifeYears)} years of headroom) — no replacement is scheduled in the cashflow.`,
+                  `Bateria aleasă (${battInfo.battery.brand} ${battInfo.battery.model}, ${battInfo.battery.chem}, ${NUM(battInfo.battery.cycles)} cicluri) depășește confortabil 25 de ani la un regim solar de ~330 cicluri complete/an (≈ ${Math.round(battInfo.lifeYears)} ani rezervă) — nicio înlocuire nu e programată în flux.`
+                )}
+          </p>
+        ) : (
+          <p style={{ fontSize: "11.5px" }}>{d("No battery in this system — nothing to schedule.", "Fără baterie în acest sistem — nimic de programat.")}</p>
+        )}
 
         <h2>{d("Lender view — debt service coverage", "Perspectiva finanțatorului — acoperirea serviciului datoriei")}</h2>
         <div className="doc-grid">
@@ -402,6 +447,20 @@ export default function BankabilityPreview() {
             "Resursă din PVGIS-SARAH3 (2005–2023) pentru coordonatele sitului. Model energetic și pierderi conform motorului VoltMira (schemă de export SR EN 50549-1, reguli tarifare per piață). Valorile P presupun o distribuție normală a energiei anuale în jurul P50, cu σ combinat de mai sus. Este o evaluare de screening pentru discuții de finanțare — nu înlocuiește raportul unui inginer independent, acolo unde este cerut de facilitate."
           )}
         </p>
+        <p style={{ fontSize: "11px" }}>
+          {d(
+            "The energy-price escalation in the expected band is calibrated against published ANRE household tariff orders (Premier Energy / RED Nord, 2021–2026), not an arbitrary constant — replace with the facility's own regulatory forecast where one exists.",
+            "Creșterea de preț la energie din banda așteptată e calibrată pe ordinele ANRE publicate pentru tariful populației (Premier Energy / RED Nord, 2021–2026), nu pe o constantă arbitrară — înlocuiți-o cu prognoza reglementată a finanțatorului acolo unde există una."
+          )}
+        </p>
+        {project.market === "MD" && (
+          <p style={{ fontSize: "11px" }}>
+            {d(
+              `Exported energy is valued at ${BUYBACK_SOURCE.operator}'s published monthly purchase price for prosumer-delivered energy, weighted by the months this system actually exports in: ${buyback.weightedMdl.toFixed(2)} lei/kWh (€${buyback.weightedEur.toFixed(3)}). A flat calendar average would overstate it, because the price is lowest in the spring and summer months that carry most of the export. The published series itself has moved: ${buyback.years.map((r) => `${r.year} ${r.avg.toFixed(2)} lei${r.yoyPct != null ? ` (${r.yoyPct > 0 ? "+" : ""}${r.yoyPct.toFixed(0)}% like-for-like on ${r.yoyMonths} common months)` : ""}`).join("; ")}. That history is shown for reference only — the escalation applied to the cashflow is the band setting above, not an extrapolation of these figures.`,
+              `Energia exportată e evaluată la prețul mediu lunar publicat de ${BUYBACK_SOURCE.operator} pentru energia livrată de prosumatori, ponderat cu lunile în care acest sistem chiar exportă: ${buyback.weightedMdl.toFixed(2)} lei/kWh (€${buyback.weightedEur.toFixed(3)}). O medie calendaristică simplă ar supraevalua cifra, pentru că prețul e cel mai mic exact în lunile de primăvară-vară care duc cea mai mare parte a exportului. Seria publicată s-a mișcat astfel: ${buyback.years.map((r) => `${r.year} ${r.avg.toFixed(2)} lei${r.yoyPct != null ? ` (${r.yoyPct > 0 ? "+" : ""}${r.yoyPct.toFixed(0)}% comparabil, pe ${r.yoyMonths} luni comune)` : ""}`).join("; ")}. Istoricul e dat doar ca referință — creșterea aplicată fluxului de numerar e setarea de bandă de mai sus, nu o extrapolare a acestor cifre.`
+            )}
+          </p>
+        )}
         <div className="doc-sign">
           <div>{d("Prepared by — VoltMira (automated)", "Întocmit de — VoltMira (automat)")} · {new Date().toLocaleDateString(loc)}</div>
           <div>{d("Reviewed by — [independent engineer]", "Verificat de — [inginer independent]")}</div>
@@ -423,12 +482,16 @@ export default function BankabilityPreview() {
 // NPV. Downside (below base) in terracotta, upside (above base) in green.
 function TornadoSVG({ rows, base, label, baseLabel }) {
   const fmt = (v) => (v < 0 ? "−" : "") + "€" + Math.abs(Math.round(v / 1000)) + "k";
-  const W = 560, rowH = 30, PADT = 10, PADB = 30, LBL = 168, xR = W - 10;
+  // GUT is the gutter the value labels are drawn into: the leftmost bar starts
+  // one gutter right of the row labels and the rightmost ends one gutter short
+  // of the edge, so neither end label can land on a row label or run off-frame.
+  const W = 560, rowH = 30, PADT = 10, PADB = 30, LBL = 168, GUT = 32;
+  const xL = LBL + GUT, xR = W - 10 - GUT;
   const H = PADT + rows.length * rowH + PADB;
   const lo = Math.min(base, ...rows.map((r) => r.lo));
   const hi = Math.max(base, ...rows.map((r) => r.hi));
   const span = (hi - lo) || 1;
-  const X = (v) => LBL + ((v - lo) / span) * (xR - LBL);
+  const X = (v) => xL + ((v - lo) / span) * (xR - xL);
   const bx = X(base);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: 560, margin: "4px 0 2px" }} xmlns="http://www.w3.org/2000/svg">
@@ -437,11 +500,11 @@ function TornadoSVG({ rows, base, label, baseLabel }) {
         const y = PADT + i * rowH + 5, bh = 17;
         return (
           <g key={r.key}>
-            <text x={LBL - 8} y={y + bh / 2 + 3} textAnchor="end" fontSize="9" fill="#333">{label(r.key)}</text>
+            <text x={LBL - 4} y={y + bh / 2 + 3} textAnchor="end" fontSize="9" fill="#333">{label(r.key)}</text>
             <rect x={X(r.lo)} y={y} width={Math.max(0, bx - X(r.lo))} height={bh} fill="#E3C0B3" />
             <rect x={bx} y={y} width={Math.max(0, X(r.hi) - bx)} height={bh} fill="#B4D3C2" />
-            <text x={X(r.lo) - 3} y={y + bh / 2 + 3} textAnchor="end" fontSize="7.5" fill="#9A5A46">{fmt(r.lo)}</text>
-            <text x={X(r.hi) + 3} y={y + bh / 2 + 3} textAnchor="start" fontSize="7.5" fill="#2F6A49">{fmt(r.hi)}</text>
+            <text x={X(r.lo) - 4} y={y + bh / 2 + 3} textAnchor="end" fontSize="7.5" fill="#9A5A46">{fmt(r.lo)}</text>
+            <text x={X(r.hi) + 4} y={y + bh / 2 + 3} textAnchor="start" fontSize="7.5" fill="#2F6A49">{fmt(r.hi)}</text>
           </g>
         );
       })}

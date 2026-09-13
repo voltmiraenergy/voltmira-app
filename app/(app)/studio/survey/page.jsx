@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   useLang, tx, PreviewHeader, MockNote, NUM,
-  useStudioClient, ClientBar, engineSettings, DEMO_SYSTEM,
+  useStudioClient, ClientBar, engineSettings, systemFor,
 } from "../studio-kit.jsx";
 import { simulate, OPTIMAL_YIELD } from "../_engine.js";
 
@@ -97,7 +97,11 @@ export default function SurveyPreview() {
   // Feed this real-roof factor into the shared client so the quote, connection
   // file, P50/P90 and monitoring all use THIS site's yield — one number across
   // the whole pipeline, not an optimal-plane guess that only the survey corrects.
-  useEffect(() => { update({ roofFactor }); }, [roofFactor]);   // eslint-disable-line react-hooks/exhaustive-deps
+  // Debounced: a slider drag shouldn't write to storage on every frame.
+  useEffect(() => {
+    const id = setTimeout(() => update({ roofFactor }), 350);
+    return () => clearTimeout(id);
+  }, [roofFactor]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const eng = useMemo(() => {
     const E = engineSettings();
@@ -110,7 +114,7 @@ export default function SurveyPreview() {
     return { stdPb: std.payback, realPb: real.payback };
   }, [client, roofYield, baseOptimal]);
 
-  const panel = DEMO_SYSTEM.panel;
+  const panel = systemFor(client).panel;
   const kw = +client.kw || 0;
   const modules = Math.max(1, Math.ceil((kw * 1000) / panel.watt));
   const dcKw = (modules * panel.watt) / 1000;

@@ -10,19 +10,36 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { defaultEngineSettings } from "./_engine.js";
 import { PREVIEW_FEATURES, PREVIEW_BASE } from "./features.js";
+import { DEFAULT_IDS, systemFor } from "./catalog-data.js";
+import AddressField from "./address-field.jsx";
+export {
+  PANELS, INVERTERS, BATTERIES, MOUNTS, ALL_PRODUCTS, SUPPLIERS,
+  DEFAULT_IDS, systemFor, findPanel, findInverter, findBattery, findMount, findSupplier,
+  recommendInverter, recommendBattery, recommendPanel,
+} from "./catalog-data.js";
 
 /* ------------------------------------------------------------------ i18n ---- */
-// The authed layout stores the workspace language in localStorage so client
-// components (which can't read the server-side company row) can localize.
+// Language reaches the surfaces two ways. Preferred: <StudioLangProvider lang>,
+// which the Studio layout fills from the server-side company row — so the very
+// first paint is already in the right language, no flash of English. Fallback
+// (a standalone copy with no provider): the workspace language the authed app
+// mirrors into localStorage, read in an effect.
+const StudioLangCtx = createContext(null);
+export function StudioLangProvider({ lang, children }) {
+  return <StudioLangCtx.Provider value={lang || null}>{children}</StudioLangCtx.Provider>;
+}
+
 export function useLang() {
-  const [lang, setLang] = useState("en");
+  const provided = useContext(StudioLangCtx);
+  const [lang, setLang] = useState(provided || "en");
   useEffect(() => {
+    if (provided) return;                       // provider is authoritative
     try {
       const v = localStorage.getItem("voltmira_lang");
       if (v === "en" || v === "ro" || v === "ru") setLang(v);
     } catch { /* private mode / disabled storage — stay English */ }
-  }, []);
-  return lang;
+  }, [provided]);
+  return provided || lang;
 }
 
 // tx({ en, ro, ru }, lang) → best string for the language, English as the floor.
@@ -99,13 +116,12 @@ export const DEMO_PROJECT = {
   approvedKw: 12,        // putere aprobată consum
 };
 
-// The equipment the demo system is built from — brands RO/MD installers quote.
-export const DEMO_SYSTEM = {
-  panel: { brand: "LONGi", model: "Hi-MO 6 Explorer LR5-54HTH", watt: 435, voc: 39.6, isc: 13.9, cells: 108 },
-  inverter: { brand: "Deye", model: "SUN-6K-SG04LP3", kw: 6, type: "hybrid", mppt: 2, phases: 3, std: "SR EN 50549-1" },
-  battery: { brand: "Pylontech", model: "US5000 × 2", kwh: 9.6, vdc: 48, chem: "LiFePO₄" },
-  mount: { brand: "K2 Systems", model: "SingleRail 48 / Speed Rail", type: "roof, tile hooks" },
-};
+// The equipment a surface shows when it needs "the system" but has no client
+// selection yet — the catalog's workspace default (LONGi / Deye / Pylontech /
+// K2), kept as a constant only for that fallback. Every surface that has a
+// client calls systemFor(client) instead (catalog-data.js), which resolves the
+// SKUs that client actually has picked in the Catalog surface.
+export const DEMO_SYSTEM = systemFor({});
 
 // Standardised grid-protection settings for the SLD / annex (SR EN 50549-1,
 // aligned with ANRE Ord. 228/2018 and Moldelectrica connection rules).
@@ -134,10 +150,14 @@ export function protRows(lang) {
 // the site layout, the pricing view and the P50/P90 export all reflect the same
 // client and update together. Persisted per browser; NOT written to Supabase.
 export const CLIENT_PRESETS = [
-  { id: "ionescu", name: "Familia Ionescu", address: "str. Petru Zadnipru 12, Chișinău, MD-2044", lat: 47.0509, lng: 28.8785, contractNo: "PE-CHI-2026-04417", ref: "VM-2026-0417", market: "MD", kw: 6.5, cons: 6200, price: 0.185, batteryKwh: 9.6, phases: 3, atestat: "ANRE-MC nr. 2026/PV-0148" },
-  { id: "popescu", name: "Familie Popescu", address: "str. Donath 128, Cluj-Napoca", lat: 46.7623, lng: 23.5558, contractNo: "DEER-CJ-2026-11832", ref: "VM-2026-1183", market: "RO", kw: 8.5, cons: 8000, price: 0.21, batteryKwh: 0, phases: 1, atestat: "ANRE tip B nr. 2026/24417" },
-  { id: "logipark", name: "Hala Chiajna — LogiPark SRL", address: "DN7 km 12, Chiajna, jud. Ilfov", lat: 44.4682, lng: 25.9760, contractNo: "EDMuntenia-2026-55901", ref: "VM-BNK-2026-0093", market: "RO", kw: 180, cons: 240000, price: 0.142, batteryKwh: 0, phases: 3, atestat: "ANRE tip B nr. 2026/24417" },
-  { id: "agronord", name: "Fabrica AgroNord SRL", address: "str. Uzinelor 210, Chișinău, MD-2036", lat: 47.0304, lng: 28.8912, contractNo: "PE-CHI-2026-09920", ref: "VM-CI-2026-0300", market: "MD", kw: 300, cons: 540000, price: 0.16, batteryKwh: 0, phases: 3, atestat: "ANRE-MC nr. 2026/PV-0300" },
+  { id: "rusu", name: "Familia Rusu", address: "str. Alexandru cel Bun 15, Ialoveni, MD-6801", lat: 46.9412, lng: 28.7770, contractNo: "PE-IAL-2026-03318", ref: "VM-2026-0331", market: "MD", kw: 6.5, cons: 6200, price: 0.185, batteryKwh: 9.6, phases: 3, atestat: "ANRE-MC nr. 2026/PV-0148",
+    panelId: DEFAULT_IDS.panel, inverterId: DEFAULT_IDS.inverter, batteryId: DEFAULT_IDS.battery, mountId: DEFAULT_IDS.mount },
+  { id: "popescu", name: "Familie Popescu", address: "str. Donath 128, Cluj-Napoca", lat: 46.7623, lng: 23.5558, contractNo: "DEER-CJ-2026-11832", ref: "VM-2026-1183", market: "RO", kw: 8.5, cons: 8000, price: 0.21, batteryKwh: 0, phases: 1, atestat: "ANRE tip B nr. 2026/24417",
+    panelId: DEFAULT_IDS.panel, inverterId: "growatt-min6000tl-xh", batteryId: DEFAULT_IDS.battery, mountId: DEFAULT_IDS.mount },
+  { id: "logipark", name: "Hala Chiajna — LogiPark SRL", address: "DN7 km 12, Chiajna, jud. Ilfov", lat: 44.4682, lng: 25.9760, contractNo: "EDMuntenia-2026-55901", ref: "VM-BNK-2026-0093", market: "RO", kw: 180, cons: 240000, price: 0.142, batteryKwh: 0, phases: 3, atestat: "ANRE tip B nr. 2026/24417",
+    panelId: "jinko-tigerneo-615", inverterId: "sofar-hyd20ktl-3ph", batteryId: DEFAULT_IDS.battery, mountId: "k2-crossrail" },
+  { id: "agronord", name: "Fabrica AgroNord SRL", address: "str. Uzinelor 210, Chișinău, MD-2036", lat: 47.0304, lng: 28.8912, contractNo: "PE-CHI-2026-09920", ref: "VM-CI-2026-0300", market: "MD", kw: 300, cons: 540000, price: 0.16, batteryKwh: 0, phases: 3, atestat: "ANRE-MC nr. 2026/PV-0300",
+    panelId: "longi-hi-mo9-610", inverterId: "huawei-sun2000-100ktl", batteryId: DEFAULT_IDS.battery, mountId: "k2-crossrail" },
 ];
 const StudioClientCtx = createContext(null);
 export function StudioClientProvider({ children }) {
@@ -188,8 +208,8 @@ export function ClientBar({ lang }) {
         <div className="cl-grid">
           <label>{T({ en: "Client", ro: "Client", ru: "Клиент" })}
             <input className="pv-input" value={client.name} onChange={(e) => update({ name: e.target.value })} /></label>
-          <label>{T({ en: "Address", ro: "Adresă", ru: "Адрес" })}
-            <input className="pv-input" value={client.address} onChange={(e) => update({ address: e.target.value })} /></label>
+          <label style={{ gridColumn: "1 / -1" }}>{T({ en: "Address", ro: "Adresă", ru: "Адрес" })}
+            <AddressField lang={lang} client={client} onPick={(p) => update(p)} /></label>
           <label>{T({ en: "Contract no.", ro: "Nr. contract", ru: "№ договора" })}
             <input className="pv-input" value={client.contractNo} onChange={(e) => update({ contractNo: e.target.value })} /></label>
           <label>{T({ en: "Market", ro: "Piață", ru: "Рынок" })}
@@ -227,10 +247,8 @@ const IC = {
   // the VoltMira mark (three rising rays + sun dot), monochrome — Studio's home glyph
   overview: <><path d="M5 19 8.6 9" /><path d="M10.6 19 15 6" /><path d="M16 19 19.4 8" /><circle cx="15" cy="6" r="1.6" fill="currentColor" stroke="none" /></>,
   survey: <><path d="M3 20h18" /><path d="M5 20V10l7-5 7 5v10" /><path d="M9 20v-5h6v5" /><circle cx="18" cy="6" r="2.2" /></>,
-  quote: <><path d="M7 3h8l4 4v14H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M14 3v5h5" /><path d="M10 13h6M10 17h4" /><path d="M12 9.5V8m0 3.5c1 0 1.6.5 1.6 1.2S13 14 12 14s-1.6.5-1.6 1.2S11 16.5 12 16.5m0-8v1.5m0 8V16.5" /></>,
-  connection: <><path d="M6 4v5a3 3 0 0 0 3 3h6a3 3 0 0 1 3 3v5" /><circle cx="6" cy="4" r="1.8" fill="currentColor" stroke="none" /><circle cx="18" cy="20" r="1.8" fill="currentColor" stroke="none" /></>,
+  catalog: <><rect x="3" y="3" width="7.5" height="7.5" rx="1.4" /><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.4" /><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.4" /><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.4" /></>,
   annex: <><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M14 3v5h5M9 13h6M9 17h6M9 9h2" /></>,
-  pricing: <><path d="M3 7h18M3 12h18M3 17h18" /><circle cx="8" cy="7" r="1.6" /><circle cx="15" cy="12" r="1.6" /><circle cx="10" cy="17" r="1.6" /></>,
   payments: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /><path d="M6 15h4" /></>,
   schedule: <><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4" /><path d="M8 14l2.5 2.5L16 11" /></>,
   monitoring: <><path d="M3 12h4l3 8 4-16 3 8h4" /></>,
@@ -253,22 +271,23 @@ export function PreviewBadge() {
   return null;
 }
 
-// Pill row — the one nav model for the whole section: a "Studio" home pill + one
-// short pill per surface. Wraps compactly on a surface page; on the landing it
-// spreads to a full-width grid of larger pills (`pv-tabs-wide`).
+// Pill row — the section nav on every surface page: a "Studio" home pill + one
+// numbered pill per surface, in workflow order. On the landing itself the
+// numbered .st-list flow (studio/page.jsx) is the nav, so this row is hidden there.
 export function PreviewNav({ lang }) {
   const path = usePathname() || "";
   const onLanding = path === PREVIEW_BASE;
   const active = (slug) => path === `${PREVIEW_BASE}/${slug}`;
+  if (onLanding) return null;
   return (
-    <nav className={"pv-tabs" + (onLanding ? " pv-tabs-wide" : "")} aria-label="Studio">
-      <Link href={PREVIEW_BASE} className={"pv-tab pv-tab-home" + (onLanding ? " here" : "")}
-        aria-current={onLanding ? "page" : undefined}>
+    <nav className="pv-tabs" aria-label="Studio">
+      <Link href={PREVIEW_BASE} className="pv-tab pv-tab-home">
         <FeatureIcon slug="overview" /><span>{tx({ en: "Studio", ro: "Studio", ru: "Studio" }, lang)}</span>
       </Link>
-      {PREVIEW_FEATURES.map((f) => (
+      {PREVIEW_FEATURES.map((f, i) => (
         <Link key={f.slug} href={`${PREVIEW_BASE}/${f.slug}`} className={"pv-tab" + (active(f.slug) ? " on" : "")}
           aria-current={active(f.slug) ? "page" : undefined}>
+          <i className="pv-tab-n">{i + 1}</i>
           <FeatureIcon slug={f.slug} />
           <span>{(f[lang] || f.en).nav}</span>
         </Link>
@@ -449,6 +468,12 @@ html[data-theme="dark"] .pv-tab:hover{border-color:#39443B}
 .pv-tab svg{flex:none;opacity:.85}
 .pv-tab.on{background:var(--green);border-color:var(--green);color:#fff}
 .pv-tab.on svg{opacity:1}
+.pv-tab-n{flex:none;font-family:var(--font-m,monospace);font-size:9.5px;font-weight:700;line-height:1;
+  color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:5px;
+  min-width:15px;height:15px;display:grid;place-items:center}
+.pv-tab.on .pv-tab-n{background:rgba(255,255,255,.22);border-color:transparent;color:#fff}
+.pv-tab-home .pv-tab-n{display:none}
+.pv-tabs-wide .pv-tab-n{font-size:10.5px;min-width:17px;height:17px}
 .pv-tab-home{color:var(--ink);border-color:transparent;background:var(--paper);padding-left:9px}
 .pv-tab-home svg{opacity:1;color:var(--green)}
 .pv-tab-home:hover{background:var(--green-tint);border-color:transparent}
@@ -469,6 +494,35 @@ html[data-theme="dark"] .pv-tab:hover{border-color:#39443B}
 .cl-grid > label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--muted)}
 .cl-grid > label output{color:var(--green);font-weight:700}
 .cl-summary{margin-top:10px;font-size:13px;color:var(--ink);font-weight:600;line-height:1.5}
+
+/* address field — the picker ships its own .af-* styles (components/AddressField.jsx) */
+
+/* equipment picker — inline, Sunny-Design-style module/inverter/battery pick */
+.eqp{position:relative}
+.eqp-cur{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--line);
+  border-radius:11px;padding:10px 12px}
+.eqp-cur-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.eqp-cur-tx b{font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eqp-cur-tx span{font-size:11px;color:var(--muted)}
+.eqp-auto{flex:none;font-family:var(--font-m,monospace);font-size:9.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.04em;background:var(--green-tint);color:var(--green-soft);border-radius:99px;padding:3px 8px}
+.eqp-panel{position:absolute;z-index:25;top:calc(100% + 6px);left:0;right:0;background:var(--paper-2);
+  border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg,var(--shadow));padding:10px}
+.eqp-list{margin-top:8px;display:grid;gap:3px;max-height:280px;overflow-y:auto}
+.eqp-row{display:grid;grid-template-columns:1.3fr 1fr 1.2fr auto;gap:10px;align-items:center;width:100%;
+  text-align:left;font-family:inherit;background:none;border:1px solid transparent;border-radius:8px;
+  padding:8px 9px;cursor:pointer;color:var(--ink);transition:background .12s,border-color .12s}
+.eqp-row:hover{background:var(--paper)}
+.eqp-row.on{border-color:var(--green);background:var(--green-tint)}
+.eqp-row-main{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eqp-row-spec{font-size:11px;color:var(--muted)}
+.eqp-row-sup{display:flex;flex-direction:column;font-size:10.5px;color:var(--muted)}
+.eqp-row-sup em{font-style:normal;color:var(--green-soft)}
+.eqp-row-sup em.low{color:#B4700F}
+.eqp-row-price{font-family:var(--font-m,monospace);font-size:12px;color:var(--ink);white-space:nowrap}
+.eqp-empty{font-size:12px;color:var(--muted);padding:10px 4px}
+@media(max-width:640px){.eqp-row{grid-template-columns:1fr 1fr}.eqp-row-sup,.eqp-row-price{grid-column:span 1}}
+
 /* Phones: 2-up client editor (name/address/contract span the row) and a
    one-line scrollable pill row instead of a 750px stack and a 2-row wrap. */
 @media(max-width:520px){
@@ -495,24 +549,32 @@ html[data-theme="dark"] .pv-tab:hover{border-color:#39443B}
   .pv-head-right{order:3;flex-basis:100%;margin-top:2px}
 }
 
-.pv-mocknote{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--muted);line-height:1.5;
-  background:var(--paper-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin:0 0 18px}
-.pv-mocknote svg{flex:none;margin-top:1px;color:var(--amber)}
+.pv-mocknote{display:flex;gap:7px;align-items:flex-start;font-size:11.5px;color:var(--muted);line-height:1.5;
+  padding:0 2px;margin:-2px 0 16px;max-width:76ch}
+.pv-mocknote svg{flex:none;margin-top:2px;color:var(--amber);opacity:.85}
 
-/* Studio landing — one hairline-divided list of every surface (2-up on desktop) */
-.st-list{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);
-  border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
-@media(max-width:820px){.st-list{grid-template-columns:1fr}}
-.st-row{display:flex;align-items:flex-start;gap:14px;padding:18px 20px;background:var(--paper-2);
-  text-decoration:none;color:inherit;transition:background .15s}
+/* Studio landing — the installer's job as a numbered, front-to-back flow */
+.st-list{display:grid;gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  background:var(--paper-2);box-shadow:var(--shadow)}
+.st-row{display:flex;align-items:flex-start;gap:13px;padding:15px 20px;background:var(--paper-2);
+  text-decoration:none;color:inherit;transition:background .15s;position:relative}
+.st-row + .st-row{border-top:1px solid var(--line)}
 .st-row:hover{background:var(--paper)}
 .st-row:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
-.st-row-ic{flex:none;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;
-  background:var(--green-tint);color:var(--green);margin-top:1px}
+/* connector threading the numbered nodes into one pipeline */
+.st-row::before{content:"";position:absolute;left:33px;top:0;bottom:0;width:2px;background:var(--line)}
+.st-row:first-child::before{top:27px}
+.st-row:last-child::before{bottom:auto;height:12px}
+.st-row-n{flex:none;position:relative;z-index:1;width:23px;height:23px;border-radius:50%;
+  display:grid;place-items:center;background:var(--green-tint);color:var(--green);
+  font-family:var(--font-m,monospace);font-size:11px;font-weight:700;margin-top:2px}
+.st-row:hover .st-row-n{background:var(--green);color:#fff}
+.st-row-ic{flex:none;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
+  background:var(--paper);border:1px solid var(--line);color:var(--green);margin-top:-1px}
 .st-row-tx{flex:1;min-width:0}
-.st-row-tx b{display:block;font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
-.st-row-tx span{display:block;font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:5px}
-.st-row-go{flex:none;color:var(--muted);transition:color .15s,transform .15s;margin-top:3px}
+.st-row-tx b{display:block;font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.st-row-tx span{display:block;font-size:12px;color:var(--muted);line-height:1.5;margin-top:4px}
+.st-row-go{flex:none;color:var(--muted);transition:color .15s,transform .15s;margin-top:5px}
 .st-row:hover .st-row-go{color:var(--green);transform:translateX(2px)}
 
 /* generic building blocks reused by feature pages */

@@ -370,6 +370,21 @@ const CSS = `
   .band .roi{font-size:12px;color:var(--muted);margin-top:6px}
   .band .roi b{color:var(--ink)}
 
+  /* yield calibration measured from the installed base */
+  .cal-note{margin-top:10px;padding:11px 13px;background:var(--green-tint);border-radius:10px}
+  .cal-note .cal-h{font-size:12.5px;font-weight:600;color:var(--green);line-height:1.45}
+  .cal-note .cal-s{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.45}
+
+  /* NPV / IRR / LCOE, under the payback bands */
+  .fin-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:16px}
+  .fin-metrics .fm{background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+  .fin-metrics .fm b{display:block;font-family:var(--font-d);font-size:18px;font-weight:700;letter-spacing:-.01em;
+    font-variant-numeric:tabular-nums;color:var(--ink)}
+  .fin-metrics .fm span{display:block;margin-top:2px;font-size:10.5px;color:var(--muted);line-height:1.35}
+  .disc-row{display:block;margin-top:12px;font-size:12px;font-weight:600;color:var(--muted)}
+  .disc-row output{color:var(--green);font-family:var(--font-d);font-weight:700;margin-left:6px}
+  .disc-row input[type=range]{margin-top:6px}
+
   /* Chart legend + trend legend */
   .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;color:var(--muted);margin-top:8px}
   .tr-leg{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
