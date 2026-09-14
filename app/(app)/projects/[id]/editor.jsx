@@ -4,11 +4,11 @@
 // for the address. Proposal button creates the tracked link. Visual language
 // matches the live demo (editor grid, cards, bands, financing, modal).
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
-import { createProposal, saveQuoteTemplate } from "../../../../lib/actions.js";
+import { createProposal, regenerateProposal, saveQuoteTemplate } from "../../../../lib/actions.js";
 import AddressField from "../../../../components/AddressField.jsx";
 import SiteDesigner from "../../../../components/SiteDesigner.jsx";
+import BackLink from "../../../../components/BackLink.jsx";
 import BomCard from "../../../../components/BomCard.jsx";
 import DesignChecks from "../../../../components/DesignChecks.jsx";
 import DesignSuggestions from "../../../../components/DesignSuggestions.jsx";
@@ -120,6 +120,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const [billErr, setBillErr] = useState("");
   const billInput = useRef(null);
   const [propUrl, setPropUrl] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState(null);
   // Emailing the PDF: the recipient isn't stored on the project (only the client's
   // NAME is), so this always starts empty rather than guessing an address.
   const [emailTo, setEmailTo] = useState("");
@@ -382,6 +384,23 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     return code;
   }
 
+  // The link itself never changes (createProposal is idempotent by design —
+  // never bait-and-switch a client), but everything the link SHOWS is frozen
+  // at first-generate time. Edited the BOM, drawn the roof, changed the price
+  // since then? Nothing reaches the client until this runs. Refuses server-side
+  // once the client has actually accepted — see regenerateProposal's own comment.
+  async function refreshProposal() {
+    setRefreshing(true); setRefreshMsg(null);
+    try {
+      await regenerateProposal(initial.id);
+      setRefreshMsg({ ok: true, text: tr("prop_refreshed") });
+    } catch (e) {
+      setRefreshMsg({ ok: false, text: e.message === "already_accepted" ? tr("prop_refresh_accepted") : tr("prop_refresh_err") });
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   async function downloadPdf() {
     // Open the tab synchronously, inside the click gesture, so mobile popup
     // blockers don't swallow it — they do when window.open runs after an await,
@@ -480,10 +499,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   return (
     <div style={{ maxWidth: 1080, margin: "0 auto" }}>
       <div className="ed-head">
-        <Link className="back-link" href="/projects">
+        <BackLink href="/projects">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
           {tr("back_projects").replace("← ", "")}
-        </Link>
+        </BackLink>
         <input className="proj-title" value={p.title} onChange={e => update({ title: e.target.value })} />
         <span style={{ fontSize: 12, color: saved === "error" ? "var(--red)" : "var(--muted)", fontWeight: saved === "error" ? 700 : 400 }}>
           {saved === "saving" ? tr("saving") : saved === "error" ? tr("save_failed") : tr("saved")}
@@ -1002,6 +1021,19 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 setCopied(true); setTimeout(() => setCopied(false), 1800);
               }}>{copied ? tr("t_copied") : tr("copy")}</button>
             </div>
+            {/* The link stays the same; this refreshes what it SHOWS from the
+                project's current state — the escape hatch for edits made after
+                the first "Generate" click, which createProposal() itself will
+                never pick up. Server refuses once the client has accepted; the
+                status check here just avoids showing a button that would fail. */}
+            {p.status !== "won" && (
+              <div className="prop-refresh-row">
+                <button className="btn sm ghost" disabled={refreshing} onClick={refreshProposal}>
+                  {refreshing ? tr("prop_refreshing") : tr("prop_refresh")}
+                </button>
+                {refreshMsg && <span className={"email-msg " + (refreshMsg.ok ? "ok" : "bad")} style={{ margin: 0 }}>{refreshMsg.text}</span>}
+              </div>
+            )}
             {/* WhatsApp is how solar sells in RO/MD — pre-write the message + link */}
             <a className="btn wapp" style={{ width: "100%", marginBottom: 10 }}
               href={`https://wa.me/?text=${encodeURIComponent(tr("wa_message", { client: p.client || tr("your_client"), company: companyName, url: propUrl }))}`}

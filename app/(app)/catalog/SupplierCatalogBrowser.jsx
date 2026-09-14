@@ -135,7 +135,7 @@ export default function SupplierCatalogBrowser({ lang, onAdded, onClose }) {
     start(() =>
       addProduct({
         kind: p.kind, brand: p.brand, model: p.model, spec: p.specString,
-        unit_price: Math.round(p.price ?? p.eurPerKw), image_url: "",
+        unit_price: Math.round(p.price ?? p.eurPerKw), image_url: p.photoUrl || "",
         track_stock: false, stock: "",
       }).then((row) => {
         if (row) { onAdded(row); setAdded((s) => new Set([...s, p.id])); }

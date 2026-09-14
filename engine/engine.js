@@ -46,6 +46,8 @@ export function defaultEngineSettings() {
     subsidyAmountRon: 20000,   // RO — Casa Verde / AFM grant (RON)
     subsidyAmountMdl: 0,       // MD — local prosumer grant (MDL); 0 until the installer sets their programme
     quoteValidityDays: 30,     // a sent quote is "valid until" sentAt + this; older = stale
+    financeRatePct: 9,      // annual interest rate assumed for the monthly-payment estimate — a starting default like costPerKw, editable per company; never presented to a client as a real loan offer
+    financeTermYears: 10,   // loan term assumed for the same estimate
     bands: {
       pess: { ym: 0.92, degr: 0.8, infl: 0 },
       expc: { ym: 1.00, degr: 0.5, infl: 3 },
@@ -222,6 +224,28 @@ export function quote(p, E) {
     e: simulate(p, E, "expc"),
     o: simulate(p, E, "opti"),
   };
+}
+
+/**
+ * Standard amortized monthly loan payment: M = P·r(1+r)^n / ((1+r)^n − 1),
+ * degrading to P/n at 0% (the textbook formula divides by zero there).
+ * Not a loan offer — an estimate from the installer's own configured
+ * rate/term (financeRatePct/financeTermYears in engine settings), the same
+ * way costPerKw is an editable starting assumption, not a verified market
+ * rate. Callers must label it as an estimate, never a bank quote.
+ * @param {number} principal EUR, the amount financed
+ * @param {number} annualRatePct e.g. 9 for 9%/yr — 0 is a valid, interest-free case
+ * @param {number} termYears loan length
+ * @returns {number} monthly payment in EUR, or 0 for a non-positive principal/term
+ */
+export function amortizedMonthlyPayment(principal, annualRatePct, termYears) {
+  const p = Math.max(0, Number(principal) || 0);
+  const n = Math.max(0, Number(termYears) || 0) * 12;
+  if (p <= 0 || n <= 0) return 0;
+  const r = Math.max(0, Number(annualRatePct) || 0) / 100 / 12;
+  if (r === 0) return p / n;
+  const factor = Math.pow(1 + r, n);
+  return (p * r * factor) / (factor - 1);
 }
 
 /** Display-currency formatting (UI layer). Engine stays in EUR. */

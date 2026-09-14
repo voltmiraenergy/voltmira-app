@@ -9,7 +9,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   simulate, quote, effectiveConsumption,
-  defaultEngineSettings, formatMoney, FX,
+  defaultEngineSettings, formatMoney, FX, amortizedMonthlyPayment,
 } from "./engine.js";
 
 const E = defaultEngineSettings();
@@ -346,4 +346,38 @@ test("costOverride + battery: the BOM only covers the battery if it prices one",
   // No battery at all: the flag is irrelevant.
   assert.equal(simulate({ ...BASE, costOverride: 9999 }, E, "expc").cost,
                simulate({ ...BASE, costOverride: 9999, bomHasBattery: true }, E, "expc").cost);
+});
+
+/* ------------------------------------------------------------------ *
+ * amortizedMonthlyPayment — the standard formula, checked against a
+ * well-known textbook example ($10,000 at 6% APR over 5 years = $193.33/mo),
+ * not against the function's own output.
+ * ------------------------------------------------------------------ */
+test("amortizedMonthlyPayment matches the standard textbook example", () => {
+  const m = amortizedMonthlyPayment(10000, 6, 5);
+  assert.ok(Math.abs(m - 193.33) < 0.05, `expected ~193.33, got ${m}`);
+});
+
+test("amortizedMonthlyPayment at 0% is a plain division, not a div-by-zero", () => {
+  assert.equal(amortizedMonthlyPayment(1200, 0, 1), 100);
+});
+
+test("amortizedMonthlyPayment returns 0 for a non-positive principal or term", () => {
+  assert.equal(amortizedMonthlyPayment(0, 9, 10), 0);
+  assert.equal(amortizedMonthlyPayment(-500, 9, 10), 0);
+  assert.equal(amortizedMonthlyPayment(10000, 9, 0), 0);
+  assert.equal(amortizedMonthlyPayment(10000, 9, -3), 0);
+});
+
+test("amortizedMonthlyPayment rises with a higher rate or a shorter term", () => {
+  const base = amortizedMonthlyPayment(10000, 9, 10);
+  assert.ok(amortizedMonthlyPayment(10000, 15, 10) > base, "a higher rate must cost more per month");
+  assert.ok(amortizedMonthlyPayment(10000, 9, 5) > base, "a shorter term must cost more per month");
+});
+
+test("amortizedMonthlyPayment never returns NaN or a negative figure for junk input", () => {
+  for (const bad of [NaN, undefined, null, "x", -1]) {
+    const m = amortizedMonthlyPayment(10000, bad, 10);
+    assert.ok(Number.isFinite(m) && m >= 0, `rate=${bad} produced ${m}`);
+  }
 });

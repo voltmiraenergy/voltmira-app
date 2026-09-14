@@ -107,7 +107,7 @@ export default function Settings() {
         // company legal details for invoicing
         legal_name: co.legal_name, reg_no: co.reg_no, vat_no: co.vat_no,
         legal_address: co.legal_address, iban: co.iban, invoice_prefix: co.invoice_prefix,
-        vat_rate: co.vat_rate,
+        vat_rate: co.vat_rate, install_warranty_years: co.install_warranty_years,
         engine: eng,
       });
       setMsg(t("s_saved", lang));
@@ -288,6 +288,20 @@ export default function Settings() {
         <div className="set-note">{t("s_invoicing_note", lang)}</div>
       </section>
 
+      {/* Installation warranty — the installer's OWN workmanship commitment,
+          distinct from the manufacturer warranties in the equipment catalog.
+          Blank by default: unlike the catalog's warrantyYears, there is
+          nothing to verify here (it's the installer's own real promise), but
+          it must still not print a false "0-year" line on a proposal before
+          they've actually set it. */}
+      <section className="card st-sec">
+        <div className="st-head"><SecIcon name="company" /><h3>{t("s_install_warranty", lang)}</h3></div>
+        <div className="set-note" style={{ marginTop: -4, marginBottom: 12 }}>{t("s_install_warranty_sub", lang)}</div>
+        <div className="set-grid">
+          {numField("iInstWarr", t("s_install_warranty_years", lang), co.install_warranty_years ?? "", 1, t("unit_years", lang), setCoNum("install_warranty_years"))}
+        </div>
+      </section>
+
       {/* Plan */}
       <section className="card st-sec">
         <div className="st-head"><SecIcon name="star" color="var(--amber)" /><h3>{t("s_plan", lang)}</h3>
@@ -335,6 +349,15 @@ export default function Settings() {
         <div className="set-grid">
           {numField("eValidity", t("s_validity", lang), eng.quoteValidityDays, 5, t("unit_days", lang), setEng("quoteValidityDays"))}
         </div>
+
+        {/* A starting assumption for the client-facing "monthly payment"
+            estimate — same as costPerKw, never shown as a real loan offer. */}
+        <div className="st-glabel">{t("st_grp_finance", lang)}</div>
+        <div className="set-grid">
+          {numField("eFinRate", t("e_finance_rate", lang), eng.financeRatePct ?? 9, 0.5, "%/yr", setEng("financeRatePct"))}
+          {numField("eFinTerm", t("e_finance_term", lang), eng.financeTermYears ?? 10, 1, t("unit_years", lang), setEng("financeTermYears"))}
+        </div>
+        <div className="set-note">{t("st_finance_note", lang)}</div>
       </section>
 
       {/* Payback scenarios */}

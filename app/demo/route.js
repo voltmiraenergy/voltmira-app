@@ -12,7 +12,7 @@
 //   signed out          -> seed a workspace and drop them on the dashboard
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { createDemoWorkspace, resolvePdfDemoDest, resolveEditorDemoDest, resolveWidgetDemoDest } from "../../lib/demoSeed.js";
+import { createDemoWorkspace, resolvePdfDemoDest, resolveProposalDemoDest, resolveEditorDemoDest, resolveWidgetDemoDest } from "../../lib/demoSeed.js";
 import { isDemoEmail } from "../../lib/demo.js";
 import { isRateLimited, clientIp } from "../../lib/ratelimit.js";
 import { safeNext } from "../../lib/safeRedirect.js";
@@ -38,6 +38,10 @@ const LANGS = new Set(["en", "ro", "ru"]);
 //                          per-MPPT-input compliance matrix, backup-power
 //                          callout, and — once a roof's been drawn — the
 //                          real measured roof area/orientation)
+//   proposal-demo       -> the SAME proposal, live/mobile (no ?print=1) — the
+//                          real charts, the live self-audit sliders, the
+//                          cash/monthly financing toggle; what the client
+//                          actually opens on their phone, not the PDF
 //   hybrid-demo         -> the same demo project's editor, to see the hybrid
 //                          system-type UI (segmented Rețea/Hibrid control)
 //   site-designer-demo  -> the SAME editor (Site Designer is a button on that
@@ -48,6 +52,7 @@ const LANGS = new Set(["en", "ro", "ru"]);
 //   widget-demo         -> the public quick-estimate widget for this tenant
 const NEXT_RESOLVERS = {
   "pdf-annex": resolvePdfDemoDest,
+  "proposal-demo": resolveProposalDemoDest,
   "hybrid-demo": resolveEditorDemoDest,
   "site-designer-demo": resolveEditorDemoDest,
   "widget-demo": resolveWidgetDemoDest,

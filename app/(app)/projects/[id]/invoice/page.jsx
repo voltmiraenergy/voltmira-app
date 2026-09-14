@@ -19,6 +19,7 @@ import { rowToQuoteInput } from "../../../../../lib/quoteInput.js";
 import { t, normLang } from "../../../../../lib/i18n.js";
 import { fmtDate } from "../../../../../lib/tz.js";
 import PrintNow from "./PrintNow.jsx";
+import BackLink from "../../../../../components/BackLink.jsx";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Invoice — VoltMira" };
@@ -108,7 +109,19 @@ export default async function InvoicePage({ params, searchParams }) {
           body { background: #fff !important; }
         }
         .inv-actions { max-width: 820px; margin: 12px auto 0; padding: 0 40px; display: flex; gap: 10px; }
+        .inv-back-row { max-width: 820px; margin: 0 auto; padding: 16px 40px 0; }
       `}</style>
+
+      {/* Reached only via a link from the project editor, with no route of its
+          own reachable from the sidebar/bottom-tab bar — in the standalone
+          Home Screen app there's no Safari swipe-back to fall back on, so
+          without this the page was a dead end. */}
+      <div className="inv-back-row no-print">
+        <BackLink href={`/projects/${params.id}`}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
+          {t("back_quote", lang)}
+        </BackLink>
+      </div>
 
       <div style={S.page}>
         {/* header */}

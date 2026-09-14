@@ -35,26 +35,35 @@ export default function ClientAudit({ inputs, assumptions: E, lang }) {
   const touched = priceMul !== 1 || inflDelta !== 0;
 
   const bands = [["pp_pess", q.p, "#C4543B"], ["pp_expc", q.e, "#E89B2D"], ["pp_opti", q.o, "#1E6B4E"]];
-  const slider = { flex: 1, minWidth: 0, accentColor: "#E89B2D", height: 6, cursor: "pointer" };
+  const DISPLAY = "'Inter Tight',Inter,system-ui,sans-serif";
+  // className, not inline style: a custom thumb needs ::-webkit-slider-thumb /
+  // ::-moz-range-thumb, which no inline style object can target. This is the
+  // one interactive, live-recomputing moment in the whole proposal — it used
+  // to fall back to the browser's plain default slider because this page
+  // renders outside AppTheme (no access to the app's own premium slider CSS).
+  const slider = { flex: 1, minWidth: 0, height: 6, cursor: "pointer" };
   const lbl = { display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13, color: "#66756C", marginBottom: 8, fontWeight: 500 };
-  const val = { fontFamily: "Inter, system-ui, sans-serif", fontWeight: 700, color: "#1E6B4E", fontSize: 15 };
+  const val = { fontFamily: DISPLAY, fontWeight: 800, color: "#1E6B4E", fontSize: 16 };
   const row = { display: "flex", alignItems: "center", gap: 10 };
   // A drag can't land on an exact figure — this lets the number itself (from
   // an actual bill, or an inflation figure the client has in mind) be typed.
   const numBox = { width: 68, flex: "none", textAlign: "right", fontVariantNumeric: "tabular-nums",
     padding: "5px 7px", borderRadius: 8, border: "1px solid #E3E1D6", fontSize: 13, fontFamily: "inherit" };
+  const fillPct = (v, min, max) => `${((v - min) / (max - min)) * 100}%`;
+  const priceFill = { ...slider, "--fill": fillPct(priceMul, 0.6, 1.8) };
+  const inflFill = { ...slider, "--fill": fillPct(inflDelta, -3, 6) };
 
   return (
     <section style={{ background: "#fff", border: "1px solid #E89B2D", borderRadius: 14, padding: 20, margin: "16px 0",
-      boxShadow: "0 2px 14px rgba(232,155,45,.1)" }}>
-      <h2 style={{ fontSize: 15, margin: "0 0 4px", fontFamily: "Inter, system-ui, sans-serif", color: "#B4700F" }}>{t("audit_title", lang)}</h2>
+      boxShadow: "0 2px 4px rgba(20,42,33,.03), 0 10px 26px -12px rgba(232,155,45,.28)" }}>
+      <h2 style={{ fontSize: 15.5, margin: "0 0 4px", fontFamily: DISPLAY, fontWeight: 700, color: "#B4700F" }}>{t("audit_title", lang)}</h2>
       <p style={{ fontSize: 13, color: "#66756C", margin: "0 0 18px", lineHeight: 1.5 }}>{t("audit_sub", lang)}</p>
 
       <div style={{ display: "grid", gap: 18, marginBottom: 18 }}>
         <div>
           <div style={lbl}><span>{t("audit_price", lang)}</span><output style={val}>€{(basePrice * priceMul).toFixed(3)}/kWh</output></div>
           <div style={row}>
-            <input type="range" min="0.6" max="1.8" step="0.05" value={priceMul} style={slider}
+            <input type="range" className="ca-slider" min="0.6" max="1.8" step="0.05" value={priceMul} style={priceFill}
               onChange={e => setPriceMul(+e.target.value)} aria-label={t("audit_price", lang)} />
             <input type="number" step="0.001" min="0" style={numBox} value={(basePrice * priceMul).toFixed(3)}
               aria-label={t("audit_price", lang)}
@@ -64,7 +73,7 @@ export default function ClientAudit({ inputs, assumptions: E, lang }) {
         <div>
           <div style={lbl}><span>{t("audit_infl", lang)}</span><output style={val}>{(E.bands.expc.infl + inflDelta).toFixed(1)}%/yr</output></div>
           <div style={row}>
-            <input type="range" min="-3" max="6" step="0.5" value={inflDelta} style={slider}
+            <input type="range" className="ca-slider" min="-3" max="6" step="0.5" value={inflDelta} style={inflFill}
               onChange={e => setInflDelta(+e.target.value)} aria-label={t("audit_infl", lang)} />
             <input type="number" step="0.1" style={numBox} value={(E.bands.expc.infl + inflDelta).toFixed(1)}
               aria-label={t("audit_infl", lang)}
@@ -77,7 +86,7 @@ export default function ClientAudit({ inputs, assumptions: E, lang }) {
         {bands.map(([key, b, c]) => (
           <div key={key} style={{ background: "#F6F5F0", borderLeft: `4px solid ${c}`, borderRadius: 10, padding: "12px 12px" }}>
             <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: c }}>{t(key, lang)}</div>
-            <div style={{ fontSize: 22, fontFamily: "Inter, system-ui, sans-serif", fontWeight: 700, lineHeight: 1.1 }}>
+            <div style={{ fontSize: 22, fontFamily: DISPLAY, fontWeight: 800, lineHeight: 1.1 }}>
               {yrs(b.payback)} <small style={{ fontSize: 12, color: "#66756C", fontWeight: 500 }}>{t("pp_years", lang)}</small></div>
           </div>
         ))}
@@ -91,6 +100,23 @@ export default function ClientAudit({ inputs, assumptions: E, lang }) {
         </button>
       )}
       <p style={{ fontSize: 11.5, color: "#8A8F88", margin: "14px 0 0", lineHeight: 1.5 }}>{t("audit_note", lang)}</p>
+
+      {/* A custom thumb needs a real stylesheet — no inline-style object can
+          target ::-webkit-slider-thumb / ::-moz-range-thumb. This page
+          renders outside AppTheme (public route), so it can't reach the
+          app's own premium slider CSS either; this is a self-contained copy
+          of the same visual language instead. */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .ca-slider{-webkit-appearance:none;appearance:none;border-radius:99px;
+          background:linear-gradient(90deg,#E89B2D var(--fill,30%),#E3E1D6 var(--fill,30%))}
+        .ca-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;
+          border-radius:50%;background:#E89B2D;border:3px solid #fff;
+          box-shadow:0 0 0 1px #E89B2D,0 2px 6px rgba(20,42,33,.25);cursor:grab}
+        .ca-slider::-webkit-slider-thumb:active{cursor:grabbing;transform:scale(1.08)}
+        .ca-slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#E89B2D;
+          border:3px solid #fff;box-shadow:0 0 0 1px #E89B2D,0 2px 6px rgba(20,42,33,.25);cursor:grab}
+        .ca-slider::-moz-range-progress{height:6px;border-radius:99px;background:#E89B2D}
+      ` }} />
     </section>
   );
 }

@@ -500,6 +500,7 @@ const CSS = `
   .modal p.sub{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5}
   .link-row{display:flex;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:5px 5px 5px 13px;align-items:center;margin-bottom:16px}
   .link-row code{font-family:var(--font-d);font-size:13px;color:var(--green);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prop-refresh-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-6px 0 16px}
   .modal-acts{display:flex;gap:9px;flex-wrap:wrap}
   .modal-acts .btn{flex:1}
 
