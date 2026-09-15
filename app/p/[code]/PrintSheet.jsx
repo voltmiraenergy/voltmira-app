@@ -59,22 +59,36 @@ function ElectricalDiagramSVG({ rows, panel, inverter, nInv, phases, hasBattery,
   const MAX_ROWS = 6;
   const shown = rows.slice(0, MAX_ROWS);
   const extra = rows.length - shown.length;
-  const W = 720;
-  const ROW_H = 54, ROW_GAP = 8;
-  const colH = shown.length * ROW_H + Math.max(0, shown.length - 1) * ROW_GAP;
-  const extraH = extra > 0 ? 20 : 0;
-  const H = Math.max(120, colH + extraH) + 40;
-  const midY = H / 2;
-
-  const panelX = 12, panelW = 112, panelY = midY - 40, panelH = 80;
-  const colX = 190, colW = 220;
-  const colTop = (H - (colH + extraH)) / 2;
-  const invX = 478, invW = 122, invH = Math.min(96, colH), invY = midY - invH / 2;
-  const gridX = 664, gridY = hasBattery ? midY - 34 : midY;
-  const battX = 610, battW = 96, battH = 40, battY = midY + (hasBattery ? 26 : 0);
-
   const tr = (k, vars) => t(k, lang, vars);
-  const ok = "#1E6B4E", bad = "#C4543B", ink = "#142A21", muted = "#8A8574", line = "#D9D5C6";
+  const ok = "#1E6B4E", bad = "#C4543B", ink = "#142A21", muted = "#8A7F6E", edge = "#B8AF98", paper = "#FCFBF7";
+
+  // Every box is sized first, then vertically centered on ONE shared midline
+  // (graphMidY) — the bug this replaced came from positioning the battery box
+  // independently of the inverter it connects to, so their edges could cross.
+  // Connectors now always start exactly AT a box's edge, never from a point
+  // computed separately from where that box actually ended up.
+  const ROW_H = 62, ROW_GAP = 10;
+  const colH = shown.length * ROW_H + Math.max(0, shown.length - 1) * ROW_GAP;
+  const invH = Math.min(150, Math.max(92, colH));
+  const GRID_H = 34, BATT_H = 44, TERM_GAP = 14;
+  const clusterH = hasBattery ? GRID_H + TERM_GAP + BATT_H : GRID_H;
+  const graphH = Math.max(colH, invH, clusterH);
+
+  const PAD_TOP = 14, LABEL_H = 32, PAD_BOTTOM = 6, EXTRA_H = extra > 0 ? 16 : 0;
+  const H = PAD_TOP + graphH + LABEL_H + EXTRA_H + PAD_BOTTOM;
+  const graphMidY = PAD_TOP + graphH / 2;
+
+  const PAD_X = 14, GAP = 46;
+  const panelX = PAD_X, panelW = 106, panelY = graphMidY - graphH / 2, panelH = graphH;
+  const colX = panelX + panelW + GAP, colW = 232, colTop = graphMidY - colH / 2;
+  const invX = colX + colW + GAP, invW = 128, invY = graphMidY - invH / 2;
+  const clusterX = invX + invW + GAP, clusterW = 104, clusterTop = graphMidY - clusterH / 2;
+  const gridY = clusterTop, battY = clusterTop + GRID_H + TERM_GAP;
+  const W = clusterX + clusterW + PAD_X;
+  // Every connector from the inverter starts at its own right edge and
+  // elbows over — a straight line would only work when the target happens to
+  // sit at invMidY, which the old code assumed and the battery case violated.
+  const elbowX = invX + invW + GAP / 2;
 
   return (
     <svg className="p-chart p-elec" viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg">
@@ -84,68 +98,85 @@ function ElectricalDiagramSVG({ rows, panel, inverter, nInv, phases, hasBattery,
         </marker>
       </defs>
 
-      {/* panels */}
-      <rect x={panelX} y={panelY} width={panelW} height={panelH} rx="4" fill="#FCFBF7" stroke={line} />
-      <g fill="none" stroke={line} strokeWidth="1">
-        {[1, 2, 3].map((i) => <line key={"v" + i} x1={panelX + (panelW / 4) * i} y1={panelY + 4} x2={panelX + (panelW / 4) * i} y2={panelY + panelH - 4} />)}
-        <line x1={panelX + 4} y1={panelY + panelH / 2} x2={panelX + panelW - 4} y2={panelY + panelH / 2} />
-      </g>
-      <text x={panelX + panelW / 2} y={panelY + panelH + 16} textAnchor="middle" fontSize="10" fontWeight="700" fill={ink}>
+      {/* panel array — a small real grid (capped 3x4 for legibility), not a
+          literal per-module count; the label under it carries the real count */}
+      <rect x={panelX} y={panelY} width={panelW} height={panelH} rx="6" fill={paper} stroke={edge} strokeWidth="1.4" />
+      {(() => {
+        const cols = 3, gRows = Math.min(4, Math.max(2, shown.length + 1));
+        const gx0 = panelX + 12, gx1 = panelX + panelW - 12, gy0 = panelY + 12, gy1 = panelY + panelH - 12;
+        const cw = (gx1 - gx0) / cols, ch = (gy1 - gy0) / gRows;
+        const cells = [];
+        for (let r = 0; r < gRows; r++) for (let c = 0; c < cols; c++) {
+          cells.push(<rect key={`${r}-${c}`} x={gx0 + c * cw + 1} y={gy0 + r * ch + 1} width={cw - 2} height={ch - 2} rx="1" fill="#E4EFE9" stroke="#BFD6C8" strokeWidth="0.75" />);
+        }
+        return <g>{cells}</g>;
+      })()}
+      <text x={panelX + panelW / 2} y={panelY + panelH + 17} textAnchor="middle" fontSize="10.5" fontWeight="700" fill={ink}>
         {panel ? `${panel.brand} ${panel.model}` : ""}
       </text>
-      <text x={panelX + panelW / 2} y={panelY + panelH + 28} textAnchor="middle" fontSize="9" fill={muted}>
+      <text x={panelX + panelW / 2} y={panelY + panelH + 29} textAnchor="middle" fontSize="9.5" fill={muted}>
         {rows.reduce((a, r) => a + r.strings * r.modulesPerString, 0)} × {panel?.watt || 0} W
       </text>
 
-      {/* panels -> inputs */}
-      <path d={`M${panelX + panelW},${midY} H${colX - 10}`} stroke={muted} strokeWidth="1.3" fill="none" markerEnd="url(#eahead)" />
+      <path d={`M${panelX + panelW},${graphMidY} H${colX - 9}`} stroke={muted} strokeWidth="1.4" fill="none" markerEnd="url(#eahead)" />
 
       {/* MPPT input boxes, each a real row from stringInputs() */}
       {shown.map((r, i) => {
         const y = colTop + i * (ROW_H + ROW_GAP);
         const c = r.ok ? ok : bad;
+        const midRowY = y + ROW_H / 2;
         return (
           <g key={r.label}>
-            <rect x={colX} y={y} width={colW} height={ROW_H} rx="5" fill="#fff" stroke={c} strokeWidth={r.ok ? 1 : 1.4} />
-            <text x={colX + 10} y={y + 16} fontSize="10" fontWeight="700" fill={ink}>
+            <rect x={colX} y={y} width={colW} height={ROW_H} rx="6" fill="#fff" stroke={c} strokeWidth={r.ok ? 1.1 : 1.6} />
+            <circle cx={colX + 13} cy={y + 16} r="3.5" fill={c} />
+            <text x={colX + 22} y={y + 19} fontSize="10.5" fontWeight="700" fill={ink}>
               {tr("pdf_input_n", { n: r.label })}
             </text>
-            <text x={colX + colW - 10} y={y + 16} textAnchor="end" fontSize="9" fill={muted}>
-              {r.strings} × {r.modulesPerString}
+            <text x={colX + colW - 12} y={y + 19} textAnchor="end" fontSize="9.5" fill={muted}>
+              {r.strings} × {r.modulesPerString} {tr("pdf_elec_modules")}
             </text>
-            <text x={colX + 10} y={y + 32} fontSize="9" fill={c}>
-              {Math.round(r.vString)}V {r.vmppHotActual != null ? `(${Math.round(r.vmppHotActual)}V hot)` : ""} / {r.maxDcV}V
+            <line x1={colX + 12} y1={y + 27} x2={colX + colW - 12} y2={y + 27} stroke="#EDEAE0" strokeWidth="1" />
+            <text x={colX + 12} y={y + 41} fontSize="9.5" fill={ink}>
+              <tspan fill={muted}>V </tspan>{Math.round(r.vString)}{r.vmppHotActual != null ? ` (${Math.round(r.vmppHotActual)})` : ""} <tspan fill={muted}>/ {r.maxDcV}</tspan>
             </text>
-            <text x={colX + 10} y={y + 45} fontSize="9" fill={r.currentOk ? muted : bad}>
-              {r.iscTotalA.toFixed(1)} A{r.maxInputCurrentA ? ` / ${r.maxInputCurrentA} A` : ""}
+            <text x={colX + 12} y={y + 55} fontSize="9.5" fill={ink}>
+              <tspan fill={muted}>A </tspan>{r.iscTotalA.toFixed(1)}{r.maxInputCurrentA ? <tspan fill={muted}> / {r.maxInputCurrentA}</tspan> : null}
             </text>
-            <path d={`M${colX + colW},${y + ROW_H / 2} H${invX - 10}`} stroke={muted} strokeWidth="1.1" fill="none" markerEnd="url(#eahead)" />
+            <path d={`M${colX + colW},${midRowY} H${invX - 9}`} stroke={muted} strokeWidth="1.2" fill="none" markerEnd="url(#eahead)" />
           </g>
         );
       })}
       {extra > 0 && (
-        <text x={colX + colW / 2} y={colTop + colH + 14} textAnchor="middle" fontSize="9.5" fill={muted} fontStyle="italic">
+        <text x={colX + colW / 2} y={colTop + colH + 16} textAnchor="middle" fontSize="9.5" fill={muted} fontStyle="italic">
           {tr("pdf_elec_more", { n: extra })}
         </text>
       )}
 
       {/* inverter */}
-      <rect x={invX} y={invY} width={invW} height={invH} rx="5" fill="#EFF5F1" stroke={ok} strokeWidth="1.3" />
-      <text x={invX + invW / 2} y={invY + invH / 2 - 8} textAnchor="middle" fontSize="10.5" fontWeight="700" fill={ink}>
-        {inverter?.brand} {inverter?.model}
+      <rect x={invX} y={invY} width={invW} height={invH} rx="6" fill="#EFF5F1" stroke={ok} strokeWidth="1.4" />
+      <text x={invX + invW / 2} y={invY + invH / 2 - 7} textAnchor="middle" fontSize="10.5" fontWeight="700" fill={ink}>
+        {inverter?.brand}
       </text>
-      <text x={invX + invW / 2} y={invY + invH / 2 + 8} textAnchor="middle" fontSize="9.5" fill={muted}>
+      <text x={invX + invW / 2} y={invY + invH / 2 + 7} textAnchor="middle" fontSize="9.5" fill={ink}>
+        {inverter?.model}
+      </text>
+      <text x={invX + invW / 2} y={invY + invH / 2 + 23} textAnchor="middle" fontSize="9" fill={muted}>
         {inverter ? `${(inverter.kw * nInv).toFixed(1)} kW · ${phases} ${t3phase(phases, lang)}` : ""}
       </text>
 
-      {/* inverter -> grid (+ battery, if hybrid) */}
-      <path d={`M${invX + invW},${gridY} H${gridX - 8}`} stroke={muted} strokeWidth="1.3" fill="none" markerEnd="url(#eahead)" />
-      <text x={gridX} y={gridY + 4} fontSize="10" fontWeight="700" fill={ink}>{tr("pdf_elec_grid")}</text>
+      {/* inverter -> grid terminal (+ battery terminal, if hybrid) — both
+          elbow from the SAME point on the inverter's own right edge, so
+          neither line can ever originate inside the box or cross it */}
+      <path d={`M${invX + invW},${graphMidY} H${elbowX} V${gridY + GRID_H / 2} H${clusterX - 8}`}
+        stroke={muted} strokeWidth="1.3" fill="none" markerEnd="url(#eahead)" />
+      <rect x={clusterX} y={gridY} width={clusterW} height={GRID_H} rx="6" fill={paper} stroke={edge} strokeWidth="1.2" />
+      <text x={clusterX + clusterW / 2} y={gridY + GRID_H / 2 + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill={ink}>{tr("pdf_elec_grid")}</text>
       {hasBattery && (
         <>
-          <path d={`M${invX + invW / 2},${invY + invH} V${battY + battH / 2} H${battX - 8}`} stroke={muted} strokeWidth="1.3" fill="none" markerEnd="url(#eahead)" />
-          <rect x={battX} y={battY} width={battW} height={battH} rx="5" fill="#FBF3E4" stroke="#C97F14" strokeWidth="1.2" />
-          <text x={battX + battW / 2} y={battY + battH / 2 + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="#C97F14">{kindLabel("battery", lang)}</text>
+          <path d={`M${invX + invW},${graphMidY} H${elbowX} V${battY + BATT_H / 2} H${clusterX - 8}`}
+            stroke={muted} strokeWidth="1.3" fill="none" markerEnd="url(#eahead)" />
+          <rect x={clusterX} y={battY} width={clusterW} height={BATT_H} rx="6" fill="#FBF3E4" stroke="#C97F14" strokeWidth="1.3" />
+          <text x={clusterX + clusterW / 2} y={battY + BATT_H / 2 + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="#C97F14">{kindLabel("battery", lang)}</text>
         </>
       )}
     </svg>
