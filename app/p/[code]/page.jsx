@@ -2,6 +2,7 @@
 // Server-renders the proposal from the API, then a small client component
 // sends real tracking events (open, heartbeat every 15s, battery toggle, accept).
 import Tracker from "./tracker.jsx";
+import QaWidget from "./QaWidget.jsx";
 import AutoPrint from "./AutoPrint.jsx";
 import PrintSheet from "./PrintSheet.jsx";
 import ClientAudit from "./ClientAudit.jsx";
@@ -278,6 +279,12 @@ export default async function ProposalPage({ params, searchParams }) {
         )}
         <Tracker code={params.code} accepted={accepted} lang={lang} signedName={signedName} signedDate={signedDate} />
       </section>
+
+      {/* Grounded in THIS proposal's real, frozen numbers via a Make.com
+          scenario the installer configures (docs/MAKE_AUTOMATIONS.md) — see
+          QaWidget.jsx's own comment for why its output is never rendered as
+          HTML. Live-view only, never on the printed/emailed PDF. */}
+      <QaWidget code={params.code} lang={lang} preparedBy={preparedBy} />
 
       {/* Growth loop: every free-plan proposal a homeowner opens carries a
           tasteful VoltMira credit. Pro/Team white-labels it away. */}

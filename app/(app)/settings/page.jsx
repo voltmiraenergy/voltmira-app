@@ -104,6 +104,7 @@ export default function Settings() {
         default_market: co.default_market, currency: co.currency, lang: normLang(co.lang),
         subsidy_amount_ron: co.subsidy_amount_ron, prosumer_limit_kw: co.prosumer_limit_kw,
         notify_open: co.notify_open !== false,
+        nudge_enabled: co.nudge_enabled === true,
         // company legal details for invoicing
         legal_name: co.legal_name, reg_no: co.reg_no, vat_no: co.vat_no,
         legal_address: co.legal_address, iban: co.iban, invoice_prefix: co.invoice_prefix,
@@ -262,6 +263,16 @@ export default function Settings() {
             onChange={e => { setCo({ ...co, notify_open: e.target.checked }); touch(); }} />
           <span className="toggle-pill" />
           <span className="txt">{t("s_notify", lang)}<small>{t("s_notify_note", lang)}</small></span>
+        </label>
+        {/* Opt-IN, unlike notify_open above — this emails a real CLIENT under
+            this company's own brand with AI-phrased copy nobody here wrote,
+            so it must default off (co.nudge_enabled === true, not !== false)
+            until someone explicitly turns it on. See add-proposal-nudges.sql. */}
+        <label className="check" style={{ marginTop: 10 }}>
+          <input type="checkbox" checked={co.nudge_enabled === true}
+            onChange={e => { setCo({ ...co, nudge_enabled: e.target.checked }); touch(); }} />
+          <span className="toggle-pill" />
+          <span className="txt">{t("s_nudge", lang)}<small>{t("s_nudge_note", lang)}</small></span>
         </label>
         <div className="set-note">{t("co_note", lang)}</div>
       </section>

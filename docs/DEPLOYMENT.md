@@ -51,6 +51,19 @@ This 30-line function is the single biggest retention feature you can ship.
 ```
 The widget POSTs to `/api/widget-lead` (rate-limited, honeypot-protected).
 
+## 8. Make.com automations (client Q&A + follow-up nudges)
+Two optional features (a live "ask about your offer" widget on `/p/[code]`,
+and a scheduled unsigned-proposal nudge email) are orchestrated by a Make.com
+scenario you build yourself, not by code in this repo — this app only
+exposes the narrow endpoints Make.com calls into. Both are fully inert
+(harmless fallback / refuses every request) until you configure them.
+1. Run `supabase/add-proposal-nudges.sql`.
+2. Set `AUTOMATION_API_KEY` and `MAKE_QA_WEBHOOK_URL` (see `.env.example`).
+3. Follow `docs/MAKE_AUTOMATIONS.md` for the exact Make.com module chain and
+   the system prompts to paste in for both scenarios.
+4. Each installer turns the nurture email on themselves, per company, in
+   Settings — it's off by default because it emails their real clients.
+
 ## Porting the prototype UI
 The single-file prototype's editor (sliders, bands, Sales Mode) is vanilla JS
 around the same engine. Port screen-by-screen into `app/(app)/projects/`,

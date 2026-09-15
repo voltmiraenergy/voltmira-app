@@ -27,6 +27,9 @@ have an EU privacy lawyer review before scale (€500–1000, worth it).
 - [ ] Records of processing activities (one page: what data, why, where, how long)
 - [ ] Breach response plan: who emails users, within 72h notification to DPA
 - [ ] Sub-processor list published (Supabase, Vercel, Stripe, Resend)
+- [ ] If Make.com automations are enabled (`docs/MAKE_AUTOMATIONS.md`): Make.com
+      and its LLM provider added to the sub-processor list; EU-region
+      processing enabled in Make.com if available on your plan
 - [ ] The public proposal page shows only what the installer chose to share
 
 ## Moldova note

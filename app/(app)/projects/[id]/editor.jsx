@@ -3,7 +3,7 @@
 // engine. Autosaves to Supabase (debounced 600ms). PVGIS button pulls real yield
 // for the address. Proposal button creates the tracked link. Visual language
 // matches the live demo (editor grid, cards, bands, financing, modal).
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
 import { createProposal, regenerateProposal, saveQuoteTemplate } from "../../../../lib/actions.js";
 import AddressField from "../../../../components/AddressField.jsx";
@@ -93,7 +93,7 @@ function Donut({ self, prod0, cons, lang }) {
 export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", signed = null, calibration = null }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
-    title: initial.title, client: initial.client_name, address: initial.address,
+    title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
     // Coordinates of the resolved address pick. Null until someone picks a
     // suggestion (or until add-project-coords.sql has been run); PVGIS then
     // uses them directly instead of re-geocoding the text every time.
@@ -249,6 +249,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           .then(({ error: e5 }) => { if (e5) console.warn("coordinates not stored (run add-project-coords.sql?):", e5.message); });
         sb.from("projects").update({ site_design: next.siteDesign || {} }).eq("id", initial.id)
           .then(({ error: e6 }) => { if (e6) console.warn("site design not stored (run add-site-design.sql?):", e6.message); });
+        sb.from("projects").update({ client_email: next.clientEmail || "" }).eq("id", initial.id)
+          .then(({ error: e7 }) => { if (e7) console.warn("client email not stored (run add-proposal-nudges.sql?):", e7.message); });
       }
     } catch (e) {
       setSaved("error");
@@ -342,6 +344,13 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // aspect params instead of always taking the route's 35°/south default.
   // Per-plane yields are combined panel-count-weighted into the single
   // yieldOverride/monthlyYieldShape the engine already consumes.
+  // Lets the Site Designer preview real payback/ROI/CO2 for whatever kW its
+  // current drawn layout implies — same engine call as the main quote above,
+  // just with kw swapped for the layout's, so the two can never disagree.
+  const computeSiteDesignQuote = useCallback((kw) =>
+    quote({ ...p, kw, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) }, E),
+    [p, E, feedOverride]);
+
   async function applySiteDesignLayout(layout) {
     if (!layout || !layout.totalCount) return;
     setSiteDesignApplying(true);
@@ -542,6 +551,13 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <h3>{tr("client_site")}</h3>
             <div className="field"><label>{tr("client_name")}</label>
               <input className="input" value={p.client} onChange={e => update({ client: e.target.value })} /></div>
+            {/* Real prerequisite for the follow-up nudge automation (if
+                enabled in Settings) — without a stored address there's
+                nowhere to send a reminder. Optional: nudges just skip a
+                proposal that has none. */}
+            <div className="field"><label>{tr("client_email")}</label>
+              <input type="email" className="input" value={p.clientEmail || ""} placeholder={tr("client_email_ph")}
+                onChange={e => update({ clientEmail: e.target.value })} /></div>
             <div className="field"><label>{tr("address")}</label>
               <AddressField
                 lang={lang}
@@ -956,7 +972,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <h4>{tr("site_designer_title")}</h4>
             <SiteDesigner lang={lang} lat={p.lat} lon={p.lon} siteDesign={p.siteDesign}
               onChange={(sd) => update({ siteDesign: sd })}
-              onApply={applySiteDesignLayout} applying={siteDesignApplying} />
+              onApply={applySiteDesignLayout} applying={siteDesignApplying}
+              projectInputs={p} onComputeQuote={computeSiteDesignQuote} />
             <div className="modal-acts" style={{ marginTop: 14 }}>
               <button className="btn ghost" onClick={() => setSiteDesignerOpen(false)}>{tr("close")}</button>
             </div>

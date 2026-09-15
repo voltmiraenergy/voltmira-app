@@ -177,7 +177,14 @@ export async function GET(req, { params }) {
       afmSubsidy: !!prop.snapshot.afmSubsidy,
     },
     options,
-    bom: Array.isArray(prop.snapshot.bom) ? prop.snapshot.bom : [],
+    // Never the installer's purchase cost or margin — this is a public,
+    // capability-URL endpoint (the code IS the auth), and unit_price/
+    // cost_price were never meant to reach it. Nothing client-facing has
+    // ever rendered them (PrintSheet.jsx/page.jsx only read kind/brand/
+    // model/spec/qty), so this was a latent leak in the raw JSON response
+    // rather than something anything legitimate depended on.
+    bom: (Array.isArray(prop.snapshot.bom) ? prop.snapshot.bom : [])
+      .map(({ unit_price, cost_price, ...safe }) => safe),
     // Real, drawn roof area/orientation (Site Designer), frozen at "Generate
     // offer" time same as everything else here — undefined on any proposal
     // made before that plane existed, or with no single unambiguous plane.
