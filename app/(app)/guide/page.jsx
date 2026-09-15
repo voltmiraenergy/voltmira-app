@@ -97,7 +97,7 @@ const HTML = {
     <div class="row"><div class="k">Yearly consumption <small>kWh / year</small></div><div class="v">How much power they use per year — read the annual total off their bill. This decides how much solar they use vs. export.</div></div>
     <div class="row"><div class="k">Electricity price <small>€ / kWh</small></div><div class="v">What they pay per kWh. Pre-filled with the market default (Moldova ≈ €0.18); set their real bill for accuracy.</div></div>
     <div class="row"><div class="k">Battery <small>optional, kWh</small></div><div class="v">Adds storage. Enter usable capacity — cost and benefit both scale with it. Worth it in Moldova (see below).</div></div>
-    <div class="row"><div class="k">Casa Verde grant <small>optional</small></div><div class="v">If the client qualifies for a subsidy, set the amount in Settings and switch it on — it comes off the up-front cost.</div></div>
+    <div class="row"><div class="k">Bill of materials <small>optional</small></div><div class="v">Pick the real panels, inverter and battery from your catalog or the supplier database — or auto-fill a whole system for the size you've set. Shows the margin between the quote price and what the equipment actually costs.</div></div>
   </div>
   <div class="g-tip"><p>Type the client's <b>address</b> and VoltMira pulls the real sunlight for that exact roof from satellite data — numbers for <i>their</i> house, not a national average.</p></div>
 </section>
@@ -127,7 +127,7 @@ const HTML = {
     <p><b>Self-consumed %.</b> The share of solar the household actually <i>uses</i> instead of exporting. Higher is better — self-used power is worth full retail price, exports earn a low feed rate. A very low number (say 8%) means the system is <b>too big</b> for that home; downsize it, or add a battery.</p>
   </div>
   <div class="g-card">
-    <p><b>Battery &amp; the Moldova advantage.</b> Since Moldova moved to <b>net billing</b> (2024), exported power earns ≈ €0.07/kWh while power you use is worth ≈ €0.18. A battery stores daytime surplus for the evening, turning cheap exports into full-price self-use — so in Moldova a battery genuinely adds savings.</p>
+    <p><b>Battery &amp; the Moldova advantage.</b> Since Moldova moved to <b>net billing</b> (2024), exported power is bought back at the operator's published monthly price — around <b>2.5 lei/kWh</b> (≈ €0.13), lowest in spring and summer when a roof exports most — while power you use is worth the retail tariff, ≈ 3.66 lei (€0.18). The gap of roughly <b>1.2 lei/kWh</b> is what a battery earns on every stored kWh: not the whole tariff, as offers often claim, but enough that in Moldova a battery genuinely adds savings.</p>
     <div class="g-tip"><p>Size the battery to cover the <b>evening</b>, not to be as big as possible — an oversized battery just adds cost.</p></div>
   </div>
 </section>
@@ -207,7 +207,7 @@ const HTML = {
     <div class="row"><div class="k">Consum anual <small>kWh / an</small></div><div class="v">Cât curent folosește pe an — ia totalul anual de pe factură. Decide cât din solar folosește vs. exportă.</div></div>
     <div class="row"><div class="k">Preț energie <small>€ / kWh</small></div><div class="v">Cât plătește pe kWh. Pre-completat cu valoarea implicită a pieței (Moldova ≈ €0,18); pune prețul real pentru acuratețe.</div></div>
     <div class="row"><div class="k">Baterie <small>opțional, kWh</small></div><div class="v">Adaugă stocare. Introdu capacitatea utilă — și costul, și beneficiul cresc cu ea. Merită în Moldova (vezi mai jos).</div></div>
-    <div class="row"><div class="k">Grant Casa Verde <small>opțional</small></div><div class="v">Dacă clientul se califică pentru subvenție, setează suma în Setări și activeaz-o — se scade din costul inițial.</div></div>
+    <div class="row"><div class="k">Deviz de echipamente <small>opțional</small></div><div class="v">Alege panourile, invertorul și bateria reale din catalogul tău sau din baza de date a furnizorilor — sau completează automat un sistem întreg pentru puterea aleasă. Arată marja dintre prețul din ofertă și cât costă efectiv echipamentul.</div></div>
   </div>
   <div class="g-tip"><p>Scrie <b>adresa</b> clientului și VoltMira ia lumina solară reală pentru acel acoperiș din date satelitare — cifre pentru casa <i>lui</i>, nu o medie națională.</p></div>
 </section>
@@ -237,7 +237,7 @@ const HTML = {
     <p><b>% autoconsum.</b> Cota de solar pe care gospodăria chiar o <i>folosește</i> în loc s-o exporte. Mai mare e mai bine — energia autoconsumată valorează prețul întreg de retail, exporturile aduc un tarif mic. Un număr foarte mic (să zicem 8%) înseamnă că sistemul e <b>prea mare</b> pentru acea casă; micșorează-l sau adaugă o baterie.</p>
   </div>
   <div class="g-card">
-    <p><b>Bateria &amp; avantajul Moldovei.</b> De când Moldova a trecut la <b>facturare netă</b> (2024), energia exportată aduce ≈ €0,07/kWh, iar cea pe care o folosești valorează ≈ €0,18. O baterie stochează surplusul de zi pentru seară, transformând exporturile ieftine în autoconsum la preț întreg — așa că în Moldova bateria chiar adaugă economii.</p>
+    <p><b>Bateria &amp; avantajul Moldovei.</b> De când Moldova a trecut la <b>facturare netă</b> (2024), energia exportată se răscumpără la prețul mediu lunar publicat de operator — în jur de <b>2,5 lei/kWh</b> (≈ €0,13), cel mai mic primăvara și vara, exact când acoperișul exportă cel mai mult — iar energia pe care o folosești valorează tariful din factură, ≈ 3,66 lei (€0,18). Diferența de circa <b>1,2 lei/kWh</b> e tot ce câștigă bateria pe fiecare kWh stocat: nu tariful întreg, cum se scrie des în oferte, dar suficient cât în Moldova bateria chiar să adauge economii.</p>
     <div class="g-tip"><p>Dimensionează bateria ca să acopere <b>seara</b>, nu ca să fie cât mai mare — o baterie supradimensionată doar adaugă cost.</p></div>
   </div>
 </section>
@@ -317,7 +317,7 @@ const HTML = {
     <div class="row"><div class="k">Годовое потребление <small>кВт·ч / год</small></div><div class="v">Сколько энергии он тратит в год — возьмите годовой итог из счёта. Определяет, сколько солнечной энергии используется, а сколько экспортируется.</div></div>
     <div class="row"><div class="k">Цена электроэнергии <small>€ / кВт·ч</small></div><div class="v">Сколько он платит за кВт·ч. Заполнено значением по умолчанию (Молдова ≈ €0,18); укажите реальную цену из счёта.</div></div>
     <div class="row"><div class="k">Батарея <small>необязательно, кВт·ч</small></div><div class="v">Добавляет накопитель. Введите полезную ёмкость — и стоимость, и выгода растут вместе с ней. В Молдове окупается (см. ниже).</div></div>
-    <div class="row"><div class="k">Грант Casa Verde <small>необязательно</small></div><div class="v">Если клиент имеет право на субсидию, задайте сумму в Настройках и включите её — она вычитается из первоначальной стоимости.</div></div>
+    <div class="row"><div class="k">Смета оборудования <small>необязательно</small></div><div class="v">Выберите реальные панели, инвертор и батарею из своего каталога или из базы поставщиков — либо заполните систему автоматически под выбранную мощность. Показывает разницу между ценой предложения и реальной стоимостью оборудования.</div></div>
   </div>
   <div class="g-tip"><p>Введите <b>адрес</b> клиента, и VoltMira возьмёт реальную инсоляцию именно для этой крыши из спутниковых данных — цифры для <i>его</i> дома, а не средние по стране.</p></div>
 </section>
@@ -347,7 +347,7 @@ const HTML = {
     <p><b>% самопотребления.</b> Доля солнечной энергии, которую дом реально <i>использует</i>, а не экспортирует. Больше — лучше: самопотреблённая энергия стоит полную розничную цену, экспорт оплачивается по низкому тарифу. Очень низкое значение (скажем, 8%) означает, что система <b>слишком большая</b> для этого дома; уменьшите её или добавьте батарею.</p>
   </div>
   <div class="g-card">
-    <p><b>Батарея &amp; преимущество Молдовы.</b> С тех пор как Молдова перешла на <b>нетто-биллинг</b> (2024), экспортируемая энергия приносит ≈ €0,07/кВт·ч, а используемая вами стоит ≈ €0,18. Батарея запасает дневной избыток на вечер, превращая дешёвый экспорт в самопотребление по полной цене — поэтому в Молдове батарея действительно добавляет экономию.</p>
+    <p><b>Батарея &amp; преимущество Молдовы.</b> С тех пор как Молдова перешла на <b>нетто-биллинг</b> (2024), экспортируемая энергия выкупается по публикуемой оператором среднемесячной цене — около <b>2,5 лей/кВт·ч</b> (≈ €0,13), и ниже всего весной и летом, когда крыша отдаёт больше всего — а используемая вами стоит розничный тариф, ≈ 3,66 лей (€0,18). Разрыв примерно в <b>1,2 лей/кВт·ч</b> — это и есть заработок батареи на каждом запасённом кВт·ч: не весь тариф, как часто пишут в предложениях, но достаточно, чтобы в Молдове батарея действительно добавляла экономию.</p>
     <div class="g-tip"><p>Подбирайте батарею под <b>вечер</b>, а не «как можно больше» — избыточная батарея лишь добавляет затраты.</p></div>
   </div>
 </section>

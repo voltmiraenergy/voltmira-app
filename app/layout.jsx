@@ -3,6 +3,21 @@ import { Analytics } from "@vercel/analytics/next";
 export const metadata = {
   title: "VoltMira — Solar quoting your clients can fact-check",
   description: "Honest three-band payback estimates, tracked proposals, and real PVGIS data for solar installers.",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "VoltMira" },
+};
+
+// viewportFit:"cover" is the actual fix for the bottom-tab-bar/safe-area
+// issue: without it, env(safe-area-inset-bottom) is always 0 (the OS quietly
+// keeps the page above the home-indicator strip for you, so there's nothing
+// to inset for) — but a Home Screen icon opened without appleWebApp above
+// still runs inside Safari's own minimal-UI chrome, which can visually
+// collide with a fixed bottom bar as it shows/hides on scroll. Both changes
+// together make it a true standalone app (no Safari chrome to collide with)
+// AND give the CSS a real inset value to push its own bottom nav clear of the
+// home indicator. Existing bookmarks need to be re-added to the Home Screen
+// to pick up standalone mode — this can't retrofit an icon someone already added.
+export const viewport = {
+  width: "device-width", initialScale: 1, viewportFit: "cover",
 };
 
 // App-wide theme tokens. The authenticated app (sidebar + pages) reads these via
@@ -65,16 +80,25 @@ const THEME_VARS = `
 `;
 
 // Runs before paint to set the theme attribute — prevents a light-then-dark flash.
-const NO_FLASH = `(function(){try{var t=localStorage.getItem("voltmira_theme");if(t!=="dark"&&t!=="light"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`;
+// Also syncs <meta name="theme-color">, same as the landing page: in standalone
+// (Home Screen) mode that color paints the status bar strip itself, so a
+// stale light value behind a dark-mode page reads as a visible seam, not just
+// a missed nicety.
+const NO_FLASH = `(function(){try{var t=localStorage.getItem("voltmira_theme");if(t!=="dark"&&t!=="light"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0F1310":"#142A21");}catch(e){}})();`;
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        <meta name="theme-color" content="#142A21" />
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH }} />
         <style dangerouslySetInnerHTML={{ __html: THEME_VARS }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* Inter Tight is the display face on /login (var(--d)); Google only ships
+            the woff2 for faces a page actually renders, so pages that never use it
+            pay nothing beyond a slightly longer stylesheet URL. */}
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body style={{ margin: 0 }}>{children}<Analytics /></body>
     </html>

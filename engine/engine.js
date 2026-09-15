@@ -14,12 +14,20 @@
 // each proposal freezes the numbers it was built with.
 // Moldova is the primary market (net billing since 2024-01-01: surplus paid at the
 // low producer price, consumption billed at retail — which is why a battery pays
-// off here). Numbers sourced 2026-07 from ANRE / Premier Energy / pv-magazine:
-//   MD retail ≈ 3.59 lei/kWh (Premier, central/south) ≈ €0.18; producer/export
-//   price ≈ 1.16–1.44 lei (solar auction €0.064 / ceiling €0.073) ≈ €0.07.
+// off here). MD retail ≈ 3.59 lei/kWh (Premier, central/south) ≈ €0.18.
+//
+// MD `feed` was €0.07, taken from the solar AUCTION ceiling (€0.064–0.073). That
+// is the wrong series for a prosumer: an auction PPA prices utility-scale
+// generation, while a rooftop's surplus is bought at the operator's published
+// "preț mediu lunar de procurare a energiei livrate de prosumatori". Premier
+// Energy Distribution's own table (see lib/prosumerPrice.js) gives 2.13–3.06
+// lei/kWh over the trailing twelve months. Weighted by when a PV system actually
+// exports — the price bottoms out in spring, exactly when surplus peaks — that
+// is 2.51 lei/kWh ≈ €0.127, which is what ships here. Pass `feedOverride` to
+// price a specific contract instead.
 // RO stays 1:1 net metering. All values are editable per company in Settings.
 export const MARKETS = {
-  MD: { name: "Moldova", scheme: "Net billing",      feed: 0.07,  oneToOne: false, defaultPrice: 0.18, subsidyKey: "subsidyAmountMdl", subsidyFx: "MDL", prosumer: true },
+  MD: { name: "Moldova", scheme: "Net billing",      feed: 0.127, oneToOne: false, defaultPrice: 0.18, subsidyKey: "subsidyAmountMdl", subsidyFx: "MDL", prosumer: true },
   RO: { name: "Romania", scheme: "Net metering 1:1", feed: 0.036, oneToOne: true,  defaultPrice: 0.21, subsidyKey: "subsidyAmountRon", subsidyFx: "RON", prosumer: true },
 };
 
@@ -38,6 +46,8 @@ export function defaultEngineSettings() {
     subsidyAmountRon: 20000,   // RO — Casa Verde / AFM grant (RON)
     subsidyAmountMdl: 0,       // MD — local prosumer grant (MDL); 0 until the installer sets their programme
     quoteValidityDays: 30,     // a sent quote is "valid until" sentAt + this; older = stale
+    financeRatePct: 9,      // annual interest rate assumed for the monthly-payment estimate — a starting default like costPerKw, editable per company; never presented to a client as a real loan offer
+    financeTermYears: 10,   // loan term assumed for the same estimate
     bands: {
       pess: { ym: 0.92, degr: 0.8, infl: 0 },
       expc: { ym: 1.00, degr: 0.5, infl: 3 },
@@ -61,12 +71,16 @@ export function effectiveConsumption(p) {
  *   useMonthly, consMonthly[12], afmSubsidy,
  *   yieldOverride?  — kWh/kWp/yr from PVGIS for this exact location (replaces baseYield)
  *   monthlyYieldShape? — optional 12 monthly fractions from PVGIS (replaces SOLAR_SEASON)
+ *   feedOverride?   — EUR/kWh paid for exported surplus, replacing the market default.
+ *                     Use it to price a specific supply contract, or the operator's
+ *                     published monthly buy-back weighted by this site's export shape.
  * @param {object} E engine settings (defaultEngineSettings shape)
  * @param {'pess'|'expc'|'opti'} bandKey
  */
 export function simulate(p, E, bandKey) {
   const b = E.bands[bandKey] || E.bands.expc;
   const mkt = MARKETS[p.market] || MARKETS.MD;
+  const feed = Number(p.feedOverride) > 0 ? Number(p.feedOverride) : mkt.feed;
   // Sanitize numeric inputs: a blank editor field, a stale DB value or a missing
   // param must never leak NaN into a proposal or PDF. Clamp to non-negative — a
   // negative system size or price is meaningless, not a discount.
@@ -171,9 +185,9 @@ export function simulate(p, E, bandKey) {
     if (mkt.oneToOne) {
       const imports = Math.max(0, cons - selfK);
       const credited = Math.min(expK, imports);
-      val = selfK * priceY + credited * priceY + (expK - credited) * mkt.feed;
+      val = selfK * priceY + credited * priceY + (expK - credited) * feed;
     } else {
-      val = selfK * priceY + expK * mkt.feed;
+      val = selfK * priceY + expK * feed;
     }
     const opexY = opexEur0 * Math.pow(1 + b.infl / 100, y - 1);
     const net = val - opexY;
@@ -210,6 +224,28 @@ export function quote(p, E) {
     e: simulate(p, E, "expc"),
     o: simulate(p, E, "opti"),
   };
+}
+
+/**
+ * Standard amortized monthly loan payment: M = P·r(1+r)^n / ((1+r)^n − 1),
+ * degrading to P/n at 0% (the textbook formula divides by zero there).
+ * Not a loan offer — an estimate from the installer's own configured
+ * rate/term (financeRatePct/financeTermYears in engine settings), the same
+ * way costPerKw is an editable starting assumption, not a verified market
+ * rate. Callers must label it as an estimate, never a bank quote.
+ * @param {number} principal EUR, the amount financed
+ * @param {number} annualRatePct e.g. 9 for 9%/yr — 0 is a valid, interest-free case
+ * @param {number} termYears loan length
+ * @returns {number} monthly payment in EUR, or 0 for a non-positive principal/term
+ */
+export function amortizedMonthlyPayment(principal, annualRatePct, termYears) {
+  const p = Math.max(0, Number(principal) || 0);
+  const n = Math.max(0, Number(termYears) || 0) * 12;
+  if (p <= 0 || n <= 0) return 0;
+  const r = Math.max(0, Number(annualRatePct) || 0) / 100 / 12;
+  if (r === 0) return p / n;
+  const factor = Math.pow(1 + r, n);
+  return (p * r * factor) / (factor - 1);
 }
 
 /** Display-currency formatting (UI layer). Engine stays in EUR. */

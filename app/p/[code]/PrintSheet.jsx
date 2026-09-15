@@ -6,6 +6,17 @@
 // mobile proposal when ?print=1; AutoPrint fires the save-as-PDF dialog.
 import { t } from "../../../lib/i18n.js";
 import { fmtDate } from "../../../lib/tz.js";
+import { SOLAR_SEASON, FX, effectiveConsumption, amortizedMonthlyPayment } from "@voltmira/engine";
+import { designCheck, designCheckRows, designCheckLead, stringInputs } from "../../../lib/designCheck.js";
+import { kindLabel, bomLineText, surplusRevenue } from "../../../lib/quoteAnalysis.js";
+import { findWarrantyInfo } from "../../../lib/supplierCatalog.js";
+import { backupHours } from "../../../lib/batteryBackup.js";
+import { compassLabel } from "../../../lib/roofLayout.js";
+import {
+  latestSeasonalMdl, weightedExportPriceMdl, weightedExportPriceEur,
+  flatAverageMdl, storageSpreadMdl, MONTHS_RO, BUYBACK_SOURCE,
+} from "../../../lib/prosumerPrice.js";
+import { CashflowSVG, MonthlySVG } from "./charts.jsx";
 
 // Per-market export data (same table as the demo's MARKETS).
 const MKT = {
@@ -19,81 +30,420 @@ const MKT = {
 // would be a tofu box on a container with no system fonts. The ordinary "2" IS
 // in Inter, so subscript it with markup instead of relying on a glyph we don't
 // ship.
+// "1 fază" vs "3 faze" — the catalog only ever ships 1-phase or 3-phase gear,
+// so this doesn't need the full Slavic plural-form ladder, just singular vs.
+// the one plural each language actually uses here.
+function t3phase(n, lang) {
+  if (lang === "en") return n === 1 ? "phase" : "phases";
+  if (lang === "ru") return n === 1 ? "фаза" : "фазы";
+  return n === 1 ? "fază" : "faze";
+}
+
 function co2(text) {
   const i = (text || "").indexOf("CO2");
   if (i < 0) return text;
   return <>{text.slice(0, i)}CO<sub>2</sub>{text.slice(i + 3)}</>;
 }
 
-function CashflowSVG({ bands, cost, horizon, lang }) {
-  const W = 720, H = 185, PADX = 12, PADT = 10, PADB = 22;
-  const rowsP = bands.pess.rows || [], rowsE = bands.expc.rows || [], rowsO = bands.opti.rows || [];
-  const all = [...rowsP, ...rowsE, ...rowsO, -cost, 0];
-  const mn = Math.min(...all), mx = Math.max(...all), sp = (mx - mn) || 1;
-  const X = (i) => PADX + (i / Math.max(1, horizon - 1)) * (W - 2 * PADX);
-  const Y = (v) => PADT + (1 - (v - mn) / sp) * (H - PADT - PADB);
-  const ln = (r) => r.map((v, i) => (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1)).join(" ");
-  const zero = Y(0), be = bands.expc.payback;
-  const bx = be && be > 0 ? X(be - 1) : null;
+// Electrical compliance diagram: panels → strings on each real MPPT input →
+// inverter → grid (and battery, on a hybrid system). Every number drawn here
+// comes straight from stringInputs() — the SAME rows the per-input table
+// above already prints — so the picture and the table can never disagree.
+// Deliberately NOT a full as-built schematic: no combiner box, disconnect or
+// grounding symbol, because none of that data exists anywhere in the product
+// (see pdf_elec_note). At most 6 input boxes are drawn; a C&I inverter with
+// more inputs gets a "+N more, same layout" note instead of an unreadably
+// tall diagram — every displayed input is still real, just not every one of
+// a possible 10+.
+function ElectricalDiagramSVG({ rows, panel, inverter, nInv, phases, hasBattery, lang }) {
+  const MAX_ROWS = 6;
+  const shown = rows.slice(0, MAX_ROWS);
+  const extra = rows.length - shown.length;
+  const tr = (k, vars) => t(k, lang, vars);
+  const ok = "#1E6B4E", bad = "#C4543B", ink = "#142A21", muted = "#8A7F6E", edge = "#B8AF98", paper = "#FCFBF7";
+
+  // Every box is sized first, then vertically centered on ONE shared midline
+  // (graphMidY) — the bug this replaced came from positioning the battery box
+  // independently of the inverter it connects to, so their edges could cross.
+  // Connectors now always start exactly AT a box's edge, never from a point
+  // computed separately from where that box actually ended up.
+  const ROW_H = 62, ROW_GAP = 10;
+  const colH = shown.length * ROW_H + Math.max(0, shown.length - 1) * ROW_GAP;
+  const invH = Math.min(150, Math.max(92, colH));
+  const GRID_H = 34, BATT_H = 44, TERM_GAP = 14;
+  const clusterH = hasBattery ? GRID_H + TERM_GAP + BATT_H : GRID_H;
+  const graphH = Math.max(colH, invH, clusterH);
+
+  const PAD_TOP = 14, LABEL_H = 32, PAD_BOTTOM = 6, EXTRA_H = extra > 0 ? 16 : 0;
+  const H = PAD_TOP + graphH + LABEL_H + EXTRA_H + PAD_BOTTOM;
+  const graphMidY = PAD_TOP + graphH / 2;
+
+  const PAD_X = 14, GAP = 46;
+  const panelX = PAD_X, panelW = 106, panelY = graphMidY - graphH / 2, panelH = graphH;
+  const colX = panelX + panelW + GAP, colW = 232, colTop = graphMidY - colH / 2;
+  const invX = colX + colW + GAP, invW = 128, invY = graphMidY - invH / 2;
+  const clusterX = invX + invW + GAP, clusterW = 104, clusterTop = graphMidY - clusterH / 2;
+  const gridY = clusterTop, battY = clusterTop + GRID_H + TERM_GAP;
+  const W = clusterX + clusterW + PAD_X;
+  // Every connector from the inverter starts at its own right edge and
+  // elbows over — a straight line would only work when the target happens to
+  // sit at invMidY, which the old code assumed and the battery case violated.
+  const elbowX = invX + invW + GAP / 2;
+
+  return (
+    <svg className="p-chart p-elec" viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="eahead" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L8,4 L0,8 Z" fill={muted} />
+        </marker>
+      </defs>
+
+      {/* panel array — a small real grid (capped 3x4 for legibility), not a
+          literal per-module count; the label under it carries the real count */}
+      <rect x={panelX} y={panelY} width={panelW} height={panelH} rx="6" fill={paper} stroke={edge} strokeWidth="1.4" />
+      {(() => {
+        const cols = 3, gRows = Math.min(4, Math.max(2, shown.length + 1));
+        const gx0 = panelX + 12, gx1 = panelX + panelW - 12, gy0 = panelY + 12, gy1 = panelY + panelH - 12;
+        const cw = (gx1 - gx0) / cols, ch = (gy1 - gy0) / gRows;
+        const cells = [];
+        for (let r = 0; r < gRows; r++) for (let c = 0; c < cols; c++) {
+          cells.push(<rect key={`${r}-${c}`} x={gx0 + c * cw + 1} y={gy0 + r * ch + 1} width={cw - 2} height={ch - 2} rx="1" fill="#E4EFE9" stroke="#BFD6C8" strokeWidth="0.75" />);
+        }
+        return <g>{cells}</g>;
+      })()}
+      <text x={panelX + panelW / 2} y={panelY + panelH + 17} textAnchor="middle" fontSize="10.5" fontWeight="700" fill={ink}>
+        {panel ? `${panel.brand} ${panel.model}` : ""}
+      </text>
+      <text x={panelX + panelW / 2} y={panelY + panelH + 29} textAnchor="middle" fontSize="9.5" fill={muted}>
+        {rows.reduce((a, r) => a + r.strings * r.modulesPerString, 0)} × {panel?.watt || 0} W
+      </text>
+
+      <path d={`M${panelX + panelW},${graphMidY} H${colX - 9}`} stroke={muted} strokeWidth="1.4" fill="none" markerEnd="url(#eahead)" />
+
+      {/* MPPT input boxes, each a real row from stringInputs() */}
+      {shown.map((r, i) => {
+        const y = colTop + i * (ROW_H + ROW_GAP);
+        const c = r.ok ? ok : bad;
+        const midRowY = y + ROW_H / 2;
+        return (
+          <g key={r.label}>
+            <rect x={colX} y={y} width={colW} height={ROW_H} rx="6" fill="#fff" stroke={c} strokeWidth={r.ok ? 1.1 : 1.6} />
+            <circle cx={colX + 13} cy={y + 16} r="3.5" fill={c} />
+            <text x={colX + 22} y={y + 19} fontSize="10.5" fontWeight="700" fill={ink}>
+              {tr("pdf_input_n", { n: r.label })}
+            </text>
+            <text x={colX + colW - 12} y={y + 19} textAnchor="end" fontSize="9.5" fill={muted}>
+              {r.strings} × {r.modulesPerString} {tr("pdf_elec_modules")}
+            </text>
+            <line x1={colX + 12} y1={y + 27} x2={colX + colW - 12} y2={y + 27} stroke="#EDEAE0" strokeWidth="1" />
+            <text x={colX + 12} y={y + 41} fontSize="9.5" fill={ink}>
+              <tspan fill={muted}>V </tspan>{Math.round(r.vString)}{r.vmppHotActual != null ? ` (${Math.round(r.vmppHotActual)})` : ""} <tspan fill={muted}>/ {r.maxDcV}</tspan>
+            </text>
+            <text x={colX + 12} y={y + 55} fontSize="9.5" fill={ink}>
+              <tspan fill={muted}>A </tspan>{r.iscTotalA.toFixed(1)}{r.maxInputCurrentA ? <tspan fill={muted}> / {r.maxInputCurrentA}</tspan> : null}
+            </text>
+            <path d={`M${colX + colW},${midRowY} H${invX - 9}`} stroke={muted} strokeWidth="1.2" fill="none" markerEnd="url(#eahead)" />
+          </g>
+        );
+      })}
+      {extra > 0 && (
+        <text x={colX + colW / 2} y={colTop + colH + 16} textAnchor="middle" fontSize="9.5" fill={muted} fontStyle="italic">
+          {tr("pdf_elec_more", { n: extra })}
+        </text>
+      )}
+
+      {/* inverter */}
+      <rect x={invX} y={invY} width={invW} height={invH} rx="6" fill="#EFF5F1" stroke={ok} strokeWidth="1.4" />
+      <text x={invX + invW / 2} y={invY + invH / 2 - 7} textAnchor="middle" fontSize="10.5" fontWeight="700" fill={ink}>
+        {inverter?.brand}
+      </text>
+      <text x={invX + invW / 2} y={invY + invH / 2 + 7} textAnchor="middle" fontSize="9.5" fill={ink}>
+        {inverter?.model}
+      </text>
+      <text x={invX + invW / 2} y={invY + invH / 2 + 23} textAnchor="middle" fontSize="9" fill={muted}>
+        {inverter ? `${(inverter.kw * nInv).toFixed(1)} kW · ${phases} ${t3phase(phases, lang)}` : ""}
+      </text>
+
+      {/* inverter -> grid terminal (+ battery terminal, if hybrid) — both
+          elbow from the SAME point on the inverter's own right edge, so
+          neither line can ever originate inside the box or cross it */}
+      <path d={`M${invX + invW},${graphMidY} H${elbowX} V${gridY + GRID_H / 2} H${clusterX - 8}`}
+        stroke={muted} strokeWidth="1.3" fill="none" markerEnd="url(#eahead)" />
+      <rect x={clusterX} y={gridY} width={clusterW} height={GRID_H} rx="6" fill={paper} stroke={edge} strokeWidth="1.2" />
+      <text x={clusterX + clusterW / 2} y={gridY + GRID_H / 2 + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill={ink}>{tr("pdf_elec_grid")}</text>
+      {hasBattery && (
+        <>
+          <path d={`M${invX + invW},${graphMidY} H${elbowX} V${battY + BATT_H / 2} H${clusterX - 8}`}
+            stroke={muted} strokeWidth="1.3" fill="none" markerEnd="url(#eahead)" />
+          <rect x={clusterX} y={battY} width={clusterW} height={BATT_H} rx="6" fill="#FBF3E4" stroke="#C97F14" strokeWidth="1.3" />
+          <text x={clusterX + clusterW / 2} y={battY + BATT_H / 2 + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="#C97F14">{kindLabel("battery", lang)}</text>
+        </>
+      )}
+    </svg>
+  );
+}
+
+// A top-down snapshot of the roof Site Designer actually drew: each plane's
+// real outline, the real fitted panel rectangles (same fitPanels() math and
+// same real BOM panel dimensions as the auto-layout button), and any
+// obstacles skipped. Every polygon here is real, measured geometry — nothing
+// is estimated or inferred. `planes[].outline/obstacles/panels` already
+// arrive projected to local meters (lib/actions.js createProposal, at
+// send-time), so this component only ever scales and flips an axis; it never
+// re-derives geometry from raw lat/lon itself.
+function RoofSnapshotSVG({ planes }) {
+  const W = 680, PAD = 18;
+  const allPts = [];
+  planes.forEach((pl) => {
+    pl.outline.forEach((p) => allPts.push(p));
+    (pl.obstacles || []).forEach((o) => o.forEach((p) => allPts.push(p)));
+  });
+  if (allPts.length === 0) return null;
+  const xs = allPts.map((p) => p[0]), ys = allPts.map((p) => p[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const spanX = Math.max(1, maxX - minX), spanY = Math.max(1, maxY - minY);
+  const scale = (W - PAD * 2) / spanX;
+  const H = spanY * scale + PAD * 2;
+  // World meters (x east, y NORTH-positive — lib/roofLayout.js's own
+  // convention) -> SVG pixels (x right, y DOWN, same origin top-left as
+  // every other chart in this file). Flipping Y here is the only orientation
+  // math this component does; everything else was already computed upstream.
+  const toSvg = ([x, y]) => [PAD + (x - minX) * scale, PAD + (maxY - y) * scale];
+  const pts = (ring) => ring.map((p) => toSvg(p).join(",")).join(" ");
+  const sharedObstacles = planes[0]?.obstacles || [];
+
+  return (
+    <svg className="p-chart p-roof" viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg">
+      {planes.map((pl, i) => (
+        <g key={i}>
+          <polygon points={pts(pl.outline)} fill="#FCFBF7" stroke="#8A8574" strokeWidth="1.5" />
+          {pl.panels.map((ring, j) => (
+            <polygon key={j} points={pts(ring)} fill="#1E6B4E" fillOpacity="0.6" stroke="#0F4E38" strokeWidth="0.5" />
+          ))}
+        </g>
+      ))}
+      {sharedObstacles.map((ring, j) => (
+        <polygon key={j} points={pts(ring)} fill="#C4543B" fillOpacity="0.3" stroke="#C4543B" strokeWidth="1" strokeDasharray="2.5 2" />
+      ))}
+    </svg>
+  );
+}
+
+// The operator's published monthly buy-back price as bars, with the months the
+// system actually exports drawn behind them. The two point opposite ways — the
+// price bottoms out exactly when the surplus peaks — which is the whole reason
+// the weighted average (dashed) is the figure quoted rather than the flat mean.
+// Print palette: inline hex, not the app's CSS variables (this page renders
+// outside AppTheme, and a print stylesheet must not depend on custom properties).
+function BuybackSVG({ seasonal, weighted, lang }) {
+  const W = 720, H = 176, PADL = 30, PADR = 84, PADT = 16, PADB = 34;
+  const vals = seasonal.filter((v) => v != null);
+  const maxP = (Math.max(...vals, weighted) || 1) * 1.16;
+  const bw = (W - PADL - PADR) / 12;
+  const Y = (v) => PADT + (1 - v / maxP) * (H - PADT - PADB);
+  const base = Y(0);
+  const maxW = Math.max(...SOLAR_SEASON) || 1;
+  const SY = (w) => base - (w / maxW) * (base - PADT) * 0.76;
+  const shape = SOLAR_SEASON
+    .map((w, i) => (i ? "L" : "M") + (PADL + bw * (i + 0.5)).toFixed(1) + " " + SY(w).toFixed(1)).join(" ");
   return (
     <svg className="p-chart" viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg">
-      <line x1={PADX} y1={zero} x2={W - PADX} y2={zero} stroke="#B9B5A6" strokeWidth="1" strokeDasharray="3 4" />
-      <path d={ln(rowsP)} fill="none" stroke="#C4543B" strokeWidth="1.4" strokeDasharray="4 3" opacity=".5" />
-      <path d={ln(rowsO)} fill="none" stroke="#1E6B4E" strokeWidth="1.4" strokeDasharray="4 3" opacity=".5" />
-      <path d={ln(rowsE)} fill="none" stroke="#1E6B4E" strokeWidth="2.4" />
-      {bx !== null && <>
-        <line x1={bx} y1={PADT} x2={bx} y2={H - PADB} stroke="#E89B2D" strokeWidth="1.4" strokeDasharray="3 3" />
-        <circle cx={bx} cy={zero} r="3.4" fill="#E89B2D" />
-        <text x={bx} y={H - 6} fontSize="9" fill="#C97F14" textAnchor="middle">{t("pdf_breakeven", lang)}</text>
-      </>}
-      <text x={PADX} y={H - 6} fontSize="9" fill="#999">{t("pdf_year1", lang)}</text>
-      <text x={W - PADX} y={H - 6} fontSize="9" fill="#999" textAnchor="end">{t("pdf_yearN", lang, { n: horizon })}</text>
+      {[1, 2, 3].filter((v) => v < maxP).map((v) => (
+        <g key={v}>
+          <line x1={PADL} y1={Y(v)} x2={W - PADR} y2={Y(v)} stroke="#E5E2D6" strokeWidth="1" strokeDasharray="2 4" />
+          <text x={PADL - 5} y={Y(v) + 3} textAnchor="end" fontSize="8" fill="#999">{v}</text>
+        </g>
+      ))}
+      <path d={`${shape} L ${(PADL + bw * 11.5).toFixed(1)} ${base} L ${(PADL + bw * 0.5).toFixed(1)} ${base} Z`}
+        fill="#E89B2D" opacity=".16" />
+      <path d={shape} fill="none" stroke="#E89B2D" strokeWidth="1.3" opacity=".8" />
+      {seasonal.map((p, i) => p == null ? null : (
+        <g key={i}>
+          <rect x={PADL + bw * i + bw * 0.22} y={Y(p)} width={bw * 0.56}
+            height={Math.max(1, base - Y(p))} rx="2" fill="#1E6B4E" opacity=".85" />
+          <text x={PADL + bw * (i + 0.5)} y={Y(p) - 3.5} textAnchor="middle" fontSize="7.5" fontWeight="700" fill="#1E6B4E">
+            {p.toFixed(2)}</text>
+        </g>
+      ))}
+      <line x1={PADL} y1={Y(weighted)} x2={W - PADR + 5} y2={Y(weighted)} stroke="#111" strokeWidth="1.2" strokeDasharray="5 3" />
+      <text x={W - PADR + 9} y={Y(weighted) - 1} fontSize="10" fontWeight="700" fill="#111">{weighted.toFixed(2)} lei</text>
+      <text x={W - PADR + 9} y={Y(weighted) + 9} fontSize="7.5" fill="#666">
+        {lang === "en" ? "weighted" : lang === "ru" ? "взвеш." : "ponderat"}</text>
+      <line x1={PADL} y1={base} x2={W - PADR} y2={base} stroke="#D8D4C6" strokeWidth="1" />
+      {MONTHS_RO.map((m, i) => (
+        <text key={m} x={PADL + bw * (i + 0.5)} y={H - 20} textAnchor="middle" fontSize="7.5" fill="#888">{m}</text>
+      ))}
+      <rect x={PADL} y={H - 13} width="8" height="8" rx="2" fill="#1E6B4E" opacity=".85" />
+      <text x={PADL + 12} y={H - 6} fontSize="8" fill="#777">{t("pdf_sp_legend_price", lang)}</text>
+      <rect x={PADL + 190} y={H - 13} width="8" height="8" rx="2" fill="#E89B2D" opacity=".4" />
+      <text x={PADL + 202} y={H - 6} fontSize="8" fill="#777">{t("pdf_sp_legend_export", lang)}</text>
     </svg>
   );
 }
 
 const CSS = `
-  body{background:#fff!important}
-  .print-sheet{max-width:820px;margin:0 auto;background:#fff;color:#111;
-    font-family:Inter,system-ui,sans-serif;font-size:13.5px;padding:34px 42px;line-height:1.45}
-  .print-sheet h1,.print-sheet h2{font-family:'Inter',system-ui,sans-serif}
-  .print-sheet .p-co{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#1E6B4E;font-weight:700;margin-bottom:10px}
-  .print-sheet h1{font-size:24px;margin:0 0 3px;letter-spacing:-.02em}
+  /* The sheet is an A4 page, on screen and on paper alike.
+     A4 is 210mm wide; with the 14mm @page margins below, the content column is
+     182mm. It used to be authored at 820px — wider than the page it printed
+     onto — so every figure was silently scaled down by about a sixth, and on
+     screen it read as a narrow column floating in empty space rather than a
+     document. Both modes now resolve to the same 182mm column. */
+  /* White everywhere, no exceptions. A tinted "desk" behind a floating white
+     card looks right in a browser and then prints: Chrome paints the body
+     background into the PDF, so the document arrives with a grey band around
+     every page. The page IS the document — one white surface, on screen and on
+     paper, with nothing behind it to leak. */
+  html,body{background:#fff!important;margin:0}
+  .print-sheet{width:182mm;max-width:100%;box-sizing:border-box;
+    padding:14mm 0;margin:0 auto;background:#fff;color:#111;
+    font-family:Inter,system-ui,sans-serif;font-size:13.5px;line-height:1.45}
+  .print-sheet h2{font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:700}
+  .print-sheet .p-co{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:#1E6B4E;font-weight:700;margin-bottom:11px}
+  /* Inter Tight, not Inter: the app already loads it (it's the display face on
+     /login) but the proposal never used it, so every number and headline was
+     the same body face at a heavier weight — the single biggest lever for a
+     document that reads as authored rather than templated. */
+  .print-sheet h1{font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;
+    font-size:27px;margin:0 0 4px;letter-spacing:-.02em}
   .print-sheet .p-sub{color:#555;font-size:12.5px;margin-bottom:0}
-  /* Single column since the QR came out — the identity block gets the full width. */
-  .print-sheet .p-head{margin-bottom:18px}
+  /* Single column since the QR came out — the identity block gets the full
+     width. A rule under the masthead gives the header a floor instead of
+     bleeding straight into the KPI grid. */
+  .print-sheet .p-head{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #E5E2D6}
   /* A 5-item flex row wrapped the most important figure onto a line of its own,
      left-aligned under four others — it read as an afterthought. The four spec
      figures now sit on a fixed 4-up grid, and the money the client actually
      cares about gets its own band, where gross and net sit side by side and
      can't be misread as two answers to the same question. */
   .print-sheet .p-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:13px}
-  .print-sheet .p-kpis b{display:block;font-size:18.5px;font-family:'Inter',system-ui,sans-serif;letter-spacing:-.01em}
+  .print-sheet .p-kpis b{display:block;font-size:18.5px;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:700;letter-spacing:-.01em}
   .print-sheet .p-kpis span{font-size:10.5px;color:#666;display:block;margin-top:1px}
+  .print-sheet .p-kpi-fin{color:#999!important;font-style:italic}
   /* No tinted panel: on paper the fill and border read as a highlighter box and
      cheapen the document. The two figures carry their own colour, which is
      enough emphasis — and dropping the box lets them align flush left with the
-     spec grid above instead of sitting 16px inboard of it. */
+     spec grid above instead of sitting 16px inboard of it. On screen only
+     (never on paper — a shadow implies a light source, meaningless once
+     printed, and the earlier highlighter-box problem was exactly this kind of
+     effect misapplied to print) a soft lift separates the headline money from
+     the spec grid above it. */
   .print-sheet .p-hero{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;
     background:#fff;padding:2px 0 0}
-  .print-sheet .p-hero b{display:block;font-size:23px;font-family:'Inter',system-ui,sans-serif;letter-spacing:-.02em;color:#C97F14}
+  .print-sheet .p-hero b{display:block;font-size:25px;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;letter-spacing:-.02em;color:#C97F14}
   .print-sheet .p-hero .net b{color:#1E6B4E}
   .print-sheet .p-hero span{font-size:10.5px;color:#666;display:block;margin-top:2px;line-height:1.35}
-  .print-sheet h2{font-size:14.5px;margin:17px 0 8px;color:#1E6B4E}
+  @media screen{
+    .print-sheet .p-hero{background:#fff;border:1px solid #EDEAE0;border-radius:12px;padding:16px 18px;
+      box-shadow:0 1px 2px rgba(20,42,33,.04),0 8px 20px -10px rgba(20,42,33,.14)}
+  }
+  /* Hybrid systems' own pitch: a distinct callout, not folded into the money
+     band above — a battery is a different product (resilience), not just
+     another number in the savings math. */
+  .print-sheet .p-backup{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;
+    background:#EFF1E9;border:1px solid #D9DEC9;border-radius:9px;padding:10px 14px;margin:-6px 0 20px}
+  .print-sheet .p-backup b{font-size:16px;color:#3D5A2E;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:700;letter-spacing:-.01em}
+  .print-sheet .p-backup span{font-size:11.5px;color:#333}
+  .print-sheet .p-backup em{font-style:normal;font-size:10px;color:#777;flex-basis:100%}
+  /* Numbered spine: the document reads as a sequence of answers, not a pile of
+     tables. A small filled badge instead of a plain muted digit — a real
+     editorial device (chapter markers, not a page-counter afterthought), and
+     it still prints fine (flat fill, no gradient/shadow to lose on paper). */
+  .print-sheet h2{display:flex;align-items:center;gap:10px;font-size:15px;margin:26px 0 10px;color:#142A21;
+    border-top:1.5px solid #E5E2D6;padding-top:16px}
+  .print-sheet h2 .p-n{flex:none;display:inline-flex;align-items:center;justify-content:center;
+    width:20px;height:20px;border-radius:50%;background:#1E6B4E;color:#fff;
+    font-family:'Inter Tight','Inter',system-ui,sans-serif;font-size:10.5px;font-weight:700;margin:0}
+  .print-sheet h3{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:#888;
+    margin:15px 0 6px;font-weight:700}
+  .print-sheet .p-lead{font-size:12px;color:#555;line-height:1.5;margin:0 0 9px;max-width:74ch}
+  /* three scenarios as cards — the old table buried the headline figure in a
+     row of jargon the client was never going to parse */
+  .print-sheet .p-scen{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 0}
+  .print-sheet .p-scen > div{border:1px solid #E5E2D6;border-radius:9px;padding:10px 12px 11px;background:#fff}
+  .print-sheet .p-scen > div.on{background:#F4F8F5;border-color:#CBD8CF}
+  @media screen{ .print-sheet .p-scen > div.on{box-shadow:0 6px 16px -10px rgba(30,107,78,.35)} }
+  .print-sheet .p-scen .s-t{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+  .print-sheet .p-scen .s-y{font-size:21px;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;
+    letter-spacing:-.02em;line-height:1.15;margin-top:3px}
+  .print-sheet .p-scen .s-y small{font-size:10.5px;font-weight:500;color:#777;letter-spacing:0}
+  .print-sheet .p-scen .s-r{font-size:10px;color:#777;margin-top:2px}
+  /* monthly cashflow: one strip, not a three-column table for three numbers */
+  .print-sheet .p-mo{display:flex;gap:26px;align-items:baseline;flex-wrap:wrap;
+    background:#F7F6F1;border-radius:9px;padding:11px 14px;margin-top:4px}
+  .print-sheet .p-mo div b{font-size:16px;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:700;letter-spacing:-.01em}
+  .print-sheet .p-mo div span{font-size:10px;color:#666;display:block}
+  .print-sheet .p-mo .pos b{color:#1E6B4E}
+  /* back matter: reference, deliberately quieter than the selling content */
+  .print-sheet .p-annex h2{color:#666}
+  .print-sheet .p-annex table{font-size:11px}
+  .print-sheet .p-annex td{padding:5px 9px;color:#555}
   .print-sheet table{width:100%;border-collapse:collapse;font-size:12.5px}
   .print-sheet th{text-align:left;padding:7px 9px;background:#F0EEE6;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
   .print-sheet td{padding:7px 9px;border-bottom:1px solid #E5E2D6}
-  .print-sheet .p-verdict{margin-top:18px;padding:13px;background:#E4EFE9;color:#1E6B4E;font-weight:600;border-radius:8px;font-size:14px}
+  /* Where the energy goes, and where it comes from — two stacked bars instead
+     of a paragraph explaining self-consumption ratios. */
+  .print-sheet .p-split{display:grid;gap:9px;margin:8px 0 2px}
+  .print-sheet .p-split-r{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:center}
+  .print-sheet .p-split-k{font-size:10.5px;color:#666;text-align:right;line-height:1.3}
+  .print-sheet .p-split-k b{display:block;font-size:12px;color:#111;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:700}
+  .print-sheet .p-bar{display:flex;height:26px;border-radius:6px;overflow:hidden;background:#F0EEE6}
+  .print-sheet .p-bar span{display:flex;align-items:center;justify-content:center;font-size:9.5px;
+    font-weight:700;color:#fff;white-space:nowrap;overflow:hidden}
+  .print-sheet .p-bar .s1{background:#1E6B4E}
+  .print-sheet .p-bar .s2{background:#E89B2D}
+  .print-sheet .p-bar .s3{background:#9FB3A7}
+  .print-sheet .p-bar .s4{background:#CFC9B8;color:#555}
+  /* 25-year cost of energy, with and without the system */
+  .print-sheet .p-vs{display:grid;gap:7px;margin:6px 0 2px}
+  .print-sheet .p-vs-r{display:grid;grid-template-columns:118px 1fr auto;gap:10px;align-items:center;font-size:11px}
+  .print-sheet .p-vs-t{width:100%;height:20px;background:#F0EEE6;border-radius:5px;overflow:hidden}
+  .print-sheet .p-vs-t i{display:block;height:100%}
+  .print-sheet .p-vs-r b{font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:700;font-size:13px;white-space:nowrap}
+  .print-sheet .p-vs .bad i{background:#C4543B;opacity:.75}
+  .print-sheet .p-vs .good i{background:#1E6B4E}
+  .print-sheet .p-vs .bad b{color:#C4543B}
+  .print-sheet .p-vs .good b{color:#1E6B4E}
   .print-sheet .p-foot{break-inside:avoid;page-break-inside:avoid;margin-top:18px;font-size:10.5px;color:#888;border-top:1px solid #ddd;padding-top:12px}
-  .print-sheet section{page-break-inside:avoid;margin:0}
+  /* Pagination: the money section is now taller than an A4 page, so forbidding
+     a break inside it would push the whole thing to the next page and leave a
+     half-empty one behind. Let sections flow, and protect the units that must
+     not split instead — a chart, a card row, a table, a heading stranded at the
+     foot of a page. */
+  .print-sheet section{margin:0;break-inside:auto;page-break-inside:auto}
+  .print-sheet h2{break-after:avoid;page-break-after:avoid}
+  .print-sheet h3{break-after:avoid;page-break-after:avoid}
+  .print-sheet table,.print-sheet .p-chart,.print-sheet .p-scen,.print-sheet .p-mo,
+  .print-sheet .p-spread,.print-sheet .p-eco,.print-sheet .p-verdict{
+    break-inside:avoid;page-break-inside:avoid}
   .print-sheet .p-chart{width:100%;height:auto;display:block;margin:4px 0 6px;border:1px solid #E5E2D6;border-radius:8px;background:#FCFBF7}
   .print-sheet .p-legend{display:flex;flex-wrap:wrap;gap:16px;font-size:10px;color:#666;margin-bottom:4px}
   .print-sheet .p-legend i{display:inline-block;width:15px;height:0;border-top:2px solid #1E6B4E;margin-right:5px;vertical-align:middle}
   .print-sheet .p-note{font-size:11.5px;color:#555;line-height:1.5;margin:2px 0 0}
   .print-sheet .p-eco{display:flex;gap:26px;margin:4px 0 2px;flex-wrap:wrap}
-  .print-sheet .p-eco b{display:block;font-size:19px;font-family:'Inter',system-ui,sans-serif;color:#1E6B4E}
+  .print-sheet .p-eco b{display:block;font-size:19px;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:700;color:#1E6B4E}
   .print-sheet .p-eco span{font-size:10.5px;color:#666}
   .print-sheet sub{font-size:.72em;line-height:0;vertical-align:-.22em}
+  /* equipment table: the component name leads, the quantity sits right */
+  .print-sheet td.p-qty{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;width:1%}
+  .print-sheet .p-kind{color:#666;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  .print-sheet .p-gear{font-weight:600;color:#111}
+  .print-sheet .p-gear a{color:inherit;text-decoration:underline;text-decoration-color:#C9C4B2;text-underline-offset:2px}
+  .print-sheet .p-warr{white-space:nowrap;font-variant-numeric:tabular-nums;color:#555;font-size:12px}
+  .print-sheet .p-warr-install{margin-top:8px;font-size:11.5px;color:#555}
+  .print-sheet .p-warr-install b{color:#111;font-weight:600}
+  /* design checks: value right-aligned, the reasoning under it */
+  .print-sheet td.p-chk{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:700}
+  .print-sheet td.p-chk.bad{color:#C4543B}
+  .print-sheet .p-chk-d{font-size:10.5px;color:#666;font-weight:400;line-height:1.4;margin:2px 0 0 18px;white-space:normal}
+  .print-sheet .p-chk-d em{font-style:normal;color:#C4543B}
+  .print-sheet .p-flag{display:inline-block;width:13px;text-align:center;font-weight:700;margin-right:5px}
+  .print-sheet .p-flag.ok{color:#1E6B4E}
+  .print-sheet .p-flag.warn{color:#C4543B}
+  .print-sheet .p-spread{margin-top:10px;padding:11px 13px;background:#FBF3E4;border-radius:8px;font-size:11.5px;
+    color:#333;line-height:1.5}
+  .print-sheet .p-spread b{color:#C97F14;font-size:15px;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:700;margin-right:6px}
+  .print-sheet .p-src{font-size:10px;color:#888;margin-top:6px}
   .print-sheet .p-steps{margin:4px 0 0;padding-left:18px;font-size:12.5px;color:#333}
   .print-sheet .p-steps li{margin-bottom:5px}
   .print-sheet .p-valid{margin-top:10px;font-size:11.5px;color:#666}
@@ -103,12 +453,17 @@ const CSS = `
      locale default — US Letter (612x792pt) — which rescales or clips on every
      A4 printer in RO/MD. The margin here replaces the on-screen padding. */
   @page{ size:A4; margin:14mm; }
-  @media print{ .print-sheet{padding:0;max-width:none} }
+  /* On paper @page supplies the margin, so the sheet drops its own padding and
+     fills the printable area exactly — 182mm either way. */
+  @media print{ .print-sheet{width:auto;padding:0;margin:0} }
 `;
 
-export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null }) {
+export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null }) {
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-IE";
-  const fmt = (n) => "€" + Math.round(n).toLocaleString(loc);
+  // Minus ahead of the currency symbol. "€-31" reads as a broken string; a
+  // client seeing it on a monthly cashflow line reads it twice before believing
+  // it. Applies everywhere money can go negative — the strip, the chart axis.
+  const fmt = (n) => (n < 0 ? "−€" : "€") + Math.abs(Math.round(n)).toLocaleString(loc);
   const yrsF = (n) => n === null ? "25+" : n === 0 ? t("pp_immediate", lang) : n.toFixed(1);
   // null = a grant covered the whole system, so return on outlay is undefined.
   const pct = (n) => (n == null ? "∞" : Math.round(n) + "%");
@@ -121,6 +476,13 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   const lifeNet = rowsE.length ? rowsE[rowsE.length - 1] : 0;
   const lifeGross = lifeNet + q.cost;
   const net = q.year1 / 12 - (inputs.loan || 0);
+  // Absent on any proposal frozen before this feature existed. The PDF is
+  // static (no toggle possible), so it shows both figures together instead —
+  // the mobile page's FinanceToggle is the interactive version of this.
+  const financeRate = Number(E.financeRatePct);
+  const financeTerm = Number(E.financeTermYears);
+  const hasFinance = financeRate >= 0 && financeTerm > 0;
+  const monthlyPayment = hasFinance ? amortizedMonthlyPayment(q.cost, financeRate, financeTerm) : 0;
   // Cost of doing nothing: the client's own consumption bought from the grid for
   // the whole horizon, inflating at the same rate the expected band assumes, so
   // it is directly comparable with the savings figures above rather than a
@@ -137,7 +499,90 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   const trees = Math.max(1, Math.round(co2Year / 21));
   const carKm = Math.round(co2Year / 0.17);
   const panels = Math.max(1, Math.round(inputs.kw / 0.44));
-  const roofArea = Math.round(inputs.kw * 5.5);
+  // Site Designer's own measured area/orientation beat the flat kw*5.5 rule
+  // of thumb and the "South, 35° (assumed)" placeholder once they exist —
+  // undefined on any quote that never had a roof drawn, which keeps every
+  // proposal made before this feature (or without it) exactly as it was.
+  const roofArea = roofAreaM2 ? Math.round(roofAreaM2) : Math.round(inputs.kw * 5.5);
+  const orientText = roofOrientation
+    ? `${Math.round(roofOrientation.tiltDeg)}°, ${compassLabel(roofOrientation.azimuthDeg, lang)}`
+    : roofAreaM2
+      ? t("pdf_orient_varies", lang)
+      : t("pdf_orient_v", lang);
+
+  // ---- what the client is actually buying, and whether it can be built ------
+  // The bill of materials names the real parts; with no BOM the document keeps
+  // the old size-derived estimate rather than inventing equipment.
+  const lines = (Array.isArray(bom) ? bom : []).filter((l) => (Number(l.qty) || 0) > 0);
+  // Real, manufacturer-verified warranty terms only — a BOM line's brand+model
+  // matched against lib/supplierCatalog.js's real published figures (see that
+  // file's own comment for what "verified" means here). A hand-typed or
+  // custom line that matches nothing simply gets no warranty cell, never a
+  // guess. Computed once per line so the table and any later reference to it
+  // agree, and so the "any real warranty at all" check below doesn't redo the
+  // lookup.
+  const lineWarranty = lines.map((l) => findWarrantyInfo(l.brand, l.model));
+  const anyWarranty = lineWarranty.some(Boolean);
+  const installWarrantyYears = Number(company?.installWarrantyYears) || 0;
+  const battKwh = inputs.batt ? (Number(inputs.battKwh) || 0) : 0;
+  const consEff = Math.max(0, Number(effectiveConsumption(inputs)) || 0);
+  // Hybrid systems get their own pitch, not just an add-on line item: real
+  // hours of backup at this household's own average draw (lib/batteryBackup.js)
+  // — never a monetized "avoided blackout" figure, since there's no reliable
+  // RO/MD outage-frequency data to price that against.
+  const backupHrs = battKwh > 0 ? backupHours(battKwh, consEff) : null;
+  const dc = designCheck({ bom: lines, kw: Number(inputs.kw) || 0, battKwh, consKwh: consEff });
+  const checks = designCheckRows(dc, { lang, battKwh });
+  // Shown for any real BOM inverter, even a single MPPT input in use — a
+  // genuine per-input compliance table (peak power, both ends of the voltage
+  // window, the current limit) is exactly what a real inverter-design report
+  // prints regardless of string count. Without a real inverter (representative
+  // fallback gear) there's no per-input electrical limit to check, so it only
+  // falls back to the old bare split once there's actually more than one input
+  // to show — see hasRealInverter below.
+  const mpptInputs = dc.strings >= 1 ? stringInputs(dc) : [];
+  const hasRealInverter = !!dc.stringRangeInfo;
+
+  // ---- what the exported surplus is worth (Moldova / net billing only) ------
+  // Romania credits exports 1:1 at the retail price, so there is no separate
+  // buy-back price to weight and the section simply doesn't apply there.
+  const isMD = inputs.market === "MD";
+  const buyback = isMD ? {
+    seasonal: latestSeasonalMdl(),
+    weightedMdl: weightedExportPriceMdl(SOLAR_SEASON),
+    weightedEur: weightedExportPriceEur(SOLAR_SEASON, FX.MDL),
+    flatMdl: flatAverageMdl(),
+    spread: storageSpreadMdl((Number(inputs.price) || 0) * FX.MDL, SOLAR_SEASON),
+    surplus: surplusRevenue(q.prod0, q.self, FX.MDL),
+  } : null;
+  const lei = (n) => Math.round(n).toLocaleString(loc) + " lei";
+
+  // ---- energy, month by month -----------------------------------------------
+  // PVGIS hands back this roof's own monthly shape when the address was looked
+  // up; without it the engine's seasonal curve is the honest fallback.
+  const shape = Array.isArray(inputs.monthlyYieldShape) && inputs.monthlyYieldShape.length === 12
+    ? inputs.monthlyYieldShape : SOLAR_SEASON;
+  const shapeSum = shape.reduce((a, b) => a + (Number(b) || 0), 0) || 1;
+  const prodMonthly = shape.map((f) => (q.prod0 * (Number(f) || 0)) / shapeSum);
+  const consMonthly = (inputs.useMonthly && Array.isArray(inputs.consMonthly) && inputs.consMonthly.length === 12)
+    ? inputs.consMonthly.map((v) => Number(v) || 0)
+    : new Array(12).fill(consEff / 12);
+
+  // Where production goes, and where consumption comes from. Two views of the
+  // same split, and the pair is what a client actually wants to know.
+  const selfPct = Math.round((q.self || 0) * 100);
+  const selfKwh = (q.self || 0) * q.prod0;
+  const expKwh = Math.max(0, q.prod0 - selfKwh);
+  const fromSolar = Math.min(selfKwh, consEff);
+  const fromGrid = Math.max(0, consEff - fromSolar);
+  const coverPct = consEff > 0 ? Math.round((fromSolar / consEff) * 100) : 0;
+
+  // 25-year cost of energy, with the system and without it. The "do nothing"
+  // figure was a sentence; as a pair of bars it is the comparison the client is
+  // actually making, and it needs no explaining.
+  const gridAfter = Math.max(0, doNothing - lifeGross);
+  const withSolar = gridAfter + q.cost;
+  const vsMax = Math.max(doNothing, withSolar, 1);
   // Valid for the company's validity window from when the quote was sent
   // (frozen in the snapshot engine); falls back to today + 30 for old proposals.
   const validityDays = E.quoteValidityDays || 30;
@@ -173,7 +618,9 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
 
       <div className="p-kpis">
         <div><b>{Number(inputs.kw).toFixed(1)} kW{battSuffix}</b><span>{tr("pdf_system")}</span></div>
-        <div><b>{fmt(q.cost)}</b><span>{tr("total_inv")}</span></div>
+        <div><b>{fmt(q.cost)}</b><span>{tr("total_inv")}</span>
+          {hasFinance && <span className="p-kpi-fin">{tr("pdf_pay_monthly_v", { v: fmt(monthlyPayment) })}</span>}
+        </div>
         <div><b>{Math.round(q.prod0).toLocaleString(loc)} kWh</b><span>{tr("prod_year")}</span></div>
         <div><b>{fmt(q.year1)}</b><span>{tr("save_y1")}</span></div>
       </div>
@@ -182,63 +629,336 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         <div className="net"><b>{fmt(lifeNet)}</b><span>{tr("pdf_net_gain")}</span></div>
       </div>
 
+      {/* Hybrid systems get their own pitch here, right at the top next to the
+          headline money figures — a battery isn't just an add-on that shifts
+          self-consumption, it's a different product with its own value:
+          keeping the lights on. Only the honest, computable claim (hours at
+          this household's own average draw), never a monetized "avoided
+          blackout cost" — no reliable RO/MD outage data exists to price that
+          against. */}
+      {backupHrs != null && (
+        <div className="p-backup">
+          <b>~{Math.round(backupHrs)} {tr("pdf_backup_hunit")}</b>
+          <span>{tr("pdf_backup_body", { kwh: battKwh })}</span>
+          <em>{tr("pdf_backup_caveat")}</em>
+        </div>
+      )}
+
+      {/* 1 — what they are actually buying. Moved ahead of the money: a serious
+          buyer compares equipment first, and leading with the hardware is what
+          separates a proposal from a price list. */}
       <section>
-        <h2>{tr("payback_title")}</h2>
-        <table><tbody>
-          <tr><th>{tr("pdf_scenario")}</th><th>{tr("pdf_payback")}</th><th>{hz}{tr("yr_roi")}</th><th>{tr("pdf_key_inputs")}</th></tr>
-          <tr><td>{tr("pessimistic")}</td><td>{yrsF(bands.pess.payback)} {tr("years_w")}</td><td>{pct(bands.pess.roi)}</td>
-            <td>{tr("pdf_inputs_v", { y: Math.round((E.bands.pess.ym - 1) * 100) + "%", d: E.bands.pess.degr, i: E.bands.pess.infl })}</td></tr>
-          <tr><td><b>{tr("expected")}</b></td><td><b>{yrsF(bands.expc.payback)} {tr("years_w")}</b></td><td><b>{pct(bands.expc.roi)}</b></td>
-            <td>{tr("pdf_inputs_base", { d: E.bands.expc.degr, i: E.bands.expc.infl })}</td></tr>
-          <tr><td>{tr("optimistic")}</td><td>{yrsF(bands.opti.payback)} {tr("years_w")}</td><td>{pct(bands.opti.roi)}</td>
-            <td>{tr("pdf_inputs_v", { y: "+" + Math.round((E.bands.opti.ym - 1) * 100) + "%", d: E.bands.opti.degr, i: E.bands.opti.infl })}</td></tr>
-        </tbody></table>
+        <h2><span className="p-n">1</span>{tr("pdf_glance_h")}</h2>
+        {/* Real parts when the installer has built a bill of materials — brand,
+            model and spec, so the client can compare this against another quote
+            on equipment rather than on price alone. Never the unit cost: the BOM
+            carries the installer's purchase price and their margin. */}
+        {lines.length > 0 ? (
+          <table><tbody>
+            <tr>
+              <th>{tr("pdf_component")}</th><th>{tr("pdf_gear")}</th>
+              {anyWarranty && <th>{tr("pdf_warranty")}</th>}
+              <th className="p-qty">{tr("pdf_qty")}</th>
+            </tr>
+            {lines.map((l, i) => {
+              const w = lineWarranty[i];
+              return (
+                <tr key={i}>
+                  <td className="p-kind">{kindLabel(l.kind, lang)}</td>
+                  <td className="p-gear">
+                    {w?.productUrl ? <a href={w.productUrl} target="_blank" rel="noopener noreferrer">{bomLineText(l)}</a> : bomLineText(l)}
+                  </td>
+                  {anyWarranty && (
+                    <td className="p-warr" title={w?.warrantyNote || undefined}>
+                      {w ? tr("pdf_warranty_v", { n: w.warrantyYears }) : "—"}
+                    </td>
+                  )}
+                  <td className="p-qty">× {Number(l.qty)}</td>
+                </tr>
+              );
+            })}
+            <tr><td className="p-kind">{tr(roofAreaM2 ? "pdf_roof_real" : "pdf_roof")}</td><td colSpan={anyWarranty ? 3 : 2}>~{roofArea} m² · {orientText}</td></tr>
+          </tbody></table>
+        ) : (
+          <table><tbody>
+            <tr><td>{tr("pdf_panels")}</td><td>{tr("pdf_panels_v", { n: panels })}</td></tr>
+            <tr><td>{tr("pdf_inverter")}</td><td>~{Number(inputs.kw).toFixed(1)} kW</td></tr>
+            {inputs.batt && <tr><td>{tr("pdf_batt_row")}</td><td>{tr("pdf_included")}</td></tr>}
+            <tr><td>{tr(roofAreaM2 ? "pdf_roof_real" : "pdf_roof")}</td><td>~{roofArea} m²</td></tr>
+            <tr><td>{tr("pdf_orient")}</td><td>{orientText}</td></tr>
+          </tbody></table>
+        )}
+
+        {/* The installer's OWN workmanship commitment (Settings → Installation
+            warranty) — a real promise they set, distinct from the manufacturer
+            terms above, so it needs no verification blocker. Hidden until set. */}
+        {installWarrantyYears > 0 && (
+          <p className="p-warr-install">
+            {tr("pdf_warranty_install_h")}: <b>{tr("pdf_warranty_install_v", { n: installWarrantyYears, co: company?.name || "" })}</b>
+          </p>
+        )}
+
+        {/* Top-down snapshot of the roof Site Designer drew: real outline,
+            real fitted panel rectangles. Absent (not an empty box) whenever
+            no roof was ever drawn — see RoofSnapshotSVG's own comment. */}
+        {Array.isArray(roofPlanes) && roofPlanes.length > 0 && (
+          <>
+            <h3>{tr("pdf_roof_snap_h")}</h3>
+            <RoofSnapshotSVG planes={roofPlanes} />
+            <p className="p-note" style={{ marginTop: 2 }}>
+              {tr("pdf_roof_snap_note", { n: roofPlanes.reduce((s, pl) => s + pl.panels.length, 0) })}
+            </p>
+          </>
+        )}
+
+        {/* The panel/inverter's own datasheet figures, straight from the
+            supplier catalogue — only once the BOM names real gear, so this
+            never prints numbers for equipment nobody chose. Sunny Design's
+            module/inverter pages show exactly this; ours is two compact
+            tables rather than two dedicated pages, but the numbers are the
+            same real, checkable ones the annex validates against below. */}
+        {(dc.fromBom.panel || dc.fromBom.inverter) && (
+          <>
+            <h3>{tr("pdf_specs_h")}</h3>
+            <table><tbody>
+              <tr><th>{tr("pdf_specs_panel_h")}</th><th></th></tr>
+              <tr><td>{tr("pdf_specs_model")}</td><td>{dc.panel.brand} {dc.panel.model}</td></tr>
+              <tr><td>{tr("pdf_specs_power")}</td><td>{dc.panel.watt} W</td></tr>
+              <tr><td>{tr("pdf_specs_voc_vmp")}</td><td>{dc.panel.voc} V / {dc.panel.vmp} V</td></tr>
+              <tr><td>{tr("pdf_specs_isc_imp")}</td><td>{dc.panel.isc} A / {dc.panel.imp} A</td></tr>
+              <tr><td>{tr("pdf_specs_eff")}</td><td>{dc.panel.eff}% · {dc.panel.cells} {tr("pdf_specs_cells")}</td></tr>
+            </tbody></table>
+            <table style={{ marginTop: 8 }}><tbody>
+              <tr><th>{tr("pdf_specs_inv_h")}</th><th></th></tr>
+              {dc.inverter ? (
+                <>
+                  <tr><td>{tr("pdf_specs_model")}</td><td>{dc.inverter.brand} {dc.inverter.model}</td></tr>
+                  <tr><td>{tr("pdf_specs_ac")}</td><td>{dc.inverter.kw} kW · {dc.inverter.type}</td></tr>
+                  <tr><td>{tr("pdf_specs_maxdc")}</td><td>{dc.inverter.maxDcV} V</td></tr>
+                  <tr><td>{tr("pdf_specs_minmppt")}</td><td>{dc.inverter.minMpptV ? `${dc.inverter.minMpptV} V` : "—"}</td></tr>
+                  <tr><td>{tr("pdf_specs_maxcur")}</td><td>{dc.inverter.maxInputCurrentA ? `${dc.inverter.maxInputCurrentA} A` : "—"}</td></tr>
+                  <tr><td>{tr("pdf_specs_mppt_n")}</td><td>{dc.inverter.mppt} · {dc.inverter.phases} {t3phase(dc.inverter.phases, lang)}</td></tr>
+                </>
+              ) : (
+                <tr><td colSpan={2}>{tr("pdf_specs_na")}</td></tr>
+              )}
+            </tbody></table>
+          </>
+        )}
       </section>
 
+      {/* 2 — the energy itself, as two pictures. Whether it covers the winter,
+          and where every kWh ends up, were previously only implied by a
+          self-consumption percentage buried in the assumptions table. */}
       <section>
-        <h2>{tr("pdf_money_h", { n: hz })}</h2>
-        <CashflowSVG bands={bands} cost={q.cost} horizon={hz} lang={lang} />
+        <h2><span className="p-n">2</span>{tr("pdf_energy_h")}</h2>
+        <MonthlySVG prod={prodMonthly} cons={consMonthly} lang={lang} loc={loc} />
+        <div className="p-split">
+          <div className="p-split-r">
+            <div className="p-split-k">{tr("pdf_m_prod")}<b>{Math.round(q.prod0).toLocaleString(loc)} kWh</b></div>
+            <div className="p-bar">
+              <span className="s1" style={{ width: `${selfPct}%` }}>{selfPct >= 12 ? `${tr("pdf_e_self")} ${selfPct}%` : ""}</span>
+              <span className="s2" style={{ width: `${100 - selfPct}%` }}>{100 - selfPct >= 12 ? `${tr("pdf_e_exp")} ${100 - selfPct}%` : ""}</span>
+            </div>
+          </div>
+          {consEff > 0 && (
+            <div className="p-split-r">
+              <div className="p-split-k">{tr("pdf_m_cons")}<b>{Math.round(consEff).toLocaleString(loc)} kWh</b></div>
+              <div className="p-bar">
+                <span className="s3" style={{ width: `${coverPct}%` }}>{coverPct >= 12 ? `${tr("pdf_e_fromsolar")} ${coverPct}%` : ""}</span>
+                <span className="s4" style={{ width: `${100 - coverPct}%` }}>{100 - coverPct >= 12 ? `${tr("pdf_e_fromgrid")} ${100 - coverPct}%` : ""}</span>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="p-eco" style={{ marginTop: 10 }}>
+          <div><b>{Math.round(selfKwh).toLocaleString(loc)} kWh</b><span>{tr("pdf_e_self")}</span></div>
+          <div><b>{Math.round(expKwh).toLocaleString(loc)} kWh</b><span>{tr("pdf_e_exp")}</span></div>
+          {consEff > 0 && <div><b>{coverPct}%</b><span>{tr("pdf_e_cover")}</span></div>}
+          <div><b>{Math.round(q.yieldPerKwp || E.baseYield).toLocaleString(loc)}</b><span>kWh/kWp · {tr("as_yield_exp")}</span></div>
+        </div>
+      </section>
+
+      {/* 2 — the money, as one continuous argument: how fast it pays back, what
+          the position looks like year by year, what it costs per month, and what
+          standing still costs instead. These used to be four separate sections. */}
+      <section>
+        <h2><span className="p-n">3</span>{tr("pdf_money_h", { n: hz })}</h2>
+
+        <h3>{tr("payback_title")}</h3>
+        <div className="p-scen">
+          {[["pess", tr("pessimistic"), bands.pess, "#C4543B"],
+            ["expc", tr("expected"), bands.expc, "#1E6B4E"],
+            ["opti", tr("optimistic"), bands.opti, "#2A8563"]].map(([k, label, b, c]) => (
+            <div key={k} className={k === "expc" ? "on" : ""}>
+              <div className="s-t" style={{ color: c }}>{label}</div>
+              <div className="s-y">{yrsF(b.payback)} <small>{tr("years_w")}</small></div>
+              <div className="s-r">{hz}{tr("yr_roi")} · {pct(b.roi)}</div>
+            </div>
+          ))}
+        </div>
+        <h3>{tr("pdf_position_h")}</h3>
+        <CashflowSVG bands={bands} cost={q.cost} horizon={hz} lang={lang} money={fmt} />
         <div className="p-legend">
           <span><i />{tr("expected")}</span>
           <span><i style={{ borderColor: "#C4543B", borderTopStyle: "dashed" }} />{tr("pessimistic")}</span>
           <span><i style={{ borderColor: "#1E6B4E", borderTopStyle: "dashed", opacity: .6 }} />{tr("optimistic")}</span>
           <span><i style={{ borderColor: "#E89B2D", borderTopStyle: "dashed" }} />{tr("lg_break")}</span>
         </div>
-        <p className="p-note" dangerouslySetInnerHTML={{
-          __html: tr("pdf_cash_note", { n: hz, v: fmt(lifeNet) }) }} />
-        {/* The counterfactual. Every figure above answers "what does solar give
-            me?"; none answered "what does standing still cost?" — which is the
-            comparison the client is actually making. */}
+        <p className="p-note">{tr("pdf_cash_cap", { v: fmt(lifeNet), n: hz })}</p>
+
+        <h3>{tr("pdf_monthly_h")}</h3>
+        <div className="p-mo">
+          <div><b>{fmt(inputs.loan || 0)}</b><span>{tr("pdf_loan_h")}</span></div>
+          <div><b>{fmt(q.year1 / 12)}</b><span>{tr("pdf_save_h")}</span></div>
+          <div className={net >= 0 ? "pos" : ""}>
+            <b>{(net >= 0 ? "+" : "") + fmt(net)}</b><span>{tr("pdf_net_h")}</span>
+          </div>
+        </div>
+
         {doNothing > 0 && (
-          <p className="p-note" style={{ marginTop: 6 }} dangerouslySetInnerHTML={{
-            __html: tr("pdf_donothing_note", { v: fmt(doNothing), n: hz, i: inflPct }) }} />
+          <>
+            <h3>{tr("pdf_vs_h", { n: hz })}</h3>
+            <div className="p-vs">
+              <div className="p-vs-r bad">
+                <span>{tr("pdf_vs_without")}</span>
+                <span className="p-vs-t"><i style={{ width: `${(doNothing / vsMax) * 100}%` }} /></span>
+                <b>{fmt(doNothing)}</b>
+              </div>
+              <div className="p-vs-r good">
+                <span>{tr("pdf_vs_with")}</span>
+                <span className="p-vs-t"><i style={{ width: `${(withSolar / vsMax) * 100}%` }} /></span>
+                <b>{fmt(withSolar)}</b>
+              </div>
+            </div>
+            <p className="p-note">{tr("pdf_vs_cap", { i: inflPct, c: fmt(q.cost) })}</p>
+          </>
         )}
       </section>
 
+      {/* 3 — whether the thing can be built, not just whether it pays. Most
+          residential offers in RO/MD contain no engineering at all; a string
+          voltage checked against the inverter's real DC limit is the difference
+          between a proposal and a sales sheet. */}
       <section>
-        <h2>{tr("pdf_glance_h")}</h2>
+        <h2><span className="p-n">4</span>{tr("pdf_annex_h")}</h2>
+        <p className="p-lead">{designCheckLead(dc, lang)}</p>
         <table><tbody>
-          <tr><td>{tr("pdf_panels")}</td><td>{tr("pdf_panels_v", { n: panels })}</td></tr>
-          <tr><td>{tr("pdf_inverter")}</td><td>~{Number(inputs.kw).toFixed(1)} kW</td></tr>
-          {inputs.batt && <tr><td>{tr("pdf_batt_row")}</td><td>{tr("pdf_included")}</td></tr>}
-          <tr><td>{tr("pdf_roof")}</td><td>~{roofArea} m²</td></tr>
-          <tr><td>{tr("pdf_orient")}</td><td>{tr("pdf_orient_v")}</td></tr>
+          {checks.map((r, i) => (
+            <tr key={i}>
+              {/* The reasoning belongs under the check it explains. Sharing the
+                  value's right-aligned cell left it stranded mid-page, reading
+                  as neither label nor figure. */}
+              <td>
+                <span className={"p-flag " + (r.ok ? "ok" : "warn")}>{r.ok ? "✓" : "!"}</span>
+                {r.label}
+                <div className="p-chk-d">
+                  {r.detail}{r.note ? ` · ${r.note}` : ""}
+                  {r.warn ? <> — <em>{r.warn}</em></> : null}
+                </div>
+              </td>
+              <td className={"p-chk" + (r.ok ? "" : " bad")}>{r.value}</td>
+            </tr>
+          ))}
         </tbody></table>
+
+        {/* Per-MPPT-input compliance matrix — a real inverter-design report's
+            level of detail: peak power on that input, and each electrical
+            limit (voltage ceiling AND floor, current) checked against the
+            SAME real inverter rating the summary check above already used.
+            Every figure here comes from stringInputs() in lib/designCheck.js,
+            so the annex above and this table can never disagree. Without a
+            real inverter matched, there's no per-input rating to check
+            against, so this only shows the bare split once there's actually
+            more than one input to name. */}
+        {mpptInputs.length > 0 && (hasRealInverter || mpptInputs.length > 1) && (
+          <>
+            <h3>{tr("pdf_mppt_h")}</h3>
+            <table><tbody>
+              <tr>
+                <th></th>
+                {mpptInputs.map((r) => <th key={r.label}>{tr("pdf_input_n", { n: r.label })}</th>)}
+              </tr>
+              <tr>
+                <td>{tr("pdf_strings")}</td>
+                {mpptInputs.map((r) => <td key={r.label}>{r.strings} × {r.modulesPerString}</td>)}
+              </tr>
+              {hasRealInverter && (
+                <tr>
+                  <td>{tr("pdf_peak_input")}</td>
+                  {mpptInputs.map((r) => <td key={r.label}>{r.peakKw.toFixed(2)} kWp</td>)}
+                </tr>
+              )}
+              <tr>
+                <td>{tr("pdf_vstring")}</td>
+                {mpptInputs.map((r) => (
+                  <td key={r.label} className={r.vocOk ? "" : "p-chk bad"}>
+                    {Math.round(r.vString)} / {r.maxDcV} V
+                  </td>
+                ))}
+              </tr>
+              {hasRealInverter && mpptInputs[0].vmppOk !== null && (
+                <tr>
+                  <td>{tr("pdf_vmpp_hot")}</td>
+                  {mpptInputs.map((r) => (
+                    <td key={r.label} className={r.vmppOk ? "" : "p-chk bad"}>
+                      {Math.round(r.vmppHotActual)} / {r.minMpptV} V
+                    </td>
+                  ))}
+                </tr>
+              )}
+              {hasRealInverter && mpptInputs[0].maxInputCurrentA !== null && (
+                <tr>
+                  <td>{tr("pdf_isc_input")}</td>
+                  {mpptInputs.map((r) => (
+                    <td key={r.label} className={r.currentOk ? "" : "p-chk bad"}>
+                      {r.iscTotalA.toFixed(1)} / {r.maxInputCurrentA} A
+                    </td>
+                  ))}
+                </tr>
+              )}
+            </tbody></table>
+
+            {/* The same rows above, drawn as a diagram — panels → strings on
+                each real MPPT input → inverter → grid/battery. See
+                ElectricalDiagramSVG's own comment for what this is and isn't. */}
+            <h3>{tr("pdf_elec_h")}</h3>
+            <ElectricalDiagramSVG rows={mpptInputs} panel={dc.panel} inverter={dc.inverter}
+              nInv={dc.nInv} phases={dc.ph} hasBattery={battKwh > 0} lang={lang} />
+            <p className="p-note" style={{ marginTop: 2 }}>{tr("pdf_elec_note")}</p>
+          </>
+        )}
       </section>
 
-      <section>
-        <h2>{tr("pdf_monthly_h")}</h2>
-        <table><tbody>
-          <tr><th>{tr("pdf_loan_h")}</th><th>{tr("pdf_save_h")}</th><th>{tr("pdf_net_h")}</th></tr>
-          <tr><td>{fmt(inputs.loan || 0)}</td><td>{fmt(q.year1 / 12)}</td>
-            <td>{(net >= 0 ? "+" : "") + fmt(net)}{tr("pp_mo")}</td></tr>
-        </tbody></table>
-        <p className="p-note" style={{ marginTop: 6 }}>{tr("pdf_loan_note")}</p>
-        {net >= 0 && <div className="p-verdict">{tr("pdf_cf_ok")}</div>}
-      </section>
+      {/* 4 — what the exported surplus actually earns, from the operator's own
+          published table: a figure the client can look up and verify. */}
+      {buyback && (
+        <section>
+          <h2><span className="p-n">5</span>{tr("pdf_surplus_h")}</h2>
+          <p className="p-note" style={{ marginBottom: 7 }}>{tr("pdf_surplus_cap")}</p>
+          <BuybackSVG seasonal={buyback.seasonal} weighted={buyback.weightedMdl} lang={lang} />
+          <div className="p-eco" style={{ marginTop: 8 }}>
+            <div><b>{buyback.weightedMdl.toFixed(2)} lei</b><span>{tr("pdf_sp_weighted")}</span></div>
+            <div><b>{buyback.flatMdl.toFixed(2)} lei</b><span>{tr("pdf_sp_flat")}</span></div>
+            <div><b>{Math.round(buyback.surplus.totalKwh).toLocaleString(loc)} kWh</b><span>{tr("pdf_sp_exported")}</span></div>
+            <div><b>{lei(buyback.surplus.mdl)}</b><span>{tr("pdf_sp_revenue")} · {fmt(buyback.surplus.eur)}</span></div>
+          </div>
+          {battKwh > 0 && (
+            <div className="p-spread">
+              <b>{buyback.spread.spreadMdl.toFixed(2)} lei</b>
+              {tr("pdf_sp_spread", {
+                r: buyback.spread.retailMdl.toFixed(2),
+                b: buyback.spread.buybackMdl.toFixed(2),
+                p: Math.round(buyback.spread.sharePct),
+              })}
+            </div>
+          )}
+          <div className="p-src">{BUYBACK_SOURCE.operator} — {tr("pdf_sp_src")}</div>
+        </section>
+      )}
 
       <section>
-        <h2>{tr("pdf_eco_h")}</h2>
+        <h2><span className="p-n">{buyback ? 6 : 5}</span>{tr("pdf_eco_h")}</h2>
         <div className="p-eco">
           <div><b>{Math.round(co2Year).toLocaleString(loc)} kg</b><span>{co2(tr("pdf_co2_year"))}</span></div>
           <div><b>{co2Life.toFixed(1)} t</b><span>{co2(tr("pdf_co2_life", { n: hz }))}</span></div>
@@ -247,30 +967,9 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         </div>
       </section>
 
-
+      {/* What happens next, and how long this price holds. */}
       <section>
-        <h2>{tr("pdf_assump_h")}</h2>
-        <table><tbody>
-          <tr><td>{tr("as_yield_exp")}</td><td>{tr("as_yield_v", { n: Math.round(q.yieldPerKwp || E.baseYield) })}</td></tr>
-          {q.afmSubsidy && <tr><td>{tr("pa_subsidy")}</td><td>{tr("pa_yes")} — {(E.subsidyAmountRon || 20000).toLocaleString(loc)} RON</td></tr>}
-          <tr><td>{tr("as_export_scheme")}</td><td>{tr("pdf_scheme_v", { s: mktLine, f: mkt.feed })}</td></tr>
-          {/* "8%" alone reads to a homeowner as "only 8% of my needs are met", when
-              it means 8% of PRODUCTION is used on site — often while 100% of their
-              own consumption is covered. State both so it can't be misread. */}
-          <tr><td>{tr("as_selfcons")}</td><td>
-            {Math.round((q.self || 0) * 100)}%{inputs.batt ? " " + tr("as_with_batt") : ""}
-            {Number(inputs.cons) > 0 && (
-              <> — {tr("as_covers", { n: Math.round(Math.min(1, ((q.self || 0) * (q.prod0 || 0)) / Number(inputs.cons)) * 100) })}</>
-            )}
-          </td></tr>
-          <tr><td>{tr("as_cost_basis")}</td><td>{tr("pdf_cost_v", { c: E.costPerKw, b: E.batteryCost, o: E.opexPct })}</td></tr>
-          <tr><td>{tr("pdf_horizon")}</td><td>{tr("as_horizon_v", { n: hz })}</td></tr>
-          <tr><td>{co2(tr("pdf_co2_factor"))}</td><td>{mkt.co2} kg/kWh</td></tr>
-        </tbody></table>
-      </section>
-
-      <section>
-        <h2>{tr("pdf_next_h")}</h2>
+        <h2><span className="p-n">{buyback ? 7 : 6}</span>{tr("pdf_next_h")}</h2>
         <ol className="p-steps">
           <li>{tr("pdf_step1")}</li>
           <li>{tr("pdf_step2")}</li>
@@ -285,12 +984,43 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         )}
       </section>
 
-      {preparedBy?.name && (
-        <div className="p-foot" style={{ borderTop: "none", marginTop: 18, paddingTop: 0 }}>
-          {tr("pp_prepared_by")} {preparedBy.name}{preparedBy.phone ? " · " + preparedBy.phone : ""} · {company.name}
+      {/* Back matter: reference the client can check, deliberately quieter than
+          the selling content — it used to sit mid-document competing with it. */}
+      <div className="p-annex">
+        <section>
+          <h2>{tr("pdf_assump_h")}</h2>
+          <table><tbody>
+            <tr><td>{tr("as_yield_exp")}</td><td>{tr("as_yield_v", { n: Math.round(q.yieldPerKwp || E.baseYield) })}</td></tr>
+            <tr><td>{tr("as_export_scheme")}</td><td>{tr("pdf_scheme_v", { s: mktLine, f: mkt.feed })}</td></tr>
+            {/* "8%" alone reads to a homeowner as "only 8% of my needs are met", when
+                it means 8% of PRODUCTION is used on site — often while 100% of their
+                own consumption is covered. State both so it can't be misread. */}
+            <tr><td>{tr("as_selfcons")}</td><td>
+              {Math.round((q.self || 0) * 100)}%{inputs.batt ? " " + tr("as_with_batt") : ""}
+              {Number(inputs.cons) > 0 && (
+                <> — {tr("as_covers", { n: Math.round(Math.min(1, ((q.self || 0) * (q.prod0 || 0)) / Number(inputs.cons)) * 100) })}</>
+              )}
+            </td></tr>
+            <tr><td>{tr("as_cost_basis")}</td><td>{tr("pdf_cost_v", { c: E.costPerKw, b: E.batteryCost, o: E.opexPct })}</td></tr>
+            <tr><td>{tr("pdf_horizon")}</td><td>{tr("as_horizon_v", { n: hz })}</td></tr>
+            <tr><td>{co2(tr("pdf_co2_factor"))}</td><td>{mkt.co2} kg/kWh</td></tr>
+          </tbody></table>
+        </section>
+      </div>
+
+      {/* One atomic block, not two. These were separate divs that could split
+          across a page boundary independently — on a quote where the back
+          matter landed near the bottom of a page, the "prepared by" line fit
+          but the bare company-name line after it didn't, leaving it stranded
+          alone on a nearly blank trailing page. */}
+      <div className="p-foot">
+        {preparedBy?.name && (
+          <div>{tr("pp_prepared_by")} {preparedBy.name}{preparedBy.phone ? " · " + preparedBy.phone : ""} · {company.name}</div>
+        )}
+        <div style={preparedBy?.name ? { marginTop: 3 } : undefined}>
+          {company.name}{company.plan === "free" ? <> · {tr("pdf_foot")} · voltmira.com</> : null}
         </div>
-      )}
-      <div className="p-foot">{company.name}{company.plan === "free" ? <> · {tr("pdf_foot")} · voltmira.com</> : null}</div>
+      </div>
     </div>
   );
 }

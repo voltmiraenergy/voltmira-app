@@ -109,12 +109,19 @@ export default {
     return [{ source: "/.well-known/security.txt", destination: "/api/security-txt" }];
   },
   async redirects() {
-    // Canonicalize www → apex with a permanent 308 (preserves method + body).
-    return [{
-      source: "/:path*",
-      has: [{ type: "host", value: "www.voltmira.com" }],
-      destination: "https://voltmira.com/:path*",
-      permanent: true,
-    }];
+    return [
+      // Canonicalize www → apex with a permanent 308 (preserves method + body).
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.voltmira.com" }],
+        destination: "https://voltmira.com/:path*",
+        permanent: true,
+      },
+      // The Studio offer preview was retired — building an offer now happens on
+      // the real project, which carries everything the preview had. Temporary
+      // (307) rather than permanent so a bookmark isn't cached forever against
+      // a path we may reuse.
+      { source: "/studio/quote", destination: "/projects", permanent: false },
+    ];
   },
 };

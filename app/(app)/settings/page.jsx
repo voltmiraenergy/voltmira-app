@@ -104,10 +104,11 @@ export default function Settings() {
         default_market: co.default_market, currency: co.currency, lang: normLang(co.lang),
         subsidy_amount_ron: co.subsidy_amount_ron, prosumer_limit_kw: co.prosumer_limit_kw,
         notify_open: co.notify_open !== false,
+        nudge_enabled: co.nudge_enabled === true,
         // company legal details for invoicing
         legal_name: co.legal_name, reg_no: co.reg_no, vat_no: co.vat_no,
         legal_address: co.legal_address, iban: co.iban, invoice_prefix: co.invoice_prefix,
-        vat_rate: co.vat_rate,
+        vat_rate: co.vat_rate, install_warranty_years: co.install_warranty_years,
         engine: eng,
       });
       setMsg(t("s_saved", lang));
@@ -263,6 +264,16 @@ export default function Settings() {
           <span className="toggle-pill" />
           <span className="txt">{t("s_notify", lang)}<small>{t("s_notify_note", lang)}</small></span>
         </label>
+        {/* Opt-IN, unlike notify_open above — this emails a real CLIENT under
+            this company's own brand with AI-phrased copy nobody here wrote,
+            so it must default off (co.nudge_enabled === true, not !== false)
+            until someone explicitly turns it on. See add-proposal-nudges.sql. */}
+        <label className="check" style={{ marginTop: 10 }}>
+          <input type="checkbox" checked={co.nudge_enabled === true}
+            onChange={e => { setCo({ ...co, nudge_enabled: e.target.checked }); touch(); }} />
+          <span className="toggle-pill" />
+          <span className="txt">{t("s_nudge", lang)}<small>{t("s_nudge_note", lang)}</small></span>
+        </label>
         <div className="set-note">{t("co_note", lang)}</div>
       </section>
 
@@ -286,6 +297,20 @@ export default function Settings() {
         <div className="field" style={{ marginTop: 12 }}><label>{t("s_legal_address", lang)}</label>
           <input className="input" value={co.legal_address || ""} onChange={set("legal_address")} placeholder={t("s_legal_address_ph", lang)} /></div>
         <div className="set-note">{t("s_invoicing_note", lang)}</div>
+      </section>
+
+      {/* Installation warranty — the installer's OWN workmanship commitment,
+          distinct from the manufacturer warranties in the equipment catalog.
+          Blank by default: unlike the catalog's warrantyYears, there is
+          nothing to verify here (it's the installer's own real promise), but
+          it must still not print a false "0-year" line on a proposal before
+          they've actually set it. */}
+      <section className="card st-sec">
+        <div className="st-head"><SecIcon name="company" /><h3>{t("s_install_warranty", lang)}</h3></div>
+        <div className="set-note" style={{ marginTop: -4, marginBottom: 12 }}>{t("s_install_warranty_sub", lang)}</div>
+        <div className="set-grid">
+          {numField("iInstWarr", t("s_install_warranty_years", lang), co.install_warranty_years ?? "", 1, t("unit_years", lang), setCoNum("install_warranty_years"))}
+        </div>
       </section>
 
       {/* Plan */}
@@ -326,10 +351,8 @@ export default function Settings() {
           {numField("eHorizon", t("pdf_horizon", lang), eng.horizon, 1, t("unit_years", lang), setEng("horizon"))}
         </div>
 
-        <div className="st-glabel">{t("st_grp_subs", lang)}</div>
+        <div className="st-glabel">{t("st_grp_limits", lang)}</div>
         <div className="set-grid">
-          {numField("eSubsidy", t("afm_amount", lang), co.subsidy_amount_ron, 500, null, setCoNum("subsidy_amount_ron"))}
-          {numField("eSubsidyMdl", t("s_subsidy_mdl", lang), eng.subsidyAmountMdl, 500, null, setEng("subsidyAmountMdl"))}
           {numField("eProsumer", t("prosumer_limit", lang), co.prosumer_limit_kw, 0.1, null, setCoNum("prosumer_limit_kw"))}
         </div>
 
@@ -337,6 +360,15 @@ export default function Settings() {
         <div className="set-grid">
           {numField("eValidity", t("s_validity", lang), eng.quoteValidityDays, 5, t("unit_days", lang), setEng("quoteValidityDays"))}
         </div>
+
+        {/* A starting assumption for the client-facing "monthly payment"
+            estimate — same as costPerKw, never shown as a real loan offer. */}
+        <div className="st-glabel">{t("st_grp_finance", lang)}</div>
+        <div className="set-grid">
+          {numField("eFinRate", t("e_finance_rate", lang), eng.financeRatePct ?? 9, 0.5, "%/yr", setEng("financeRatePct"))}
+          {numField("eFinTerm", t("e_finance_term", lang), eng.financeTermYears ?? 10, 1, t("unit_years", lang), setEng("financeTermYears"))}
+        </div>
+        <div className="set-note">{t("st_finance_note", lang)}</div>
       </section>
 
       {/* Payback scenarios */}

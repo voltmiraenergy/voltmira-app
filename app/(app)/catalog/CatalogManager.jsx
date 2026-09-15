@@ -4,12 +4,14 @@
 // real product photo (or a clean kind icon when none is set). Prices here feed
 // the bill of materials that drives a quote's real cost.
 import { useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { addProduct, updateProduct, deleteProduct, seedStarterCatalog } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
+import SupplierCatalogBrowser from "./SupplierCatalogBrowser.jsx";
 
 const KINDS = ["panel", "inverter", "battery", "mounting", "other"];
 const SPEC_HINT = { panel: "550 W", inverter: "8 kW", battery: "10 kWh", mounting: "", other: "" };
-const EMPTY = { kind: "panel", brand: "", model: "", spec: "", unit_price: "", image_url: "", track_stock: false, stock: "" };
+const EMPTY = { kind: "panel", brand: "", model: "", spec: "", cost_price: "", unit_price: "", image_url: "", track_stock: false, stock: "" };
 const LOW_STOCK = 2;   // available at or below this shows the amber "low" state
 
 // Clean line-art thumbnails per kind — shown when a product has no photo, so the
@@ -66,6 +68,14 @@ const CSS = `
 .cat-foot{display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:11px}
 .cat-price{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);letter-spacing:-.01em}
 .cat-price small{font-size:11px;font-weight:500;color:var(--muted);margin-left:3px}
+.cat-cost{display:block;font-style:normal;font-size:11px;font-weight:500;color:var(--muted);margin-top:1px}
+.cat-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.cat-mtag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:99px;
+  background:var(--green-tint);color:var(--green);letter-spacing:.01em}
+.cat-mtag.neg{background:var(--amber-tint);color:#B4472F}
+.cat-mtag.quiet{background:var(--paper);color:var(--muted);font-weight:600}
+.cat-margin{font-family:var(--font-d);font-weight:700;color:var(--green);font-size:15px;align-self:center}
+.cat-margin.neg{color:#B4472F}
 .cat-acts{margin-left:auto;display:flex;gap:5px}
 .cat-iconbtn{border:1px solid var(--line);background:var(--paper);border-radius:8px;width:30px;height:30px;
   display:grid;place-items:center;cursor:pointer;color:var(--muted);font-size:13px;transition:color .18s,border-color .18s}
@@ -90,10 +100,92 @@ const CSS = `
   .cat-form-grid{grid-template-columns:1fr 1fr;gap:9px}
   .cat-form-grid .fkind{grid-column:1/-1}
 }
+
+/* supplier catalog browser — "Sunny Design"-style database, one click into
+   your own catalog via the same addProduct() the manual form uses */
+.cat-sup-card{width:100%;text-align:left;font-family:inherit;background:var(--paper);border:1px solid var(--line);border-radius:11px;
+  padding:11px 13px;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:border-color .14s,background .14s}
+.cat-sup-card:hover{border-color:var(--green)}
+.cat-sup-card.on{border-color:var(--green);background:rgba(30,107,78,.08)}
+.cat-sup-card b{font-size:13px;color:var(--ink)}
+.cat-sup-card span{font-size:11px;color:#1E6B4E;font-weight:600}
+.cat-sup-card em{font-style:normal;font-size:11px;color:var(--muted);line-height:1.4;margin-top:2px}
+.supbrowser-kinds{display:flex;gap:6px;flex-wrap:wrap}
+.supbrowser-chip{font-family:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:99px;
+  background:var(--paper-2);border:1px solid var(--line);color:var(--muted);cursor:pointer;transition:all .14s}
+.supbrowser-chip:hover{border-color:var(--green);color:var(--green)}
+.supbrowser-chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.supbrowser-search{width:100%;margin-bottom:16px}
+.supbrowser-card .cat-body{gap:5px}
+.supbrowser-stockrow{display:flex;align-items:center;gap:8px;margin-top:2px}
+.supbrowser-lead{font-size:10.5px;color:var(--muted);background:var(--paper);border:1px solid var(--line);
+  border-radius:99px;padding:2px 8px}
+.supbrowser-supname{font-size:10.5px;color:var(--muted);margin-top:-1px}
+.supbrowser-compat{font-size:10.5px;font-weight:600;color:var(--green)}
+.supbrowser-compat.none{color:#B4472F}
+
+/* filter sidebar + grid layout */
+.supbrowser-layout{display:grid;grid-template-columns:230px 1fr;gap:22px;margin-top:14px;align-items:start}
+.supbrowser-sidebar{position:sticky;top:12px;display:flex;flex-direction:column}
+.supbrowser-sb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.supbrowser-sb-head b{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.supbrowser-clear{font-family:inherit;font-size:11px;font-weight:600;color:#1E6B4E;background:none;
+  border:none;cursor:pointer;text-decoration:underline;padding:0}
+.supbrowser-sb-group{margin-bottom:18px}
+.supbrowser-sb-group h3{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+  font-weight:700;margin:0 0 8px}
+.supbrowser-check{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);
+  cursor:pointer;padding:3px 0}
+.supbrowser-check input{width:15px;height:15px;accent-color:var(--green);cursor:pointer}
+.supbrowser-range{margin-bottom:8px}
+.supbrowser-range span{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;
+  font-variant-numeric:tabular-nums}
+.supbrowser-range input[type=range]{width:100%}
+.supbrowser-range-summary{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:8px;font-variant-numeric:tabular-nums}
+.supbrowser-resultline{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);margin-bottom:10px}
+.supbrowser-cmphint{font-style:normal}
+.supbrowser-main .cat-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.supbrowser-imgbtn{display:block;width:100%;padding:0;border:none;background:var(--paper);cursor:pointer;
+  border-bottom:1px solid var(--line);overflow:hidden}
+@keyframes catImgIn{from{opacity:0}to{opacity:1}}
+.supbrowser-img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;animation:catImgIn .3s ease}
+.supbrowser-filtertoggle{display:none}
+.supbrowser-namebtn{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;
+  font-family:inherit;background:none;border:none;padding:0;cursor:pointer}
+.supbrowser-cmp{position:absolute;top:8px;left:8px;z-index:1;display:flex;align-items:center;gap:5px;
+  font-size:10.5px;font-weight:700;color:var(--ink);background:rgba(255,255,255,.92);border-radius:99px;
+  padding:3px 9px 3px 6px;cursor:pointer;box-shadow:0 2px 6px rgba(20,42,33,.18)}
+.supbrowser-cmp input{width:13px;height:13px;accent-color:var(--green);cursor:pointer}
+.supbrowser-card{position:relative}
+.supbrowser-cmpbar{position:sticky;bottom:12px;display:flex;align-items:center;gap:10px;margin-top:14px;
+  background:var(--ink);color:#fff;border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;
+  box-shadow:var(--shadow-lg)}
+.supbrowser-cmpbar-hint{font-size:11px;font-weight:500;opacity:.7}
+.supbrowser-toptabs{display:flex;gap:6px;margin-top:12px;border-bottom:1px solid var(--line)}
+.supbrowser-toptab{font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);background:none;
+  border:none;border-bottom:2px solid transparent;padding:9px 4px;margin-bottom:-1px;cursor:pointer;transition:color .14s}
+.supbrowser-toptab:hover{color:var(--ink)}
+.supbrowser-toptab.on{color:var(--green);border-bottom-color:var(--green)}
+@media(max-width:860px){
+  .supbrowser-layout{grid-template-columns:1fr}
+  .supbrowser-sidebar{position:static;flex-direction:column}
+  .supbrowser-filtertoggle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+    font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);background:var(--paper-2);
+    border:1px solid var(--line);border-radius:11px;padding:11px 14px;cursor:pointer;margin-top:12px}
+  .supbrowser-filtertoggle svg{transition:transform .18s;flex:none}
+  .supbrowser-filtertoggle.open svg{transform:rotate(180deg)}
+  .supbrowser-sidebar{display:none}
+  .supbrowser-sidebar.open{display:flex;margin-top:12px}
+}
 `;
 
-export default function CatalogManager({ initial, lang, committed = {}, reserved = {} }) {
+export default function CatalogManager({ initial, lang, committed = {}, reserved = {}, usedIn = {} }) {
+  const searchParams = useSearchParams();
   const [items, setItems] = useState(initial);
+  // ?browse=1 opens the supplier browser straight away — a one-hop deep link
+  // (see /demo?next=/catalog?browse=1) instead of "land on /catalog, then
+  // click Catalog furnizori yourself".
+  const [browsing, setBrowsing] = useState(() => searchParams.get("browse") === "1");
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
@@ -101,6 +193,14 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
   const [pending, start] = useTransition();
 
   const fmt = (n) => "€" + (Math.round(Number(n) || 0)).toLocaleString("en-IE");
+
+  // Margin between what you pay and what you list it at. Null when either side
+  // is unset — a product with no purchase price yet must not claim 100% margin.
+  function marginPct(p) {
+    const cost = Number(p.cost_price) || 0, list = Number(p.unit_price) || 0;
+    if (!(cost > 0) || !(list > 0)) return null;
+    return ((list - cost) / list) * 100;
+  }
 
   function saveNew() {
     if (!form.brand.trim() && !form.model.trim()) return;
@@ -111,13 +211,15 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
   }
   function startEdit(p) {
     setEditId(p.id);
-    setEditForm({ kind: p.kind, brand: p.brand, model: p.model, spec: p.spec, unit_price: p.unit_price,
+    setEditForm({ kind: p.kind, brand: p.brand, model: p.model, spec: p.spec,
+      cost_price: p.cost_price ?? "", unit_price: p.unit_price,
       image_url: p.image_url || "", track_stock: !!p.track_stock, stock: p.stock ?? "" });
   }
   function saveEdit() {
     start(() => updateProduct(editId, editForm).then(() => {
       setItems(l => l.map(x => x.id === editId ? { ...x, ...editForm,
         unit_price: Number(editForm.unit_price) || 0,
+        cost_price: Number(editForm.cost_price) || 0,
         track_stock: !!editForm.track_stock, stock: Math.max(0, Math.round(Number(editForm.stock) || 0)) } : x));
       setEditId(null);
     }));
@@ -142,9 +244,20 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
           <input className="input" value={v.model} maxLength={80} placeholder="Tiger Neo" onChange={e => set({ ...v, model: e.target.value })} /></div>
         <div className="field"><label>{t("cat_field_spec", lang)}</label>
           <input className="input" value={v.spec} maxLength={60} placeholder={SPEC_HINT[v.kind] || "—"} onChange={e => set({ ...v, spec: e.target.value })} /></div>
+        <div className="field"><label>{t("cat_field_cost", lang)}</label>
+          <input className="input" type="number" min="0" step="1" value={v.cost_price} placeholder="0"
+            onChange={e => set({ ...v, cost_price: e.target.value })} /></div>
         <div className="field"><label>{t("cat_field_price", lang)}</label>
           <input className="input" type="number" min="0" step="1" value={v.unit_price} placeholder="0"
             onChange={e => set({ ...v, unit_price: e.target.value })} /></div>
+        {marginPct(v) != null && (
+          <div className="field fmargin">
+            <label>{t("cat_field_margin", lang)}</label>
+            <output className={"cat-margin" + (marginPct(v) < 0 ? " neg" : "")}>
+              {fmt(Number(v.unit_price) - Number(v.cost_price))} · {marginPct(v).toFixed(0)}%
+            </output>
+          </div>
+        )}
       </div>
       <div className="cat-form-img">
         <div className="field"><label>{t("cat_field_image", lang)}</label>
@@ -200,10 +313,17 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
         <h1>{t("nav_catalog", lang)}</h1>
         <span className="spacer" />
         <span style={{ color: "var(--muted)", fontSize: 13 }}>{t("cat_count", lang, { n: items.length })}</span>
-        {!adding && <button className="btn primary" onClick={() => { setForm(EMPTY); setAdding(true); }}>+ {t("cat_add", lang)}</button>}
+        {!browsing && <button className="btn ghost" onClick={() => { setAdding(false); setBrowsing(true); }}>⇪ {t("cat_sup_browse", lang)}</button>}
+        {!adding && <button className="btn primary" onClick={() => { setBrowsing(false); setForm(EMPTY); setAdding(true); }}>+ {t("cat_add", lang)}</button>}
       </div>
 
       <p className="cat-sub">{t("cat_sub", lang)}</p>
+
+      {browsing && (
+        <SupplierCatalogBrowser lang={lang}
+          onClose={() => setBrowsing(false)}
+          onAdded={(row) => setItems((l) => [...l, row])} />
+      )}
 
       {adding && (
         <section className="card" style={{ marginBottom: 16, borderColor: "var(--green)" }}>
@@ -215,13 +335,16 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
         </section>
       )}
 
-      {!hasItems && !adding ? (
+      {!hasItems && !adding && !browsing ? (
         <div className="cat-starter">
-          
+
           <h3>{t("cat_empty", lang)}</h3>
           <p>{t("cat_starter_hint", lang)}</p>
           <div style={{ display: "flex", gap: 9, justifyContent: "center", flexWrap: "wrap" }}>
-            <button className="btn primary" disabled={pending} onClick={loadStarter}>
+            <button className="btn primary" disabled={pending} onClick={() => setBrowsing(true)}>
+              ⇪ {t("cat_sup_browse", lang)}
+            </button>
+            <button className="btn ghost" disabled={pending} onClick={loadStarter}>
               {pending ? "…" : "⬇ " + t("cat_load_starter", lang)}
             </button>
             <button className="btn ghost" disabled={pending} onClick={() => { setForm(EMPTY); setAdding(true); }}>+ {t("cat_add", lang)}</button>
@@ -257,11 +380,27 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
                         <span className="cat-name">{p.model || p.brand || t("cat_untitled", lang)}</span>
                         {p.spec && <span className="cat-spec">{p.spec}</span>}
                         {stockBadge(p)}
+                        {/* What you sell and what it leaves you — stock says
+                            what's in the warehouse, this says what it earns. */}
+                        <div className="cat-meta">
+                          {marginPct(p) != null && (
+                            <span className={"cat-mtag" + (marginPct(p) < 0 ? " neg" : "")}>
+                              {t("cat_margin_tag", lang, { n: Math.round(marginPct(p)) })}
+                            </span>
+                          )}
+                          {usedIn[p.id] > 0 && (
+                            <span className="cat-mtag quiet">{t("cat_used_in", lang, { n: usedIn[p.id] })}</span>
+                          )}
+                        </div>
                         <div className="cat-foot">
-                          <span className="cat-price">{fmt(p.unit_price)}<small>{t("cat_price_each", lang)}</small></span>
+                          <span className="cat-price">{fmt(p.unit_price)}<small>{t("cat_price_each", lang)}</small>
+                            {Number(p.cost_price) > 0 && (
+                              <em className="cat-cost">{t("cat_cost_each", lang, { v: fmt(p.cost_price) })}</em>
+                            )}
+                          </span>
                           <div className="cat-acts">
                             <button className="cat-iconbtn" onClick={() => startEdit(p)} disabled={pending}
-                              aria-label={t("cat_edit", lang)} title={t("cat_edit", lang)}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+                              aria-label={t("cat_edit", lang)} title={t("cat_edit", lang)}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
                             <button className="cat-iconbtn" onClick={() => remove(p.id)} disabled={pending}
                               aria-label={t("cat_delete", lang)} title={t("cat_delete", lang)}>✕</button>
                           </div>

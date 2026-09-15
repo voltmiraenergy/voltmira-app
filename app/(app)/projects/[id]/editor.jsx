@@ -3,19 +3,31 @@
 // engine. Autosaves to Supabase (debounced 600ms). PVGIS button pulls real yield
 // for the address. Proposal button creates the tracked link. Visual language
 // matches the live demo (editor grid, cards, bands, financing, modal).
-import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
-import { createProposal, saveQuoteTemplate } from "../../../../lib/actions.js";
+import { createProposal, regenerateProposal, saveQuoteTemplate } from "../../../../lib/actions.js";
+import AddressField from "../../../../components/AddressField.jsx";
+import SiteDesigner from "../../../../components/SiteDesigner.jsx";
+import BackLink from "../../../../components/BackLink.jsx";
+import BomCard from "../../../../components/BomCard.jsx";
+import DesignChecks from "../../../../components/DesignChecks.jsx";
+import DesignSuggestions from "../../../../components/DesignSuggestions.jsx";
+import BatterySizingPanel from "../../../../components/BatterySizingPanel.jsx";
+import SurplusPanel, { useBuyback } from "../../../../components/SurplusPanel.jsx";
 import InstallChecklist from "./InstallChecklist.jsx";
 import SignedContract from "./SignedContract.jsx";
 import ShareCard from "./ShareCard.jsx";
 import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
+import { financials } from "../../../../lib/quoteAnalysis.js";
+import { applyCalibration } from "../../../../lib/yieldCalibration.js";
 import { t } from "../../../../lib/i18n.js";
+import { autoBom } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
 
-// System-size slider range — raised to 50 kW for larger commercial projects.
-const KW_MIN = 2, KW_MAX = 50;
+// System-size slider range — raised to 500 kW: Site Designer's own real,
+// drawn-roof panel counts can land well past a "residential" size for a large
+// commercial roof, and the slider must be able to show whatever it applied.
+const KW_MIN = 2, KW_MAX = 500;
 
 // Short month labels in the app's language, via Intl — no extra i18n keys needed.
 function monthLabels(lang) {
@@ -78,16 +90,22 @@ function Donut({ self, prod0, cons, lang }) {
 }
 
 /* ---------- editor ---------- */
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", signed = null }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", signed = null, calibration = null }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
-    title: initial.title, client: initial.client_name, address: initial.address,
+    title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
+    // Coordinates of the resolved address pick. Null until someone picks a
+    // suggestion (or until add-project-coords.sql has been run); PVGIS then
+    // uses them directly instead of re-geocoding the text every time.
+    lat: initial.lat != null ? +initial.lat : null,
+    lon: initial.lon != null ? +initial.lon : null,
     market: initial.market, status: initial.status,
     kw: +initial.kw, price: +initial.price, cons: +initial.cons,
     batt: initial.batt, battKwh: initial.batt_kwh != null ? +initial.batt_kwh : 10,
     options: Array.isArray(initial.options) ? initial.options : [],
     bom: Array.isArray(initial.bom) ? initial.bom : [],
-    afmSubsidy: initial.afm_subsidy, loan: +initial.loan_monthly,
+    siteDesign: initial.site_design && typeof initial.site_design === "object" ? initial.site_design : {},
+    loan: +initial.loan_monthly,
     yieldOverride: initial.yield_per_kwp ? +initial.yield_per_kwp : undefined,
     monthlyYieldShape: initial.monthly_yield_shape || undefined,
     useMonthly: initial.use_monthly, consMonthly: initial.cons_monthly,
@@ -102,6 +120,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const [billErr, setBillErr] = useState("");
   const billInput = useRef(null);
   const [propUrl, setPropUrl] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState(null);
   // Emailing the PDF: the recipient isn't stored on the project (only the client's
   // NAME is), so this always starts empty rather than guessing an address.
   const [emailTo, setEmailTo] = useState("");
@@ -110,6 +130,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // of a proforma (asking for money up front) was reachable only by hand-editing
   // the URL. 0 = invoice the full amount.
   const [invOpen, setInvOpen] = useState(false);
+  const [siteDesignerOpen, setSiteDesignerOpen] = useState(false);
+  const [siteDesignApplying, setSiteDesignApplying] = useState(false);
   const [depPct, setDepPct] = useState(30);
   const [invTo, setInvTo] = useState("");
   const [invBusy, setInvBusy] = useState(false);
@@ -121,6 +143,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const [tplOpen, setTplOpen] = useState(false);
   const [tplName, setTplName] = useState("");
   const [tplBusy, setTplBusy] = useState(false);
+  const [disc, setDisc] = useState(6);   // % real discount rate, for NPV/LCOE
   const timer = useRef(null);
 
   function openTemplate() { setTplName(p.title || "Template"); setTplOpen(true); }
@@ -134,9 +157,22 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     } catch { /* non-fatal */ } finally { setTplBusy(false); }
   }
 
-  // Quote price is driven entirely by system size (kW × rate + battery).
-  const q = useMemo(() => quote({ ...p, costOverride: 0 }, E), [p, E]);
+  // Moldova's exported surplus is bought back at the operator's published
+  // monthly price, weighted by the months this system actually exports in — not
+  // the market's flat constant. Same figure Studio and the bankability export
+  // use, so an offer and its supporting documents never disagree.
+  const buyback = useBuyback(Number(p.price) || 0.18, FX.MDL);
+  const isMD = p.market === "MD";
+  const feedOverride = isMD ? buyback.weightedEur : undefined;
+
+  // Quote price is driven entirely by system size (kW × rate + battery); the
+  // bill of materials is the installer's cost, not a price override (see
+  // lib/quoteInput.js).
+  const q = useMemo(
+    () => quote({ ...p, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) }, E),
+    [p, E, feedOverride]);
   const fmt = n => "€" + Math.round(n).toLocaleString("en-IE");
+  const num = n => Math.round(Number(n) || 0).toLocaleString("en-IE");
   const yrs = n => n === null ? "25+" : n === 0 ? tr("pp_immediate") : n.toFixed(1);
   // per-kWh prices need decimals, and 0.036 must not print as "0.04"
   const eurKwh = v => "€" + Number(v).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
@@ -166,6 +202,17 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const grants = Math.max(0, q.e.grossCost - q.e.cost);
   const cbMax = Math.max(q.e.cost, lifetime, 1);
 
+  /* ---- commercial metrics: what payback alone doesn't answer ---- */
+  const fin = useMemo(() => financials(q.e, q.e.grossCost, disc, E), [q.e, disc, E]);
+
+  // Inputs for the battery sweep: the same project WITHOUT a battery, so the
+  // curve measures what each added kWh is worth rather than re-stating the
+  // current pick.
+  const sweepBase = useMemo(() => {
+    const { batt, battKwh, ...rest } = p;
+    return { ...rest, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) };
+  }, [p, feedOverride]);
+
   /* debounced autosave — MUST surface failure: a false "Saved" while the write
      was rejected (expired session, offline, RLS) silently loses the edit. */
   async function persist(next) {
@@ -176,7 +223,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         market: next.market, status: next.status,
         kw: next.kw, price: next.price, cons: next.cons,
         batt: next.batt,
-        afm_subsidy: next.afmSubsidy, loan_monthly: next.loan,
+        loan_monthly: next.loan,
         use_monthly: !!next.useMonthly,
         cons_monthly: (next.useMonthly && Array.isArray(next.consMonthly) && next.consMonthly.length === 12)
           ? next.consMonthly : null,
@@ -198,6 +245,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           .then(({ error: e3 }) => { if (e3) console.warn("options not stored (run add-quote-options.sql?):", e3.message); });
         sb.from("projects").update({ bom: next.bom }).eq("id", initial.id)
           .then(({ error: e4 }) => { if (e4) console.warn("bom not stored (run add-quote-bom.sql?):", e4.message); });
+        sb.from("projects").update({ lat: next.lat ?? null, lon: next.lon ?? null }).eq("id", initial.id)
+          .then(({ error: e5 }) => { if (e5) console.warn("coordinates not stored (run add-project-coords.sql?):", e5.message); });
+        sb.from("projects").update({ site_design: next.siteDesign || {} }).eq("id", initial.id)
+          .then(({ error: e6 }) => { if (e6) console.warn("site design not stored (run add-site-design.sql?):", e6.message); });
+        sb.from("projects").update({ client_email: next.clientEmail || "" }).eq("id", initial.id)
+          .then(({ error: e7 }) => { if (e7) console.warn("client email not stored (run add-proposal-nudges.sql?):", e7.message); });
       }
     } catch (e) {
       setSaved("error");
@@ -242,15 +295,95 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const removeOption = (i) => update({ options: p.options.filter((_, j) => j !== i) });
   useEffect(() => () => clearTimeout(timer.current), []);
 
+  // A row picked from Design Suggestions replaces whatever inverter line(s)
+  // are already in the BOM — never adds a second, competing one alongside it.
+  // Supplier-sourced, like autoBom's own lines: no productId, since this isn't
+  // the installer's own stocked catalog.
+  function applyInverterChoice(row) {
+    const kept = (Array.isArray(p.bom) ? p.bom : []).filter((l) => l.kind !== "inverter");
+    const line = {
+      kind: "inverter", brand: row.inverter.brand, model: row.inverter.model,
+      spec: `${row.inverter.kw} kW ${row.inverter.type}`,
+      qty: row.count, unit_price: row.inverter.price, source: "supplier",
+    };
+    update({ bom: [...kept, line] });
+  }
+
+  // Picking a different place invalidates a PVGIS yield fetched for the old one
+  // — keeping it would quote this roof with another town's sunshine. Moving the
+  // pin within ~1 km is the same PVGIS cache cell, so that keeps the yield.
+  function pickAddress(a) {
+    const moved = p.lat == null || p.lon == null
+      || Math.abs(p.lat - a.lat) > 0.01 || Math.abs(p.lon - a.lng) > 0.01;
+    update({
+      address: a.address, lat: a.lat, lon: a.lng,
+      ...(moved && p.yieldOverride ? { yieldOverride: undefined, monthlyYieldShape: undefined } : {}),
+    });
+  }
+
   async function fetchPVGIS() {
-    if (!p.address) return alert(tr("add_address"));
+    if (!p.address && p.lat == null) return alert(tr("add_address"));
     setPvgisBusy(true);
     try {
-      const r = await fetch(`/api/pvgis?address=${encodeURIComponent(p.address)}`);
+      // Coordinates from a picked address beat re-geocoding its text: the same
+      // street name exists in several towns, and the text lookup can resolve to
+      // a different one than the installer saw on the pin.
+      const query = p.lat != null && p.lon != null
+        ? `lat=${p.lat}&lon=${p.lon}`
+        : `address=${encodeURIComponent(p.address)}`;
+      const r = await fetch(`/api/pvgis?${query}`);
       const j = await r.json();
       if (j.yieldPerKwp) update({ yieldOverride: j.yieldPerKwp, monthlyYieldShape: j.monthlyShape });
       else alert(j.error || "PVGIS lookup failed");
     } finally { setPvgisBusy(false); }
+  }
+
+  // The Site Designer hands back a real, physical panel count per roof plane
+  // (lib/roofLayout.js's fitPanels), each with its own drawn tilt/azimuth —
+  // so this is the one place that actually exercises /api/pvgis's angle/
+  // aspect params instead of always taking the route's 35°/south default.
+  // Per-plane yields are combined panel-count-weighted into the single
+  // yieldOverride/monthlyYieldShape the engine already consumes.
+  // Lets the Site Designer preview real payback/ROI/CO2 for whatever kW its
+  // current drawn layout implies — same engine call as the main quote above,
+  // just with kw swapped for the layout's, so the two can never disagree.
+  const computeSiteDesignQuote = useCallback((kw) =>
+    quote({ ...p, kw, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) }, E),
+    [p, E, feedOverride]);
+
+  async function applySiteDesignLayout(layout) {
+    if (!layout || !layout.totalCount) return;
+    setSiteDesignApplying(true);
+    try {
+      const results = await Promise.all(layout.perPlane.filter((pl) => pl.count > 0).map(async (pl) => {
+        try {
+          const r = await fetch(`/api/pvgis?lat=${pl.lat}&lon=${pl.lon}&angle=${pl.tiltDeg}&aspect=${pl.azimuthDeg}`);
+          const j = await r.json();
+          return { ...pl, yieldPerKwp: j.yieldPerKwp, monthlyShape: j.monthlyShape };
+        } catch { return { ...pl, yieldPerKwp: null }; }
+      }));
+      const valid = results.filter((r) => r.yieldPerKwp);
+      let patch = { kw: layout.kw };
+      if (valid.length) {
+        const totalCount = valid.reduce((s, r) => s + r.count, 0) || 1;
+        patch.yieldOverride = valid.reduce((s, r) => s + r.yieldPerKwp * r.count, 0) / totalCount;
+        if (valid.every((r) => Array.isArray(r.monthlyShape) && r.monthlyShape.length === 12)) {
+          patch.monthlyYieldShape = Array.from({ length: 12 },
+            (_, i) => valid.reduce((s, r) => s + r.monthlyShape[i] * r.count, 0) / totalCount);
+        }
+      }
+      const bomArr = Array.isArray(p.bom) ? p.bom : [];
+      const hasPanelLine = bomArr.some((l) => l.kind === "panel");
+      patch.bom = hasPanelLine
+        ? bomArr.map((l) => l.kind === "panel" ? { ...l, qty: layout.totalCount, brand: layout.panelBrand, model: layout.panelModel } : l)
+        : bomArr.length === 0
+          ? autoBom(layout.kw, p.battKwh).map((l) => l.kind === "panel" ? { ...l, qty: layout.totalCount } : l)
+          : bomArr; // has other lines but no panel line — an unusual manual BOM; leave it rather than guess
+      update(patch);
+      setSiteDesignerOpen(false);
+    } finally {
+      setSiteDesignApplying(false);
+    }
   }
 
   async function makeProposal() {
@@ -260,14 +393,43 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     return code;
   }
 
+  // The link itself never changes (createProposal is idempotent by design —
+  // never bait-and-switch a client), but everything the link SHOWS is frozen
+  // at first-generate time. Edited the BOM, drawn the roof, changed the price
+  // since then? Nothing reaches the client until this runs. Refuses server-side
+  // once the client has actually accepted — see regenerateProposal's own comment.
+  async function refreshProposal() {
+    setRefreshing(true); setRefreshMsg(null);
+    try {
+      await regenerateProposal(initial.id);
+      setRefreshMsg({ ok: true, text: tr("prop_refreshed") });
+    } catch (e) {
+      setRefreshMsg({ ok: false, text: e.message === "already_accepted" ? tr("prop_refresh_accepted") : tr("prop_refresh_err") });
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   async function downloadPdf() {
-    // Warm first so the browser launch overlaps with makeProposal()/navigation.
-    fetch("/api/proposal/warm", { method: "POST", keepalive: true }).catch(() => { });
-    const code = propUrl ? propUrl.split("/p/")[1] : await makeProposal();
-    // Server-rendered PDF, not the browser print dialog. The dialog stamped
-    // Chrome's own header (page title + proposal URL) onto every page, which
-    // undid white-labelling, and left paper size up to whoever was exporting.
-    window.open(`/api/proposal/${code}/pdf`, "_blank", "noopener");
+    // Open the tab synchronously, inside the click gesture, so mobile popup
+    // blockers don't swallow it — they do when window.open runs after an await,
+    // which is why "Download PDF" appeared to do nothing on a phone.
+    const tab = window.open("", "_blank");
+    let code = propUrl ? propUrl.split("/p/")[1] : null;
+    if (!code) {
+      // createProposal is idempotent (returns the existing code), so this does
+      // NOT open the share modal — that's why it no longer mirrors "Generate".
+      try { code = await createProposal(initial.id); }
+      catch { if (tab) tab.close(); return; }
+    }
+    if (p.status === "draft") update({ status: "sent" });
+    // Clean, server-rendered PDF: headless Chromium with displayHeaderFooter:false,
+    // so there's NO browser header/footer stamp (page title, URL, date) the way
+    // a client-side window.print() leaves. Chromium is pre-warmed when the share
+    // panel opens (see the effect below), so this is a short wait, and the tab
+    // shows the actual PDF — saveable on desktop and on a phone.
+    const url = `/api/proposal/${code}/pdf`;
+    if (tab) tab.location.href = url; else window.location.href = url;
   }
 
   // Chromium's cold launch is ~3.5s. Kick it off when the share modal appears so
@@ -324,13 +486,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // app timezone, so this matches the date printed on the client's PDF
   const validUntilStr = validUntilDate ? fmtDate(validUntilDate, { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB") : null;
 
-  // Local subsidy is market-aware: RO = AFM/Casa Verde (RON), MD = prosumer grant
-  // (MDL). DE has none, so the toggle hides there. Amount converts to EUR for the
-  // "−€X" hint, using the same FX the engine uses.
-  const subKey = mkt.subsidyKey;                 // e.g. "subsidyAmountRon" | "subsidyAmountMdl" | null
-  const subAmountEur = subKey ? (Number(E[subKey]) || 0) / (FX[mkt.subsidyFx] || 1) : 0;
-  const subLabel = p.market === "MD" ? tr("md_subsidy_label") : tr("afm_label");
-
   // Switching market pre-fills the electricity price with the new market's
   // regional default — but only when the user hasn't typed a custom price yet
   // (i.e. it still equals the old market's default).
@@ -353,10 +508,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   return (
     <div style={{ maxWidth: 1080, margin: "0 auto" }}>
       <div className="ed-head">
-        <Link className="back-link" href="/projects">
+        <BackLink href="/projects">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
           {tr("back_projects").replace("← ", "")}
-        </Link>
+        </BackLink>
         <input className="proj-title" value={p.title} onChange={e => update({ title: e.target.value })} />
         <span style={{ fontSize: 12, color: saved === "error" ? "var(--red)" : "var(--muted)", fontWeight: saved === "error" ? 700 : 400 }}>
           {saved === "saving" ? tr("saving") : saved === "error" ? tr("save_failed") : tr("saved")}
@@ -396,8 +551,34 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <h3>{tr("client_site")}</h3>
             <div className="field"><label>{tr("client_name")}</label>
               <input className="input" value={p.client} onChange={e => update({ client: e.target.value })} /></div>
+            {/* Real prerequisite for the follow-up nudge automation (if
+                enabled in Settings) — without a stored address there's
+                nowhere to send a reminder. Optional: nudges just skip a
+                proposal that has none. */}
+            <div className="field"><label>{tr("client_email")}</label>
+              <input type="email" className="input" value={p.clientEmail || ""} placeholder={tr("client_email_ph")}
+                onChange={e => update({ clientEmail: e.target.value })} /></div>
             <div className="field"><label>{tr("address")}</label>
-              <input className="input" value={p.address} onChange={e => update({ address: e.target.value })} /></div>
+              <AddressField
+                lang={lang}
+                value={p.address}
+                lat={p.lat}
+                lng={p.lon}
+                mapSize={260}
+                onText={(s) => update({ address: s, lat: null, lon: null })}
+                onPick={pickAddress}
+              />
+            </div>
+
+            {/* Draw the roof on real satellite imagery instead of assuming one
+                flat 35°-south plane — see components/SiteDesigner.jsx. Needs a
+                resolved pin, same requirement as the PVGIS fetch below. */}
+            <button className="btn ghost" style={{ width: "100%", marginBottom: 10 }}
+              disabled={p.lat == null || p.lon == null}
+              title={p.lat == null || p.lon == null ? tr("site_designer_need_address") : undefined}
+              onClick={() => setSiteDesignerOpen(true)}>
+              {tr("site_designer_open")}
+            </button>
 
             <button className={p.yieldOverride ? "btn amber" : "btn ghost"} style={{ width: "100%" }}
               onClick={fetchPVGIS} disabled={pvgisBusy}>
@@ -409,8 +590,38 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               <div className="pvgis-data">
                 <span className="pvg-k">{Math.round(p.yieldOverride)}</span> {tr("unit_kwp_yr")}
                 {Array.isArray(p.monthlyYieldShape) && p.monthlyYieldShape.length === 12 && <> · {tr("pvgis_monthly")}</>}
+                {/* Sunny Design names a "site for meteorological data" and a
+                    distance to it — SMA runs on a network of physical
+                    stations, so that number means something for them. PVGIS is
+                    gridded satellite irradiance, not station lookups, so a
+                    fabricated "X km away" would be a made-up number wearing
+                    their UI's clothes. This states what the source actually is. */}
+                <div className="pvgis-src">{tr("pvgis_src")}</div>
               </div>
             )}
+
+            {/* What the installed base measured. Offered, never applied on its
+                own: a yield that drifts by itself is the opposite of the
+                promise this product is sold on. */}
+            {calibration?.confident && p.yieldOverride && (() => {
+              const tuned = Math.round(applyCalibration(p.yieldOverride, calibration));
+              const deltaPct = (calibration.factor - 1) * 100;
+              const applied = Math.abs(tuned - Math.round(p.yieldOverride)) < 1;
+              return (
+                <div className="cal-note">
+                  <div className="cal-h">
+                    {tr("cal_title", { n: Math.abs(deltaPct).toFixed(0), d: tr(deltaPct >= 0 ? "cal_above" : "cal_below") })}
+                  </div>
+                  <div className="cal-s">{tr("cal_basis", { s: calibration.systems, m: calibration.months })}</div>
+                  {!applied && (
+                    <button className="btn ghost sm" style={{ marginTop: 8 }}
+                      onClick={() => update({ yieldOverride: tuned })}>
+                      {tr("cal_apply", { n: tuned })}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
 
             {team.length >= 1 && (
               <div className="field" style={{ marginTop: 15 }}><label>{tr("proj_owner")}</label>
@@ -444,9 +655,17 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <h3>{tr("system")}</h3>
             <div className="field">
               <label>{tr("system_size")}<output>{p.kw.toFixed(1)} kW</output></label>
-              <input type="range" min={KW_MIN} max={KW_MAX} step="0.5" value={p.kw} style={{ "--fill": kwFill + "%" }}
-                aria-valuemin={KW_MIN} aria-valuemax={KW_MAX} aria-valuenow={p.kw}
-                onChange={e => update({ kw: +e.target.value })} />
+              <div className="slider-row">
+                <input type="range" min={KW_MIN} max={KW_MAX} step="0.5" value={p.kw} style={{ "--fill": kwFill + "%" }}
+                  aria-valuemin={KW_MIN} aria-valuemax={KW_MAX} aria-valuenow={p.kw}
+                  onChange={e => update({ kw: +e.target.value })} />
+                {/* A drag is imprecise once the range spans 2-500 kW — this
+                    lets an exact figure (from a real design, a client ask) be
+                    typed directly instead of hunted for on the slider. */}
+                <input type="number" className="slider-num" inputMode="decimal" step="0.1"
+                  aria-label={tr("system_size")} value={p.kw}
+                  onChange={e => update({ kw: +e.target.value || KW_MIN })} />
+              </div>
             </div>
             <div className="field"><label>{tr("elec_price")}</label>
               <input className="input" type="number" step="0.01" value={p.price}
@@ -504,7 +723,23 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 </div>
               </div>
             )}
-            {check(p.batt, tr("battery_label"), tr("battery_sub"), v => update({ batt: v }))}
+            {/* System type as a real, first-class choice — grid-tied and
+                hybrid are different products (different pitch: bill savings
+                vs. bill savings + backup resilience), not one checkbox among
+                many sizing inputs. Still just p.batt underneath, so the
+                capacity input below and the rest of the app (engine, PDF,
+                design checks) are unchanged. */}
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>{tr("sys_type_label")}</label>
+              <div className="seg2">
+                <button type="button" className={!p.batt ? "on" : ""} onClick={() => update({ batt: false })}>
+                  {tr("sys_type_grid")}
+                </button>
+                <button type="button" className={p.batt ? "on" : ""} onClick={() => update({ batt: true })}>
+                  {tr("sys_type_hybrid")}
+                </button>
+              </div>
+            </div>
             {p.batt && (() => {
               const battCost = (Number(p.battKwh) || 0) * (Number(E.batteryCostPerKwh) || 500);
               return (
@@ -518,10 +753,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 </div>
               );
             })()}
-            {subKey &&
-              check(p.afmSubsidy, subLabel,
-                subAmountEur > 0 ? tr("afm_sub", { x: fmt(subAmountEur) }) : tr("afm_sub_unset"),
-                v => update({ afmSubsidy: v }))}
           </section>
 
           <section className="card">
@@ -547,6 +778,17 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             )}
           </section>
 
+          <BomCard
+            lang={lang}
+            bom={p.bom}
+            onChange={(bom) => update({ bom })}
+            catalog={catalog}
+            kw={p.kw}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            quotePrice={q.e.grossCost}
+            money={fmt}
+          />
+
         </div>
 
         {/* right: results */}
@@ -555,7 +797,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <h3>{tr("sys_investment")}</h3>
             <div className="cost-line">
               <div className="k"><b>{fmt(q.e.cost)}</b>
-                <span>{tr("total_invest")}{p.afmSubsidy && <span className="mini-badge">{tr("with_subsidy")}</span>}</span></div>
+                <span>{tr("total_invest")}</span></div>
               <div className="k"><b>{Math.round(q.e.prod0).toLocaleString()} kWh</b>
                 <span>{tr("prod_year")}{p.yieldOverride ? " " + tr("tag_pvgis") : " " + tr("tag_default")}</span></div>
               <div className="k"><b>{fmt(q.e.year1)}</b><span>{tr("savings_y1")}</span></div>
@@ -635,7 +877,68 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               ))}
             </div>
             <div style={{ marginTop: 14 }}><Chart q={q} lang={lang} /></div>
+
+            {/* NPV / IRR / LCOE — what a commercial client or a lender asks for
+                once payback alone stops being the whole question. */}
+            <div className="fin-metrics">
+              <div className="fm"><b>{fmt(fin.npv)}</b><span>{tr("m_npv")} @ {disc.toFixed(0)}%</span></div>
+              <div className="fm"><b>{fin.irr == null ? "—" : (fin.irr * 100).toFixed(1) + "%"}</b><span>{tr("m_irr")}</span></div>
+              <div className="fm"><b>€{fin.lcoe.toFixed(3)}</b>
+                <span>{tr("m_lcoe")} · {tr("m_vs_price")} {eurKwh(Number(p.price) || 0)}</span></div>
+            </div>
+            <label className="disc-row">
+              {tr("m_disc")}<output>{disc.toFixed(1)}%</output>
+              <input type="range" min="3" max="12" step="0.5" value={disc}
+                style={{ "--fill": ((disc - 3) / 9) * 100 + "%" }}
+                onChange={e => setDisc(+e.target.value)} />
+            </label>
           </section>
+
+          {/* Whether the thing is buildable, before whether it's profitable —
+              run against the equipment actually picked in the bill of materials. */}
+          <DesignChecks
+            lang={lang}
+            bom={p.bom}
+            kw={p.kw}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            consKwh={consEff}
+          />
+
+          {/* Compare every inverter that could serve this array, not just the
+              one in the BOM — applying a row swaps the BOM's inverter line. */}
+          <DesignSuggestions
+            lang={lang}
+            bom={p.bom}
+            kw={p.kw}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            onApply={applyInverterChoice}
+          />
+
+          {/* Battery sizing and the surplus price: the two questions an offer in
+              Moldova actually turns on. Both computed by the engine for THIS
+              client — the same panels Studio shows, not a second implementation. */}
+          <BatterySizingPanel
+            lang={lang}
+            base={sweepBase}
+            E={E}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            onApply={(kwh) => update({ batt: kwh > 0, battKwh: kwh })}
+            money={fmt}
+            spread={isMD ? buyback.spread : null}
+            netMetering={mkt.oneToOne}
+          />
+
+          {isMD && (
+            <SurplusPanel
+              lang={lang}
+              buyback={buyback}
+              prodKwh={q.e.prod0}
+              selfRatio={q.e.self}
+              mdlPerEur={FX.MDL}
+              money={fmt}
+              num={num}
+            />
+          )}
 
           <section className="card">
             <h3>{tr("financing")}</h3>
@@ -661,6 +964,22 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           )}
         </div>
       </div>
+
+      {/* site designer modal: draw the roof on satellite imagery */}
+      {siteDesignerOpen && p.lat != null && p.lon != null && (
+        <div className="overlay" onClick={() => setSiteDesignerOpen(false)}>
+          <div className="modal sd-modal" onClick={e => e.stopPropagation()}>
+            <h4>{tr("site_designer_title")}</h4>
+            <SiteDesigner lang={lang} lat={p.lat} lon={p.lon} siteDesign={p.siteDesign}
+              onChange={(sd) => update({ siteDesign: sd })}
+              onApply={applySiteDesignLayout} applying={siteDesignApplying}
+              projectInputs={p} onComputeQuote={computeSiteDesignQuote} />
+            <div className="modal-acts" style={{ marginTop: 14 }}>
+              <button className="btn ghost" onClick={() => setSiteDesignerOpen(false)}>{tr("close")}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* proforma modal: pick a deposit, then open the document */}
       {invOpen && (
@@ -719,6 +1038,19 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 setCopied(true); setTimeout(() => setCopied(false), 1800);
               }}>{copied ? tr("t_copied") : tr("copy")}</button>
             </div>
+            {/* The link stays the same; this refreshes what it SHOWS from the
+                project's current state — the escape hatch for edits made after
+                the first "Generate" click, which createProposal() itself will
+                never pick up. Server refuses once the client has accepted; the
+                status check here just avoids showing a button that would fail. */}
+            {p.status !== "won" && (
+              <div className="prop-refresh-row">
+                <button className="btn sm ghost" disabled={refreshing} onClick={refreshProposal}>
+                  {refreshing ? tr("prop_refreshing") : tr("prop_refresh")}
+                </button>
+                {refreshMsg && <span className={"email-msg " + (refreshMsg.ok ? "ok" : "bad")} style={{ margin: 0 }}>{refreshMsg.text}</span>}
+              </div>
+            )}
             {/* WhatsApp is how solar sells in RO/MD — pre-write the message + link */}
             <a className="btn wapp" style={{ width: "100%", marginBottom: 10 }}
               href={`https://wa.me/?text=${encodeURIComponent(tr("wa_message", { client: p.client || tr("your_client"), company: companyName, url: propUrl }))}`}

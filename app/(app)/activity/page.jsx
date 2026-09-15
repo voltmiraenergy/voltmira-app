@@ -8,6 +8,7 @@ import { t, normLang } from "../../../lib/i18n.js";
 import { activityHtml } from "../../../lib/activity.js";
 import { mdDayKey, fmtDate, fmtTime } from "../../../lib/tz.js";
 import ActivityFilters from "./ActivityFilters.jsx";
+import { initials } from "../../../lib/Avatar.jsx";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Activity — VoltMira" };
@@ -30,14 +31,6 @@ const TYPE_META = {
   won: { key: "act_type_won", c: "#1E6B4E" },
   sys: { key: "act_type_settings", c: "#5A4FB0" },
 };
-
-function initials(s) {
-  s = (s || "").trim();
-  if (!s) return "•";
-  if (s.includes("@")) return s.slice(0, 2).toUpperCase();
-  const p = s.split(/\s+/);
-  return ((p[0]?.[0] || "") + (p[1]?.[0] || "")).toUpperCase() || s.slice(0, 2).toUpperCase();
-}
 
 export default async function ActivityPage({ searchParams }) {
   const sb = supabaseServer();

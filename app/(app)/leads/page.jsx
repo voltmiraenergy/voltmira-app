@@ -28,7 +28,7 @@ export default async function LeadsPage({ searchParams }) {
     const active = filter === key;
     const href = key === "all" ? "/leads" : `/leads?status=${key}`;
     return (
-      <a key={key} href={href} className={active ? "fchip active" : "fchip"}>
+      <a key={key} href={href} className={active ? "fchip on" : "fchip"}>
         {label}{typeof n === "number" ? <span style={{ opacity: .6, marginLeft: 5 }}>{n}</span> : null}
       </a>
     );
