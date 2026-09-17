@@ -8,7 +8,7 @@ import LeadCard from "./LeadCard.jsx";
 import LeadAttribution from "./LeadAttribution.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Leads — VoltMira" };
+export const metadata = { title: "Leads · VoltMira" };
 
 const STATUSES = ["new", "contacted", "converted", "archived"];
 

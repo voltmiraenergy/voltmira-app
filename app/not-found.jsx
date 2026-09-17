@@ -1,7 +1,7 @@
 // app/not-found.jsx — branded 404 that respects the shared theme system.
 import Link from "next/link";
 
-export const metadata = { title: "Page not found — VoltMira", robots: { index: false, follow: true } };
+export const metadata = { title: "Page not found · VoltMira", robots: { index: false, follow: true } };
 
 export default function NotFound() {
   return (

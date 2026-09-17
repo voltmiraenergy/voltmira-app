@@ -74,7 +74,7 @@ export default function Settings() {
   const [isOwner, setIsOwner] = useState(true);   // default true so owners see no flash
 
   useEffect(() => {
-    document.title = "Settings — VoltMira";
+    document.title = "Settings · VoltMira";
     sb.from("companies").select("*").single().then(({ data }) => setCo(data));
     getMyRole().then(r => setIsOwner(r === "owner")).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -369,6 +369,34 @@ export default function Settings() {
           {numField("eFinTerm", t("e_finance_term", lang), eng.financeTermYears ?? 10, 1, t("unit_years", lang), setEng("financeTermYears"))}
         </div>
         <div className="set-note">{t("st_finance_note", lang)}</div>
+
+        {/* Premier Energy's real ANRE-approved day/night rates, seeded here —
+            revised periodically, so this stays editable rather than baked
+            into the engine as permanent truth. Only used on a project that
+            explicitly opts into "tarif diferențiat" (see the project editor);
+            every existing/flat-rate project is unaffected. */}
+        <div className="st-glabel">{t("st_grp_md_tariff", lang)}</div>
+        {/* Two real suppliers, two real rate tables — Premier Energy covers
+            central/south MD, FEE-Nord (RED Nord's distribution territory)
+            covers the north, and their ANRE-approved rates genuinely differ.
+            These buttons just quick-fill the editable fields below with
+            whichever supplier's real published rate applies; nothing is
+            locked to a supplier afterward. */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+          <button type="button" className="btn ghost sm"
+            onClick={() => { setCo(c => ({ ...c, engine: { ...eng, mdDayRateMdl: 3.75, mdNightRateMdl: 2.94 } })); touch(); }}>
+            {t("e_md_preset_premier", lang)}
+          </button>
+          <button type="button" className="btn ghost sm"
+            onClick={() => { setCo(c => ({ ...c, engine: { ...eng, mdDayRateMdl: 4.89, mdNightRateMdl: 3.91 } })); touch(); }}>
+            {t("e_md_preset_feenord", lang)}
+          </button>
+        </div>
+        <div className="set-grid">
+          {numField("eMdDay", t("e_md_day_rate", lang), eng.mdDayRateMdl ?? 3.75, 0.01, "MDL/kWh", setEng("mdDayRateMdl"))}
+          {numField("eMdNight", t("e_md_night_rate", lang), eng.mdNightRateMdl ?? 2.94, 0.01, "MDL/kWh", setEng("mdNightRateMdl"))}
+        </div>
+        <div className="set-note">{t("st_md_tariff_note", lang)}</div>
       </section>
 
       {/* Payback scenarios */}

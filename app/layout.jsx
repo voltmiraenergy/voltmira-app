@@ -1,7 +1,7 @@
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
-  title: "VoltMira — Solar quoting your clients can fact-check",
+  title: "VoltMira: Solar quoting your clients can fact-check",
   description: "Honest three-band payback estimates, tracked proposals, and real PVGIS data for solar installers.",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "VoltMira" },
 };

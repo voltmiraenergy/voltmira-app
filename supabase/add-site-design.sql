@@ -4,7 +4,7 @@
 -- plane, instead of every quote assuming one flat 35°-south roof. Panel
 -- layout is per-project and never queried across projects, so — like bom,
 -- options, cons_monthly — it's a single jsonb blob rather than new tables.
--- Shape: { planes: [{id, polygon:[[lat,lon],...], tiltDeg, azimuthDeg}],
+-- Shape: { planes: [{id, polygon:[[lat,lon],...], tiltDeg, azimuthDeg, roofType}],
 --   obstacles: [{id, polygon:[[lat,lon],...], kind}],
 --   markers: [{id, type, lat, lon}] } — obstacles/markers are flat, not
 -- nested per-plane: which plane an obstacle affects is a geometric

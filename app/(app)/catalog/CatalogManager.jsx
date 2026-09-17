@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { addProduct, updateProduct, deleteProduct, seedStarterCatalog } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
 import SupplierCatalogBrowser from "./SupplierCatalogBrowser.jsx";
+import MyProductDetailModal from "./MyProductDetailModal.jsx";
 
 const KINDS = ["panel", "inverter", "battery", "mounting", "other"];
 const SPEC_HINT = { panel: "550 W", inverter: "8 kW", battery: "10 kWh", mounting: "", other: "" };
@@ -55,7 +56,8 @@ const CSS = `
 .cat-group-h .n{opacity:.6;font-weight:500}
 .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
 .cat-card{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--paper-2);
-  display:flex;flex-direction:column;transition:border-color .18s,box-shadow .18s,transform .18s}
+  display:flex;flex-direction:column;transition:border-color .18s,box-shadow .18s,transform .18s;cursor:pointer}
+.cat-card:focus-visible{outline:2px solid var(--green);outline-offset:2px}
 .cat-card:hover{border-color:#CBC7B6;box-shadow:0 10px 26px -14px rgba(20,42,33,.32);transform:translateY(-2px)}
 .cat-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--paper)}
 .cat-thumb-ph{width:100%;aspect-ratio:4/3;display:grid;place-items:center;color:var(--muted);
@@ -190,6 +192,7 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState(EMPTY);
+  const [viewing, setViewing] = useState(null); // the product shown in MyProductDetailModal, or null
   const [pending, start] = useTransition();
 
   const fmt = (n) => "€" + (Math.round(Number(n) || 0)).toLocaleString("en-IE");
@@ -325,6 +328,12 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
           onAdded={(row) => setItems((l) => [...l, row])} />
       )}
 
+      {viewing && (
+        <MyProductDetailModal p={viewing} lang={lang}
+          onClose={() => setViewing(null)}
+          onEdit={(p) => startEdit(p)} />
+      )}
+
       {adding && (
         <section className="card" style={{ marginBottom: 16, borderColor: "var(--green)" }}>
           {fields(form, setForm)}
@@ -373,7 +382,9 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
                 )}
                 <div className="cat-grid">
                   {group.map(p => (
-                    <article key={p.id} className="cat-card">
+                    <article key={p.id} className="cat-card" onClick={() => setViewing(p)}
+                      role="button" tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setViewing(p); } }}>
                       <ProductThumb kind={p.kind} src={p.image_url || ""} />
                       <div className="cat-body">
                         {p.brand && <span className="cat-brand">{p.brand}</span>}
@@ -399,9 +410,9 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
                             )}
                           </span>
                           <div className="cat-acts">
-                            <button className="cat-iconbtn" onClick={() => startEdit(p)} disabled={pending}
+                            <button className="cat-iconbtn" onClick={(e) => { e.stopPropagation(); startEdit(p); }} disabled={pending}
                               aria-label={t("cat_edit", lang)} title={t("cat_edit", lang)}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-                            <button className="cat-iconbtn" onClick={() => remove(p.id)} disabled={pending}
+                            <button className="cat-iconbtn" onClick={(e) => { e.stopPropagation(); remove(p.id); }} disabled={pending}
                               aria-label={t("cat_delete", lang)} title={t("cat_delete", lang)}>✕</button>
                           </div>
                         </div>

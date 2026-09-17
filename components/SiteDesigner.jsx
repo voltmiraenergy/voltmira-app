@@ -27,6 +27,18 @@ const PLANE_STYLE = { color: "#2E7D5B", weight: 2, fillColor: "#2E7D5B", fillOpa
 const OBSTACLE_STYLE = { color: "#B4472F", weight: 2, fillColor: "#B4472F", fillOpacity: 0.35 };
 const TREE_STYLE = { color: "#5B7A3A", weight: 2, fillColor: "#5B7A3A", fillOpacity: 0.35 };
 
+// Matches lib/supplierCatalog.js's ROOF_TYPE_MOUNT_TEST keys exactly, so a
+// plane's chosen roof type maps straight to a real, verified mount SKU (or
+// honestly to none, for "flat" — see that file's own comment).
+const ROOF_TYPES = ["tile", "trapezoidal", "standingSeam", "flat", "ground"];
+const ROOF_TYPE_LABEL = {
+  tile: { ro: "Țiglă", en: "Tile", ru: "Черепица" },
+  trapezoidal: { ro: "Tablă cutată", en: "Trapezoidal sheet", ru: "Профлист" },
+  standingSeam: { ro: "Falț stâlp", en: "Standing-seam metal", ru: "Фальцевая кровля" },
+  flat: { ro: "Terasă (acoperiș plat)", en: "Flat roof / terrace", ru: "Плоская крыша" },
+  ground: { ro: "Sol / carport", en: "Ground / carport", ru: "Грунт / навес" },
+};
+
 const OBSTACLE_KINDS = ["chimney", "vent", "dormer", "tree", "other"];
 const KIND_LABEL = {
   chimney: { ro: "Coș", en: "Chimney", ru: "Дымоход" },
@@ -57,10 +69,18 @@ function uid() { return Math.random().toString(36).slice(2, 10); }
 function planePopupHtml(layer, lang) {
   const tilt = layer._sdTilt ?? 35;
   const az = layer._sdAzimuth ?? 0;
+  const roofType = layer._sdRoofType || "tile";
+  const roofOpts = ROOF_TYPES.map((k) =>
+    `<option value="${k}"${k === roofType ? " selected" : ""}>${ROOF_TYPE_LABEL[k][lang] || ROOF_TYPE_LABEL[k].ro}</option>`
+  ).join("");
   // A drag can't land on an exact degree — a paired number box lets the
   // installer type a figure from a real site survey instead of hunting for
   // it on the slider.
   return `<div class="sd-pop">
+    <div class="sd-pop-row">
+      <label>${t3(lang, "Tip acoperiș", "Roof material", "Тип крыши")}</label>
+      <select class="sd-pop-roof">${roofOpts}</select>
+    </div>
     <div class="sd-pop-row">
       <label>${t3(lang, "Înclinare", "Tilt", "Наклон")}</label>
       <div class="sd-pop-inrow">
@@ -242,9 +262,10 @@ export default function SiteDesigner({
       return m;
     }
 
-    function attachPlane(layer, id, tiltDeg, azimuthDeg) {
+    function attachPlane(layer, id, tiltDeg, azimuthDeg, roofType) {
       layer._sdKind = "plane"; layer._sdId = id;
       layer._sdTilt = tiltDeg ?? 35; layer._sdAzimuth = azimuthDeg ?? 0;
+      layer._sdRoofType = ROOF_TYPES.includes(roofType) ? roofType : "tile";
       layer.setStyle?.(PLANE_STYLE);
       layer.bindPopup(planePopupHtml(layer, lang));
       planeLayers.current.set(id, layer);
@@ -288,6 +309,7 @@ export default function SiteDesigner({
     function currentSnapshot() {
       const planes = [...planeLayers.current.entries()].map(([id, layer]) => ({
         id, polygon: ringToLatLon(layer), tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0,
+        roofType: layer._sdRoofType || "tile",
       }));
       const obstacles = [...obstacleLayers.current.entries()].map(([id, layer]) => ({
         id, polygon: ringToLatLon(layer), kind: layer._sdObstacleKind || "chimney",
@@ -315,7 +337,7 @@ export default function SiteDesigner({
       (snap?.planes || []).forEach((pl) => {
         if (!Array.isArray(pl.polygon) || pl.polygon.length < 3) return;
         const layer = Lref.current.polygon(pl.polygon.map(([a, b]) => [a, b])).addTo(mapRef.current);
-        attachPlane(layer, pl.id || uid(), pl.tiltDeg, pl.azimuthDeg);
+        attachPlane(layer, pl.id || uid(), pl.tiltDeg, pl.azimuthDeg, pl.roofType);
       });
       (snap?.obstacles || []).forEach((ob) => {
         if (!Array.isArray(ob.polygon) || ob.polygon.length < 3) return;
@@ -491,6 +513,8 @@ export default function SiteDesigner({
         if (!layer?._sdKind) return;
         const el = e.popup.getElement();
         if (layer._sdKind === "plane") {
+          const roofEl = el.querySelector(".sd-pop-roof");
+          if (roofEl) roofEl.onchange = () => { layer._sdRoofType = roofEl.value; syncToParent(); };
           const tiltEl = el.querySelector(".sd-pop-tilt");
           const azEl = el.querySelector(".sd-pop-az");
           const tiltNum = el.querySelector(".sd-pop-tiltnum");
@@ -622,7 +646,10 @@ export default function SiteDesigner({
       const { panels, count } = fitPanels(polygon, obstaclePolys, h, w, fitOpts);
       totalCount += count;
       const [clat, clon] = centroidOf(polygon);
-      perPlane.push({ id, tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0, lat: clat, lon: clon, count });
+      perPlane.push({
+        id, tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0,
+        roofType: layer._sdRoofType || "tile", lat: clat, lon: clon, count,
+      });
       panels.forEach((corners) => {
         L.polygon(corners, { color: "#B9C4CE", weight: 1, fillColor: "url(#sdPanelCells)", fillOpacity: 1, interactive: false })
           .addTo(panelGroupRef.current);

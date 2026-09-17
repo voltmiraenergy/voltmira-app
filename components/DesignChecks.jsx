@@ -9,8 +9,8 @@ import { designCheck, designCheckRows, designCheckLead, stringInputs } from "../
 
 const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
 
-export default function DesignChecks({ lang, bom, kw, battKwh, consKwh, phases, className = "card" }) {
-  const d = useMemo(() => designCheck({ bom, kw, battKwh, consKwh, phases }), [bom, kw, battKwh, consKwh, phases]);
+export default function DesignChecks({ lang, bom, kw, battKwh, consKwh, phases, market, className = "card" }) {
+  const d = useMemo(() => designCheck({ bom, kw, battKwh, consKwh, phases, market }), [bom, kw, battKwh, consKwh, phases, market]);
   const rows = useMemo(() => designCheckRows(d, { lang, battKwh }), [d, lang, battKwh]);
   // Per-MPPT-input breakdown — "Input A / Input B" — only worth its own table
   // once there's an actual split to show; one string is just the row above.

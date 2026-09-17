@@ -8,7 +8,7 @@ import { normLang } from "../../../lib/i18n.js";
 import ProfileForm from "./ProfileForm.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Profile — VoltMira" };
+export const metadata = { title: "Profile · VoltMira" };
 
 export default async function ProfilePage() {
   const sb = supabaseServer();

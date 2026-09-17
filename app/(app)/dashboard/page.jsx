@@ -24,7 +24,7 @@ import Avatar from "../../../lib/Avatar.jsx";
 const INSTALL_STEPS = ["deposit", "permit", "order", "install", "grid", "commission"];
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Dashboard — VoltMira" };
+export const metadata = { title: "Dashboard · VoltMira" };
 
 async function newQuote() {
   "use server";

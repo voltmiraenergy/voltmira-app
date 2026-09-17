@@ -11,7 +11,7 @@ import { rowToQuoteInput } from "../../../lib/quoteInput.js";
 import TeamActions from "./TeamActions.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Team — VoltMira" };
+export const metadata = { title: "Team · VoltMira" };
 
 export default async function Team() {
   const sb = supabaseServer();

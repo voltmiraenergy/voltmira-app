@@ -20,9 +20,9 @@ const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
  * @param {number} kw, battKwh, phases   same inputs DesignChecks takes
  * @param {(row:{inverter,count,acKw,dcac,capturePct,hybrid})=>void} onApply
  */
-export default function DesignSuggestions({ lang, bom, kw, battKwh, phases, onApply, className = "card" }) {
+export default function DesignSuggestions({ lang, bom, kw, battKwh, phases, market, onApply, className = "card" }) {
   const [open, setOpen] = useState(false);
-  const d = useMemo(() => designCheck({ bom, kw, battKwh, phases }), [bom, kw, battKwh, phases]);
+  const d = useMemo(() => designCheck({ bom, kw, battKwh, phases, market }), [bom, kw, battKwh, phases, market]);
   const rows = useMemo(
     () => inverterOptions({ dcKw: d.dcKw, phases: d.ph, wantHybrid: battKwh > 0 }),
     [d.dcKw, d.ph, battKwh],

@@ -11,7 +11,7 @@ import ActivityFilters from "./ActivityFilters.jsx";
 import { initials } from "../../../lib/Avatar.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Activity — VoltMira" };
+export const metadata = { title: "Activity · VoltMira" };
 
 const PAGE = 25;
 const TYPES = ["all", "quote", "proposal", "lead", "sys", "won"];

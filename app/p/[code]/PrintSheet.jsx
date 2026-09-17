@@ -531,7 +531,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   // — never a monetized "avoided blackout" figure, since there's no reliable
   // RO/MD outage-frequency data to price that against.
   const backupHrs = battKwh > 0 ? backupHours(battKwh, consEff) : null;
-  const dc = designCheck({ bom: lines, kw: Number(inputs.kw) || 0, battKwh, consKwh: consEff });
+  const dc = designCheck({ bom: lines, kw: Number(inputs.kw) || 0, battKwh, consKwh: consEff, market: inputs.market });
   const checks = designCheckRows(dc, { lang, battKwh });
   // Shown for any real BOM inverter, even a single MPPT input in use — a
   // genuine per-input compliance table (peak power, both ends of the voltage
@@ -612,7 +612,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
           )}
           <div className="p-co">{company.name} · {tr("pdf_title")} · {fmtDate(new Date(), loc)}</div>
           <h1>{headline}</h1>
-          <div className="p-sub">{inputs.address || ""} — {tr("pdf_prepared")} {inputs.client || tr("pdf_the_client")}</div>
+          <div className="p-sub">{inputs.address || ""}, {tr("pdf_prepared")} {inputs.client || tr("pdf_the_client")}</div>
         </div>
       </div>
 
@@ -854,7 +854,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
                 {r.label}
                 <div className="p-chk-d">
                   {r.detail}{r.note ? ` · ${r.note}` : ""}
-                  {r.warn ? <> — <em>{r.warn}</em></> : null}
+                  {r.warn ? <>, <em>{r.warn}</em></> : null}
                 </div>
               </td>
               <td className={"p-chk" + (r.ok ? "" : " bad")}>{r.value}</td>
@@ -953,7 +953,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
               })}
             </div>
           )}
-          <div className="p-src">{BUYBACK_SOURCE.operator} — {tr("pdf_sp_src")}</div>
+          <div className="p-src">{BUYBACK_SOURCE.operator}, {tr("pdf_sp_src")}</div>
         </section>
       )}
 
@@ -992,13 +992,17 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
           <table><tbody>
             <tr><td>{tr("as_yield_exp")}</td><td>{tr("as_yield_v", { n: Math.round(q.yieldPerKwp || E.baseYield) })}</td></tr>
             <tr><td>{tr("as_export_scheme")}</td><td>{tr("pdf_scheme_v", { s: mktLine, f: mkt.feed })}</td></tr>
+            {inputs.tariffMode === "differentiated" && (
+              <tr><td>{tr("as_md_tariff")}</td>
+                <td>{tr("as_md_tariff_v", { d: E.mdDayRateMdl, n: E.mdNightRateMdl })}</td></tr>
+            )}
             {/* "8%" alone reads to a homeowner as "only 8% of my needs are met", when
                 it means 8% of PRODUCTION is used on site — often while 100% of their
                 own consumption is covered. State both so it can't be misread. */}
             <tr><td>{tr("as_selfcons")}</td><td>
               {Math.round((q.self || 0) * 100)}%{inputs.batt ? " " + tr("as_with_batt") : ""}
               {Number(inputs.cons) > 0 && (
-                <> — {tr("as_covers", { n: Math.round(Math.min(1, ((q.self || 0) * (q.prod0 || 0)) / Number(inputs.cons)) * 100) })}</>
+                <>, {tr("as_covers", { n: Math.round(Math.min(1, ((q.self || 0) * (q.prod0 || 0)) / Number(inputs.cons)) * 100) })}</>
               )}
             </td></tr>
             <tr><td>{tr("as_cost_basis")}</td><td>{tr("pdf_cost_v", { c: E.costPerKw, b: E.batteryCost, o: E.opexPct })}</td></tr>

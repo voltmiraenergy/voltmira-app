@@ -7,7 +7,7 @@ import { normLang } from "../../../lib/i18n.js";
 import CatalogManager from "./CatalogManager.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Catalog — VoltMira" };
+export const metadata = { title: "Catalog · VoltMira" };
 
 export default async function CatalogPage() {
   const sb = supabaseServer();

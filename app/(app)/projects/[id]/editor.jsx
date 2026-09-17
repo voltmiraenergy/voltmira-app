@@ -11,17 +11,20 @@ import SiteDesigner from "../../../../components/SiteDesigner.jsx";
 import BackLink from "../../../../components/BackLink.jsx";
 import BomCard from "../../../../components/BomCard.jsx";
 import DesignChecks from "../../../../components/DesignChecks.jsx";
+import StructuralLoads from "../../../../components/StructuralLoads.jsx";
+import BosEstimate from "../../../../components/BosEstimate.jsx";
 import DesignSuggestions from "../../../../components/DesignSuggestions.jsx";
 import BatterySizingPanel from "../../../../components/BatterySizingPanel.jsx";
 import SurplusPanel, { useBuyback } from "../../../../components/SurplusPanel.jsx";
 import InstallChecklist from "./InstallChecklist.jsx";
 import SignedContract from "./SignedContract.jsx";
 import ShareCard from "./ShareCard.jsx";
+import LegalDocsModal from "./LegalDocsModal.jsx";
 import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
 import { financials } from "../../../../lib/quoteAnalysis.js";
 import { applyCalibration } from "../../../../lib/yieldCalibration.js";
 import { t } from "../../../../lib/i18n.js";
-import { autoBom } from "../../../../lib/supplierCatalog.js";
+import { autoBom, recommendMount } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
 
 // System-size slider range — raised to 500 kW: Site Designer's own real,
@@ -90,7 +93,7 @@ function Donut({ self, prod0, cons, lang }) {
 }
 
 /* ---------- editor ---------- */
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", signed = null, calibration = null }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, calibration = null }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
@@ -109,6 +112,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     yieldOverride: initial.yield_per_kwp ? +initial.yield_per_kwp : undefined,
     monthlyYieldShape: initial.monthly_yield_shape || undefined,
     useMonthly: initial.use_monthly, consMonthly: initial.cons_monthly,
+    tariffMode: initial.tariff_mode || "flat",
     ownerId: initial.owner_id || null,
     nextFollowUp: initial.next_follow_up || "",
     notes: initial.notes || "",
@@ -130,6 +134,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // of a proforma (asking for money up front) was reachable only by hand-editing
   // the URL. 0 = invoice the full amount.
   const [invOpen, setInvOpen] = useState(false);
+  const [legalDocsOpen, setLegalDocsOpen] = useState(false);
   const [siteDesignerOpen, setSiteDesignerOpen] = useState(false);
   const [siteDesignApplying, setSiteDesignApplying] = useState(false);
   const [depPct, setDepPct] = useState(30);
@@ -251,6 +256,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           .then(({ error: e6 }) => { if (e6) console.warn("site design not stored (run add-site-design.sql?):", e6.message); });
         sb.from("projects").update({ client_email: next.clientEmail || "" }).eq("id", initial.id)
           .then(({ error: e7 }) => { if (e7) console.warn("client email not stored (run add-proposal-nudges.sql?):", e7.message); });
+        sb.from("projects").update({ tariff_mode: next.tariffMode || "flat" }).eq("id", initial.id)
+          .then(({ error: e8 }) => { if (e8) console.warn("tariff mode not stored (run add-tariff-mode.sql?):", e8.message); });
       }
     } catch (e) {
       setSaved("error");
@@ -372,13 +379,26 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             (_, i) => valid.reduce((s, r) => s + r.monthlyShape[i] * r.count, 0) / totalCount);
         }
       }
+      // The roof material the most panels actually sit on, so a building with
+      // one small trapezoidal-sheet dormer and one large tile main roof still
+      // gets the mount that matches where the array actually is.
+      const dominantPlane = layout.perPlane.reduce((best, pl) => (!best || pl.count > best.count) ? pl : best, null);
+      const roofType = dominantPlane?.roofType;
+      const matchedMount = recommendMount(roofType);
+
       const bomArr = Array.isArray(p.bom) ? p.bom : [];
       const hasPanelLine = bomArr.some((l) => l.kind === "panel");
       patch.bom = hasPanelLine
-        ? bomArr.map((l) => l.kind === "panel" ? { ...l, qty: layout.totalCount, brand: layout.panelBrand, model: layout.panelModel } : l)
+        ? bomArr.map((l) => {
+            if (l.kind === "panel") return { ...l, qty: layout.totalCount, brand: layout.panelBrand, model: layout.panelModel };
+            // Only swap an EXISTING mount line's product, never add or
+            // remove one — an installer's custom BOM keeps its own shape.
+            if (l.kind === "mounting" && matchedMount) return { ...l, brand: matchedMount.brand, model: matchedMount.model, spec: matchedMount.type, unit_price: matchedMount.eurPerKw };
+            return l;
+          })
         : bomArr.length === 0
-          ? autoBom(layout.kw, p.battKwh).map((l) => l.kind === "panel" ? { ...l, qty: layout.totalCount } : l)
-          : bomArr; // has other lines but no panel line — an unusual manual BOM; leave it rather than guess
+          ? autoBom(layout.kw, p.battKwh, roofType).map((l) => l.kind === "panel" ? { ...l, qty: layout.totalCount } : l)
+          : bomArr; // has other lines but no panel line, an unusual manual BOM; leave it rather than guess
       update(patch);
       setSiteDesignerOpen(false);
     } finally {
@@ -534,6 +554,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         )}
         <button className="btn ghost" onClick={downloadPdf}>{tr("dl_pdf")}</button>
         <button className="btn ghost" onClick={() => setInvOpen(true)}>{tr("inv_button")}</button>
+        <button className="btn ghost" onClick={() => setLegalDocsOpen(true)}>{tr("ld_open")}</button>
         <button className="btn primary" onClick={makeProposal}>{tr("gen_proposal")}</button>
       </div>
 
@@ -670,6 +691,14 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <div className="field"><label>{tr("elec_price")}</label>
               <input className="input" type="number" step="0.01" value={p.price}
                 onChange={e => update({ price: +e.target.value || 0.21 })} /></div>
+            {/* Only Moldova has this plan (Premier Energy/RED Nord, ANRE-
+                approved) — real self-consumption is ~entirely daytime, so a
+                differentiated plan makes solar worth more than the flat
+                price above implies. Defaults off: every existing/new project
+                keeps computing against the flat price unless explicitly
+                switched. */}
+            {p.market === "MD" && check(p.tariffMode === "differentiated", tr("md_tariff_diff"), tr("md_tariff_diff_sub"),
+              v => update({ tariffMode: v ? "differentiated" : "flat" }))}
             {!p.useMonthly && (
               <div className="field"><label>{tr("annual_cons")}</label>
                 <input className="input" type="number" step="100" value={p.cons}
@@ -902,7 +931,13 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             kw={p.kw}
             battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
             consKwh={consEff}
+            market={p.market}
           />
+
+          <StructuralLoads lang={lang} roofPitchDeg={p.siteDesign?.planes?.[0]?.tiltDeg} />
+
+          <BosEstimate lang={lang} bom={p.bom} kw={p.kw}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} consKwh={consEff} phases={undefined} market={p.market} />
 
           {/* Compare every inverter that could serve this array, not just the
               one in the BOM — applying a row swaps the BOM's inverter line. */}
@@ -911,6 +946,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             bom={p.bom}
             kw={p.kw}
             battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            market={p.market}
             onApply={applyInverterChoice}
           />
 
@@ -1023,6 +1059,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             </div>
           </div>
         </div>
+      )}
+
+      {legalDocsOpen && (
+        <LegalDocsModal lang={lang} onClose={() => setLegalDocsOpen(false)}
+          company={{ name: companyName, ...companyLegal }}
+          project={{ clientName: p.client, address: p.address, kw: p.kw, price: q.e.cost, currency: "EUR", batt: p.batt, market: p.market }} />
       )}
 
       {/* proposal modal */}

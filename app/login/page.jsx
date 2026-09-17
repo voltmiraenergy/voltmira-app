@@ -13,7 +13,7 @@ import BrandPhoto from "./BrandPhoto.jsx";
 import LoginForm from "./LoginForm.jsx";
 
 export const metadata = {
-  title: "Sign in — VoltMira",
+  title: "Sign in · VoltMira",
   description: "Sign in to VoltMira, or create a free workspace for your solar business.",
   robots: { index: false, follow: true },
 };

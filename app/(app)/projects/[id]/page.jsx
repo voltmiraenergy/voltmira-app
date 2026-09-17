@@ -7,7 +7,7 @@ import { calibrateYield } from "../../../../lib/yieldCalibration.js";
 import Editor from "./editor.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Quote — VoltMira" };
+export const metadata = { title: "Quote · VoltMira" };
 
 export default async function ProjectPage({ params }) {
   const sb = supabaseServer();
@@ -15,7 +15,7 @@ export default async function ProjectPage({ params }) {
   // the security-definer my_company_id(), no recursion).
   const [{ data: p }, { data: co }, { data: prop }, { data: catalog }, { data: signedProp }] = await Promise.all([
     sb.from("projects").select("*").eq("id", params.id).single(),
-    sb.from("companies").select("name, logo_url, engine, currency, prosumer_limit_kw, subsidy_amount_ron, lang").single(),
+    sb.from("companies").select("name, logo_url, engine, currency, prosumer_limit_kw, subsidy_amount_ron, lang, legal_name, reg_no, legal_address, iban").single(),
     sb.from("proposals").select("created_at").eq("project_id", params.id).limit(1).maybeSingle(),
     sb.from("products").select("*").order("created_at"),   // catalog for the bill of materials
     // the accepted + signed proposal, so the installer can view the signature back
@@ -60,6 +60,7 @@ export default async function ProjectPage({ params }) {
   return <Editor initial={p} engineSettings={E} team={team || []} catalog={catalog || []}
     prosumerLimitKw={Number(co?.prosumer_limit_kw ?? 10.8)} lang={normLang(co?.lang)}
     proposalSentAt={prop?.created_at || null} companyName={co?.name || "VoltMira"} companyLogo={co?.logo_url || ""}
+    companyLegal={{ legal_name: co?.legal_name || "", reg_no: co?.reg_no || "", legal_address: co?.legal_address || "", iban: co?.iban || "" }}
     signed={signed} calibration={calibration} />;
 }
 

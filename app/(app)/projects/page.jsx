@@ -22,7 +22,7 @@ import BulkBar from "./BulkBar.jsx";
 import Avatar, { initials } from "../../../lib/Avatar.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Quotes — VoltMira" };
+export const metadata = { title: "Quotes · VoltMira" };
 
 const PAGE_SIZE = 10;
 const STATUSES = ["all", "draft", "sent", "won", "lost"];

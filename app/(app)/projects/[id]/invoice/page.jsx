@@ -22,7 +22,7 @@ import PrintNow from "./PrintNow.jsx";
 import BackLink from "../../../../../components/BackLink.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Invoice — VoltMira" };
+export const metadata = { title: "Invoice · VoltMira" };
 
 export default async function InvoicePage({ params, searchParams }) {
   const sb = supabaseServer();

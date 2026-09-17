@@ -13,7 +13,7 @@
 import LegalShell from "../LegalShell.jsx";
 
 export const metadata = {
-  title: "Photography Credits — VoltMira",
+  title: "Photography Credits · VoltMira",
   description:
     "Attribution for the photographs used on the VoltMira homepage, sourced from Wikimedia Commons.",
 };

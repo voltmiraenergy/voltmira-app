@@ -6,7 +6,7 @@ import { currentCompany } from "../../../lib/session.js";
 import { normLang } from "../../../lib/i18n.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Guide — VoltMira" };
+export const metadata = { title: "Guide · VoltMira" };
 
 const CSS = `
 .guide{max-width:820px;margin:0 auto;color:var(--ink)}

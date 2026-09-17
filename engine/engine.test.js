@@ -93,6 +93,23 @@ test("markets: RO 1:1 credit is capped at what the household imports", () => {
   assert.ok(Math.abs(r.year1 - 1385.25) < 0.05, `year1=${r.year1}`);
 });
 
+test("MD differentiated tariff: self-consumption values at the day rate, not the flat price", () => {
+  const flat = simulate({ ...BASE, market: "MD", price: 0.18 }, E, "expc");
+  const diff = simulate({ ...BASE, market: "MD", price: 0.18, tariffMode: "differentiated" }, E, "expc");
+  const dayRateEur = E.mdDayRateMdl / FX.MDL; // 3.75/19.8 ≈ 0.189394, above the 0.18 flat price here
+  assert.ok(dayRateEur > 0.18);
+  assert.ok(diff.year1 > flat.year1, `diff ${diff.year1} should exceed flat ${flat.year1}`);
+  // Hand check: solar0=6600, selfK=2750, expK=3850 (same as the feedOverride block below)
+  const expectedYear1 = (2750 * dayRateEur + 3850 * 0.127) - 6300 * 0.005;
+  assert.ok(Math.abs(diff.year1 - expectedYear1) < 0.01, `year1=${diff.year1} expected=${expectedYear1}`);
+});
+
+test("MD differentiated tariff is a no-op outside MD (RO's 1:1 credit isn't in scope)", () => {
+  const flatRo = simulate({ ...BASE, market: "RO" }, E, "expc").year1;
+  const diffRo = simulate({ ...BASE, market: "RO", tariffMode: "differentiated" }, E, "expc").year1;
+  assert.equal(flatRo, diffRo);
+});
+
 /* ------------------------------------------------------------------ *
  * feedOverride — pricing exports at a contracted rate.
  * MD, 6 kW, cons 5000, expc:

@@ -297,7 +297,7 @@ export default async function ProposalPage({ params, searchParams }) {
           </div>
           <div style={{ ...S.muted, fontSize: 12, marginTop: 3 }}>{t("powered_by_sub", lang)}</div>
         </a>
-      ) : null /* Pro/Team: white-label — no VoltMira footer */}
+      ) : null /* Pro/Team: white-label, no VoltMira footer */}
       {/* print stylesheet: clean paper output for save-as-PDF */}
       <style>{`@media print{
         body{background:#fff!important}

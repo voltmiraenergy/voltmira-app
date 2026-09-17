@@ -48,6 +48,21 @@ export function defaultEngineSettings() {
     quoteValidityDays: 30,     // a sent quote is "valid until" sentAt + this; older = stale
     financeRatePct: 9,      // annual interest rate assumed for the monthly-payment estimate — a starting default like costPerKw, editable per company; never presented to a client as a real loan offer
     financeTermYears: 10,   // loan term assumed for the same estimate
+    // Moldova's differentiated day/night electricity tariff, ANRE-approved,
+    // MDL/kWh — a company-wide editable default, like costPerKw, not a
+    // permanently-correct figure: ANRE revises these periodically, and the
+    // real rate depends on which supplier serves this client. Defaults here
+    // are Premier Energy's (central/south MD), verified 2026-09 against
+    // premierenergy.md: night 2.94 MDL/kWh (23:00-07:00), day 3.75 MDL/kWh
+    // (07:00-23:00). FEE-Nord's (RED Nord's northern territory) real rates —
+    // night ~3.91, day ~4.89 MDL/kWh, per ANRE decisions referenced on
+    // fee-nord.md/legislatie — are offered as a one-click Settings preset
+    // (app/(app)/settings/page.jsx) rather than a second hardcoded default,
+    // since either supplier's client can be on this platform. Applies only
+    // to a project with tariffMode:"differentiated" — see simulate()'s own
+    // comment for why only the day rate feeds the payback math.
+    mdDayRateMdl: 3.75,
+    mdNightRateMdl: 2.94,
     bands: {
       pess: { ym: 0.92, degr: 0.8, infl: 0 },
       expc: { ym: 1.00, degr: 0.5, infl: 3 },
@@ -174,11 +189,33 @@ export function simulate(p, E, bandKey) {
   const opexEur0 = grossCost * (E.opexPct / 100);
   const horizon = E.horizon || 25;
 
+  // Moldova's differentiated day/night tariff: the "day" band (07:00-23:00)
+  // comfortably covers every daylight hour at this latitude, so real solar
+  // self-consumption is ~entirely a daytime event — the energy it displaces
+  // would otherwise have been bought at the DAY rate, not the flat `price`.
+  // Valuing it at a blended/flat rate understates what self-consumption is
+  // actually worth for a client on this plan. The night rate isn't part of
+  // this formula: solar never displaces night-time grid draw (there's no
+  // production then), so a household pays the night rate for that regardless
+  // of having solar — it's shown to the client for transparency, not modeled
+  // as a saving. Exported surplus is unaffected either way: it's valued at
+  // the operator's real buy-back price (feed/feedOverride), never at retail.
+  // RO's 1:1 net-metering credit isn't in scope — differentiated pricing
+  // only applies to MD's net-billing scheme.
+  let selfPriceBase = price;
+  if (p.market === "MD" && p.tariffMode === "differentiated" && !mkt.oneToOne) {
+    const liveMdl = Number(E.fx && E.fx.MDL);
+    const fxMdl = liveMdl > 0 ? liveMdl : FX.MDL;
+    const dayRateMdl = Number(E.mdDayRateMdl) || 0;
+    if (dayRateMdl > 0) selfPriceBase = dayRateMdl / fxMdl;
+  }
+
   let cum = -cost, payback = null, total = 0, year1 = 0;
   const rows = [];
   for (let y = 1; y <= horizon; y++) {
     const prod = solar0 * Math.pow(1 - b.degr / 100, y - 1);
     const priceY = price * Math.pow(1 + b.infl / 100, y - 1);
+    const selfPriceY = selfPriceBase * Math.pow(1 + b.infl / 100, y - 1);
     const selfK = Math.min(prod * selfRatio, cons);
     const expK = prod - selfK;
     let val;
@@ -187,7 +224,7 @@ export function simulate(p, E, bandKey) {
       const credited = Math.min(expK, imports);
       val = selfK * priceY + credited * priceY + (expK - credited) * feed;
     } else {
-      val = selfK * priceY + expK * feed;
+      val = selfK * selfPriceY + expK * feed;
     }
     const opexY = opexEur0 * Math.pow(1 + b.infl / 100, y - 1);
     const net = val - opexY;

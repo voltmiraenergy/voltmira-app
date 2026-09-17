@@ -2,7 +2,7 @@
 import LegalShell from "../LegalShell.jsx";
 
 export const metadata = {
-  title: "Privacy Policy — VoltMira",
+  title: "Privacy Policy · VoltMira",
   description: "How VoltMira processes personal data for solar installers and their clients. EU-hosted, no ad trackers.",
 };
 
