@@ -11,6 +11,7 @@ import { supabaseAdmin } from "../../../lib/supabase.js";
 import { escapeHtml } from "../../../lib/safe.js";
 import { logActivity } from "../../../lib/activity.js";
 import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
+import { sendCrmWebhook } from "../../../lib/crmWebhook.js";
 
 export async function POST(req) {
   const ip = clientIp(req);
@@ -83,5 +84,10 @@ export async function POST(req) {
     text: `New lead from the website widget: <b>${escapeHtml(name)}</b>`,
     link: "/leads",
   });
+  // Awaited (not fire-and-forget): a serverless function can be frozen the
+  // instant this handler returns, killing an unawaited promise before its
+  // fetch ever lands — sendCrmWebhook() itself never throws and is capped at
+  // a 5s timeout, so this can't fail or meaningfully slow the response.
+  await sendCrmWebhook(companyId, "lead.created", { name, email: base.email, phone, address, monthlyBill, source: "widget" });
   return NextResponse.json({ ok: true });
 }

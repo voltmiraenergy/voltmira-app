@@ -9,6 +9,7 @@ import { addProduct, updateProduct, deleteProduct, seedStarterCatalog } from "..
 import { t } from "../../../lib/i18n.js";
 import SupplierCatalogBrowser from "./SupplierCatalogBrowser.jsx";
 import MyProductDetailModal from "./MyProductDetailModal.jsx";
+import CsvImportPanel from "./CsvImportPanel.jsx";
 
 const KINDS = ["panel", "inverter", "battery", "mounting", "other"];
 const SPEC_HINT = { panel: "550 W", inverter: "8 kW", battery: "10 kWh", mounting: "", other: "" };
@@ -188,6 +189,7 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
   // (see /demo?next=/catalog?browse=1) instead of "land on /catalog, then
   // click Catalog furnizori yourself".
   const [browsing, setBrowsing] = useState(() => searchParams.get("browse") === "1");
+  const [importing, setImporting] = useState(false);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
@@ -316,8 +318,9 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
         <h1>{t("nav_catalog", lang)}</h1>
         <span className="spacer" />
         <span style={{ color: "var(--muted)", fontSize: 13 }}>{t("cat_count", lang, { n: items.length })}</span>
-        {!browsing && <button className="btn ghost" onClick={() => { setAdding(false); setBrowsing(true); }}>⇪ {t("cat_sup_browse", lang)}</button>}
-        {!adding && <button className="btn primary" onClick={() => { setBrowsing(false); setForm(EMPTY); setAdding(true); }}>+ {t("cat_add", lang)}</button>}
+        {!browsing && <button className="btn ghost" onClick={() => { setAdding(false); setImporting(false); setBrowsing(true); }}>⇪ {t("cat_sup_browse", lang)}</button>}
+        {!importing && <button className="btn ghost" onClick={() => { setAdding(false); setBrowsing(false); setImporting(true); }}>⇧ {t("cat_imp_open", lang)}</button>}
+        {!adding && <button className="btn primary" onClick={() => { setBrowsing(false); setImporting(false); setForm(EMPTY); setAdding(true); }}>+ {t("cat_add", lang)}</button>}
       </div>
 
       <p className="cat-sub">{t("cat_sub", lang)}</p>
@@ -326,6 +329,12 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
         <SupplierCatalogBrowser lang={lang}
           onClose={() => setBrowsing(false)}
           onAdded={(row) => setItems((l) => [...l, row])} />
+      )}
+
+      {importing && (
+        <CsvImportPanel lang={lang}
+          onClose={() => setImporting(false)}
+          onImported={(rows) => setItems((l) => [...l, ...rows])} />
       )}
 
       {viewing && (
@@ -344,7 +353,7 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
         </section>
       )}
 
-      {!hasItems && !adding && !browsing ? (
+      {!hasItems && !adding && !browsing && !importing ? (
         <div className="cat-starter">
 
           <h3>{t("cat_empty", lang)}</h3>
@@ -356,6 +365,7 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
             <button className="btn ghost" disabled={pending} onClick={loadStarter}>
               {pending ? "…" : "⬇ " + t("cat_load_starter", lang)}
             </button>
+            <button className="btn ghost" disabled={pending} onClick={() => setImporting(true)}>⇧ {t("cat_imp_open", lang)}</button>
             <button className="btn ghost" disabled={pending} onClick={() => { setForm(EMPTY); setAdding(true); }}>+ {t("cat_add", lang)}</button>
           </div>
           <p style={{ margin: "14px 0 0", fontSize: 12 }}>{t("cat_starter_note", lang)}</p>

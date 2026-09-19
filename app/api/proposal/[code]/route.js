@@ -13,6 +13,7 @@ import { escapeHtml } from "../../../../lib/safe.js";
 import { logActivity } from "../../../../lib/activity.js";
 import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
 import { sendEmail, proposalOpenedEmail, emailConfigured } from "../../../../lib/email.js";
+import { sendCrmWebhook } from "../../../../lib/crmWebhook.js";
 import { quote } from "@voltmira/engine";
 import { snapshotEngine } from "../../../../lib/engineSettings.js";
 import { bomHasBattery } from "../../../../lib/quoteInput.js";
@@ -249,6 +250,14 @@ export async function POST(req, { params }) {
     await logActivity(db, { companyId: prop.company_id, kind: actKind, key, params: { b: rawWho, title: rawTitle, n }, text, link: `/projects/${prop.project_id}` });
     // Retention feature: tell the installer while the client is still reading.
     await notifyProposalOpened(db, prop);
+    // CRM webhook: fire ONLY on the very first open (n<=1), not every reload —
+    // a proposal a client reopens five times must not post five identical
+    // "opened" events to their Bitrix24/amoCRM/Zapier hook (lib/crmWebhook.js).
+    if (n <= 1) {
+      await sendCrmWebhook(prop.company_id, "proposal.opened", {
+        project_id: prop.project_id, code: prop.code, client_name: rawWho, title: rawTitle,
+      });
+    }
   }
   if (kind === "heartbeat" && seconds > 0) {
     await db.rpc("bump_proposal_stat", { p_code: prop.code, p_field: "seconds", p_by: seconds });

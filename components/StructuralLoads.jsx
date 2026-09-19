@@ -7,7 +7,7 @@
 // stamped calculation itself, same status as the DC/AC headroom check next
 // to it.
 import { useMemo, useState } from "react";
-import { snowLoad, windLoad, windPeakPressure, TERRAIN_CATEGORIES, FLAT_ROOF_CPE_ZONES } from "../lib/ncmLoads.js";
+import { snowLoad, windLoad, windPeakPressure, TERRAIN_CATEGORIES, FLAT_ROOF_CPE_ZONES, MD_WIND_ZONES_MPS, MD_SNOW_EXAMPLE } from "../lib/ncmLoads.js";
 
 const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
 
@@ -54,15 +54,18 @@ export default function StructuralLoads({ lang, roofPitchDeg }) {
       </div>
       <p className="sl-note">
         {t3(lang,
-          "Formulele Eurocode sunt exacte; valorile caracteristice de mai jos (sₖ, vb,0) depind de zona ta (Nord/Centru/Sud) și trebuie luate din Anexa Națională NCM sau dintr-un studiu de teren real, nu sunt calculate automat aici. Rezultatul e un reper pentru inginerul de structură, nu un calcul ștampilat.",
-          "The Eurocode formulas are exact; the characteristic values below (sₖ, vb,0) depend on your zone (Nord/Centru/Sud) and must come from the NCM National Annex or a real site survey, they aren't auto-filled here. The result is a reference figure for your structural engineer, not a stamped calculation.",
-          "Формулы Eurocode точны; характеристические значения ниже (sₖ, vb,0) зависят от вашей зоны и должны браться из Национального приложения NCM или реального обследования участка, здесь они не заполняются автоматически. Результат, ориентир для инженера-конструктора, а не заверенный расчёт.")}
+          "Formulele Eurocode sunt exacte. vb,0: alege una din cele 5 viteze oficiale ale Anexei Naționale (nu se cunoaște aici care raion e în care zonă, confirmă pe harta reală sau printr-un studiu de teren). sₖ: niciun tabel pe zone nu a putut fi extras, doar un exemplu documentat, e un reper, nu valoarea site-ului tău. Rezultatul e un reper pentru inginerul de structură, nu un calcul ștampilat.",
+          "The Eurocode formulas are exact. vb,0: pick one of the National Annex's 5 official speeds (which raion falls in which zone isn't known here, confirm on the real map or via a site survey). sₖ: no per-zone table could be extracted, only one documented example, a reference point, not your site's real value. The result is a reference figure for your structural engineer, not a stamped calculation.",
+          "Формулы Eurocode точны. vb,0: выберите одну из 5 официальных скоростей Национального приложения (какой район в какой зоне, здесь неизвестно, уточните по реальной карте). sₖ: таблицу по зонам извлечь не удалось, есть только один документированный пример, ориентир, а не значение вашего участка. Результат, ориентир для инженера-конструктора, а не заверенный расчёт.")}
       </p>
 
       <div className="sl-grid">
         <div className="field">
           <label>{t3(lang, "sₖ: încărcare zăpadă pe sol (kN/m²)", "sₖ: characteristic ground snow load (kN/m²)", "sₖ: снеговая нагрузка на грунт (кН/м²)")}</label>
           <input className="input" type="number" min="0" step="0.1" value={sk} onChange={(e) => setSk(e.target.value)} placeholder="—" />
+          <button type="button" className="sl-fill-btn" onClick={() => setSk(String(MD_SNOW_EXAMPLE.skKNm2))}>
+            {t3(lang, `Completează exemplul documentat (${MD_SNOW_EXAMPLE.skKNm2})`, `Fill the documented example (${MD_SNOW_EXAMPLE.skKNm2})`, `Заполнить документированный пример (${MD_SNOW_EXAMPLE.skKNm2})`)}
+          </button>
         </div>
         <div className="field">
           <label>{t3(lang, "Înclinare acoperiș (°)", "Roof pitch (°)", "Уклон крыши (°)")}</label>
@@ -72,7 +75,10 @@ export default function StructuralLoads({ lang, roofPitchDeg }) {
         </div>
         <div className="field">
           <label>{t3(lang, "vb,0: viteza de bază a vântului (m/s)", "vb,0: fundamental basic wind velocity (m/s)", "vb,0: базовая скорость ветра (м/с)")}</label>
-          <input className="input" type="number" min="0" step="0.5" value={vb0} onChange={(e) => setVb0(e.target.value)} placeholder="—" />
+          <select className="input" value={vb0} onChange={(e) => setVb0(e.target.value)}>
+            <option value="">{t3(lang, "Alege zona reală", "Pick the real zone", "Выберите реальную зону")}</option>
+            {MD_WIND_ZONES_MPS.map((v) => <option key={v} value={v}>{v} m/s</option>)}
+          </select>
         </div>
         <div className="field">
           <label>{t3(lang, "Categorie de teren", "Terrain category", "Категория местности")}</label>
@@ -126,6 +132,8 @@ export default function StructuralLoads({ lang, roofPitchDeg }) {
         .sl-note{font-size:12px;color:var(--muted);line-height:1.55;margin:0 0 14px}
         .sl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:16px}
         .sl-cpe-hint{font-size:11px;color:var(--muted);line-height:1.45;margin:6px 0 0}
+        .sl-fill-btn{display:block;margin-top:5px;font-family:inherit;font-size:11px;font-weight:600;
+          color:var(--green);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;text-align:left}
         .sl-results{display:flex;gap:20px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--line)}
         .sl-stat{display:flex;flex-direction:column;gap:2px}
         .sl-stat b{font-size:18px;font-variant-numeric:tabular-nums;color:var(--ink)}

@@ -13,6 +13,7 @@ import BomCard from "../../../../components/BomCard.jsx";
 import DesignChecks from "../../../../components/DesignChecks.jsx";
 import StructuralLoads from "../../../../components/StructuralLoads.jsx";
 import BosEstimate from "../../../../components/BosEstimate.jsx";
+import PeakShaving from "../../../../components/PeakShaving.jsx";
 import DesignSuggestions from "../../../../components/DesignSuggestions.jsx";
 import BatterySizingPanel from "../../../../components/BatterySizingPanel.jsx";
 import SurplusPanel, { useBuyback } from "../../../../components/SurplusPanel.jsx";
@@ -26,6 +27,8 @@ import { applyCalibration } from "../../../../lib/yieldCalibration.js";
 import { t } from "../../../../lib/i18n.js";
 import { autoBom, recommendMount } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
+import { designCheck } from "../../../../lib/designCheck.js";
+import { fitPanels } from "../../../../lib/roofLayout.js";
 
 // System-size slider range — raised to 500 kW: Site Designer's own real,
 // drawn-roof panel counts can land well past a "residential" size for a large
@@ -93,7 +96,7 @@ function Donut({ self, prod0, cons, lang }) {
 }
 
 /* ---------- editor ---------- */
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, calibration = null }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, calibration = null, canEditTechnical = true }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
@@ -357,6 +360,22 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const computeSiteDesignQuote = useCallback((kw) =>
     quote({ ...p, kw, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) }, E),
     [p, E, feedOverride]);
+
+  // Rail/clamp quantities for BosEstimate: the SAME real drawn roof planes
+  // and fitPanels() math applySiteDesignLayout/lib/actions.js's PDF snapshot
+  // already use, not a separate guess — recomputed live here (not persisted
+  // with the project) since a plane's geometry, or the BOM's real panel,
+  // can change without reopening Site Designer.
+  const siteRows = useMemo(() => {
+    const planes = Array.isArray(p.siteDesign?.planes) ? p.siteDesign.planes : [];
+    const validPlanes = planes.filter((pl) => Array.isArray(pl.polygon) && pl.polygon.length >= 3);
+    if (!validPlanes.length) return [];
+    const obstacles = Array.isArray(p.siteDesign?.obstacles)
+      ? p.siteDesign.obstacles.map((o) => o.polygon).filter((o) => Array.isArray(o) && o.length >= 3)
+      : [];
+    const { w, h } = designCheck({ bom: p.bom, kw: p.kw }).panel.dimensionsMm || { w: 1909, h: 1134 };
+    return validPlanes.flatMap((pl) => fitPanels(pl.polygon, obstacles, h, w, { orientation: "portrait" }).rows);
+  }, [p.siteDesign, p.bom, p.kw]);
 
   async function applySiteDesignLayout(layout) {
     if (!layout || !layout.totalCount) return;
@@ -807,16 +826,33 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             )}
           </section>
 
-          <BomCard
-            lang={lang}
-            bom={p.bom}
-            onChange={(bom) => update({ bom })}
-            catalog={catalog}
-            kw={p.kw}
-            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
-            quotePrice={q.e.grossCost}
-            money={fmt}
-          />
+          {/* RBAC (lib/rbac.js): the real backstop is the enforce_project_rbac
+              DB trigger (add-rbac.sql) — this is just the UX signal, so a
+              Sales-titled member on a workspace that's turned RBAC on isn't
+              left guessing why their BOM edit didn't stick. Soft-disabled
+              rather than unmounted: still visible so they can read the
+              current config, just not interactive. */}
+          {canEditTechnical ? (
+            <BomCard
+              lang={lang}
+              bom={p.bom}
+              onChange={(bom) => update({ bom })}
+              catalog={catalog}
+              kw={p.kw}
+              battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+              quotePrice={q.e.grossCost}
+              money={fmt}
+            />
+          ) : (
+            <div style={{ position: "relative" }}>
+              <div style={{ position: "absolute", inset: 0, zIndex: 1, cursor: "not-allowed" }} title={tr("ed_readonly_bom")} />
+              <div style={{ opacity: .55, pointerEvents: "none" }}>
+                <BomCard lang={lang} bom={p.bom} onChange={() => {}} catalog={catalog} kw={p.kw}
+                  battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} quotePrice={q.e.grossCost} money={fmt} />
+              </div>
+              <div className="set-note" style={{ marginTop: -6 }}>{tr("ed_readonly_bom")}</div>
+            </div>
+          )}
 
         </div>
 
@@ -937,7 +973,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           <StructuralLoads lang={lang} roofPitchDeg={p.siteDesign?.planes?.[0]?.tiltDeg} />
 
           <BosEstimate lang={lang} bom={p.bom} kw={p.kw}
-            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} consKwh={consEff} phases={undefined} market={p.market} />
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} consKwh={consEff} phases={undefined} market={p.market}
+            rows={siteRows} />
+
+          <PeakShaving lang={lang} lat={p.lat} lon={p.lon} kw={p.kw} cons={consEff}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} market={p.market}
+            roofPitchDeg={p.siteDesign?.planes?.[0]?.tiltDeg} roofAzimuthDeg={p.siteDesign?.planes?.[0]?.azimuthDeg} />
 
           {/* Compare every inverter that could serve this array, not just the
               one in the BOM — applying a row swaps the BOM's inverter line. */}
@@ -1064,7 +1105,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       {legalDocsOpen && (
         <LegalDocsModal lang={lang} onClose={() => setLegalDocsOpen(false)}
           company={{ name: companyName, ...companyLegal }}
-          project={{ clientName: p.client, address: p.address, kw: p.kw, price: q.e.cost, currency: "EUR", batt: p.batt, market: p.market }} />
+          project={{ id: initial.id, clientName: p.client, address: p.address, kw: p.kw, price: q.e.cost, currency: "EUR", batt: p.batt, battKwh: p.battKwh, market: p.market, bom: p.bom }} />
       )}
 
       {/* proposal modal */}

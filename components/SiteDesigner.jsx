@@ -9,11 +9,16 @@
 // module, and sees real payback/CO2 numbers for whatever the layout implies —
 // before ever touching the main kW field.
 //
-// Esri World Imagery, not Google/Mapbox: free, no API key or billing account,
-// good enough resolution for outlining a roof. Leaflet + leaflet-geoman are
-// loaded dynamically inside an effect (not a static top-level import) because
-// they touch `window` at load time and this file is server-rendered on first
-// paint.
+// Esri World Imagery is the default base layer: free, no API key or billing
+// account, good enough resolution for outlining a roof. When a real
+// NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set (installer's own Google Cloud
+// project, billing enabled — see .env.example), the map switches to Google's
+// satellite tiles instead, via the official Maps JavaScript API loaded under
+// leaflet.gridlayer.googlemutant (not raw google tile-server URLs, which
+// aren't licensed for direct use outside that API). No key set: unchanged
+// Esri behavior. Leaflet + leaflet-geoman are loaded dynamically inside an
+// effect (not a static top-level import) because they touch `window` at load
+// time and this file is server-rendered on first paint.
 import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { fitPanels, compassLabel, project } from "../lib/roofLayout.js";
@@ -26,6 +31,38 @@ const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
 const PLANE_STYLE = { color: "#2E7D5B", weight: 2, fillColor: "#2E7D5B", fillOpacity: 0.18 };
 const OBSTACLE_STYLE = { color: "#B4472F", weight: 2, fillColor: "#B4472F", fillOpacity: 0.35 };
 const TREE_STYLE = { color: "#5B7A3A", weight: 2, fillColor: "#5B7A3A", fillOpacity: 0.35 };
+
+let googleMapsScriptPromise = null;
+function loadGoogleMapsScript(key) {
+  if (window.google?.maps) return Promise.resolve();
+  if (!googleMapsScriptPromise) {
+    googleMapsScriptPromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}`;
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("google maps script failed to load"));
+      document.head.appendChild(s);
+    });
+  }
+  return googleMapsScriptPromise;
+}
+
+// Real Google satellite tiles, via the official Maps JavaScript API (never
+// raw mt0/mt1.google.com tile URLs — those aren't licensed for direct use
+// outside that API and Google actively blocks scraped traffic). Any failure
+// — bad key, network, billing not enabled on the installer's own Google
+// Cloud project — resolves to null so the caller falls back to Esri instead
+// of leaving the map blank.
+async function loadGoogleSatelliteLayer(L, key) {
+  try {
+    await loadGoogleMapsScript(key);
+    await import("leaflet.gridlayer.googlemutant");
+    return L.gridLayer.googleMutant({ type: "satellite", maxZoom: 21 });
+  } catch {
+    return null;
+  }
+}
 
 // Matches lib/supplierCatalog.js's ROOF_TYPE_MOUNT_TEST keys exactly, so a
 // plane's chosen roof type maps straight to a real, verified mount SKU (or
@@ -417,17 +454,26 @@ export default function SiteDesigner({
       if (cancelled || !mapEl.current) return;
       Lref.current = L;
 
-      // Esri's real imagery resolution varies a lot by place — most of RO/MD
-      // has nothing past ~z18, and requesting further just gets back Esri's
-      // own "Map data not yet available" filler tile. maxNativeZoom stops
-      // fetching there and lets Leaflet upscale that last real tile instead,
-      // so zooming in shows a blurrier roof rather than a blank grid.
       const map = L.map(mapEl.current, { zoomControl: true }).setView([lat, lon], 18);
       mapRef.current = map; // set early: loadSnapshot/clearAllLayers below read it via the ref
-      L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        { maxZoom: 21, maxNativeZoom: 18, attribution: "Tiles &copy; Esri" }
-      ).addTo(map);
+
+      const googleKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      const googleLayer = googleKey ? await loadGoogleSatelliteLayer(L, googleKey) : null;
+      if (googleLayer) {
+        googleLayer.addTo(map);
+      } else {
+        // Esri's real imagery resolution varies a lot by place — most of
+        // RO/MD has nothing past ~z18, and requesting further just gets back
+        // Esri's own "Map data not yet available" filler tile. maxNativeZoom
+        // stops fetching there and lets Leaflet upscale that last real tile
+        // instead, so zooming in shows a blurrier roof rather than a blank
+        // grid.
+        L.tileLayer(
+          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          { maxZoom: 21, maxNativeZoom: 18, attribution: "Tiles &copy; Esri" }
+        ).addTo(map);
+      }
+      if (cancelled || !mapEl.current) return;
       L.marker([lat, lon]).addTo(map);
 
       map.pm.addControls({
@@ -643,12 +689,19 @@ export default function SiteDesigner({
       // Conventional portrait mounting: the panel's long side (w) runs
       // up-slope, its short side (h) runs along the ridge — orientation/auto
       // then decides which axis actually gets which side.
-      const { panels, count } = fitPanels(polygon, obstaclePolys, h, w, fitOpts);
+      const { panels, count, rows } = fitPanels(polygon, obstaclePolys, h, w, fitOpts);
       totalCount += count;
       const [clat, clon] = centroidOf(polygon);
       perPlane.push({
         id, tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0,
         roofType: layer._sdRoofType || "tile", lat: clat, lon: clon, count,
+      });
+      // Rails drawn first, panels on top — same real row geometry
+      // lib/mountingEstimate.js sizes the materials list from, just shown
+      // instead of counted.
+      rows.forEach((r) => {
+        L.polyline(r.rail1, { color: "#5B6B7A", weight: 3, opacity: 0.85, interactive: false }).addTo(panelGroupRef.current);
+        L.polyline(r.rail2, { color: "#5B6B7A", weight: 3, opacity: 0.85, interactive: false }).addTo(panelGroupRef.current);
       });
       panels.forEach((corners) => {
         L.polygon(corners, { color: "#B9C4CE", weight: 1, fillColor: "url(#sdPanelCells)", fillOpacity: 1, interactive: false })

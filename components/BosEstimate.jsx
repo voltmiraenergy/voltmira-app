@@ -10,6 +10,7 @@
 import { useMemo, useState } from "react";
 import { designCheck, stringInputs } from "../lib/designCheck.js";
 import { dcCableSize, dcCableLengthM, dcBreakerA, acBreakerA, spdCount } from "../lib/bosEstimate.js";
+import { railLengthM, clampCount } from "../lib/mountingEstimate.js";
 
 const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
 
@@ -18,7 +19,7 @@ function csvEscape(v) {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-export default function BosEstimate({ lang, bom, kw, battKwh, consKwh, phases, market }) {
+export default function BosEstimate({ lang, bom, kw, battKwh, consKwh, phases, market, rows: layoutRows }) {
   const [open, setOpen] = useState(false);
   const [runM, setRunM] = useState("15");
 
@@ -32,6 +33,9 @@ export default function BosEstimate({ lang, bom, kw, battKwh, consKwh, phases, m
   const dcBreakers = useMemo(() => inputs.map((row) => ({ label: row.label, a: dcBreakerA(row.iscTotalA) })), [inputs]);
   const ac = useMemo(() => acBreakerA(d.acKw, d.ph), [d]);
   const spd = useMemo(() => spdCount({ mpptInputs: d.mppt, inverters: d.nInv }), [d]);
+  const railM = useMemo(() => railLengthM(layoutRows), [layoutRows]);
+  const clamps = useMemo(() => clampCount(layoutRows), [layoutRows]);
+  const hasLayout = Array.isArray(layoutRows) && layoutRows.length > 0;
 
   if (!open) {
     return (
@@ -53,6 +57,12 @@ export default function BosEstimate({ lang, bom, kw, battKwh, consKwh, phases, m
       value: ac != null ? `${ac}A × ${d.nInv}` : "—", note: "" },
     { label: t3(lang, "Protecții supratensiune (SPD)", "Surge protection (SPD)", "Защита от перенапряжения (SPD)"),
       value: `${spd.dc}× DC (Tip 2) · ${spd.ac}× AC (Tip 2)`, note: "" },
+    ...(hasLayout ? [
+      { label: t3(lang, "Șine montaj (lungime totală)", "Mounting rail (total length)", "Монтажные рейки (общая длина)"),
+        value: `${railM.toLocaleString(lang === "ru" ? "ru-RU" : "ro-RO", { maximumFractionDigits: 1 })} m`, note: "" },
+      { label: t3(lang, "Cleme montaj", "Mounting clamps", "Крепёжные клеммы"),
+        value: `${clamps.total}× (${clamps.end} ${t3(lang, "capăt", "end", "торцевых")} + ${clamps.mid} ${t3(lang, "mijloc", "mid", "промежуточных")})`, note: "" },
+    ] : []),
   ];
 
   function exportCsv() {
@@ -79,6 +89,14 @@ export default function BosEstimate({ lang, bom, kw, battKwh, consKwh, phases, m
           "Computed from the real strings and inverter already in the BOM (real cable voltage-drop, breakers sized at 1.25× short-circuit current, standard practice). Doesn't include power optimizers: the catalog has no inverter in that class, so there's no real product to recommend. The result is a specification (cross-section, rating, quantity) for your team to buy, not a priced BOM line.",
           "Рассчитано по реальным стрингам и инвертору из сметы (реальное падение напряжения на кабеле, автоматы рассчитаны на 1,25× тока короткого замыкания). Не включает оптимизаторы мощности, в каталоге нет инвертора такого класса. Результат, спецификация (сечение, номинал, количество), не позиция сметы с ценой.")}
       </p>
+      {!hasLayout && (
+        <p className="bos-note">
+          {t3(lang,
+            "Șine/cleme apar aici după ce desenezi acoperișul real în Proiectare amplasament: lungimea și numărul depind de layout-ul real al panourilor, nu de un rând ipotetic.",
+            "Rail/clamp figures appear here once you draw the real roof in Site Designer: the length and count depend on the actual panel layout, not a hypothetical row.",
+            "Данные по рейкам/клеммам появятся после того, как вы нарисуете реальную крышу в Проектировании: длина и количество зависят от реальной раскладки панелей.")}
+        </p>
+      )}
 
       <div className="field" style={{ maxWidth: 220, marginBottom: 14 }}>
         <label>{t3(lang, "Traseu cablu (acoperiș → invertor, m)", "Cable run (roof → inverter, m)", "Трасса кабеля (крыша → инвертор, м)")}</label>

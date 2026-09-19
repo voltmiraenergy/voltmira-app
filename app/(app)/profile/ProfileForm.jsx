@@ -1,13 +1,15 @@
 "use client";
 // app/(app)/profile/ProfileForm.jsx — edit your own name, phone, title and avatar.
-// The avatar is downscaled and stored inline (data URL) like the company logo, so
-// no storage bucket is needed. Password change sends a real reset link by email.
+// The avatar is downscaled to 256px client-side, then uploaded to the
+// public-media Storage bucket (supabase/add-storage-media.sql) — avatar_url
+// holds a real public URL, not a data: URL inlined into the profiles row.
+// Password change sends a real reset link by email.
 import { useState } from "react";
 import { supabaseBrowser } from "../../../lib/supabase-browser.js";
 import { saveProfile } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
 
-export default function ProfileForm({ lang, email, companyName, initial }) {
+export default function ProfileForm({ lang, email, companyName, initial, userId }) {
   const sb = supabaseBrowser();
   const [name, setName] = useState(initial.name || "");
   const [phone, setPhone] = useState(initial.phone || "");
@@ -27,12 +29,23 @@ export default function ProfileForm({ lang, email, companyName, initial }) {
     const rd = new FileReader();
     rd.onload = () => {
       const img = new window.Image();
-      img.onload = () => {
+      img.onload = async () => {
         const max = 256, sc = Math.min(1, max / Math.max(img.width, img.height));
         const w = Math.max(1, Math.round(img.width * sc)), h = Math.max(1, Math.round(img.height * sc));
         const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
         cv.getContext("2d").drawImage(img, 0, 0, w, h);
-        setAvatar(cv.toDataURL("image/png"));
+        cv.toBlob(async (blob) => {
+          if (!blob || !userId) { setMsg(t("pf_bad", lang)); return; }
+          setMsg(t("pf_uploading", lang));
+          // Same reasoning as settings/page.jsx's logo upload: the RLS
+          // policy needs a real folder level for the user id.
+          const path = `avatars/${userId}/avatar.png`;
+          const { error } = await sb.storage.from("public-media").upload(path, blob, { upsert: true, contentType: "image/png", cacheControl: "3600" });
+          if (error) { setMsg(error.message); return; }
+          const { data } = sb.storage.from("public-media").getPublicUrl(path);
+          setAvatar(`${data.publicUrl}?v=${Date.now()}`);
+          setMsg("");
+        }, "image/png");
       };
       img.src = rd.result;
     };

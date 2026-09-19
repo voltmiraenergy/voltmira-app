@@ -162,6 +162,35 @@ export async function POST(req) {
   return NextResponse.json({ ok: true, inviteLink: got.link, existing, moved, ...sent });
 }
 
+// PATCH { id, title } → change an existing teammate's job title (owner only).
+// Was invite-time-only: profiles.title got written once in POST above and had
+// no way to change afterward short of removing and re-inviting the person.
+// Needed for RBAC (lib/rbac.js) to mean anything in practice — an owner who
+// mis-set someone's title, or promotes a rep to manager, must be able to fix
+// it without destroying their account and project history.
+export async function PATCH(req) {
+  const me = await callerProfile();
+  if (!me) return NextResponse.json({ error: "auth" }, { status: 401 });
+  if (me.role !== "owner") return NextResponse.json({ error: "owner_only" }, { status: 403 });
+
+  let b; try { b = await req.json(); } catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }
+  const id = String(b.id || "");
+  const allowedTitles = ["sales", "engineer", "manager"];
+  const title = allowedTitles.includes(b.title) ? b.title : (b.title === "" ? "" : null);
+  if (!id || title === null) return NextResponse.json({ error: "bad_target" }, { status: 400 });
+
+  const admin = supabaseAdmin();
+  // Scope to the caller's own company — never trust the raw id.
+  const { error } = await admin.from("profiles")
+    .update({ title }).eq("id", id).eq("company_id", me.company_id);
+  if (error) {
+    if (/title/i.test(error.message || ""))
+      return NextResponse.json({ error: "no_title_column" }, { status: 409 });
+    return NextResponse.json({ error: "update_failed" }, { status: 502 });
+  }
+  return NextResponse.json({ ok: true });
+}
+
 export async function DELETE(req) {
   const me = await callerProfile();
   if (!me) return NextResponse.json({ error: "auth" }, { status: 401 });

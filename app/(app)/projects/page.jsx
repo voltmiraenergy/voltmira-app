@@ -6,7 +6,8 @@
 // all view state travels in the query string.
 import Link from "next/link";
 import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
-import { currentCompany } from "../../../lib/session.js";
+import { currentCompany, currentUser } from "../../../lib/session.js";
+import { canViewAllProjects } from "../../../lib/rbac.js";
 import { bulkUpdateStatus } from "../../../lib/actions.js";
 import { revalidatePath } from "next/cache";
 import { quote } from "@voltmira/engine";
@@ -46,11 +47,21 @@ export default async function Projects({ searchParams }) {
 
   const sb = supabaseServer();
   const co = await currentCompany();
-  const [{ data: allRows }, { data: team }, stats] = await Promise.all([
+  const [{ data: allRowsRaw }, { data: team }, stats, user] = await Promise.all([
     sb.from("projects").select("*").order("updated_at", { ascending: false }),
-    co ? supabaseAdmin().from("profiles").select("id, name, email").eq("company_id", co.id) : Promise.resolve({ data: [] }),
+    co ? supabaseAdmin().from("profiles").select("id, name, email, role, title").eq("company_id", co.id) : Promise.resolve({ data: [] }),
     proposalStatsByProject(sb),
+    currentUser(),
   ]);
+  // RBAC (lib/rbac.js, add-rbac.sql — off by default): a Sales title sees
+  // only the projects they own once an owner has explicitly turned this on.
+  // Filtered here at the query-result layer, not via RLS — a wrong RLS
+  // policy on a live multi-tenant table risks locking everyone out or
+  // leaking across companies, while this is a single reversible flag.
+  const me = (team || []).find((m) => m.id === user?.id) || null;
+  const allRows = canViewAllProjects(me, co?.rbac_enabled)
+    ? allRowsRaw
+    : (allRowsRaw || []).filter((p) => p.owner_id === user?.id);
   const E = await companyEngine(co);
   const validityDays = E.quoteValidityDays || 30;
   const lang = normLang(co?.lang);

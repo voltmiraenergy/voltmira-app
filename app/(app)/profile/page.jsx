@@ -17,5 +17,5 @@ export default async function ProfilePage() {
   const co = await currentCompany();
   const lang = normLang(co?.lang);
   const { data: profile } = await supabaseAdmin().from("profiles").select("*").eq("id", user.id).maybeSingle();
-  return <ProfileForm lang={lang} email={user.email || ""} companyName={co?.name || ""} initial={profile || {}} />;
+  return <ProfileForm lang={lang} email={user.email || ""} companyName={co?.name || ""} initial={profile || {}} userId={user.id} />;
 }

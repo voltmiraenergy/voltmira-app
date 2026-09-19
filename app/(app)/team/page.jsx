@@ -8,6 +8,7 @@ import { seatCap as planSeatCap, seatsOpen as planSeatsOpen } from "../../../lib
 import { quote } from "@voltmira/engine";
 import { companyEngine } from "../../../lib/engineSettings.js";
 import { rowToQuoteInput } from "../../../lib/quoteInput.js";
+import { canViewTeamPerformance } from "../../../lib/rbac.js";
 import TeamActions from "./TeamActions.jsx";
 
 export const dynamic = "force-dynamic";
@@ -72,8 +73,24 @@ export default async function Team() {
   const staff = Math.max(0, memberCount - (members || []).filter(m => m.role === "owner").length);
   const inPlay = (projs || []).filter(p => p.status !== "won" && p.status !== "lost").length;
 
+  // RBAC (lib/rbac.js, off by default): once an owner turns this on, a
+  // non-manager/non-owner only ever sees their OWN row's numbers — never a
+  // teammate's pipeline or win rate. Filtered here, server-side, before
+  // anything reaches the client, rather than hidden with CSS on a page that
+  // already has the real numbers in its props.
+  const me = (members || []).find((m) => m.id === user?.id) || null;
+  const restrictedView = !canViewTeamPerformance(me, co?.rbac_enabled);
+  const visibleStats = restrictedView
+    ? (user?.id && stats[user.id] ? { [user.id]: stats[user.id] } : {})
+    : stats;
+  const visibleCounts = restrictedView
+    ? (user?.id ? { [user.id]: counts[user.id] || 0 } : {})
+    : counts;
+
   // Team-wide money, so the header answers "is this team actually producing?"
-  const teamWonEur = Object.values(stats).reduce((s, x) => s + (x.wonEur || 0), 0);
+  // (blank for a restricted viewer — see visibleStats above; the header tile
+  // itself is hidden in that case, not shown with someone else's total).
+  const teamWonEur = Object.values(visibleStats).reduce((s, x) => s + (x.wonEur || 0), 0);
   const fmt = (n) => "€" + Math.round(n || 0).toLocaleString("en-IE");
 
   return (
@@ -120,16 +137,15 @@ export default async function Team() {
         </div>
 
         <div className="th-item">
-          <div className="th-lbl">{t("tm_st_wonval", lang)}</div>
+          <div className="th-lbl">{restrictedView ? t("tm_st_wonval_own", lang) : t("tm_st_wonval", lang)}</div>
           <div className="th-val th-money">{fmt(teamWonEur)}</div>
-          <div className="th-sub">{t("team_won_sub", lang)}</div>
+          <div className="th-sub">{restrictedView ? "" : t("team_won_sub", lang)}</div>
         </div>
       </section>
 
-      <TeamActions lang={lang} meId={user?.id}
-        me={(members || []).find(m => m.id === user?.id) || null}
-        members={members || []} counts={counts} pending={pending} stats={stats}
-        currency={co?.currency || "EUR"} seatCap={seatCap} />
+      <TeamActions lang={lang} meId={user?.id} me={me} restrictedView={restrictedView}
+        members={members || []} counts={visibleCounts} pending={pending} stats={visibleStats}
+        currency={co?.currency || "EUR"} seatCap={seatCap} rbacEnabled={!!co?.rbac_enabled} />
     </div>
   );
 }

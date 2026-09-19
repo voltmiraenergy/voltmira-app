@@ -4,8 +4,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { t } from "../../../lib/i18n.js";
+import { saveCompany } from "../../../lib/actions.js";
 
-export default function TeamActions({ lang, meId, me, members, counts = {}, pending = [], stats = {}, currency = "EUR", seatCap = null }) {
+export default function TeamActions({ lang, meId, me, members, counts = {}, pending = [], stats = {}, currency = "EUR", seatCap = null, restrictedView = false, rbacEnabled = false }) {
   const router = useRouter();
   const isOwner = me?.role === "owner";
   // seatCap is null for unlimited plans. atCap gates the invite so it can never
@@ -24,6 +25,30 @@ export default function TeamActions({ lang, meId, me, members, counts = {}, pend
   // Set when the address already belongs to another workspace: holds the facts
   // the owner needs before deciding to move them. {email,name,title,detail}
   const [ask, setAsk] = useState(null);
+  const [rbacBusy, setRbacBusy] = useState(false);
+  const [titleBusy, setTitleBusy] = useState(null); // member id currently saving
+
+  async function toggleRbac(checked) {
+    if (rbacBusy) return;
+    setRbacBusy(true);
+    try { await saveCompany({ rbac_enabled: checked }); router.refresh(); }
+    finally { setRbacBusy(false); }
+  }
+
+  // Was invite-time-only until now (see app/api/team/route.js PATCH) — an
+  // owner correcting a mis-set title, or promoting a rep, no longer means
+  // removing and re-inviting them.
+  async function changeTitle(id, newTitle) {
+    if (titleBusy) return;
+    setTitleBusy(id);
+    try {
+      await fetch("/api/team", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, title: newTitle }),
+      });
+      router.refresh();
+    } finally { setTitleBusy(null); }
+  }
 
   const isPending = (id) => pending.includes(id);
 
@@ -127,12 +152,28 @@ export default function TeamActions({ lang, meId, me, members, counts = {}, pend
           <h3>{t("members", lang)}</h3>
           <span className="ch-count">{members.length}</span>
         </div>
+        {/* RBAC kill switch (lib/rbac.js, add-rbac.sql) — owner-only, off by
+            default. Lives here rather than Settings: an owner deciding this
+            needs to see everyone's title (below) in the same glance. */}
+        {isOwner && (
+          <label className="check" style={{ margin: "2px 0 14px" }}>
+            <input type="checkbox" checked={rbacEnabled} disabled={rbacBusy}
+              onChange={(e) => toggleRbac(e.target.checked)} />
+            <span className="toggle-pill" />
+            <span className="txt">{t("team_rbac_toggle", lang)}<small>{t("team_rbac_note", lang)}</small></span>
+          </label>
+        )}
         {members.map(m => {
           const open = openMember === m.id;
           const s = stats[m.id] || {};
+          // RBAC (lib/rbac.js): once restrictedView is true, `stats`/`counts`
+          // already only contain the viewer's OWN entry (app/(app)/team/page.jsx)
+          // — a teammate's row here reads as genuinely unknown, not "0 deals",
+          // which "0" would wrongly imply.
+          const hidden = restrictedView && m.id !== meId && m.role !== "owner";
           const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
-          const pct = Math.round(share(m) * 100);
-          const isTop = m.id === topId && teamWon > 0;
+          const pct = hidden ? 0 : Math.round(share(m) * 100);
+          const isTop = !hidden && m.id === topId && teamWon > 0;
           return (
           <div key={m.id} className={"member-wrap" + (open ? " open" : "")}>
             <div className={`member${open ? " open" : ""}`} role="button" tabIndex={0} aria-expanded={open}
@@ -159,13 +200,19 @@ export default function TeamActions({ lang, meId, me, members, counts = {}, pend
                 <div className="m-mail">{m.email}</div>
                 {/* Always-visible headline metrics — the row should be useful
                     before you expand it. */}
-                <div className="m-meta">
-                  <span title={projCount(m.id)}>{counts[m.id] || 0} {t("tm_st_quotes", lang).toLowerCase()}</span>
-                  <i />
-                  <span>{money(s.wonEur)} {t("tm_st_won", lang).toLowerCase()}</span>
-                  {pct > 0 && <><i /><span className="m-share">{pct}%</span></>}
-                </div>
-                <div className="m-bar" aria-hidden="true"><span style={{ width: Math.max(pct, pct > 0 ? 3 : 0) + "%", background: roleColor(m) }} /></div>
+                {hidden ? (
+                  <div className="m-meta"><span>{t("tm_hidden_stats", lang)}</span></div>
+                ) : (
+                  <>
+                    <div className="m-meta">
+                      <span title={projCount(m.id)}>{counts[m.id] || 0} {t("tm_st_quotes", lang).toLowerCase()}</span>
+                      <i />
+                      <span>{money(s.wonEur)} {t("tm_st_won", lang).toLowerCase()}</span>
+                      {pct > 0 && <><i /><span className="m-share">{pct}%</span></>}
+                    </div>
+                    <div className="m-bar" aria-hidden="true"><span style={{ width: Math.max(pct, pct > 0 ? 3 : 0) + "%", background: roleColor(m) }} /></div>
+                  </>
+                )}
               </div>
 
               <span className="m-acts">
@@ -184,13 +231,32 @@ export default function TeamActions({ lang, meId, me, members, counts = {}, pend
             </div>
             {open && (
               <div className="member-detail">
-                <div className="md-stats">
-                  <div className="md-stat"><b>{s.total || 0}</b><span>{t("tm_st_quotes", lang)}</span></div>
-                  <div className="md-stat"><b>{s.won || 0}</b><span>{t("tm_st_won", lang)}</span></div>
-                  <div className="md-stat"><b className={s.winRate != null && s.winRate >= 50 ? "good" : ""}>{s.winRate != null ? s.winRate + "%" : "—"}</b><span>{t("tm_st_winrate", lang)}</span></div>
-                  <div className="md-stat"><b>{money(s.pipelineEur)}</b><span>{t("tm_st_pipeline", lang)}</span></div>
-                  <div className="md-stat"><b className="good">{money(s.wonEur)}</b><span>{t("tm_st_wonval", lang)}</span></div>
-                </div>
+                {hidden ? (
+                  <p className="invite-sub" style={{ margin: 0 }}>{t("tm_hidden_stats", lang)}</p>
+                ) : (
+                  <div className="md-stats">
+                    <div className="md-stat"><b>{s.total || 0}</b><span>{t("tm_st_quotes", lang)}</span></div>
+                    <div className="md-stat"><b>{s.won || 0}</b><span>{t("tm_st_won", lang)}</span></div>
+                    <div className="md-stat"><b className={s.winRate != null && s.winRate >= 50 ? "good" : ""}>{s.winRate != null ? s.winRate + "%" : "—"}</b><span>{t("tm_st_winrate", lang)}</span></div>
+                    <div className="md-stat"><b>{money(s.pipelineEur)}</b><span>{t("tm_st_pipeline", lang)}</span></div>
+                    <div className="md-stat"><b className="good">{money(s.wonEur)}</b><span>{t("tm_st_wonval", lang)}</span></div>
+                  </div>
+                )}
+                {/* Was invite-time-only: profiles.title had no edit path once
+                    set (app/api/team/route.js PATCH). Not shown for the owner
+                    row — role always reads "Owner" regardless of title. */}
+                {isOwner && m.role !== "owner" && (
+                  <div className="field" style={{ marginTop: 12, maxWidth: 220 }} onClick={(e) => e.stopPropagation()}>
+                    <label>{t("tm_edit_title", lang)}</label>
+                    <select className="input" value={m.title || ""} disabled={titleBusy === m.id}
+                      onChange={(e) => changeTitle(m.id, e.target.value)}>
+                      <option value="">{t("tm_role_member", lang)}</option>
+                      {["sales", "engineer", "manager"].map((r) => (
+                        <option key={r} value={r}>{t("role_" + r, lang)}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             )}
           </div>

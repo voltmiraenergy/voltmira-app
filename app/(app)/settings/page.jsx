@@ -7,6 +7,9 @@ import { openCheckout } from "../../../lib/paddle.js";
 import { saveCompany, seedSampleData, clearSampleData, getMyRole } from "../../../lib/actions.js";
 import { defaultEngineSettings } from "@voltmira/engine";
 import { t, normLang, LANGS, LANG_NAMES } from "../../../lib/i18n.js";
+import { hasFeature, planFor } from "../../../lib/features.js";
+import UpsellModal from "../../../components/UpsellModal.jsx";
+import { CONTRACT_TOKENS, COMMISSIONING_TOKENS } from "../../../lib/legalDocs.js";
 
 const ST_CSS = `
 .st-wrap{max-width:660px;margin:0 auto}
@@ -72,6 +75,7 @@ export default function Settings() {
   const [demoBusy, setDemoBusy] = useState(false);
   const [demoMsg, setDemoMsg] = useState("");
   const [isOwner, setIsOwner] = useState(true);   // default true so owners see no flash
+  const [upsell, setUpsell] = useState(null);      // feature key, or null
 
   useEffect(() => {
     document.title = "Settings · VoltMira";
@@ -105,10 +109,14 @@ export default function Settings() {
         subsidy_amount_ron: co.subsidy_amount_ron, prosumer_limit_kw: co.prosumer_limit_kw,
         notify_open: co.notify_open !== false,
         nudge_enabled: co.nudge_enabled === true,
+        crm_webhook_enabled: co.crm_webhook_enabled === true,
+        crm_webhook_url: co.crm_webhook_url,
         // company legal details for invoicing
         legal_name: co.legal_name, reg_no: co.reg_no, vat_no: co.vat_no,
         legal_address: co.legal_address, iban: co.iban, invoice_prefix: co.invoice_prefix,
         vat_rate: co.vat_rate, install_warranty_years: co.install_warranty_years,
+        contract_template_override: co.contract_template_override || "",
+        commissioning_template_override: co.commissioning_template_override || "",
         engine: eng,
       });
       setMsg(t("s_saved", lang));
@@ -152,9 +160,11 @@ export default function Settings() {
     finally { setDemoBusy(false); }
   }
 
-  // Logo upload: read the chosen image, downscale to 256px, and store it inline
-  // as a data URL in logo_url — no storage bucket needed, works everywhere the
-  // logo renders (CSP allows data: images).
+  // Logo upload: read the chosen image, downscale to 256px, and upload it to
+  // the public-media Storage bucket (supabase/add-storage-media.sql) — a real
+  // public URL in logo_url, not a data: URL inlined into the companies row
+  // (the old approach ballooned the row and, unlike a Storage object, can't
+  // be cached/served efficiently by a CDN).
   function onLogoFile(e) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -163,7 +173,7 @@ export default function Settings() {
     const reader = new FileReader();
     reader.onload = () => {
       const img = new window.Image();
-      img.onload = () => {
+      img.onload = async () => {
         const max = 256;
         const scale = Math.min(1, max / Math.max(img.width, img.height));
         const w = Math.max(1, Math.round(img.width * scale));
@@ -171,7 +181,24 @@ export default function Settings() {
         const canvas = document.createElement("canvas");
         canvas.width = w; canvas.height = h;
         canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-        setCo(c => ({ ...c, logo_url: canvas.toDataURL("image/png") })); touch();
+        canvas.toBlob(async (blob) => {
+          if (!blob) { setMsg(t("s_logo_bad", lang)); return; }
+          setMsg(t("s_logo_uploading", lang));
+          // storage.foldername(name)[2] in add-storage-media.sql's RLS policy
+          // needs a real folder level for the company id, not just a
+          // filename prefix — "logos/<id>.png" has only ONE folder segment
+          // ("logos"), so the id never reaches the policy check and every
+          // upload was rejected with "row violates row-level security
+          // policy" until this was two levels deep.
+          const path = `logos/${co.id}/logo.png`;
+          const { error } = await sb.storage.from("public-media").upload(path, blob, { upsert: true, contentType: "image/png", cacheControl: "3600" });
+          if (error) { setMsg(error.message); return; }
+          const { data } = sb.storage.from("public-media").getPublicUrl(path);
+          // Cache-bust: the path is fixed (one logo per company), so an
+          // unchanged URL would keep showing the old image from cache.
+          setCo(c => ({ ...c, logo_url: `${data.publicUrl}?v=${Date.now()}` }));
+          setMsg(""); touch();
+        }, "image/png");
       };
       img.src = reader.result;
     };
@@ -274,8 +301,75 @@ export default function Settings() {
           <span className="toggle-pill" />
           <span className="txt">{t("s_nudge", lang)}<small>{t("s_nudge_note", lang)}</small></span>
         </label>
+        {/* Opt-in, same reasoning as nudge_enabled above: sends real pipeline
+            data (a lead's name/phone, a proposal's title) to a URL the
+            installer themselves controls — nothing fires until they paste
+            one in and turn it on. See add-crm-webhook.sql. Pro+ feature
+            (lib/features.js) — Free can see it but gets an upsell, not a
+            silent toggle; saveCompany() also refuses to persist "true" for a
+            plan that doesn't grant it, so this is real, not cosmetic.
+            Owner-only, same as engine/rbac_enabled above: this sets WHERE the
+            company's real lead/proposal/invoice stream gets posted, so a
+            non-owner member must not be able to repoint it — saveCompany()
+            drops these two fields server-side for anyone but the owner, so
+            the control is hidden here rather than shown and silently
+            failing to save for everyone else. */}
+        {isOwner && (<>
+        <label className="check" style={{ marginTop: 10 }}>
+          <input type="checkbox" checked={co.crm_webhook_enabled === true}
+            onChange={e => {
+              if (e.target.checked && !hasFeature(co.plan, "crmWebhook")) { setUpsell("crmWebhook"); return; }
+              setCo({ ...co, crm_webhook_enabled: e.target.checked }); touch();
+            }} />
+          <span className="toggle-pill" />
+          <span className="txt">{t("s_crm", lang)}<small>{t("s_crm_note", lang)}</small></span>
+        </label>
+        {co.crm_webhook_enabled === true && (
+          <div className="field" style={{ marginTop: 10, maxWidth: 420 }}>
+            <label>{t("s_crm_url", lang)}</label>
+            <input className="input" value={co.crm_webhook_url || ""} onChange={set("crm_webhook_url")}
+              placeholder="https://hooks.bitrix24.com/rest/…" />
+          </div>
+        )}
+        </>)}
         <div className="set-note">{t("co_note", lang)}</div>
       </section>
+
+      {/* White-labeling: the installer's own wording, not VoltMira's, on the
+          two documents a client actually signs. Team+ (lib/features.js) — the
+          racordare PDF is a real Premier Energy government form and stays
+          exactly what it is; only the two VoltMira-authored templates
+          (lib/legalDocs.js) can be overridden. Blank = keep using the
+          built-in default; nothing here can produce a document with an
+          "undefined" in it because buildServiceContract/buildCommissioningAct
+          apply the exact same {{token}} → real-data substitution to a
+          custom override that they always applied to the built-in text. */}
+      <section className="card st-sec">
+        <div className="st-head"><SecIcon name="code" /><h3>{t("s_whitelabel", lang)}</h3></div>
+        <p className="st-desc">{t("s_whitelabel_note", lang)}</p>
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label>{t("s_wl_contract", lang)}</label>
+          <textarea className="input" style={{ minHeight: 140, fontFamily: "ui-monospace,Consolas,monospace", fontSize: 12.5 }}
+            value={co.contract_template_override || ""}
+            onFocus={() => { if (!hasFeature(co.plan, "customTemplates")) setUpsell("customTemplates"); }}
+            onChange={e => { if (!hasFeature(co.plan, "customTemplates")) { setUpsell("customTemplates"); return; } setCo({ ...co, contract_template_override: e.target.value }); touch(); }}
+            placeholder={t("s_wl_placeholder", lang)} />
+        </div>
+        <div className="field" style={{ marginBottom: 8 }}>
+          <label>{t("s_wl_commissioning", lang)}</label>
+          <textarea className="input" style={{ minHeight: 140, fontFamily: "ui-monospace,Consolas,monospace", fontSize: 12.5 }}
+            value={co.commissioning_template_override || ""}
+            onFocus={() => { if (!hasFeature(co.plan, "customTemplates")) setUpsell("customTemplates"); }}
+            onChange={e => { if (!hasFeature(co.plan, "customTemplates")) { setUpsell("customTemplates"); return; } setCo({ ...co, commissioning_template_override: e.target.value }); touch(); }}
+            placeholder={t("s_wl_placeholder", lang)} />
+        </div>
+        <div className="set-note">{t("s_wl_tokens", lang, { tokens: [...CONTRACT_TOKENS, ...COMMISSIONING_TOKENS].filter((v, i, a) => a.indexOf(v) === i).map(x => `{{${x}}}`).join(" ") })}</div>
+      </section>
+
+      {upsell && (
+        <UpsellModal lang={lang} plan={planFor(upsell)} onClose={() => setUpsell(null)}
+          onUpgrade={(p) => { setUpsell(null); upgrade(p); }} />
+      )}
 
       {/* Invoicing — company legal details printed on proforma invoices */}
       <section className="card st-sec">
@@ -297,6 +391,10 @@ export default function Settings() {
         <div className="field" style={{ marginTop: 12 }}><label>{t("s_legal_address", lang)}</label>
           <input className="input" value={co.legal_address || ""} onChange={set("legal_address")} placeholder={t("s_legal_address_ph", lang)} /></div>
         <div className="set-note">{t("s_invoicing_note", lang)}</div>
+        <div style={{ marginTop: 14 }}>
+          <a className="btn ghost" href="/api/export-invoices">⇩ {t("s_export_invoices_md", lang)}</a>
+          <div className="set-note" style={{ marginTop: 8 }}>{t("s_export_invoices_md_note", lang)}</div>
+        </div>
       </section>
 
       {/* Installation warranty — the installer's OWN workmanship commitment,
