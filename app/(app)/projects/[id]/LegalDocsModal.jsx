@@ -1,9 +1,8 @@
 "use client";
 // app/(app)/projects/[id]/LegalDocsModal.jsx — four documents:
 //   "contract"      — a VoltMira-authored service-contract template (editable
-//                      text, window.print() export — same pattern as the
-//                      proposal PDF and proforma invoice: AutoPrint.jsx /
-//                      invoice/PrintNow.jsx).
+//                      text), exported as a CLEAN server-rendered PDF — see
+//                      downloadCleanPdf() below.
 //   "racordare"      — Premier Energy Distribution's OWN real prosumer
 //                      connection-request PDF
 //                      (public/legal/cerere-ar-prosumator-premier-energy.pdf),
@@ -20,26 +19,70 @@
 //                      SAME designCheck()/stringInputs() numbers the editor's
 //                      own design-check card and BosEstimate already show.
 //
-// Printing: the old visibility:hidden + position:fixed trick printed the
-// SAME page N times (fixed elements repeat on every printed page — the same
-// browser behaviour that makes them useful as running headers — and
-// visibility:hidden leaves the rest of the app at its full, real layout
-// height, so N came from however tall the editor page behind the modal
-// happened to be). Fixed instead with a real React portal: the print
-// content renders as its own node directly under <body>, and print CSS
-// hides every OTHER direct child of body — no positioning trick, no
-// repeat, because there's nothing left tall enough to paginate.
-import { useEffect, useState } from "react";
+// Export: contract/commissioning/diagram all used window.print() until a
+// client asked why a downloaded contract carried a browser-stamped header
+// (page title, URL) and footer (URL again + the exact print date/time) —
+// Chrome/Edge add that to any window.print() output unless "Headers and
+// footers" is unchecked by hand, which nobody thinks to do. Same fix already
+// used for the Studio documents and the proposal PDF: render the exact same
+// content server-side with headless Chromium (displayHeaderFooter:false) via
+// the existing /api/studio/pdf endpoint instead of the browser's own print
+// dialog — see downloadCleanPdf(). "racordare" was already a real generated
+// PDF (lib/racordarePdf.js) and never had this problem.
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { buildServiceContract, buildCommissioningAct } from "../../../../lib/legalDocs.js";
 import { t } from "../../../../lib/i18n.js";
 import SingleLineDiagram from "../../../../components/SingleLineDiagram.jsx";
 
+// Renders its children into a node directly under <body>, isolated from the
+// rest of the app — this is also the exact node downloadCleanPdf() reads
+// outerHTML from, and the true fallback target if the server render below
+// ever fails and window.print() runs instead (print CSS hides every OTHER
+// direct child of body, so only this prints, once, regardless of the real
+// page's own height behind the modal).
 function PrintPortal({ children }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return null;
   return createPortal(<div className="ld-print-portal">{children}</div>, document.body);
+}
+
+// Grabs the currently-rendered document node, posts its markup to the same
+// clean-PDF renderer Studio's downloadStudioDoc() uses, and downloads the
+// result — no browser print dialog involved, so no browser-stamped header/
+// footer. Falls back to window.print() only if the server render fails, so
+// the button always produces something.
+async function downloadCleanPdf(nodeRef, filename, title) {
+  const node = nodeRef.current;
+  if (!node) { window.print(); return false; }
+  // .ld-print-doc styles the contract/commissioning <pre>; .sld- is
+  // SingleLineDiagram's own scoped styling (components/SingleLineDiagram.jsx)
+  // — either may be what's actually inside the node, depending on docType.
+  let css = "";
+  for (const ss of document.styleSheets) {
+    let rules; try { rules = ss.cssRules; } catch { continue; }
+    for (const r of rules) {
+      if (r.selectorText && /\.ld-print-doc|\.sld-/.test(r.selectorText)) css += r.cssText + "\n";
+    }
+  }
+  try {
+    const res = await fetch("/api/studio/pdf", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ html: node.outerHTML, css, title, filename }),
+    });
+    if (!res.ok) throw new Error("pdf_" + res.status);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = /\.pdf$/i.test(filename) ? filename : filename + ".pdf";
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+    return true;
+  } catch {
+    window.print();
+    return false;
+  }
 }
 
 export default function LegalDocsModal({ lang, onClose, company, project }) {
@@ -61,6 +104,19 @@ export default function LegalDocsModal({ lang, onClose, company, project }) {
   }));
 
   const racordareUrl = project.id ? `/api/projects/${project.id}/racordare-pdf` : null;
+
+  // One ref shared by all three exported doc types — PrintPortal always
+  // renders exactly one of them at a time (matching docType), so a single
+  // stable node is all downloadCleanPdf() ever needs to read from.
+  const printRef = useRef(null);
+  const [exporting, setExporting] = useState(false);
+  const clientSlug = (project.clientName || "client").trim() || "client";
+  async function handleExport(filename, title) {
+    if (exporting) return;
+    setExporting(true);
+    try { await downloadCleanPdf(printRef, filename, title); }
+    finally { setExporting(false); }
+  }
 
   const TABS = [
     { id: "contract", label: t("ld_tab_contract", lang), show: true },
@@ -88,7 +144,10 @@ export default function LegalDocsModal({ lang, onClose, company, project }) {
             <textarea className="ld-textarea" value={contractText} onChange={(e) => setContractText(e.target.value)} spellCheck={false} />
             <div className="ld-foot">
               <button type="button" className="btn ghost" onClick={onClose}>{t("cat_det_close", lang)}</button>
-              <button type="button" className="btn primary" onClick={() => window.print()}>{t("ld_export", lang)}</button>
+              <button type="button" className="btn primary" disabled={exporting}
+                onClick={() => handleExport(`contract-servicii-${clientSlug}`, t("ld_tab_contract", lang))}>
+                {exporting ? t("ld_exporting", lang) : t("ld_export", lang)}
+              </button>
             </div>
           </>
         )}
@@ -122,7 +181,10 @@ export default function LegalDocsModal({ lang, onClose, company, project }) {
             <textarea className="ld-textarea" value={commissioningText} onChange={(e) => setCommissioningText(e.target.value)} spellCheck={false} />
             <div className="ld-foot">
               <button type="button" className="btn ghost" onClick={onClose}>{t("cat_det_close", lang)}</button>
-              <button type="button" className="btn primary" onClick={() => window.print()}>{t("ld_export", lang)}</button>
+              <button type="button" className="btn primary" disabled={exporting}
+                onClick={() => handleExport(`act-dare-exploatare-${clientSlug}`, t("ld_tab_commissioning", lang))}>
+                {exporting ? t("ld_exporting", lang) : t("ld_export", lang)}
+              </button>
             </div>
           </>
         )}
@@ -135,23 +197,30 @@ export default function LegalDocsModal({ lang, onClose, company, project }) {
               projectTitle={project.clientName} projectAddress={project.address} />
             <div className="ld-foot">
               <button type="button" className="btn ghost" onClick={onClose}>{t("cat_det_close", lang)}</button>
-              <button type="button" className="btn primary" onClick={() => window.print()}>{t("ld_export", lang)}</button>
+              <button type="button" className="btn primary" disabled={exporting}
+                onClick={() => handleExport(`schema-monofilara-${clientSlug}`, t("ld_tab_diagram", lang))}>
+                {exporting ? t("ld_exporting", lang) : t("ld_export", lang)}
+              </button>
             </div>
           </>
         )}
       </div>
 
-      {/* Printed exactly once, regardless of what's behind the modal — see
-          the file header comment on why this replaced the old
-          visibility/position trick. */}
+      {/* Printed/exported exactly once, regardless of what's behind the
+          modal — see the file header comment on why this replaced the old
+          visibility/position trick. Also the exact node downloadCleanPdf()
+          reads from: one stable ref, since only one doc type renders here
+          at a time. */}
       <PrintPortal>
-        {docType === "contract" && <pre className="ld-print-doc">{contractText}</pre>}
-        {docType === "commissioning" && <pre className="ld-print-doc">{commissioningText}</pre>}
-        {docType === "diagram" && (
-          <SingleLineDiagram lang={lang} bom={project.bom} kw={project.kw} battKwh={project.battKwh}
-            hasBattery={!!project.batt} phases={undefined} market={project.market}
-            projectTitle={project.clientName} projectAddress={project.address} />
-        )}
+        <div ref={printRef} className="ld-doc">
+          {docType === "contract" && <pre className="ld-print-doc">{contractText}</pre>}
+          {docType === "commissioning" && <pre className="ld-print-doc">{commissioningText}</pre>}
+          {docType === "diagram" && (
+            <SingleLineDiagram lang={lang} bom={project.bom} kw={project.kw} battKwh={project.battKwh}
+              hasBattery={!!project.batt} phases={undefined} market={project.market}
+              projectTitle={project.clientName} projectAddress={project.address} />
+          )}
+        </div>
       </PrintPortal>
 
       <style dangerouslySetInnerHTML={{ __html: `
