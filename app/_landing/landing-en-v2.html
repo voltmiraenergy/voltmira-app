@@ -420,6 +420,17 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
 .foot-col a{text-decoration:none;color:var(--ink-soft);font-size:14px;transition:color .2s}
 .foot-col a:hover{color:var(--green)}
 .foot-bottom{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;padding-top:26px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+/* Quiet trust row, below foot-bottom — a directory badge (SaaS Browser) sits
+   alongside trust markers people already recognize instead of standing alone
+   as a new visual element on its own. */
+.foot-trust{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.foot-trust-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;letter-spacing:.05em;color:var(--muted);opacity:.85}
+.foot-trust-meta svg{flex:none;opacity:.8}
+.foot-dot{width:3px;height:3px;border-radius:50%;background:var(--muted);opacity:.6;display:inline-block}
+.foot-saasbrowser{margin-left:auto;display:inline-flex;opacity:.85;transition:opacity .2s}
+.foot-saasbrowser:hover{opacity:1}
+.foot-saasbrowser img{display:block;filter:grayscale(.15)}
+@media(max-width:560px){.foot-saasbrowser{margin-left:0}}
 .foot-bottom .founder a{color:var(--muted);text-decoration:underline;text-underline-offset:2px}
 .foot-bottom .sp{flex:1 1 auto;min-width:8px}
 .foot-bottom a{text-decoration:none;color:var(--muted);transition:color .2s}
@@ -838,6 +849,17 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
       <a href="/terms" data-i18n="v2_144">Terms</a>
       <a href="/refunds" data-i18n="v2_145">Refunds</a>
       <a href="/credits" data-i18n="v2_146">Credits</a>
+    </div>
+    <div class="foot-trust">
+      <span class="foot-trust-meta">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+        </svg>
+        EU-hosted <span class="foot-dot"></span> GDPR-ready <span class="foot-dot"></span> RO · MD · EU
+      </span>
+      <a href="https://saasbrowser.com/en/saas/1577574/voltmira" target="_blank" rel="nofollow noopener" class="foot-saasbrowser">
+        <img src="https://static-files.saasbrowser.com/saas-browser-badge-2.svg" alt="VoltMira - Discover new software products" width="140" height="35" loading="lazy">
+      </a>
     </div>
   </div>
 </footer>
