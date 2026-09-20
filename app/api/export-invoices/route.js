@@ -26,20 +26,9 @@ import { companyEngine } from "../../../lib/engineSettings.js";
 import { rowToQuoteInput } from "../../../lib/quoteInput.js";
 import { vatBreakdown } from "../../../lib/invoiceMath.js";
 import { getRate } from "../../../lib/fx.js";
+import { csvEsc } from "../../../lib/csv.js";
 
 export const dynamic = "force-dynamic";
-
-const PLAIN_NUMBER = /^-?\d+(\.\d+)?$/;
-
-// Same formula-injection guard as export-projects/route.js — client_name and
-// title can carry text a stranger supplied (the widget-lead endpoint has no
-// account gate), so a leading =+-@ must never reach an accountant's
-// spreadsheet as a live formula.
-function csvEsc(v) {
-  v = String(v == null ? "" : v);
-  if (!PLAIN_NUMBER.test(v) && /^[=+\-@\t\r]/.test(v)) v = "'" + v;
-  return /[",\n;]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
-}
 
 export async function GET() {
   const sb = supabaseServer();

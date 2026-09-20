@@ -76,6 +76,10 @@ export default function Settings() {
   const [demoMsg, setDemoMsg] = useState("");
   const [isOwner, setIsOwner] = useState(true);   // default true so owners see no flash
   const [upsell, setUpsell] = useState(null);      // feature key, or null
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteErr, setDeleteErr] = useState("");
 
   useEffect(() => {
     document.title = "Settings · VoltMira";
@@ -127,6 +131,29 @@ export default function Settings() {
       router.refresh();
     } catch (e) {
       setMsg(e.message || "Error");
+    }
+  }
+
+  async function deleteAccount() {
+    if (deleteBusy) return;
+    setDeleteBusy(true); setDeleteErr("");
+    try {
+      const res = await fetch("/api/account", {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: deleteConfirm }),
+      });
+      if (res.ok) { await sb.auth.signOut(); router.push("/login"); return; }
+      const j = await res.json().catch(() => ({}));
+      const ERR = {
+        active_subscription: t("s_delete_err_sub", lang),
+        confirm_mismatch: t("s_delete_err_mismatch", lang),
+        owner_only: t("s_delete_err_owner", lang),
+      };
+      setDeleteErr(ERR[j.error] || t("s_delete_err_generic", lang));
+    } catch {
+      setDeleteErr(t("s_delete_err_generic", lang));
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
@@ -543,6 +570,41 @@ export default function Settings() {
         </div>
         {demoMsg && <p className="set-note" style={{ marginTop: 12 }}>{demoMsg}</p>}
       </section>
+
+      {/* Danger zone: GDPR right to erasure, self-service (docs/GDPR_CHECKLIST.md).
+          Owner-only (already inside this isOwner block). Type-to-confirm with
+          the real company name — never a plain "are you sure?" button — so
+          this can only fire from a human reading the name on screen. */}
+      <section className="card st-sec" style={{ borderColor: "#C4543B" }}>
+        <div className="st-head"><SecIcon name="code" color="#C4543B" /><h3>{t("s_danger", lang)}</h3></div>
+        <p className="st-desc">{t("s_delete_note", lang)}</p>
+        <button className="btn ghost" style={{ color: "#C4543B", borderColor: "#C4543B" }}
+          onClick={() => { setDeleteOpen(true); setDeleteConfirm(""); setDeleteErr(""); }}>
+          {t("s_delete_cta", lang)}
+        </button>
+      </section>
+
+      {deleteOpen && (
+        <div className="overlay" onClick={() => !deleteBusy && setDeleteOpen(false)}>
+          <div className="modal" style={{ width: "min(440px,100%)" }} onClick={(e) => e.stopPropagation()}>
+            <h4>{t("s_delete_title", lang)}</h4>
+            <p className="st-desc">{t("s_delete_body", lang, { name: co.name || "" })}</p>
+            <div className="field" style={{ marginBottom: 12 }}>
+              <label>{t("s_delete_type", lang, { name: co.name || "" })}</label>
+              <input className="input" value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} disabled={deleteBusy} />
+            </div>
+            {deleteErr && <p style={{ color: "#C4543B", fontSize: 13, margin: "0 0 12px" }}>{deleteErr}</p>}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button type="button" className="btn ghost" disabled={deleteBusy} onClick={() => setDeleteOpen(false)}>{t("upsell_close", lang)}</button>
+              <button type="button" className="btn" style={{ background: "#C4543B", color: "#fff" }}
+                disabled={deleteBusy || deleteConfirm.trim() !== (co.name || "").trim()}
+                onClick={deleteAccount}>
+                {deleteBusy ? t("s_deleting", lang) : t("s_delete_confirm", lang)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       </>) : (
         <section className="card st-sec">

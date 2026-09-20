@@ -141,6 +141,12 @@ export default function WidgetForm({ companyId, lang, market = "MD" }) {
               opacity: sendBusy ? 0.7 : 1 }}>
               {sendBusy ? t("wg_sending", lang) : t("wg_send", lang)}
             </button>
+            <p style={{ fontSize: 10.5, color: "#66756C", lineHeight: 1.5, margin: "8px 0 0" }}>
+              {t("wg_consent", lang)}{" "}
+              <a href="https://voltmira.com/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "#1E6B4E" }}>
+                {t("wg_consent_link", lang)}
+              </a>.
+            </p>
           </form>
         </div>
       )}

@@ -1,0 +1,48 @@
+name: CI
+
+# Runs the real test suite (lib/ + engine/, the calculation-critical layer)
+# and a production build on every push/PR — so "the tests pass" stops being
+# something that only happens if someone remembers to run them by hand.
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      # Placeholder values, NOT real credentials — every server route in this
+      # app is dynamic (export const dynamic = "force-dynamic"), so nothing
+      # queries Supabase during `next build`; these only need to be
+      # well-formed enough for supabase-js's client constructor not to throw
+      # at module-eval time. Real secrets live in Vercel's own env config for
+      # the actual deploy, never here.
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder-anon-key"
+          SUPABASE_SERVICE_ROLE_KEY: "placeholder-service-role-key"
+          NEXT_PUBLIC_APP_URL: "https://voltmira.com"

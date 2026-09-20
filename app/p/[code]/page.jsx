@@ -298,12 +298,23 @@ export default async function ProposalPage({ params, searchParams }) {
           <div style={{ ...S.muted, fontSize: 12, marginTop: 3 }}>{t("powered_by_sub", lang)}</div>
         </a>
       ) : null /* Pro/Team: white-label, no VoltMira footer */}
+
+      {/* This page tracks real opens/time-viewed on a real homeowner (see
+          Privacy Policy's "Proposal analytics") — that disclosure has to stay
+          reachable even when Pro/Team hides the branding above; transparency
+          isn't a white-label option. Deliberately NOT hidden by company.plan. */}
+      <p className="no-print" style={{ textAlign: "center", marginTop: 14, fontSize: 11, color: "#8FA398" }}>
+        <a href="https://voltmira.com/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }}>
+          {t("prop_privacy_link", lang)}
+        </a>
+      </p>
       {/* print stylesheet: clean paper output for save-as-PDF */}
       <style>{`@media print{
         body{background:#fff!important}
         main{background:#fff!important;max-width:100%!important;padding:0!important}
         details{display:block} details>*{display:block}
         button{display:none!important}
+        .no-print{display:none!important}
         section{break-inside:avoid;border-color:#ddd!important;box-shadow:none!important}
       }`}</style>
     </main>

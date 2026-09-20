@@ -7,24 +7,9 @@ import { quote } from "@voltmira/engine";
 import { companyEngine } from "../../../lib/engineSettings.js";
 import { proposalStatsByProject } from "../../../lib/proposalStats.js";
 import { rowToQuoteInput } from "../../../lib/quoteInput.js";
+import { csvEsc } from "../../../lib/csv.js";
 
 export const dynamic = "force-dynamic";
-
-// Plain numbers we generate ourselves — never neutered, so "-2" stays a number.
-const PLAIN_NUMBER = /^-?\d+(\.\d+)?$/;
-
-function csvEsc(v) {
-  v = String(v == null ? "" : v);
-  // FORMULA INJECTION. Excel and LibreOffice evaluate any cell beginning with
-  // = + - @ (or a leading tab/CR). This export carries client_name and title,
-  // and those come from leads.name — which /api/widget-lead accepts from the
-  // open internet with no account. A stranger could therefore plant "=cmd|..."
-  // in an installer's pipeline and have it run when they open the CSV. A
-  // leading apostrophe is the standard neutraliser: Excel treats the cell as
-  // text and does not render the quote.
-  if (!PLAIN_NUMBER.test(v) && /^[=+\-@\t\r]/.test(v)) v = "'" + v;
-  return /[",\n;]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
-}
 
 export async function GET() {
   const sb = supabaseServer();

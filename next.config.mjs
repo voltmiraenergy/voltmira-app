@@ -1,3 +1,5 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
+
 /** @type {import('next').NextConfig} */
 
 // Security headers applied to every response. The CSP is intentionally
@@ -20,7 +22,11 @@ const cspCommon = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.paddle.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: https:",
-  "connect-src 'self' https://*.supabase.co https://re.jrc.ec.europa.eu https://nominatim.openstreetmap.org https://*.paddle.com https://plausible.io",
+  // *.ingest.sentry.io/us.sentry.io: error/performance events from the
+  // Sentry SDK (lib/sentry setup, see instrumentation.js) — inert with no
+  // NEXT_PUBLIC_SENTRY_DSN set, but the CSP has to allow the endpoint before
+  // that, or the browser blocks the SDK's own reporting request outright.
+  "connect-src 'self' https://*.supabase.co https://re.jrc.ec.europa.eu https://nominatim.openstreetmap.org https://*.paddle.com https://plausible.io https://*.ingest.sentry.io https://*.sentry.io",
   "frame-src https://challenges.cloudflare.com https://*.paddle.com",
   "base-uri 'self'",
   "form-action 'self'",
@@ -54,13 +60,19 @@ const widgetHeaders = [
   ...commonHeaders,
 ];
 
-export default {
+const nextConfig = {
   transpilePackages: ["@voltmira/engine"],
   // Don't advertise the framework/version in a response header (fingerprinting).
   poweredByHeader: false,
   // The homepage route reads app/_landing/landing.html with fs at runtime;
   // make sure Vercel's file tracer bundles it into the serverless function.
   experimental: {
+    // Next 14.2 defaults this OFF (it's stable-without-a-flag only from
+    // Next 15 on) — instrumentation.js's register() hook, which is what
+    // actually loads sentry.server.config.js/sentry.edge.config.js, is a
+    // silent no-op without this. Verified directly against the installed
+    // Next 14.2.35's own default config, not assumed.
+    instrumentationHook: true,
     outputFileTracingIncludes: {
       "/": ["./app/_landing/**"],
       // The PDF route shells out to a real Chromium binary that ships brotli-
@@ -125,3 +137,16 @@ export default {
     ];
   },
 };
+
+// Sentry's webpack plugin only actually DOES anything (uploads source maps,
+// creates a release) when SENTRY_AUTH_TOKEN is set — every option below is
+// safe with no Sentry account at all: the plugin just skips its extra work
+// and the build proceeds exactly as it did before this was added. The
+// runtime SDK (instrumentation.js, sentry.*.config.js) is separately inert
+// with no NEXT_PUBLIC_SENTRY_DSN — see their own comments.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+});

@@ -5,12 +5,14 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --test lib/*.test.js engine/*.test.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
     "@geoman-io/leaflet-geoman-free": "^2.20.1",
     "@pdf-lib/fontkit": "^1.1.1",
+    "@sentry/nextjs": "^10.75.0",
     "@sparticuz/chromium": "^149.0.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.0",

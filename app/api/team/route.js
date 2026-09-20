@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 import { seatCap } from "../../../lib/plans.js";
 import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
 import { sendEmail, teamInviteEmail, emailConfigured } from "../../../lib/email.js";
+import { normalizeTitle } from "../../../lib/teamValidation.js";
 
 async function callerProfile() {
   const sb = supabaseServer();
@@ -77,8 +78,7 @@ export async function POST(req) {
   // ── Add a teammate ────────────────────────────────────────────────────────
   const email = String(b.email || "").trim().toLowerCase();
   const name = String(b.name || "").trim().slice(0, 120);
-  const allowedTitles = ["sales", "engineer", "manager"];
-  const title = allowedTitles.includes(b.title) ? b.title : "";
+  const title = normalizeTitle(b.title) ?? ""; // an unrecognized title never fails the invite itself
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     return NextResponse.json({ error: "bad_email" }, { status: 400 });
 
@@ -175,8 +175,7 @@ export async function PATCH(req) {
 
   let b; try { b = await req.json(); } catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }
   const id = String(b.id || "");
-  const allowedTitles = ["sales", "engineer", "manager"];
-  const title = allowedTitles.includes(b.title) ? b.title : (b.title === "" ? "" : null);
+  const title = normalizeTitle(b.title);
   if (!id || title === null) return NextResponse.json({ error: "bad_target" }, { status: 400 });
 
   const admin = supabaseAdmin();
