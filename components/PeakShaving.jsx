@@ -23,8 +23,11 @@ function PeakChart({ hours, battKwh }) {
   const Ysoc = (v) => PADT + (H - PADT - PADB) * (1 - v / maxSoc);
   const socPath = hours.map((h, i) => `${i === 0 ? "M" : "L"}${X(h.h) + barW / 2},${Ysoc(h.socKwh)}`).join(" ");
 
+  // No height attribute below: SVG's height attribute needs a real length,
+  // "auto" isn't valid there and throws a console error — omitting it lets
+  // the browser derive height from viewBox's own aspect ratio.
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="auto" role="img">
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img">
       <line x1={PADL} y1={zero} x2={W - PADR} y2={zero} stroke="var(--line)" strokeWidth="1" />
       {hours.map((h) => (
         <g key={h.h}>

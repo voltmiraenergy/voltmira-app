@@ -154,7 +154,12 @@ export default function SingleLineDiagram({ lang, bom, kw, battKwh, hasBattery, 
         <span>{t3(lang, "Schiță monofilară", "Single-line diagram", "Однолинейная схема")} · {new Date().toLocaleDateString(lang === "ru" ? "ru-RU" : "ro-RO")}</span>
       </div>
 
-      <svg viewBox={`0 0 ${gridX + 90} ${svgH}`} width="100%" height="auto" role="img">
+      {/* No height attribute: SVG's own height attribute requires a real
+          length, "auto" isn't valid there (unlike CSS) and throws a console
+          error. Omitting it lets the browser derive height from viewBox's
+          aspect ratio against width="100%" — exactly what "auto" was meant
+          to express, just via the attribute that actually supports it. */}
+      <svg viewBox={`0 0 ${gridX + 90} ${svgH}`} width="100%" role="img">
         {inputRows.map((row) => (
           <g key={row.label}>
             {row.stringYs.map((sy, si) => (

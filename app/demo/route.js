@@ -12,6 +12,7 @@
 //   signed out          -> seed a workspace and drop them on the dashboard
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { supabaseAdmin } from "../../lib/supabase.js";
 import { createDemoWorkspace, resolvePdfDemoDest, resolveProposalDemoDest, resolveEditorDemoDest, resolveWidgetDemoDest } from "../../lib/demoSeed.js";
 import { isDemoEmail } from "../../lib/demo.js";
 import { isRateLimited, clientIp } from "../../lib/ratelimit.js";
@@ -21,6 +22,10 @@ export const dynamic = "force-dynamic";
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// This route builds its own createServerClient directly (not the shared
+// supabaseServer() factory in lib/supabase.js, which sets its own maxAge but
+// isn't used here) — so the long cookie lifetime has to be set explicitly on
+// it, same as it always was.
 const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 400;
 
 const LANGS = new Set(["en", "ro", "ru"]);
@@ -145,10 +150,42 @@ export async function GET(req) {
       `<h1>Couldn't start the demo</h1><p>Something went wrong setting up the sample workspace. Please try again.</p><a class="alt" href="/">Back to the site</a>`, 500);
   }
 
-  // ---- sign the visitor in -------------------------------------------
-  // Cookies are bound to the redirect response explicitly (the middleware
-  // pattern) rather than via next/headers, so the Set-Cookie headers reliably
-  // ride along with the 307 to /dashboard.
+  // ---- sign the visitor in --------------------------------------------
+  // NOT signInWithPassword: Supabase Auth's project-level CAPTCHA protection
+  // (turned on the day the real /login form got a Turnstile widget — see
+  // app/login/LoginForm.jsx) gates that call, and a server route has no
+  // browser to solve a challenge in, so every demo login 500'd from that day
+  // on.
+  //
+  // Also NOT a browser redirect through generateLink()'s own action_link:
+  // verified live that this project hands back magiclink/recovery tokens as a
+  // URL FRAGMENT (#access_token=…), never a PKCE ?code=, so a redirect to
+  // Supabase's verify endpoint lands back on /login with a fragment nothing
+  // reads — no server route can see a fragment at all (browsers never send it
+  // in a request), and this app's client never expected to parse one there.
+  //
+  // The robust fix: do the whole exchange server-side, right here.
+  // admin.auth.admin.generateLink() (service-role, the SAME non-captcha admin
+  // API app/api/team/route.js already uses for invites) hands back a
+  // hashed_token; sb.auth.verifyOtp() redeems it for a real session on the
+  // SAME cookie-bound client signInWithPassword used to use, so the Set-Cookie
+  // headers ride the redirect exactly as before — just a different, non-
+  // captcha-gated way of proving who's signing in.
+  if (NEXT_RESOLVERS[nextParam]) {
+    const resolved = await NEXT_RESOLVERS[nextParam](creds.id);
+    if (resolved) dest = new URL(resolved, req.url);
+  }
+  const admin = supabaseAdmin();
+  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+    type: "recovery", email: creds.email,
+  });
+  const tokenHash = linkData?.properties?.hashed_token;
+  if (linkErr || !tokenHash) {
+    console.error("[demo] link generation failed:", linkErr?.message);
+    return page("Demo unavailable",
+      `<h1>Couldn't start the demo</h1><p>The workspace was created but sign-in failed. Please try again.</p><a class="alt" href="/">Back to the site</a>`, 500);
+  }
+
   const res = NextResponse.redirect(dest);
   const sb = createServerClient(URL_, ANON, {
     cookieOptions: { maxAge: AUTH_COOKIE_MAX_AGE },
@@ -157,15 +194,11 @@ export async function GET(req) {
       setAll: (list) => list.forEach(({ name, value, options }) => res.cookies.set(name, value, options)),
     },
   });
-  const { data: signInData, error } = await sb.auth.signInWithPassword(creds);
-  if (error) {
-    console.error("[demo] sign-in failed:", error.message);
+  const { error: verifyErr } = await sb.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
+  if (verifyErr) {
+    console.error("[demo] sign-in failed:", verifyErr.message);
     return page("Demo unavailable",
       `<h1>Couldn't start the demo</h1><p>The workspace was created but sign-in failed. Please try again.</p><a class="alt" href="/">Back to the site</a>`, 500);
-  }
-  if (NEXT_RESOLVERS[nextParam]) {
-    const resolved = await NEXT_RESOLVERS[nextParam](signInData?.user?.id);
-    if (resolved) res.headers.set("location", new URL(resolved, req.url).toString());
   }
   return res;
 }

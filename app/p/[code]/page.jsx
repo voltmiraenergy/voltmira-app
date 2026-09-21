@@ -308,11 +308,19 @@ export default async function ProposalPage({ params, searchParams }) {
           {t("prop_privacy_link", lang)}
         </a>
       </p>
-      {/* print stylesheet: clean paper output for save-as-PDF */}
+      {/* print stylesheet: clean paper output for save-as-PDF.
+          No raw ">" in the CSS text below (was `details>*{...}`, now a
+          descendant selector instead of a child selector) — <style> is a
+          raw-text HTML element, so the browser never decodes the "&gt;"
+          React's server-side escaping produces for a literal ">" in text
+          content, while the client re-render sees the real ">" it just
+          wrote — a real, reproducible hydration mismatch on every load of
+          this page, not a cosmetic one: it forced the whole <main> to
+          client-render, discarding the server-rendered content. */}
       <style>{`@media print{
         body{background:#fff!important}
         main{background:#fff!important;max-width:100%!important;padding:0!important}
-        details{display:block} details>*{display:block}
+        details{display:block} details *{display:block}
         button{display:none!important}
         .no-print{display:none!important}
         section{break-inside:avoid;border-color:#ddd!important;box-shadow:none!important}
