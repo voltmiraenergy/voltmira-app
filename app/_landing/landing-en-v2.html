@@ -59,7 +59,7 @@
 <link rel="sitemap" type="application/xml" href="/sitemap.xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 <!-- Vercel Analytics — this page is raw HTML outside the React layout, so the script is included directly -->
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 34"><rect width="34" height="34" rx="8" fill="%23142A21"/><path d="M8 26 L14 12" stroke="%23C4543B" stroke-width="3.2" stroke-linecap="round"/><path d="M14.5 26 L20.5 8" stroke="%23E89B2D" stroke-width="3.2" stroke-linecap="round"/><path d="M21 26 L27 5.5" stroke="%233FAE6A" stroke-width="3.2" stroke-linecap="round"/></svg>'>
@@ -174,44 +174,33 @@ img{max-width:100%;display:block}
 .btn-amber{background:var(--amber);color:#1B1305}
 .btn-amber:hover{transform:translateY(-2px);box-shadow:0 20px 40px -18px rgba(232,155,45,.55)}
 
-/* ============ HERO ============ */
-.hero{padding:64px 0 40px;position:relative}
-.hero-grid{display:grid;grid-template-columns:1fr;gap:44px}
-@media(min-width:980px){.hero-grid{grid-template-columns:1.02fr 1fr;gap:50px;align-items:center}}
+/* ============ HERO ============
+   Full-bleed photo hero, text overlaid in white (this exact treatment was
+   already built and shown as "v4"'s hero; ported in verbatim on request,
+   replacing the split text/photo layout this section held a moment ago). The
+   hero heading/lead/CTAs stay in Manrope from the previous request; the rest
+   of the page keeps Inter / Inter Tight untouched. */
+.hero{position:relative;min-height:min(88dvh,780px);display:flex;align-items:flex-end;
+  padding-top:8px;overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0}
+.hero-bg img{width:100%;height:100%;object-fit:cover}
+.hero-bg::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(0deg,rgba(6,10,18,.86) 0%,rgba(6,10,18,.52) 40%,rgba(6,10,18,.14) 70%,rgba(6,10,18,.02) 100%)}
+.hero-in{position:relative;z-index:1;width:100%;padding-block:56px 64px}
 .eyebrow{display:inline-flex;align-items:center;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--green);margin-bottom:18px}
-h1.hh{font-size:clamp(38px,5.4vw,62px);line-height:.98;font-weight:800;margin-bottom:22px}
-h1.hh .hl{position:relative;white-space:nowrap;color:var(--green)}
-h1.hh .hl svg{position:absolute;left:0;bottom:-.14em;width:100%;height:.3em;overflow:visible}
-h1.hh .hl path{fill:none;stroke:var(--amber);stroke-width:5;stroke-linecap:round}
-.lead{font-size:18.5px;color:var(--ink-soft);max-width:490px;margin-bottom:30px}
-.lead b{color:var(--ink)}
-.hero-cta-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+h1.hh{font-family:'Manrope',var(--d);color:#fff;font-size:clamp(36px,5.4vw,60px);letter-spacing:-.025em;
+  line-height:1.05;font-weight:800;margin-bottom:20px;max-width:15ch;text-wrap:balance}
+h1.hh .hl{position:relative;color:var(--amber)}
+.lead{font-family:'Manrope',var(--b);font-size:18px;line-height:1.55;color:rgba(255,255,255,.88);max-width:52ch;margin:0 0 28px}
+.lead b{color:#fff;font-weight:700}
+.hero-cta-row{display:flex;gap:12px;flex-wrap:wrap}
+.hero-cta-row .btn{font-family:'Manrope',var(--b)}
+.btn-on-photo{border-color:rgba(255,255,255,.55);color:#fff;background:rgba(11,18,32,.28);backdrop-filter:blur(6px)}
+.btn-on-photo:hover{background:rgba(11,18,32,.44);border-color:#fff}
 /* The nav's "Live demo" link is desktop-only, so on phones the hero carries it:
    below 860px swap the "See how it works" scroll button for a real Live demo link. */
 .hero-demo{display:none}
 @media(max-width:859px){.hero-see{display:none}.hero-demo{display:inline-flex}}
-.wl-note{font-size:13px;color:var(--muted)}
-
-.hero-visual{position:relative}
-.hero-photo{border-radius:26px;overflow:hidden;box-shadow:var(--shadow);aspect-ratio:16/11.2;position:relative;border:1px solid var(--line)}
-.hero-photo img{width:100%;height:100%;object-fit:cover}
-.hero-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(200deg,rgba(14,25,19,.02) 40%,rgba(14,25,19,.5) 100%)}
-.hero-photo .cap{position:absolute;left:16px;top:16px;background:color-mix(in srgb, var(--paper-2) 82%, transparent);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:10px;padding:6px 11px;font-size:11.5px;font-weight:600;color:var(--ink-soft);z-index:2}
-
-.tprop{position:absolute;left:-18px;bottom:-28px;width:min(268px,72%);background:var(--paper-2);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:16px 16px 18px;z-index:3}
-@media(max-width:979px){.tprop{position:static;width:min(360px,100%);margin:18px auto 0}}
-.tp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.tp-from{display:flex;align-items:center;gap:7px;font-family:var(--d);font-weight:700;font-size:12.5px}
-.tp-badge{display:inline-flex;align-items:center;gap:4px;background:var(--green-tint);color:var(--green);font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px}
-.tp-client{font-size:14.5px;font-weight:700;margin-bottom:2px}
-.tp-sub{font-size:11.5px;color:var(--muted);margin-bottom:12px}
-.tp-h{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:7px}
-.tp-bands{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px}
-.tp-band{border-radius:9px;padding:8px 6px;background:var(--paper);border-top:3px solid}
-.tp-band.p{border-color:var(--red)}.tp-band.e{border-color:var(--amber)}.tp-band.o{border-color:var(--green)}
-.tp-band span{display:block;font-size:8.5px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
-.tp-band b{font-family:var(--d);font-size:15px}
-.tp-accept{width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;padding:10px;font-weight:700;font-size:12.5px;text-align:center}
 
 .stat-strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--paper-2)}
 .stat-in{display:flex;flex-wrap:wrap;gap:32px;justify-content:space-between;padding-top:26px;padding-bottom:26px}
@@ -522,40 +511,16 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
 </nav>
 
 <header class="hero" id="top">
-  <div class="wrap hero-grid">
-    <div class="hero-copy">
-      <h1 class="hh" data-i18n="v2_147">Solar quotes<br>your clients can<br><span class="hl">fact&nbsp;check.<svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M4 30 C 80 12, 180 34, 260 20 S 380 22, 396 14"/></svg></span></h1>
-      <p class="lead" data-i18n="v2_014">Most quoting tools show one flattering number. VoltMira shows <b>three honest scenarios</b>, computed from real sun data for the client's roof — and tells you the moment they open your proposal.</p>
-      <div class="hero-cta-row">
-        <a class="btn btn-primary btn-lg" href="/login" data-i18n="v2_015">Start free trial</a>
-        <a class="btn btn-lg hero-see" style="border-color:var(--line)" href="#honesty" data-i18n="v2_016">See how it works</a>
-        <a class="btn btn-lg hero-demo" style="border-color:var(--line)" href="/demo" data-i18n="v2_006">Live demo</a>
-      </div>
-      <p class="wl-note" data-i18n="v2_017">No credit card required · Free during our beta · Set up in 2 minutes</p>
-    </div>
-    <div class="hero-visual">
-      <div class="hero-photo" data-i18n="v2_018">
-        <img src="/landing/hero-rooftop.jpg" alt="Residential rooftop solar installation on a tiled roof under a clear blue sky">
-        <span class="cap">Casa Popescu · Iași</span>
-      </div>
-      <div class="tprop">
-        <div class="tp-head">
-          <div class="tp-from">
-            <svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="8" fill="#142A21"/><path d="M8 25 L14 12" stroke="#C4543B" stroke-width="2.6" stroke-linecap="round"/><path d="M14.5 25 L20.5 9" stroke="#E89B2D" stroke-width="2.6" stroke-linecap="round"/><path d="M21 25 L27 6.5" stroke="#3FAE6A" stroke-width="2.6" stroke-linecap="round"/><circle cx="20.5" cy="9" r="2.1" fill="#E89B2D"/></svg>
-            SolarTech SRL
-          </div>
-          <span class="tp-badge" data-i18n="v2_019">Opened 2×</span>
-        </div>
-        <div class="tp-client" data-i18n="v2_020">8.4 kW rooftop · 12 panels + battery</div>
-        <div class="tp-sub" data-i18n="v2_021">Lifetime savings €18,240</div>
-        <div class="tp-h" data-i18n="v2_022">Payback — three honest scenarios</div>
-        <div class="tp-bands">
-          <div class="tp-band p" data-i18n="v2_023"><span>Pessim.</span><b>9.1<small style="font-size:9px;font-weight:600"> yr</small></b></div>
-          <div class="tp-band e" data-i18n="v2_024"><span>Expected</span><b>7.3<small style="font-size:9px;font-weight:600"> yr</small></b></div>
-          <div class="tp-band o" data-i18n="v2_025"><span>Optim.</span><b>6.2<small style="font-size:9px;font-weight:600"> yr</small></b></div>
-        </div>
-        <div class="tp-accept" data-i18n="v2_026">Accept proposal ✓</div>
-      </div>
+  <div class="hero-bg" data-i18n="v2_018">
+    <img src="/landing/hero-rooftop.jpg" alt="Residential rooftop solar installation on a tiled roof under a clear blue sky">
+  </div>
+  <div class="wrap hero-in">
+    <h1 class="hh" data-i18n="v2_147">Solar quotes<br>your clients can<br><span class="hl">fact check.</span></h1>
+    <p class="lead" data-i18n="v2_014">Most quoting tools show one flattering number. VoltMira shows <b>three honest scenarios</b>, computed from real sun data for the client's roof. You'll know the moment they open it.</p>
+    <div class="hero-cta-row">
+      <a class="btn btn-amber btn-lg" href="/login" data-i18n="v2_015">Start free trial</a>
+      <a class="btn btn-on-photo btn-lg hero-see" href="#honesty" data-i18n="v2_016">See how it works</a>
+      <a class="btn btn-on-photo btn-lg hero-demo" href="/demo" data-i18n="v2_006">Live demo</a>
     </div>
   </div>
 </header>
@@ -930,7 +895,7 @@ footer{border-top:1px solid var(--line);padding:64px 0 34px;background:var(--pap
   // -- scroll progress bar + nav elevation + subtle hero parallax ---------
   var progressBar = document.getElementById('scrollBar');
   var nav = document.getElementById('siteNav');
-  var heroImg = document.querySelector('.hero-photo img');
+  var heroImg = document.querySelector('.hero-bg img');
   var ticking = false;
   function onScroll(){
     var doc = document.documentElement;

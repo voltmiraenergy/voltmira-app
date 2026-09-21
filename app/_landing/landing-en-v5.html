@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoltMira: Solar quotes your clients can fact-check</title>
+<meta name="description" content="Solar quoting software for installers: honest three-band payback from real PVGIS data, tracked proposals with open alerts, WhatsApp sharing, one-tap acceptance and a full pipeline. Free trial. Romania &amp; Moldova.">
+<meta name="author" content="Bogdan Toctarov">
+<meta name="keywords" content="solar quoting software, solar installer software, PV payback calculator, PVGIS, tracked solar proposal, Casa Verde subsidy, net metering Romania, net billing Moldova, VoltMira, Bogdan Toctarov">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0B1220">
+<script>(function(){try{var t=localStorage.getItem("voltmira_theme");if(t!=="dark"&&t!=="light"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#080D14":"#0B1220");}catch(e){}})();</script>
+
+<link rel="canonical" href="https://voltmira.com/">
+<link rel="alternate" hreflang="en" href="https://voltmira.com/">
+<link rel="alternate" hreflang="ro" href="https://voltmira.com/ro">
+<link rel="alternate" hreflang="ru" href="https://voltmira.com/ru">
+<link rel="alternate" hreflang="x-default" href="https://voltmira.com/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="VoltMira">
+<meta property="og:url" content="https://voltmira.com/">
+<meta property="og:title" content="VoltMira: Solar quotes your clients can fact-check">
+<meta property="og:description" content="Three honest payback scenarios from real PVGIS data, tracked proposal links with open alerts, WhatsApp sharing and one-tap client acceptance. Free trial for solar installers in Romania and Moldova.">
+<meta property="og:image" content="https://voltmira.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="VoltMira: solar quotes your clients can fact-check">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ro_RO">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="VoltMira: Solar quotes your clients can fact-check">
+<meta name="twitter:description" content="Three honest payback scenarios from real PVGIS data, tracked proposals with open alerts, WhatsApp sharing and one-tap acceptance. Free trial for solar installers.">
+<meta name="twitter:image" content="https://voltmira.com/og.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"VoltMira","applicationCategory":"BusinessApplication","operatingSystem":"Web","description":"Solar quoting software for installers: three honest payback scenarios from real PVGIS data, tracked proposals with open alerts and one-tap client acceptance.","offers":{"@type":"Offer","price":"49","priceCurrency":"EUR"},"areaServed":["RO","MD"]}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Where do the solar numbers come from?","acceptedAnswer":{"@type":"Answer","text":"Yearly and monthly yield come from PVGIS, the European Commission's satellite-derived solar database, for the exact coordinates of the roof. Tariff schemes are applied automatically per market. Every assumption is printed on the proposal."}},
+{"@type":"Question","name":"Why show a pessimistic number? Won't it scare clients?","acceptedAnswer":{"@type":"Answer","text":"The opposite, in practice. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself."}},
+{"@type":"Question","name":"Does it work for Moldova's net billing?","acceptedAnswer":{"@type":"Answer","text":"Yes, that's home turf. Moldova's low export price makes self-consumption the whole game, so the engine models it month by month and values battery storage correctly."}},
+{"@type":"Question","name":"What does a tracked proposal mean for my client's privacy?","acceptedAnswer":{"@type":"Answer","text":"The link records opens, time on page and interactions with the quote itself. Nothing else: no ad trackers, no profiling, EU-hosted."}}
+]}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Organization","name":"VoltMira","url":"https://voltmira.com/","logo":"https://voltmira.com/og.png","founder":{"@type":"Person","name":"Bogdan Toctarov"}}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"VoltMira","url":"https://voltmira.com/","inLanguage":["en","ro","ru"]}
+</script>
+<link rel="sitemap" type="application/xml" href="/sitemap.xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script defer src="/_vercel/insights/script.js"></script>
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 34"><rect width="34" height="34" rx="8" fill="%23142A21"/><path d="M8 26 L14 12" stroke="%23C4543B" stroke-width="3.2" stroke-linecap="round"/><path d="M14.5 26 L20.5 8" stroke="%23E89B2D" stroke-width="3.2" stroke-linecap="round"/><path d="M21 26 L27 5.5" stroke="%233FAE6A" stroke-width="3.2" stroke-linecap="round"/></svg>'>
+<style>
+/* ============================================================
+   VoltMira v5: "Field Report"
+   This is a structural rebuild, not a reskin of v3/v4. Both of
+   those used the same scaffold every AI-generated SaaS page uses
+   (photo hero with scrim, a strip of stat cards, three-up feature
+   grids repeated four times, three pricing cards, photo CTA banner)
+   regardless of color palette, and that scaffold is itself the
+   tell, independent of styling.
+
+   The replacement idea is grounded in what this product literally
+   is: a tool that prints three real numbers on a real document,
+   instead of one flattering number nobody can check. So the page
+   is built like the document itself, not like a consumer landing
+   page. Concretely: sharp corners instead of rounded cards, hairline
+   rules instead of shadows, tabular monospace numerals for every
+   real figure, an annotation margin column reused as a genuine
+   structural device, a comparison table instead of three pricing
+   cards, one merged timeline instead of two matched side-by-side
+   boxes, and the three honest numbers shown as literal hero content
+   instead of hidden behind a stock rooftop photo.
+
+   Photography is kept (three real CC BY-SA photos, credited on
+   /credits) but demoted to small supporting exhibits, captioned
+   specifically, the way a real report uses photos, never as a
+   full-bleed mood shot carrying the page.
+   ============================================================ */
+
+:root{
+  --ink:#0B1220; --ink-soft:#333C52; --muted:#5B6478;
+  --paper:#FFFFFF; --paper-2:#F4F6FA; --surface:#FFFFFF;
+  --line:#D8DCE6; --line-soft:#E9ECF2;
+  --amber:#EE9D1E; --amber-deep:#B9740A; --amber-tint:#FDF1DC;
+  --green:#1E7A52; --green-tint:#E6F3EC;
+  --terra:#C4543B; --terra-tint:#FBEAE6;
+  --navy:#0B1220; --navy-2:#101A2E;
+  --font:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Consolas,monospace;
+  --wrap:1220px;
+}
+html[data-theme="dark"]{
+  --ink:#EDF1F7; --ink-soft:#C4CBDA; --muted:#8A93A8;
+  --paper:#0A1018; --paper-2:#0F1826; --surface:#0F1826;
+  --line:#26324A; --line-soft:#1A2333;
+  --amber-tint:rgba(238,157,30,.14); --green-tint:rgba(30,122,82,.18); --terra-tint:rgba(196,84,59,.16);
+  --navy:#080D14; --navy-2:#0C1524;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--font);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+img{max-width:100%;display:block}
+a{color:inherit}
+.wrap{max-width:var(--wrap);margin-inline:auto;padding-inline:24px}
+h1,h2,h3,h4{font-family:var(--font);font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+:focus-visible{outline:2.5px solid var(--amber);outline-offset:3px}
+::selection{background:var(--amber-tint);color:var(--ink)}
+section{padding-block:76px;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:none}
+
+/* ---------- scroll progress ---------- */
+.scroll-progress{position:fixed;top:0;left:0;right:0;height:2px;z-index:120;background:transparent}
+.scroll-progress i{display:block;height:100%;width:0;background:var(--amber);transition:width .1s linear}
+
+/* ---------- reveal ---------- */
+.rv{opacity:0;transform:translateY(16px);transition:opacity .55s cubic-bezier(.2,.7,.3,1),transform .55s cubic-bezier(.2,.7,.3,1)}
+.rv.in{opacity:1;transform:none}
+.rv-group>.rv:nth-child(2){transition-delay:.06s}
+.rv-group>.rv:nth-child(3){transition-delay:.12s}
+.rv-group>.rv:nth-child(4){transition-delay:.18s}
+.rv-group>.rv:nth-child(5){transition-delay:.24s}
+@media(prefers-reduced-motion:reduce){
+  .rv{opacity:1;transform:none;transition:none}
+  html{scroll-behavior:auto}
+}
+
+/* ---------- nav ---------- */
+.nav{position:sticky;top:0;z-index:100;height:64px;display:flex;align-items:center;
+  background:var(--paper);border-bottom:1px solid var(--line);transition:box-shadow .2s}
+.nav.scrolled{box-shadow:0 1px 0 var(--line),0 8px 20px rgba(11,18,32,.06)}
+.nav-in{display:flex;align-items:center;gap:10px;width:100%}
+.logo{display:flex;align-items:center;gap:9px;text-decoration:none;font-family:var(--font);
+  font-weight:800;font-size:19px;letter-spacing:-.02em;flex:none}
+.logo svg{flex:none}
+.logo b{font-weight:800}
+.logo span span{color:var(--green)}
+.nav-links{display:flex;gap:2px;margin-left:22px;min-width:0}
+.nav-links a{white-space:nowrap;text-decoration:none;color:var(--ink-soft);font-family:var(--mono);
+  font-size:12.5px;font-weight:500;letter-spacing:.01em;padding:8px 12px;transition:color .16s}
+.nav-links a:hover{color:var(--ink)}
+.nav-signin{flex:none;margin-left:auto;white-space:nowrap;text-decoration:none;color:var(--ink-soft);
+  font-size:14px;font-weight:600;padding:8px 12px;transition:color .16s}
+.nav-signin:hover{color:var(--ink)}
+
+.lang{position:relative;flex:none}
+.lang-btn{display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--line);
+  padding:7px 9px;cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;
+  color:var(--ink-soft);transition:border-color .16s}
+.lang-btn:hover{border-color:var(--ink-soft)}
+.lf{width:18px;height:13px;display:block;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.lang-chev{width:12px;height:12px;transition:transform .2s}
+.lang.open .lang-chev{transform:rotate(180deg)}
+.lang-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:176px;background:var(--surface);
+  border:1px solid var(--line);box-shadow:0 12px 28px rgba(11,18,32,.14);padding:4px;
+  opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .16s,visibility .16s,transform .16s;z-index:60}
+.lang.open .lang-menu{opacity:1;visibility:visible;transform:none}
+.lang-opt{display:flex;align-items:center;gap:9px;width:100%;background:none;border:none;
+  padding:9px 10px;cursor:pointer;font-family:var(--font);font-size:14px;font-weight:500;
+  color:var(--ink);text-align:left;transition:background .14s}
+.lang-opt:hover{background:var(--paper-2)}
+.lang-opt span{flex:1}
+.lang-tick{width:14px;height:14px;color:var(--green);opacity:0}
+.lang-opt[aria-selected="true"] .lang-tick{opacity:1}
+.lang-opt[aria-selected="true"]{font-weight:700}
+
+.theme-toggle{flex:none;display:grid;place-items:center;width:34px;height:34px;
+  border:1px solid var(--line);background:none;cursor:pointer;color:var(--ink-soft);transition:border-color .16s,color .16s}
+.theme-toggle:hover{border-color:var(--ink-soft);color:var(--ink)}
+.theme-toggle svg{width:15px;height:15px}
+.ic-sun{display:none}
+html[data-theme="dark"] .ic-sun{display:block}
+html[data-theme="dark"] .ic-moon{display:none}
+
+/* ---------- buttons: sharp corners, hairline or filled, no shadow ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;
+  padding:12px 22px;border:1.5px solid transparent;
+  font-family:inherit;font-size:14.5px;font-weight:700;text-decoration:none;cursor:pointer;
+  transition:transform .14s ease,background .14s ease,border-color .14s ease,color .14s ease}
+.btn:active{transform:scale(.98)}
+.btn-sm{padding:9px 15px;font-size:13.5px}
+.btn-lg{padding:14px 26px;font-size:15.5px}
+.btn-amber{background:var(--amber);color:#1C1103}
+.btn-amber:hover{background:var(--amber-deep)}
+.btn-line{border-color:var(--ink);color:var(--ink)}
+.btn-line:hover{background:var(--ink);color:#fff}
+html[data-theme="dark"] .btn-line{border-color:var(--line)}
+html[data-theme="dark"] .btn-line:hover{background:#EDF1F7;color:#0A1018;border-color:#EDF1F7}
+.btn-on-dark{border-color:rgba(255,255,255,.4);color:#fff}
+.btn-on-dark:hover{background:rgba(255,255,255,.12)}
+
+/* ---------- shared typographic scraps ---------- */
+.kicker{font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+.sec-h{font-size:clamp(26px,3.2vw,38px);margin-bottom:14px;text-wrap:balance;max-width:20ch}
+.sec-lead{font-size:16px;color:var(--ink-soft);max-width:60ch;line-height:1.6;margin:0}
+
+/* ---------- annotation-margin layout (reused motif) ---------- */
+.margin-row{display:grid;grid-template-columns:200px 1fr;gap:40px}
+.margin-row .note{font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.6;padding-top:4px}
+.margin-row .note b{color:var(--ink-soft);display:block;font-weight:600;margin-bottom:4px}
+
+/* ---------- hero: the three numbers ARE the hero, not a photo ---------- */
+.hero{padding-block:56px 64px;border-bottom:1px solid var(--line)}
+.hero-in{display:grid;grid-template-columns:1.35fr .95fr;gap:56px;align-items:start}
+.hh{font-size:clamp(34px,4.6vw,54px);letter-spacing:-.025em;line-height:1.06;margin-bottom:20px;max-width:15ch;text-wrap:balance}
+.lead{font-size:17.5px;line-height:1.58;color:var(--ink-soft);max-width:52ch;margin:0 0 28px}
+.lead b{color:var(--ink);font-weight:700}
+.hero-cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:40px}
+
+.hero-proof{border:1px solid var(--line);padding:20px}
+.hero-proof-t{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.05em;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line-soft)}
+.hero-proof-row{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+.hero-proof-it{padding-right:14px;border-right:1px solid var(--line-soft)}
+.hero-proof-it:last-child{border-right:none;padding-right:0;padding-left:14px}
+.hero-proof-it:nth-child(2){padding-inline:14px}
+.hero-proof-it span{display:block;font-family:var(--mono);font-size:10.5px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
+.hero-proof-it.p span{color:var(--terra)}
+.hero-proof-it.e span{color:var(--amber-deep)}
+html[data-theme="dark"] .hero-proof-it.e span{color:var(--amber)}
+.hero-proof-it.o span{color:var(--green)}
+.hero-proof-it b{font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:-.02em}
+.hero-proof-it small{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--muted)}
+
+.hero-photo{margin-top:24px;border:1px solid var(--line)}
+.hero-photo img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block}
+.hero-photo figcaption,.hero-photo .cap{font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  display:block;padding:10px 12px;border-top:1px solid var(--line)}
+
+/* ---------- fact strip (thin-rule ticker, not stat cards) ---------- */
+.facts{padding-block:0}
+.facts-row{display:flex;flex-wrap:wrap}
+.fact{flex:1 1 220px;padding:26px 24px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.fact:last-child{border-right:none}
+.fact b{display:block;font-family:var(--mono);font-size:15px;font-weight:700;color:var(--ink);margin-bottom:5px}
+.fact span{display:block;font-size:13px;color:var(--muted);line-height:1.45}
+
+/* ---------- the lie / the fix (moved early, kept, restyled flat) ---------- */
+.proof-sec{background:var(--navy);color:#EDF1F7;border-bottom:none}
+.proof-in{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.proof-q{font-family:var(--font);font-size:clamp(26px,3vw,36px);font-weight:800;letter-spacing:-.02em;
+  line-height:1.16;margin:0 0 16px;max-width:15ch}
+.proof-q em{font-style:normal;color:var(--amber)}
+.proof-sub{font-size:15.5px;line-height:1.6;color:rgba(237,241,247,.7);margin:0 0 24px;max-width:46ch}
+
+.exhibit-wrap{position:relative;min-height:280px}
+.exhibit{position:absolute;border:1px solid rgba(255,255,255,.12);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.ex-sheet{left:0;top:0;width:58%;background:#F6F7FA;color:#2B3040;padding:14px;font-family:var(--mono);font-size:11px}
+.ex-title{font-weight:600;font-size:10px;color:#767c8f;margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid #E2E4EC}
+.ex-row{display:grid;grid-template-columns:1.4fr .6fr .8fr;gap:6px;padding:5px 0;border-bottom:1px solid #EDEEF3}
+.ex-row.ex-h{font-weight:600;color:#8890A3;font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+.ex-dim{opacity:.4}
+.ex-quote{right:0;bottom:0;width:56%;background:var(--surface);color:var(--ink);padding:16px;z-index:2}
+.eq-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;font-family:var(--mono)}
+/* mq-badge/mq-open (not eq-): the translated string for v2_066 has these two
+   class names baked into its own HTML, shared with the retired v3/v4 pages,
+   so this element keeps their names rather than the exhibit's own eq- prefix. */
+.mq-badge{font-size:9.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--amber-deep)}
+html[data-theme="dark"] .mq-badge{color:var(--amber)}
+.mq-open{font-size:9.5px;font-weight:600;padding:2px 7px;background:var(--green-tint);color:var(--green)}
+.eq-name{font-weight:800;font-size:16px;letter-spacing:-.01em}
+.eq-sub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:12px}
+.eq-bands{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-soft);margin-bottom:12px;border:1px solid var(--line-soft)}
+.eq-b{background:var(--surface);padding:8px 4px;text-align:center;font-family:var(--mono)}
+.eq-b span{display:block;font-size:8.5px;font-weight:600;color:var(--muted)}
+.eq-b b{font-size:15px;letter-spacing:-.01em}
+.eq-b.p b{color:var(--terra)}
+.eq-b.e b{color:var(--amber-deep)}
+html[data-theme="dark"] .eq-b.e b{color:var(--amber)}
+.eq-b.o b{color:var(--green)}
+.eq-accept{text-align:center;padding:9px;background:var(--green);color:#fff;font-family:var(--mono);font-size:11px;font-weight:600}
+
+/* ---------- how it works: big drop numerals, asymmetric ---------- */
+.hiw-list{display:flex;flex-direction:column}
+.hiw-row{display:grid;grid-template-columns:110px 1fr;gap:32px;padding-block:32px;border-top:1px solid var(--line)}
+.hiw-row:first-child{border-top:none;padding-top:0}
+.hiw-num{font-family:var(--mono);font-size:56px;font-weight:700;color:var(--line);letter-spacing:-.02em;line-height:1}
+.hiw-row h3{font-size:19px;margin-bottom:8px}
+.hiw-row p{margin:0;font-size:15px;color:var(--ink-soft);line-height:1.6;max-width:60ch}
+.hiw-row p b{color:var(--ink)}
+
+/* ---------- honesty engine: the deep dive, margin-row + typographic numbers ---------- */
+.bands-typo{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.band-col{padding:28px 22px;border-left:1px solid var(--line)}
+.band-col:first-child{border-left:none}
+.band-col .tag{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px}
+.band-col.pess .tag{color:var(--terra)}
+.band-col.expc .tag{color:var(--amber-deep)}
+html[data-theme="dark"] .band-col.expc .tag{color:var(--amber)}
+.band-col.opti .tag{color:var(--green)}
+.band-col .yrs{font-family:var(--mono);font-weight:700;letter-spacing:-.02em;line-height:1;margin-bottom:16px}
+.band-col.expc .yrs{font-size:58px}
+.band-col.pess .yrs,.band-col.opti .yrs{font-size:42px;color:var(--ink-soft)}
+/* letter-spacing:normal: same inherited-px-collapses-a-small-space bug as
+   .scale-nums .n small above ("6.6 yr" rendering as "6.6yr"). */
+.band-col .yrs small{font-family:var(--font);font-size:15px;font-weight:600;color:var(--muted);letter-spacing:normal}
+.band-col p{margin:0;font-size:14px;color:var(--ink-soft);line-height:1.6}
+.band-col p b{color:var(--ink)}
+
+.assump-row{display:flex;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.assump-it{flex:1 1 200px;padding:18px 22px;border-left:1px solid var(--line);border-top:1px solid var(--line)}
+.assump-it:first-child{border-left:none}
+.assump-it .k{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px}
+.assump-it .v{display:block;font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:-.01em}
+
+/* ---------- tracked proposals: one merged annotated timeline ---------- */
+.timeline{border-top:1px solid var(--line)}
+.tl-row{display:grid;grid-template-columns:120px 1fr 200px;gap:24px;align-items:start;
+  padding-block:20px;border-bottom:1px solid var(--line)}
+.tl-time{font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:2px}
+.tl-body{font-size:15px;color:var(--ink-soft);line-height:1.55;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.tl-body b{color:var(--ink)}
+.tl-body .ic{flex:none;font-size:13px;color:var(--amber-deep)}
+html[data-theme="dark"] .tl-body .ic{color:var(--amber)}
+.tl-body .ic.g{color:var(--green)}
+.tl-body time{margin-left:auto;flex:none;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.tl-note{font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.55;padding-top:2px;
+  display:flex;gap:9px}
+.tl-note .check{flex:none;color:var(--green);font-family:var(--font);font-size:13px;line-height:1.4}
+.tl-note b{color:var(--ink-soft);display:block;font-weight:600;margin-bottom:2px}
+
+/* ---------- scale: two huge contrasting numerals ---------- */
+.scale-nums{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px;
+  padding-block:36px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:0}
+.scale-nums .n{font-family:var(--mono);font-weight:700;letter-spacing:-.03em;line-height:1;text-align:center}
+.scale-nums .n1{font-size:clamp(40px,6vw,64px);color:var(--ink-soft)}
+.scale-nums .n2{font-size:clamp(52px,8vw,88px);color:var(--ink)}
+/* letter-spacing:normal reset: the -.03em above computes to a couple of
+   negative pixels at the 64-88px numeral size, and that absolute px value
+   (not a re-computed em) is what inherits down, wide enough at 13px to erase
+   the caption's own space character ("kW residential" rendered "kWresidential"). */
+.scale-nums .n small{display:block;font-family:var(--font);font-size:13px;font-weight:600;
+  color:var(--muted);margin-top:6px;letter-spacing:normal}
+.scale-nums .to{font-family:var(--mono);font-size:15px;color:var(--muted)}
+.scale-cols{display:flex;flex-wrap:wrap}
+.scale-it{flex:1 1 260px;padding:26px 24px;border-left:1px solid var(--line);border-bottom:1px solid var(--line)}
+.scale-it:first-child{border-left:none}
+.scale-it h4{font-size:15.5px;margin-bottom:8px;display:flex;align-items:center;gap:9px}
+.scale-it h4 i{display:grid;place-items:center;width:26px;height:26px;background:var(--amber-tint);color:var(--amber-deep);flex:none}
+html[data-theme="dark"] .scale-it h4 i{color:var(--amber)}
+.scale-it p{margin:0;font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.scale-photo{border:1px solid var(--line);margin-top:26px}
+.scale-photo img{width:100%;aspect-ratio:20/7;object-fit:cover;display:block}
+.scale-photo figcaption{font-family:var(--mono);font-size:11.5px;color:var(--muted);padding:10px 12px;border-top:1px solid var(--line)}
+
+/* ---------- pricing: a real comparison table, not three cards ---------- */
+.ptable{width:100%;border-collapse:collapse;font-size:14.5px}
+.ptable th,.ptable td{padding:16px 18px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+.ptable thead th{font-family:var(--font);font-weight:800;font-size:17px;border-bottom:2px solid var(--ink)}
+.ptable thead th:first-child{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.05em}
+.ptable .price-cell{font-family:var(--mono);font-weight:700;font-size:22px;letter-spacing:-.01em}
+.ptable .price-cell small{font-family:var(--font);font-size:12px;font-weight:600;color:var(--muted);letter-spacing:normal}
+.ptable td:first-child{color:var(--muted);font-size:13.5px}
+.ptable td.yes{color:var(--ink-soft)}
+.ptable td.yes::before{content:"";display:inline-block;width:11px;height:6px;margin-right:9px;
+  border-left:1.8px solid var(--green);border-bottom:1.8px solid var(--green);transform:rotate(-45deg) translateY(-1px)}
+.ptable col.hot{background:var(--paper-2)}
+.ptable th.hot,.ptable td.hot{background:var(--paper-2)}
+.ptable tfoot td{border-bottom:none;padding-top:20px}
+.ptable-scroll{overflow-x:auto}
+.p-badge{display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--amber-deep);margin-bottom:6px}
+html[data-theme="dark"] .p-badge{color:var(--amber)}
+
+/* ---------- FAQ ----------
+   data-i18n sits on the whole summary, its value already ending in the same
+   <span class="pl">+</span> the retired v2/v3/v4 pages use (shared
+   dictionary), so the Q1/Q2/Q3 numbering below is generated by a CSS
+   counter rather than added as a real element, which would have shown a
+   second "+" nested inside the translated RO/RU text on top of this one. */
+.faq{counter-reset:faqq;border-top:1px solid var(--line)}
+.faq details{border-bottom:1px solid var(--line);counter-increment:faqq}
+.faq summary{list-style:none;cursor:pointer;padding-block:20px;display:grid;
+  grid-template-columns:52px 1fr 24px;align-items:center;gap:16px;
+  font-family:var(--font);font-weight:700;font-size:16px;letter-spacing:-.01em}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::marker{content:"";display:none}
+.faq summary::before{content:"Q" counter(faqq);grid-column:1;font-family:var(--mono);
+  font-size:12px;font-weight:500;color:var(--muted)}
+.faq summary .pl{grid-column:3;font-size:17px;font-weight:400;color:var(--muted);
+  transition:transform .2s;text-align:right}
+.faq details[open] summary .pl{transform:rotate(45deg)}
+.faq p{margin:0;padding:0 0 22px 68px;font-size:14.5px;color:var(--ink-soft);line-height:1.65;max-width:68ch}
+
+/* ---------- final: type-only close, echoes the hero numbers ---------- */
+.final-sec{background:var(--navy);color:#EDF1F7;border-bottom:none;text-align:center}
+.final-sec h2{font-size:clamp(28px,3.8vw,44px);margin-inline:auto;margin-bottom:14px;max-width:17ch;text-wrap:balance}
+.final-sec p{font-size:16px;color:rgba(237,241,247,.72);margin:0 auto 30px;max-width:44ch}
+.final-cta-row{display:flex;justify-content:center;gap:12px;margin-bottom:36px}
+.final-echo{display:flex;justify-content:center;gap:0;font-family:var(--mono);font-size:12.5px;
+  border-top:1px solid rgba(237,241,247,.14);padding-top:24px;max-width:420px;margin-inline:auto}
+.final-echo span{padding-inline:16px;border-left:1px solid rgba(237,241,247,.14)}
+.final-echo span:first-child{border-left:none;padding-left:0}
+.final-echo b.p{color:var(--terra)}
+.final-echo b.e{color:var(--amber)}
+.final-echo b.o{color:#5FCB94}
+
+/* ---------- footer ---------- */
+footer{background:var(--navy);color:rgba(237,241,247,.86);padding-block:56px 28px}
+.foot-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:44px;padding-bottom:40px;border-bottom:1px solid rgba(237,241,247,.12)}
+.foot-brand .logo{color:#fff}
+.foot-brand .logo span span{color:#8FD1AD}
+.foot-brand p{font-size:13.5px;color:rgba(237,241,247,.6);max-width:30ch;margin:14px 0 0;line-height:1.6}
+.foot-saasbrowser{display:inline-flex;margin-top:18px;background:#FAF8F2;padding:8px 11px}
+.foot-saasbrowser img{display:block;max-width:100%}
+.foot-col h5{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:rgba(237,241,247,.5);margin:0 0 16px}
+.foot-col ul{list-style:none;display:grid;gap:12px;padding:0;margin:0}
+.foot-col a{text-decoration:none;color:rgba(237,241,247,.78);font-size:14px;transition:color .16s}
+.foot-col a:hover{color:#fff}
+.foot-bottom{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;padding-top:24px;
+  font-family:var(--mono);font-size:12px;color:rgba(237,241,247,.5)}
+.foot-bottom a{color:rgba(237,241,247,.5);text-decoration:none;transition:color .16s}
+.foot-bottom a:hover{color:#fff}
+.foot-bottom .founder a{text-decoration:underline;text-underline-offset:2px}
+.foot-bottom .sp{flex:1 1 auto;min-width:8px}
+.foot-trust-meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.02em;color:rgba(237,241,247,.42);margin-top:16px}
+
+/* ---------- responsive ---------- */
+@media(max-width:1080px){
+  .hero-in,.proof-in{grid-template-columns:1fr;gap:40px}
+  .exhibit-wrap{min-height:260px}
+  .bands-typo,.scale-cols{grid-template-columns:1fr}
+  .bands-typo{display:block}
+  .band-col{border-left:none;border-top:1px solid var(--line)}
+  .band-col:first-child{border-top:none}
+  .scale-it{flex:1 1 45%}
+  .margin-row{grid-template-columns:1fr;gap:12px}
+  .margin-row .note{padding-top:0}
+  .tl-row{grid-template-columns:90px 1fr;grid-template-areas:"time body" ". note"}
+  .tl-time{grid-area:time}
+  .tl-body{grid-area:body}
+  .tl-note{grid-area:note}
+  .foot-grid{grid-template-columns:1fr 1fr;gap:34px}
+  .ptable{font-size:13.5px}
+  .ptable th,.ptable td{padding:12px 12px}
+}
+@media(max-width:1040px){
+  .nav-signin{display:none}
+  .nav-links{margin-left:auto}
+}
+@media(max-width:880px){
+  .nav-links{display:none}
+}
+@media(max-width:720px){
+  section{padding-block:52px}
+  .hero{padding-block:36px 44px}
+  .hero-proof-row{grid-template-columns:1fr}
+  .hero-proof-it{border-right:none;border-bottom:1px solid var(--line-soft);padding:12px 0}
+  .hero-proof-it:first-child{padding-top:0}
+  .hero-proof-it:last-child{border-bottom:none;padding-bottom:0;padding-left:0}
+  .hero-proof-it:nth-child(2){padding-inline:0}
+  .scale-nums{grid-template-columns:1fr;text-align:center}
+  .scale-it{flex:1 1 100%;border-left:none}
+  .fact{flex:1 1 100%;border-right:none}
+  .final-echo{flex-direction:column;gap:8px}
+  .final-echo span{border-left:none;padding-inline:0}
+  .foot-grid{grid-template-columns:1fr;gap:32px}
+  .hero-cta-row .btn{flex:1 1 100%}
+}
+@media(max-width:560px){
+  .lang-code{display:none}
+  .lang-btn{padding:6px 8px}
+  .nav-in>.btn{padding:9px 13px;font-size:13px}
+  .logo{font-size:18px}
+  .logo svg{width:28px;height:28px}
+}
+@media(max-width:440px){
+  .logo span{display:none}
+  .nav-in>.btn{padding:9px 11px;font-size:12.5px}
+  .theme-toggle{width:32px;height:32px}
+  .band-col.expc .yrs{font-size:48px}
+  .band-col.pess .yrs,.band-col.opti .yrs{font-size:36px}
+}
+@media(max-width:420px){
+  .wrap{padding-inline:18px}
+}
+</style>
+</head>
+<body>
+
+<div class="scroll-progress" aria-hidden="true"><i id="scrollBar"></i></div>
+
+<nav class="nav" id="siteNav">
+  <div class="wrap nav-in">
+    <a class="logo" href="#top">
+      <svg width="28" height="28" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+        <rect width="34" height="34" rx="8" fill="#142A21"/>
+        <path d="M8 25 L14 12" stroke="#C4543B" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M14.5 25 L20.5 9" stroke="#E89B2D" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M21 25 L27 6.5" stroke="#3FAE6A" stroke-width="2.6" stroke-linecap="round"/>
+        <circle cx="20.5" cy="9" r="2.1" fill="#E89B2D"/>
+      </svg>
+      <span data-i18n="v2_001"><b>Volt</b><span>Mira</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="#honesty" data-i18n="v2_002">Honesty engine</a>
+      <a href="#tracking" data-i18n="v2_003">Tracked proposals</a>
+      <a href="#pricing" data-i18n="v2_004">Pricing</a>
+      <a href="#faq" data-i18n="v2_005">FAQ</a>
+      <a href="/demo" data-i18n="v2_006">Live demo</a>
+    </div>
+    <a class="nav-signin" href="/login" data-i18n="v2_007">Sign in</a>
+    <div class="lang" id="langWrap">
+      <button type="button" class="lang-btn" id="langBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Change language">
+        <span class="lang-flag" id="langFlag"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="15" fill="#012169"/><path d="M0 0l21 15M21 0L0 15" stroke="#fff" stroke-width="3"/><path d="M0 0l21 15M21 0L0 15" stroke="#C8102E" stroke-width="1.6"/><path d="M10.5 0v15M0 7.5h21" stroke="#fff" stroke-width="5"/><path d="M10.5 0v15M0 7.5h21" stroke="#C8102E" stroke-width="3"/></svg></span>
+        <span class="lang-code" id="langCode" data-i18n="v2_008">EN</span>
+        <svg class="lang-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="lang-menu" id="langMenu" role="listbox" aria-label="Language">
+        <button type="button" role="option" class="lang-opt" data-lang="ro" data-path="/ro" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="7" height="15" fill="#002B7F"/><rect x="7" width="7" height="15" fill="#FCD116"/><rect x="14" width="7" height="15" fill="#CE1126"/></svg><span data-i18n="v2_009">Română</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+        <button type="button" role="option" class="lang-opt" data-lang="en" data-path="/" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="15" fill="#012169"/><path d="M0 0l21 15M21 0L0 15" stroke="#fff" stroke-width="3"/><path d="M0 0l21 15M21 0L0 15" stroke="#C8102E" stroke-width="1.6"/><path d="M10.5 0v15M0 7.5h21" stroke="#fff" stroke-width="5"/><path d="M10.5 0v15M0 7.5h21" stroke="#C8102E" stroke-width="3"/></svg><span data-i18n="v2_010">English</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+        <button type="button" role="option" class="lang-opt" data-lang="ru" data-path="/ru" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="5" fill="#fff"/><rect y="5" width="21" height="5" fill="#0039A6"/><rect y="10" width="21" height="5" fill="#D52B1E"/></svg><span data-i18n="v2_011">Русский</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+      </div>
+    </div>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">
+      <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2 12h2.4M19.6 12H22M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg>
+    </button>
+    <a href="/login" class="btn btn-amber btn-sm" data-i18n="v2_012">Start free trial</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-in">
+    <div class="hero-copy rv">
+      <p class="kicker" data-i18n="v2_013">For solar installers in Romania and Moldova</p>
+      <h1 class="hh" data-i18n="v2_147">Solar quotes<br>your clients can<br><span class="hl">fact check.</span></h1>
+      <p class="lead" data-i18n="v2_014">Most quoting tools show one flattering number. VoltMira shows <b>three honest scenarios</b>, computed from real sun data for the client's roof. You'll know the moment they open it.</p>
+      <div class="hero-cta-row">
+        <a class="btn btn-amber btn-lg" href="/login" data-i18n="v2_015">Start free trial</a>
+        <a class="btn btn-line btn-lg" href="#honesty" data-i18n="v2_016">See how it works</a>
+      </div>
+      <figure class="hero-photo" data-i18n="v2_018">
+        <img src="/landing/hero-rooftop.jpg" alt="Residential rooftop solar installation on a tiled roof under a clear blue sky">
+        <span class="cap">Casa Popescu, Iași</span>
+      </figure>
+    </div>
+    <div class="hero-proof rv">
+      <div class="hero-proof-t" data-i18n="v2_051">Printed on every proposal</div>
+      <div class="hero-proof-row">
+        <div class="hero-proof-it p" data-i18n="v2_042"><span>Pessimistic</span></div>
+        <div class="hero-proof-it e" data-i18n="v2_045"><span>Expected</span></div>
+        <div class="hero-proof-it o" data-i18n="v2_048"><span>Optimistic</span></div>
+      </div>
+      <div class="hero-proof-row" style="margin-top:8px">
+        <div class="hero-proof-it p" data-i18n="v2_043"><b class="cu" data-count="6.6" data-decimals="1">6.6</b><small> yr</small></div>
+        <div class="hero-proof-it e" data-i18n="v2_046"><b class="cu" data-count="6.0" data-decimals="1">6.0</b><small> yr</small></div>
+        <div class="hero-proof-it o" data-i18n="v2_049"><b class="cu" data-count="5.7" data-decimals="1">5.7</b><small> yr</small></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="facts" aria-label="Key facts">
+  <div class="facts-row rv-group">
+    <div class="fact rv" data-i18n="v2_027"><b>3 scenarios</b><span>Pessimistic, expected and optimistic on every quote</span></div>
+    <div class="fact rv" data-i18n="v2_028"><b>PVGIS satellite data</b><span>Real irradiance for the exact roof, not an average</span></div>
+    <div class="fact rv" data-i18n="v2_029"><b>Romania and Moldova</b><span>Net metering, net billing and feed-in tariffs built in</span></div>
+    <div class="fact rv" data-i18n="v2_030"><b>&lt; 2 min</b><span>From address to a sendable proposal</span></div>
+  </div>
+</section>
+
+<section class="proof-sec">
+  <div class="wrap proof-in">
+    <div class="proof-copy rv">
+      <p class="proof-q" data-i18n="v2_057">Not a spreadsheet.<br>A quote your client <em>believes.</em></p>
+      <p class="proof-sub" data-i18n="v2_058">Clients have heard too many perfect promises. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself.</p>
+      <a class="btn btn-on-dark" href="#pricing" data-i18n="v2_059">See pricing</a>
+    </div>
+    <div class="exhibit-wrap rv" aria-hidden="true">
+      <div class="exhibit ex-sheet">
+        <div class="ex-title" data-i18n="v2_060">export_quotes_final_v3.xlsx</div>
+        <div class="ex-row ex-h" data-i18n="v2_061"><span>Client</span><span>kW</span><span>Payback</span></div>
+        <div class="ex-row" data-i18n="v2_062"><span>Popescu I.</span><span>6.0</span><span>7.2 yr</span></div>
+        <div class="ex-row" data-i18n="v2_063"><span>Rusu V.</span><span>8.4</span><span>6.1 yr</span></div>
+        <div class="ex-row" data-i18n="v2_064"><span>Ceban A.</span><span>4.5</span><span>9.4 yr</span></div>
+        <div class="ex-row ex-dim" data-i18n="v2_065"><span>Ionescu M.</span><span>5.2</span><span>TBD</span></div>
+      </div>
+      <div class="exhibit ex-quote">
+        <div class="eq-top" data-i18n="v2_066"><span class="mq-badge">Solar quote</span><span class="mq-open">Opened 2&times;</span></div>
+        <div class="eq-name" data-i18n="v2_067">Casa Rusu</div>
+        <div class="eq-sub" data-i18n="v2_068">8.4 kW, Chi&#537;in&#259;u</div>
+        <div class="eq-bands">
+          <div class="eq-b p" data-i18n="v2_069"><span>Pessim.</span><b>6.6<small> yr</small></b></div>
+          <div class="eq-b e" data-i18n="v2_070"><span>Expected</span><b>6.0<small> yr</small></b></div>
+          <div class="eq-b o" data-i18n="v2_071"><span>Optim.</span><b>5.7<small> yr</small></b></div>
+        </div>
+        <div class="eq-accept" data-i18n="v2_072">Accept quote &#10003;</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hiw" aria-label="How it works">
+  <div class="wrap">
+    <h2 class="sec-h rv" data-i18n="v2_032">Built for the installer standing on the roof.</h2>
+    <div class="hiw-list rv-group" style="margin-top:36px">
+      <div class="hiw-row rv">
+        <span class="hiw-num">01</span>
+        <div><h3 data-i18n="v2_033">Type the address</h3><p data-i18n="v2_034">VoltMira pulls the real irradiance for that exact roof from <b>PVGIS</b> and applies the right tariff scheme for the market, automatically.</p></div>
+      </div>
+      <div class="hiw-row rv">
+        <span class="hiw-num">02</span>
+        <div><h3 data-i18n="v2_035">Get three honest numbers</h3><p data-i18n="v2_036">Pessimistic, expected, optimistic, with <b>every assumption printed</b> on the proposal and ready to defend at the kitchen table.</p></div>
+      </div>
+      <div class="hiw-row rv">
+        <span class="hiw-num">03</span>
+        <div><h3 data-i18n="v2_037">Send the link, watch the feed</h3><p data-i18n="v2_038">One link to the client's phone. You see <b>opens, minutes viewed, battery toggles</b>, and Accept lands the deal in your pipeline.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="honesty">
+  <div class="wrap">
+    <div class="margin-row rv">
+      <p class="kicker" style="margin:0">The honesty engine</p>
+      <div>
+        <h2 class="sec-h" data-i18n="v2_040">One number is a sales pitch.<br>Three numbers is the truth.</h2>
+        <p class="sec-lead" data-i18n="v2_041">Every VoltMira quote shows the payback under pessimistic, expected and optimistic assumptions, with every assumption printed on the proposal. Clients trust what they can verify. Trust closes roofs.</p>
+      </div>
+    </div>
+  </div>
+  <div class="wrap" style="padding:0">
+    <div class="bands-typo rv-group" style="margin-top:40px">
+      <article class="band-col pess rv">
+        <div class="tag" data-i18n="v2_042">Pessimistic</div>
+        <div class="yrs" data-i18n="v2_043"><b class="cu" data-count="6.6" data-decimals="1">6.6</b><small> yr</small></div>
+        <p data-i18n="v2_044"><b>Low sun, flat prices.</b> −8% yield, 0.8%/yr panel degradation, zero electricity inflation. If even this number works, the deal is safe.</p>
+      </article>
+      <article class="band-col expc rv">
+        <div class="tag" data-i18n="v2_045">Expected</div>
+        <div class="yrs" data-i18n="v2_046"><b class="cu" data-count="6.0" data-decimals="1">6.0</b><small> yr</small></div>
+        <p data-i18n="v2_047"><b>The likeliest outcome.</b> PVGIS yield for the exact roof, 0.5%/yr degradation, 3% price inflation. The number you stand behind.</p>
+      </article>
+      <article class="band-col opti rv">
+        <div class="tag" data-i18n="v2_048">Optimistic</div>
+        <div class="yrs" data-i18n="v2_049"><b class="cu" data-count="5.7" data-decimals="1">5.7</b><small> yr</small></div>
+        <p data-i18n="v2_050"><b>If prices keep climbing.</b> +8% yield, 0.3%/yr degradation, 5% inflation. Shown honestly as the best case, never the headline.</p>
+      </article>
+    </div>
+    <div class="assump-row rv">
+      <div class="assump-it" data-i18n="v2_052"><span class="k">Yield (PVGIS)</span><span class="v">1,168 kWh/kWp</span></div>
+      <div class="assump-it" data-i18n="v2_053"><span class="k">Degradation</span><span class="v">0.5%/yr</span></div>
+      <div class="assump-it" data-i18n="v2_054"><span class="k">Price inflation</span><span class="v">3%/yr</span></div>
+      <div class="assump-it" data-i18n="v2_055"><span class="k">Tariff scheme</span><span class="v">Net metering 1:1</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="tracking">
+  <div class="wrap">
+    <div class="margin-row rv">
+      <p class="kicker" style="margin:0">Tracked proposals</p>
+      <div>
+        <h2 class="sec-h" data-i18n="v2_074">Know the moment they open it.</h2>
+        <p class="sec-lead" data-i18n="v2_075">Stop guessing when to follow up. Send a live link instead of a dead PDF, and watch what happens on the other side.</p>
+      </div>
+    </div>
+    <div class="timeline rv-group" style="margin-top:36px">
+      <div class="tl-row rv">
+        <time class="tl-time">2:14 pm</time>
+        <p class="tl-body" data-i18n="v2_081"><span class="ic">◉</span><span class="tx"><b>Ion Popescu</b> opened <b>Casa Popescu</b></span><time>just now</time></p>
+        <p class="tl-note" data-i18n="v2_076"><span class="check">✓</span><span><b>Opens &amp; time viewed:</b> "Ion opened it twice, 3 minutes each" beats "sent last Tuesday, no reply."</span></p>
+      </div>
+      <div class="tl-row rv">
+        <time class="tl-time">2:16 pm</time>
+        <p class="tl-body" data-i18n="v2_082"><span class="ic">⏱</span><span class="tx">Viewed for <b>3m 34s</b>, the longest so far</span><time>2m</time></p>
+        <p class="tl-note"></p>
+      </div>
+      <div class="tl-row rv">
+        <time class="tl-time">2:17 pm</time>
+        <p class="tl-body" data-i18n="v2_083"><span class="ic">⚡</span><span class="tx">Toggled the <b>battery on</b>, payback recalculated</span><time>3m</time></p>
+        <p class="tl-note" data-i18n="v2_077"><span class="check">✓</span><span><b>Interaction signals:</b> they toggled the battery on? That's a buying question. Call about batteries.</span></p>
+      </div>
+      <div class="tl-row rv">
+        <time class="tl-time">4:02 pm</time>
+        <p class="tl-body" data-i18n="v2_084"><span class="ic">◉</span><span class="tx">Opened again, <b>2nd visit today</b></span><time>1h</time></p>
+        <p class="tl-note" data-i18n="v2_079"><span class="check">✓</span><span><b>Your data stays yours:</b> export every quote and client to CSV in one click, no lock-in.</span></p>
+      </div>
+      <div class="tl-row rv">
+        <time class="tl-time">4:58 pm</time>
+        <p class="tl-body" data-i18n="v2_085"><span class="ic g">✓</span><span class="tx"><b>Accepted the quote</b>, project marked Won</span><time>1h</time></p>
+        <p class="tl-note" data-i18n="v2_078"><span class="check">✓</span><span><b>Accept from the page:</b> one tap on their phone marks the deal Won in your pipeline.</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scale-sec">
+  <div class="wrap">
+    <h2 class="sec-h rv" data-i18n="v2_087">The same honest math,<br>6 kW or 600 kW.</h2>
+    <div class="scale-nums rv">
+      <span class="n n1">6<small>kW residential</small></span>
+      <span class="to">to</span>
+      <span class="n n2">600<small>kW commercial</small></span>
+    </div>
+    <div class="scale-cols rv-group">
+      <div class="scale-it rv">
+        <h4 data-i18n="v2_148"><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></i>Three honest scenarios</h4>
+        <p data-i18n="v2_088">Pessimistic, expected, optimistic: every assumption printed on the quote, ready to defend.</p>
+      </div>
+      <div class="scale-it rv">
+        <h4 data-i18n="v2_149"><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg></i>PVGIS data per roof</h4>
+        <p data-i18n="v2_089">Satellite yield for the exact coordinates, not a rough national average.</p>
+      </div>
+      <div class="scale-it rv">
+        <h4 data-i18n="v2_150"><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="2.6"/></svg></i>See when they read it</h4>
+        <p data-i18n="v2_090">Opens, minutes viewed, battery toggled: you know exactly when to call.</p>
+      </div>
+    </div>
+    <figure class="scale-photo rv">
+      <img src="/landing/commercial-rooftop.jpg" alt="A large commercial rooftop covered edge-to-edge in solar panels">
+    </figure>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <p class="kicker rv">Pricing</p>
+    <h2 class="sec-h rv" data-i18n="v2_092">Costs less than the coffee<br>at one lost deal.</h2>
+    <p class="sec-lead rv" style="margin-bottom:36px" data-i18n="v2_093">Free 21-day trial, no card. One extra deal a year pays for VoltMira for about 20 years.</p>
+    <div class="ptable-scroll rv">
+      <table class="ptable">
+        <thead>
+          <tr>
+            <th scope="col"></th>
+            <th scope="col" class="hot"><span class="p-badge">Most popular</span><br data-i18n="v2_094"><span data-i18n="v2_094">Pro</span></th>
+            <th scope="col" data-i18n="v2_102">Team</th>
+            <th scope="col" data-i18n="v2_110">Enterprise</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Price</td>
+            <td class="hot"><span class="price-cell" data-i18n="v2_095"><b class="cu" data-count="49" data-prefix="€">€49</b><small>/mo</small></span></td>
+            <td><span class="price-cell" data-i18n="v2_103"><b class="cu" data-count="119" data-prefix="€">€119</b><small>/mo</small></span></td>
+            <td><span class="price-cell" data-i18n="v2_111"><b style="font-size:22px">Custom</b></span></td>
+          </tr>
+          <tr>
+            <td>For</td>
+            <td class="hot yes" data-i18n="v2_096">For the installer who sells</td>
+            <td class="yes" data-i18n="v2_104">Up to 5 people, one pipeline</td>
+            <td class="yes" data-i18n="v2_112">For multi-branch installers</td>
+          </tr>
+          <tr>
+            <td>Branding</td>
+            <td class="hot yes" data-i18n="v2_097">Your logo on every proposal &amp; PDF</td>
+            <td class="yes" data-i18n="v2_105">Everything in Pro</td>
+            <td class="yes" data-i18n="v2_113">Everything in Team, unlimited seats</td>
+          </tr>
+          <tr>
+            <td>Tracking</td>
+            <td class="hot yes" data-i18n="v2_098">Tracked proposal links + open alerts</td>
+            <td class="yes" data-i18n="v2_106">5 seats with project owners</td>
+            <td class="yes" data-i18n="v2_114">Full audit log of every change</td>
+          </tr>
+          <tr>
+            <td>Leads</td>
+            <td class="hot yes" data-i18n="v2_099">Website lead widget</td>
+            <td class="yes" data-i18n="v2_107">Shared clients &amp; win-rate analytics</td>
+            <td class="yes" data-i18n="v2_115">Custom subsidy &amp; tariff rules</td>
+          </tr>
+          <tr>
+            <td>Pipeline</td>
+            <td class="hot yes" data-i18n="v2_100">Saved clients &amp; full pipeline</td>
+            <td class="yes" data-i18n="v2_108">Priority support in RO/RU/EN</td>
+            <td class="yes" data-i18n="v2_116">Dedicated manager &amp; SLA</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td></td>
+            <td class="hot"><a href="/login" class="btn btn-amber btn-sm" data-i18n="v2_101">Start free trial</a></td>
+            <td><a href="/login" class="btn btn-line btn-sm" data-i18n="v2_109">Start free trial</a></td>
+            <td><a href="mailto:voltmiraenergy@gmail.com?subject=VoltMira%20Enterprise" class="btn btn-line btn-sm" data-i18n="v2_117">Talk to us</a></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <h2 class="sec-h rv" style="margin-bottom:32px" data-i18n="v2_119">Fair questions.</h2>
+    <div class="faq rv">
+      <details open>
+        <summary data-i18n="v2_151">Where do the solar numbers come from?<span class="pl">+</span></summary>
+        <p data-i18n="v2_120">Yearly and monthly yield come from PVGIS, the European Commission's satellite-derived solar database, for the exact coordinates of the roof. Tariff schemes are applied automatically per market. Every assumption is printed on the proposal.</p>
+      </details>
+      <details>
+        <summary data-i18n="v2_152">Why show a pessimistic number? Won't it scare clients?<span class="pl">+</span></summary>
+        <p data-i18n="v2_121">The opposite, in practice. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself.</p>
+      </details>
+      <details>
+        <summary data-i18n="v2_153">Does it work for Moldova's net billing?<span class="pl">+</span></summary>
+        <p data-i18n="v2_122">Yes, that's home turf. Moldova's low export price makes self-consumption the whole game, so the engine models it month by month and values battery storage correctly.</p>
+      </details>
+      <details>
+        <summary data-i18n="v2_154">How do I start?<span class="pl">+</span></summary>
+        <p data-i18n="v2_123">Sign up and you're in. No waitlist, no card: full access to build quotes and send tracked proposals right away, free through the beta.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="final-sec">
+  <div class="wrap">
+    <h2 class="rv" data-i18n="v2_124">Be the installer whose<br>numbers hold up.</h2>
+    <p class="rv" data-i18n="v2_125">Start free today in Romania and Moldova. No waitlist, no card, set up in minutes.</p>
+    <div class="final-cta-row rv">
+      <a class="btn btn-amber btn-lg" href="/login" data-i18n="v2_126">Start free</a>
+    </div>
+    <div class="final-echo rv" aria-hidden="true">
+      <span>Pessimistic <b class="p">6.6 yr</b></span>
+      <span>Expected <b class="e">6.0 yr</b></span>
+      <span>Optimistic <b class="o">5.7 yr</b></span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="logo" href="#top" style="font-size:18px">
+          <svg width="24" height="24" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+            <rect width="34" height="34" rx="8" fill="#142A21"/>
+            <path d="M8 25 L14 12" stroke="#C4543B" stroke-width="2.6" stroke-linecap="round"/>
+            <path d="M14.5 25 L20.5 9" stroke="#E89B2D" stroke-width="2.6" stroke-linecap="round"/>
+            <path d="M21 25 L27 6.5" stroke="#3FAE6A" stroke-width="2.6" stroke-linecap="round"/>
+            <circle cx="20.5" cy="9" r="2.1" fill="#E89B2D"/>
+          </svg>
+          <span data-i18n="v2_128"><b>Volt</b><span>Mira</span></span>
+        </a>
+        <p data-i18n="v2_129">The quoting tool your clients can fact-check. Built for installers in Moldova and Romania.</p>
+        <a href="https://saasbrowser.com/en/saas/1577574/voltmira" target="_blank" rel="nofollow noopener" class="foot-saasbrowser">
+          <img src="https://static-files.saasbrowser.com/saas-browser-badge-1.svg" alt="VoltMira - SaaS search engine" width="180" loading="lazy">
+        </a>
+      </div>
+      <div class="foot-col">
+        <h5>Product</h5>
+        <ul>
+          <li><a href="#honesty" data-i18n="v2_130">Honesty engine</a></li>
+          <li><a href="#tracking" data-i18n="v2_131">Tracked proposals</a></li>
+          <li><a href="#pricing" data-i18n="v2_132">Pricing</a></li>
+          <li><a href="#faq" data-i18n="v2_133">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Company</h5>
+        <ul>
+          <li><a href="/login" data-i18n="v2_134">Sign in</a></li>
+          <li><a href="/login" data-i18n="v2_135">Start free trial</a></li>
+          <li><a href="/demo" data-i18n="v2_136">Live demo</a></li>
+          <li><a href="/refer" data-i18n="v2_137">Refer an installer</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Get in touch</h5>
+        <ul>
+          <li><a href="mailto:voltmiraenergy@gmail.com" data-i18n="v2_138">voltmiraenergy@gmail.com</a></li>
+          <li><a href="https://wa.me/37362121019" target="_blank" rel="noopener" data-i18n="v2_139">WhatsApp</a></li>
+          <li><a href="https://instagram.com/voltmira.energy" target="_blank" rel="noopener" data-i18n="v2_140">Instagram</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span data-i18n="v2_141">© 2026 VoltMira. All rights reserved.</span>
+      <span class="founder">Founded by <a href="https://voltmira.com/" rel="author" data-i18n="v2_142">Bogdan Toctarov</a></span>
+      <span class="sp"></span>
+      <a href="/privacy" data-i18n="v2_143">Privacy</a>
+      <a href="/cookies">Cookies</a>
+      <a href="/terms" data-i18n="v2_144">Terms</a>
+      <a href="/refunds" data-i18n="v2_145">Refunds</a>
+      <a href="/credits" data-i18n="v2_146">Credits</a>
+    </div>
+    <p class="foot-trust-meta">EU-hosted. GDPR-ready. Serving Romania, Moldova and the EU.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  try{
+    var t = localStorage.getItem('voltmira_theme');
+    if(t === 'dark' || t === 'light'){ document.documentElement.setAttribute('data-theme', t); }
+  }catch(e){}
+  var tbtn = document.getElementById('themeToggle');
+  if(tbtn) tbtn.addEventListener('click', function(){
+    var cur = document.documentElement.getAttribute('data-theme');
+    var mql = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var isDark = cur ? cur === 'dark' : mql;
+    var next = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    var m = document.querySelector('meta[name="theme-color"]');
+    if(m) m.setAttribute('content', next === 'dark' ? '#080D14' : '#0B1220');
+    try{ localStorage.setItem('voltmira_theme', next); }catch(e){}
+  });
+
+  var els = document.querySelectorAll('.rv');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, {threshold:.1, rootMargin:'0px 0px -5% 0px'});
+    els.forEach(function(el){ io.observe(el); });
+  } else {
+    els.forEach(function(el){ el.classList.add('in'); });
+  }
+
+  /* count-up: the rendered text is the template, not data-prefix, so each
+     language's own number formatting survives and the animation only swaps
+     the digits (Romanian stays "49 €", English stays "€49"). */
+  var counters = document.querySelectorAll('.cu');
+  function animateCount(el){
+    var target = parseFloat(el.getAttribute('data-count'));
+    var decimals = parseInt(el.getAttribute('data-decimals') || '0', 10);
+    var tpl = el.textContent;
+    var numMatch = /\d[\d.,   ]*\d|\d/.exec(tpl);
+    if(isNaN(target) || !numMatch){ return; }
+    var sep = /,\d/.test(numMatch[0]) ? ',' : '.';
+    var head = tpl.slice(0, numMatch.index), tail = tpl.slice(numMatch.index + numMatch[0].length);
+    var render = function(v){ el.textContent = head + v.toFixed(decimals).replace('.', sep) + tail; };
+    if(reduceMotion){ render(target); return; }
+    var start = null, dur = 900;
+    function step(ts){
+      if(!start) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      render(target * (1 - Math.pow(1 - p, 3)));
+      if(p < 1) requestAnimationFrame(step); else render(target);
+    }
+    requestAnimationFrame(step);
+  }
+  if('IntersectionObserver' in window && counters.length){
+    var cio = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){ animateCount(en.target); cio.unobserve(en.target); }
+      });
+    }, {threshold:.6});
+    counters.forEach(function(el){ cio.observe(el); });
+  } else { counters.forEach(animateCount); }
+
+  var progressBar = document.getElementById('scrollBar');
+  var nav = document.getElementById('siteNav');
+  var ticking = false;
+  function onScroll(){
+    var doc = document.documentElement;
+    var scrollTop = doc.scrollTop || document.body.scrollTop;
+    var scrollH = (doc.scrollHeight - doc.clientHeight) || 1;
+    if(progressBar) progressBar.style.width = (Math.min(scrollTop / scrollH, 1) * 100) + '%';
+    if(nav) nav.classList.toggle('scrolled', scrollTop > 4);
+    ticking = false;
+  }
+  window.addEventListener('scroll', function(){
+    if(!ticking){ requestAnimationFrame(onScroll); ticking = true; }
+  }, {passive:true});
+  onScroll();
+})();
+
+(function(){
+  var wrap = document.getElementById('langWrap');
+  if(!wrap) return;
+  var btn = document.getElementById('langBtn'),
+      menu = document.getElementById('langMenu'),
+      code = document.getElementById('langCode'),
+      flag = document.getElementById('langFlag'),
+      opts = [].slice.call(menu.querySelectorAll('.lang-opt'));
+
+  var path = location.pathname.replace(/\/+$/, '');
+  var cur = path === '/ro' ? 'ro' : path === '/ru' ? 'ru' : 'en';
+
+  opts.forEach(function(o){
+    var on = o.getAttribute('data-lang') === cur;
+    o.setAttribute('aria-selected', String(on));
+    if(on){
+      code.textContent = o.getAttribute('data-lang').toUpperCase();
+      flag.innerHTML = o.querySelector('.lf').outerHTML;
+    }
+    o.addEventListener('click', function(){
+      var target = o.getAttribute('data-path');
+      try{ localStorage.setItem('voltmira_lang', o.getAttribute('data-lang')); }catch(e){}
+      if(target !== (path || '/')) location.assign(target); else close();
+    });
+  });
+
+  function open(){ wrap.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+  function close(){ wrap.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    wrap.classList.contains('open') ? close() : open();
+  });
+  document.addEventListener('click', function(e){ if(!wrap.contains(e.target)) close(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') close(); });
+})();
+</script>
+</body>
+</html>
