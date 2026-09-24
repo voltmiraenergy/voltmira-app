@@ -7,6 +7,9 @@ import { openCheckout } from "../../../lib/paddle.js";
 import { saveCompany, seedSampleData, clearSampleData, getMyRole } from "../../../lib/actions.js";
 import { defaultEngineSettings } from "@voltmira/engine";
 import { t, normLang, LANGS, LANG_NAMES } from "../../../lib/i18n.js";
+import { hasFeature, planFor } from "../../../lib/features.js";
+import UpsellModal from "../../../components/UpsellModal.jsx";
+import { CONTRACT_TOKENS, COMMISSIONING_TOKENS } from "../../../lib/legalDocs.js";
 
 const ST_CSS = `
 .st-wrap{max-width:660px;margin:0 auto}
@@ -72,9 +75,14 @@ export default function Settings() {
   const [demoBusy, setDemoBusy] = useState(false);
   const [demoMsg, setDemoMsg] = useState("");
   const [isOwner, setIsOwner] = useState(true);   // default true so owners see no flash
+  const [upsell, setUpsell] = useState(null);      // feature key, or null
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteErr, setDeleteErr] = useState("");
 
   useEffect(() => {
-    document.title = "Settings — VoltMira";
+    document.title = "Settings · VoltMira";
     sb.from("companies").select("*").single().then(({ data }) => setCo(data));
     getMyRole().then(r => setIsOwner(r === "owner")).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,10 +112,15 @@ export default function Settings() {
         default_market: co.default_market, currency: co.currency, lang: normLang(co.lang),
         subsidy_amount_ron: co.subsidy_amount_ron, prosumer_limit_kw: co.prosumer_limit_kw,
         notify_open: co.notify_open !== false,
+        nudge_enabled: co.nudge_enabled === true,
+        crm_webhook_enabled: co.crm_webhook_enabled === true,
+        crm_webhook_url: co.crm_webhook_url,
         // company legal details for invoicing
         legal_name: co.legal_name, reg_no: co.reg_no, vat_no: co.vat_no,
         legal_address: co.legal_address, iban: co.iban, invoice_prefix: co.invoice_prefix,
-        vat_rate: co.vat_rate,
+        vat_rate: co.vat_rate, install_warranty_years: co.install_warranty_years,
+        contract_template_override: co.contract_template_override || "",
+        commissioning_template_override: co.commissioning_template_override || "",
         engine: eng,
       });
       setMsg(t("s_saved", lang));
@@ -118,6 +131,29 @@ export default function Settings() {
       router.refresh();
     } catch (e) {
       setMsg(e.message || "Error");
+    }
+  }
+
+  async function deleteAccount() {
+    if (deleteBusy) return;
+    setDeleteBusy(true); setDeleteErr("");
+    try {
+      const res = await fetch("/api/account", {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: deleteConfirm }),
+      });
+      if (res.ok) { await sb.auth.signOut(); router.push("/login"); return; }
+      const j = await res.json().catch(() => ({}));
+      const ERR = {
+        active_subscription: t("s_delete_err_sub", lang),
+        confirm_mismatch: t("s_delete_err_mismatch", lang),
+        owner_only: t("s_delete_err_owner", lang),
+      };
+      setDeleteErr(ERR[j.error] || t("s_delete_err_generic", lang));
+    } catch {
+      setDeleteErr(t("s_delete_err_generic", lang));
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
@@ -151,9 +187,11 @@ export default function Settings() {
     finally { setDemoBusy(false); }
   }
 
-  // Logo upload: read the chosen image, downscale to 256px, and store it inline
-  // as a data URL in logo_url — no storage bucket needed, works everywhere the
-  // logo renders (CSP allows data: images).
+  // Logo upload: read the chosen image, downscale to 256px, and upload it to
+  // the public-media Storage bucket (supabase/add-storage-media.sql) — a real
+  // public URL in logo_url, not a data: URL inlined into the companies row
+  // (the old approach ballooned the row and, unlike a Storage object, can't
+  // be cached/served efficiently by a CDN).
   function onLogoFile(e) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -162,7 +200,7 @@ export default function Settings() {
     const reader = new FileReader();
     reader.onload = () => {
       const img = new window.Image();
-      img.onload = () => {
+      img.onload = async () => {
         const max = 256;
         const scale = Math.min(1, max / Math.max(img.width, img.height));
         const w = Math.max(1, Math.round(img.width * scale));
@@ -170,7 +208,24 @@ export default function Settings() {
         const canvas = document.createElement("canvas");
         canvas.width = w; canvas.height = h;
         canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-        setCo(c => ({ ...c, logo_url: canvas.toDataURL("image/png") })); touch();
+        canvas.toBlob(async (blob) => {
+          if (!blob) { setMsg(t("s_logo_bad", lang)); return; }
+          setMsg(t("s_logo_uploading", lang));
+          // storage.foldername(name)[2] in add-storage-media.sql's RLS policy
+          // needs a real folder level for the company id, not just a
+          // filename prefix — "logos/<id>.png" has only ONE folder segment
+          // ("logos"), so the id never reaches the policy check and every
+          // upload was rejected with "row violates row-level security
+          // policy" until this was two levels deep.
+          const path = `logos/${co.id}/logo.png`;
+          const { error } = await sb.storage.from("public-media").upload(path, blob, { upsert: true, contentType: "image/png", cacheControl: "3600" });
+          if (error) { setMsg(error.message); return; }
+          const { data } = sb.storage.from("public-media").getPublicUrl(path);
+          // Cache-bust: the path is fixed (one logo per company), so an
+          // unchanged URL would keep showing the old image from cache.
+          setCo(c => ({ ...c, logo_url: `${data.publicUrl}?v=${Date.now()}` }));
+          setMsg(""); touch();
+        }, "image/png");
       };
       img.src = reader.result;
     };
@@ -263,8 +318,85 @@ export default function Settings() {
           <span className="toggle-pill" />
           <span className="txt">{t("s_notify", lang)}<small>{t("s_notify_note", lang)}</small></span>
         </label>
+        {/* Opt-IN, unlike notify_open above — this emails a real CLIENT under
+            this company's own brand with AI-phrased copy nobody here wrote,
+            so it must default off (co.nudge_enabled === true, not !== false)
+            until someone explicitly turns it on. See add-proposal-nudges.sql. */}
+        <label className="check" style={{ marginTop: 10 }}>
+          <input type="checkbox" checked={co.nudge_enabled === true}
+            onChange={e => { setCo({ ...co, nudge_enabled: e.target.checked }); touch(); }} />
+          <span className="toggle-pill" />
+          <span className="txt">{t("s_nudge", lang)}<small>{t("s_nudge_note", lang)}</small></span>
+        </label>
+        {/* Opt-in, same reasoning as nudge_enabled above: sends real pipeline
+            data (a lead's name/phone, a proposal's title) to a URL the
+            installer themselves controls — nothing fires until they paste
+            one in and turn it on. See add-crm-webhook.sql. Pro+ feature
+            (lib/features.js) — Free can see it but gets an upsell, not a
+            silent toggle; saveCompany() also refuses to persist "true" for a
+            plan that doesn't grant it, so this is real, not cosmetic.
+            Owner-only, same as engine/rbac_enabled above: this sets WHERE the
+            company's real lead/proposal/invoice stream gets posted, so a
+            non-owner member must not be able to repoint it — saveCompany()
+            drops these two fields server-side for anyone but the owner, so
+            the control is hidden here rather than shown and silently
+            failing to save for everyone else. */}
+        {isOwner && (<>
+        <label className="check" style={{ marginTop: 10 }}>
+          <input type="checkbox" checked={co.crm_webhook_enabled === true}
+            onChange={e => {
+              if (e.target.checked && !hasFeature(co.plan, "crmWebhook")) { setUpsell("crmWebhook"); return; }
+              setCo({ ...co, crm_webhook_enabled: e.target.checked }); touch();
+            }} />
+          <span className="toggle-pill" />
+          <span className="txt">{t("s_crm", lang)}<small>{t("s_crm_note", lang)}</small></span>
+        </label>
+        {co.crm_webhook_enabled === true && (
+          <div className="field" style={{ marginTop: 10, maxWidth: 420 }}>
+            <label>{t("s_crm_url", lang)}</label>
+            <input className="input" value={co.crm_webhook_url || ""} onChange={set("crm_webhook_url")}
+              placeholder="https://hooks.bitrix24.com/rest/…" />
+          </div>
+        )}
+        </>)}
         <div className="set-note">{t("co_note", lang)}</div>
       </section>
+
+      {/* White-labeling: the installer's own wording, not VoltMira's, on the
+          two documents a client actually signs. Team+ (lib/features.js) — the
+          racordare PDF is a real Premier Energy government form and stays
+          exactly what it is; only the two VoltMira-authored templates
+          (lib/legalDocs.js) can be overridden. Blank = keep using the
+          built-in default; nothing here can produce a document with an
+          "undefined" in it because buildServiceContract/buildCommissioningAct
+          apply the exact same {{token}} → real-data substitution to a
+          custom override that they always applied to the built-in text. */}
+      <section className="card st-sec">
+        <div className="st-head"><SecIcon name="code" /><h3>{t("s_whitelabel", lang)}</h3></div>
+        <p className="st-desc">{t("s_whitelabel_note", lang)}</p>
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label>{t("s_wl_contract", lang)}</label>
+          <textarea className="input" style={{ minHeight: 140, fontFamily: "ui-monospace,Consolas,monospace", fontSize: 12.5 }}
+            value={co.contract_template_override || ""}
+            onFocus={() => { if (!hasFeature(co.plan, "customTemplates")) setUpsell("customTemplates"); }}
+            onChange={e => { if (!hasFeature(co.plan, "customTemplates")) { setUpsell("customTemplates"); return; } setCo({ ...co, contract_template_override: e.target.value }); touch(); }}
+            placeholder={t("s_wl_placeholder", lang)} />
+        </div>
+        <div className="field" style={{ marginBottom: 8 }}>
+          <label>{t("s_wl_commissioning", lang)}</label>
+          <textarea className="input" style={{ minHeight: 140, fontFamily: "ui-monospace,Consolas,monospace", fontSize: 12.5 }}
+            value={co.commissioning_template_override || ""}
+            onFocus={() => { if (!hasFeature(co.plan, "customTemplates")) setUpsell("customTemplates"); }}
+            onChange={e => { if (!hasFeature(co.plan, "customTemplates")) { setUpsell("customTemplates"); return; } setCo({ ...co, commissioning_template_override: e.target.value }); touch(); }}
+            placeholder={t("s_wl_placeholder", lang)} />
+        </div>
+        <div className="set-note">{t("s_wl_tokens", lang, { tokens: [...CONTRACT_TOKENS, ...COMMISSIONING_TOKENS].filter((v, i, a) => a.indexOf(v) === i).map(x => `{{${x}}}`).join(" ") })}</div>
+      </section>
+
+      {upsell && (
+        <UpsellModal lang={lang} plan={planFor(upsell)} onClose={() => setUpsell(null)}
+          onUpgrade={(p) => { setUpsell(null); upgrade(p); }} />
+      )}
 
       {/* Invoicing — company legal details printed on proforma invoices */}
       <section className="card st-sec">
@@ -286,6 +418,24 @@ export default function Settings() {
         <div className="field" style={{ marginTop: 12 }}><label>{t("s_legal_address", lang)}</label>
           <input className="input" value={co.legal_address || ""} onChange={set("legal_address")} placeholder={t("s_legal_address_ph", lang)} /></div>
         <div className="set-note">{t("s_invoicing_note", lang)}</div>
+        <div style={{ marginTop: 14 }}>
+          <a className="btn ghost" href="/api/export-invoices">⇩ {t("s_export_invoices_md", lang)}</a>
+          <div className="set-note" style={{ marginTop: 8 }}>{t("s_export_invoices_md_note", lang)}</div>
+        </div>
+      </section>
+
+      {/* Installation warranty — the installer's OWN workmanship commitment,
+          distinct from the manufacturer warranties in the equipment catalog.
+          Blank by default: unlike the catalog's warrantyYears, there is
+          nothing to verify here (it's the installer's own real promise), but
+          it must still not print a false "0-year" line on a proposal before
+          they've actually set it. */}
+      <section className="card st-sec">
+        <div className="st-head"><SecIcon name="company" /><h3>{t("s_install_warranty", lang)}</h3></div>
+        <div className="set-note" style={{ marginTop: -4, marginBottom: 12 }}>{t("s_install_warranty_sub", lang)}</div>
+        <div className="set-grid">
+          {numField("iInstWarr", t("s_install_warranty_years", lang), co.install_warranty_years ?? "", 1, t("unit_years", lang), setCoNum("install_warranty_years"))}
+        </div>
       </section>
 
       {/* Plan */}
@@ -326,10 +476,8 @@ export default function Settings() {
           {numField("eHorizon", t("pdf_horizon", lang), eng.horizon, 1, t("unit_years", lang), setEng("horizon"))}
         </div>
 
-        <div className="st-glabel">{t("st_grp_subs", lang)}</div>
+        <div className="st-glabel">{t("st_grp_limits", lang)}</div>
         <div className="set-grid">
-          {numField("eSubsidy", t("afm_amount", lang), co.subsidy_amount_ron, 500, null, setCoNum("subsidy_amount_ron"))}
-          {numField("eSubsidyMdl", t("s_subsidy_mdl", lang), eng.subsidyAmountMdl, 500, null, setEng("subsidyAmountMdl"))}
           {numField("eProsumer", t("prosumer_limit", lang), co.prosumer_limit_kw, 0.1, null, setCoNum("prosumer_limit_kw"))}
         </div>
 
@@ -337,6 +485,43 @@ export default function Settings() {
         <div className="set-grid">
           {numField("eValidity", t("s_validity", lang), eng.quoteValidityDays, 5, t("unit_days", lang), setEng("quoteValidityDays"))}
         </div>
+
+        {/* A starting assumption for the client-facing "monthly payment"
+            estimate — same as costPerKw, never shown as a real loan offer. */}
+        <div className="st-glabel">{t("st_grp_finance", lang)}</div>
+        <div className="set-grid">
+          {numField("eFinRate", t("e_finance_rate", lang), eng.financeRatePct ?? 9, 0.5, "%/yr", setEng("financeRatePct"))}
+          {numField("eFinTerm", t("e_finance_term", lang), eng.financeTermYears ?? 10, 1, t("unit_years", lang), setEng("financeTermYears"))}
+        </div>
+        <div className="set-note">{t("st_finance_note", lang)}</div>
+
+        {/* Premier Energy's real ANRE-approved day/night rates, seeded here —
+            revised periodically, so this stays editable rather than baked
+            into the engine as permanent truth. Only used on a project that
+            explicitly opts into "tarif diferențiat" (see the project editor);
+            every existing/flat-rate project is unaffected. */}
+        <div className="st-glabel">{t("st_grp_md_tariff", lang)}</div>
+        {/* Two real suppliers, two real rate tables — Premier Energy covers
+            central/south MD, FEE-Nord (RED Nord's distribution territory)
+            covers the north, and their ANRE-approved rates genuinely differ.
+            These buttons just quick-fill the editable fields below with
+            whichever supplier's real published rate applies; nothing is
+            locked to a supplier afterward. */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+          <button type="button" className="btn ghost sm"
+            onClick={() => { setCo(c => ({ ...c, engine: { ...eng, mdDayRateMdl: 3.75, mdNightRateMdl: 2.94 } })); touch(); }}>
+            {t("e_md_preset_premier", lang)}
+          </button>
+          <button type="button" className="btn ghost sm"
+            onClick={() => { setCo(c => ({ ...c, engine: { ...eng, mdDayRateMdl: 4.89, mdNightRateMdl: 3.91 } })); touch(); }}>
+            {t("e_md_preset_feenord", lang)}
+          </button>
+        </div>
+        <div className="set-grid">
+          {numField("eMdDay", t("e_md_day_rate", lang), eng.mdDayRateMdl ?? 3.75, 0.01, "MDL/kWh", setEng("mdDayRateMdl"))}
+          {numField("eMdNight", t("e_md_night_rate", lang), eng.mdNightRateMdl ?? 2.94, 0.01, "MDL/kWh", setEng("mdNightRateMdl"))}
+        </div>
+        <div className="set-note">{t("st_md_tariff_note", lang)}</div>
       </section>
 
       {/* Payback scenarios */}
@@ -385,6 +570,41 @@ export default function Settings() {
         </div>
         {demoMsg && <p className="set-note" style={{ marginTop: 12 }}>{demoMsg}</p>}
       </section>
+
+      {/* Danger zone: GDPR right to erasure, self-service (docs/GDPR_CHECKLIST.md).
+          Owner-only (already inside this isOwner block). Type-to-confirm with
+          the real company name — never a plain "are you sure?" button — so
+          this can only fire from a human reading the name on screen. */}
+      <section className="card st-sec" style={{ borderColor: "#C4543B" }}>
+        <div className="st-head"><SecIcon name="code" color="#C4543B" /><h3>{t("s_danger", lang)}</h3></div>
+        <p className="st-desc">{t("s_delete_note", lang)}</p>
+        <button className="btn ghost" style={{ color: "#C4543B", borderColor: "#C4543B" }}
+          onClick={() => { setDeleteOpen(true); setDeleteConfirm(""); setDeleteErr(""); }}>
+          {t("s_delete_cta", lang)}
+        </button>
+      </section>
+
+      {deleteOpen && (
+        <div className="overlay" onClick={() => !deleteBusy && setDeleteOpen(false)}>
+          <div className="modal" style={{ width: "min(440px,100%)" }} onClick={(e) => e.stopPropagation()}>
+            <h4>{t("s_delete_title", lang)}</h4>
+            <p className="st-desc">{t("s_delete_body", lang, { name: co.name || "" })}</p>
+            <div className="field" style={{ marginBottom: 12 }}>
+              <label>{t("s_delete_type", lang, { name: co.name || "" })}</label>
+              <input className="input" value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} disabled={deleteBusy} />
+            </div>
+            {deleteErr && <p style={{ color: "#C4543B", fontSize: 13, margin: "0 0 12px" }}>{deleteErr}</p>}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button type="button" className="btn ghost" disabled={deleteBusy} onClick={() => setDeleteOpen(false)}>{t("upsell_close", lang)}</button>
+              <button type="button" className="btn" style={{ background: "#C4543B", color: "#fff" }}
+                disabled={deleteBusy || deleteConfirm.trim() !== (co.name || "").trim()}
+                onClick={deleteAccount}>
+                {deleteBusy ? t("s_deleting", lang) : t("s_delete_confirm", lang)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       </>) : (
         <section className="card st-sec">

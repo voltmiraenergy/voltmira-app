@@ -2,7 +2,7 @@
 import LegalShell from "../LegalShell.jsx";
 
 export const metadata = {
-  title: "Refund Policy — VoltMira",
+  title: "Refund Policy · VoltMira",
   description: "Refund terms for VoltMira subscriptions. 14-day EU right of withdrawal, handled through Paddle, our merchant of record.",
 };
 

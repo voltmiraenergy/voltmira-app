@@ -2,7 +2,7 @@
 import LegalShell from "../LegalShell.jsx";
 
 export const metadata = {
-  title: "Terms of Service — VoltMira",
+  title: "Terms of Service · VoltMira",
   description: "The terms governing use of VoltMira quoting software for solar installers.",
 };
 

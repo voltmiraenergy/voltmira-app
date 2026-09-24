@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { setLeadStatus, deleteLead, createProjectFromLead } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
 
-export default function LeadActions({ id, status, projectId, lang, onEdit }) {
+export default function LeadActions({ id, status, projectId, lang, onEdit, editing = false }) {
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -26,9 +26,15 @@ export default function LeadActions({ id, status, projectId, lang, onEdit }) {
   return (
     <div style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
       {/* Edit lives in this row (not floating above it) so it lines up with the
-          other actions and shares their height, radius and spacing. */}
+          other actions and shares their height, radius and spacing. It toggles
+          the editor drawer, so it reflects the open state instead of firing a
+          one-way action. */}
       {onEdit && (
-        <button style={btn} disabled={pending} onClick={onEdit}
+        <button
+          style={editing
+            ? { ...btn, background: "var(--green-tint)", borderColor: "var(--green)", color: "var(--green)", fontWeight: 600 }
+            : btn}
+          disabled={pending} onClick={onEdit} aria-expanded={editing}
           title={t("lead_edit", lang)} aria-label={t("lead_edit", lang)}>{t("lead_edit", lang)}</button>
       )}
       {status === "converted" && projectId ? (

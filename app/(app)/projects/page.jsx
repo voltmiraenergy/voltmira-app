@@ -6,7 +6,8 @@
 // all view state travels in the query string.
 import Link from "next/link";
 import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
-import { currentCompany } from "../../../lib/session.js";
+import { currentCompany, currentUser } from "../../../lib/session.js";
+import { canViewAllProjects } from "../../../lib/rbac.js";
 import { bulkUpdateStatus } from "../../../lib/actions.js";
 import { revalidatePath } from "next/cache";
 import { quote } from "@voltmira/engine";
@@ -19,9 +20,10 @@ import StatusChip from "./StatusChip.jsx";
 import NewQuoteMenu from "./NewQuoteMenu.jsx";
 import TemplateBar from "./TemplateBar.jsx";
 import BulkBar from "./BulkBar.jsx";
+import Avatar, { initials } from "../../../lib/Avatar.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Quotes — VoltMira" };
+export const metadata = { title: "Quotes · VoltMira" };
 
 const PAGE_SIZE = 10;
 const STATUSES = ["all", "draft", "sent", "won", "lost"];
@@ -36,14 +38,6 @@ async function bulkStatus(formData) {
   revalidatePath("/dashboard");
 }
 
-function initials(s) {
-  s = (s || "").trim();
-  if (!s) return "—";
-  if (s.includes("@")) return s.slice(0, 2).toUpperCase();
-  const p = s.split(/\s+/);
-  return ((p[0]?.[0] || "") + (p[1]?.[0] || "")).toUpperCase() || s.slice(0, 2).toUpperCase();
-}
-
 export default async function Projects({ searchParams }) {
   const status = STATUSES.includes(searchParams?.status) ? searchParams.status : "all";
   const q = (searchParams?.q || "").slice(0, 80);
@@ -53,11 +47,21 @@ export default async function Projects({ searchParams }) {
 
   const sb = supabaseServer();
   const co = await currentCompany();
-  const [{ data: allRows }, { data: team }, stats] = await Promise.all([
+  const [{ data: allRowsRaw }, { data: team }, stats, user] = await Promise.all([
     sb.from("projects").select("*").order("updated_at", { ascending: false }),
-    co ? supabaseAdmin().from("profiles").select("id, name, email").eq("company_id", co.id) : Promise.resolve({ data: [] }),
+    co ? supabaseAdmin().from("profiles").select("id, name, email, role, title").eq("company_id", co.id) : Promise.resolve({ data: [] }),
     proposalStatsByProject(sb),
+    currentUser(),
   ]);
+  // RBAC (lib/rbac.js, add-rbac.sql — off by default): a Sales title sees
+  // only the projects they own once an owner has explicitly turned this on.
+  // Filtered here at the query-result layer, not via RLS — a wrong RLS
+  // policy on a live multi-tenant table risks locking everyone out or
+  // leaking across companies, while this is a single reversible flag.
+  const me = (team || []).find((m) => m.id === user?.id) || null;
+  const allRows = canViewAllProjects(me, co?.rbac_enabled)
+    ? allRowsRaw
+    : (allRowsRaw || []).filter((p) => p.owner_id === user?.id);
   const E = await companyEngine(co);
   const validityDays = E.quoteValidityDays || 30;
   const lang = normLang(co?.lang);
@@ -184,9 +188,14 @@ export default async function Projects({ searchParams }) {
                     <tr key={p.id}>
                       <td className="col-sel"><input type="checkbox" className="bulk-id" name="ids" value={p.id} aria-label={p.title || t("untitled", lang)} /></td>
                       <td>
+                        <div className="row-id">
+                        <Avatar name={p.title || p.client_name} size={36} title={p.title || t("untitled", lang)} />
+                        <div className="row-id-tx">
                         <Link className="t-title" href={`/projects/${p.id}`}>{p.title || t("untitled", lang)}</Link>
                         {p.notes ? <span className="note-dot" title={p.notes} aria-label={t("has_notes", lang)}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h13l3 3v13H4z"/><path d="M8 10h8M8 14h6"/></svg></span> : null}
                         <div className="t-sub">{p.client_name || "—"} · {p.market}</div>
+                        </div>
+                        </div>
                       </td>
                       <td>{(+p.kw).toFixed(1)} kW{p.batt ? " + batt" : ""}</td>
                       <td>{yrsF(qq.payback)} {t("yrs", lang)}</td>

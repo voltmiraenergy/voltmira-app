@@ -13,6 +13,7 @@ import { escapeHtml } from "../../../../lib/safe.js";
 import { logActivity } from "../../../../lib/activity.js";
 import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
 import { sendEmail, proposalOpenedEmail, emailConfigured } from "../../../../lib/email.js";
+import { sendCrmWebhook } from "../../../../lib/crmWebhook.js";
 import { quote } from "@voltmira/engine";
 import { snapshotEngine } from "../../../../lib/engineSettings.js";
 import { bomHasBattery } from "../../../../lib/quoteInput.js";
@@ -73,9 +74,16 @@ export async function GET(req, { params }) {
     .eq("code", params.code).single();
   if (!prop) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  const { data: co } = await db.from("companies")
-    .select("name, short_name, logo_url, engine, currency, lang, plan")
+  // Graceful before add-install-warranty.sql runs: retry without the column
+  // rather than 500ing every client-facing proposal link on a missing column.
+  let { data: co, error: coErr } = await db.from("companies")
+    .select("name, short_name, logo_url, engine, currency, lang, plan, install_warranty_years")
     .eq("id", prop.company_id).single();
+  if (coErr && /install_warranty_years/i.test(coErr.message || "")) {
+    ({ data: co } = await db.from("companies")
+      .select("name, short_name, logo_url, engine, currency, lang, plan")
+      .eq("id", prop.company_id).single());
+  }
 
   // Social proof, computed rather than typed: the installer's real count of won
   // projects. A hand-entered "trusted by N homeowners" is an unverifiable claim;
@@ -132,7 +140,7 @@ export async function GET(req, { params }) {
     sentAt: prop.created_at,   // when the link was created — drives "valid until"
     // lang drives the client-facing proposal copy — the client reads it in the
     // installer's chosen language, not always English.
-    company: { name: co?.name, shortName: co?.short_name, logoUrl: co?.logo_url, currency: co?.currency, lang: co?.lang, plan: co?.plan || "free", wonCount: wonCount || 0 },
+    company: { name: co?.name, shortName: co?.short_name, logoUrl: co?.logo_url, currency: co?.currency, lang: co?.lang, plan: co?.plan || "free", wonCount: wonCount || 0, installWarrantyYears: co?.install_warranty_years || null },
     preparedBy,
     inputs: {
       title: prop.snapshot.title, client: prop.snapshot.client, address: prop.snapshot.address,
@@ -170,7 +178,23 @@ export async function GET(req, { params }) {
       afmSubsidy: !!prop.snapshot.afmSubsidy,
     },
     options,
-    bom: Array.isArray(prop.snapshot.bom) ? prop.snapshot.bom : [],
+    // Never the installer's purchase cost or margin — this is a public,
+    // capability-URL endpoint (the code IS the auth), and unit_price/
+    // cost_price were never meant to reach it. Nothing client-facing has
+    // ever rendered them (PrintSheet.jsx/page.jsx only read kind/brand/
+    // model/spec/qty), so this was a latent leak in the raw JSON response
+    // rather than something anything legitimate depended on.
+    bom: (Array.isArray(prop.snapshot.bom) ? prop.snapshot.bom : [])
+      .map(({ unit_price, cost_price, ...safe }) => safe),
+    // Real, drawn roof area/orientation (Site Designer), frozen at "Generate
+    // offer" time same as everything else here — undefined on any proposal
+    // made before that plane existed, or with no single unambiguous plane.
+    roofAreaM2: prop.snapshot.roofAreaM2 || undefined,
+    roofOrientation: prop.snapshot.roofOrientation || undefined,
+    // The real drawn geometry itself (outline + obstacles + fitted panel
+    // rectangles, already projected to local meters) — undefined on any
+    // proposal made before this existed or where nothing was ever drawn.
+    roofPlanes: Array.isArray(prop.snapshot.roofPlanes) ? prop.snapshot.roofPlanes : undefined,
   });
 }
 
@@ -226,6 +250,14 @@ export async function POST(req, { params }) {
     await logActivity(db, { companyId: prop.company_id, kind: actKind, key, params: { b: rawWho, title: rawTitle, n }, text, link: `/projects/${prop.project_id}` });
     // Retention feature: tell the installer while the client is still reading.
     await notifyProposalOpened(db, prop);
+    // CRM webhook: fire ONLY on the very first open (n<=1), not every reload —
+    // a proposal a client reopens five times must not post five identical
+    // "opened" events to their Bitrix24/amoCRM/Zapier hook (lib/crmWebhook.js).
+    if (n <= 1) {
+      await sendCrmWebhook(prop.company_id, "proposal.opened", {
+        project_id: prop.project_id, code: prop.code, client_name: rawWho, title: rawTitle,
+      });
+    }
   }
   if (kind === "heartbeat" && seconds > 0) {
     await db.rpc("bump_proposal_stat", { p_code: prop.code, p_field: "seconds", p_by: seconds });

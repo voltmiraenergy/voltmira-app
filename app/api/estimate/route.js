@@ -13,6 +13,7 @@ import { supabaseAdmin } from "../../../lib/supabase.js";
 import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
 import { getSolarYield, geocode } from "@voltmira/engine/pvgis";
 import { quote, defaultEngineSettings, MARKETS, FX } from "@voltmira/engine";
+import { annualConsFromBill, sizeSystemKw } from "../../../lib/leadSizing.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -33,7 +34,6 @@ const MARKET_CFG = {
   DE: { price: 0.32, currency: "EUR" },
 };
 
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const round1 = (v) => Math.round(v * 10) / 10;
 
 // Cache resilient enough that a DB hiccup can't fail a public estimate.
@@ -79,14 +79,13 @@ export async function GET(req) {
     const admin = supabaseAdmin();
     const { yieldPerKwp, monthlyShape } = await getSolarYield(g.lat, g.lon, { angle: 35, aspect: 0, cache: dbCache(admin) });
 
-    // 3) derive annual consumption from the monthly bill (or a typical household)
-    const billEur = isFinite(billRaw) && billRaw > 0 ? billRaw / fx : null;
-    const annualCons = billEur
-      ? clamp((billEur * 12) / cfg.price, 800, 30000)
-      : 4200; // sensible default household when no bill given
-
-    // 4) size the system to roughly cover that consumption (residential band)
-    const recommendedKw = clamp(Math.round((annualCons / yieldPerKwp) * 2) / 2, 2, 15);
+    // 3) derive annual consumption from the monthly bill (or a typical household),
+    //    and 4) size the system to roughly cover it — lib/leadSizing.js, so this
+    //    stays identical to how lib/actions.js sizes the same lead later if it's
+    //    converted into a project (see that file's own header comment: two
+    //    copies of this formula is exactly the drift this product can't have).
+    const annualCons = annualConsFromBill(billRaw, cfg.price, fx);
+    const recommendedKw = sizeSystemKw(annualCons, yieldPerKwp);
 
     // 5) run the SAME engine as the paid product
     const E = defaultEngineSettings();
@@ -106,6 +105,7 @@ export async function GET(req) {
       yieldPerKwp: Math.round(yieldPerKwp),
       recommendedKw,
       annualConsKwh: Math.round(annualCons),
+      prodKwh: Math.round(q.e.prod0),
       cost: { eur: Math.round(q.e.cost), local: Math.round(q.e.cost * fx) },
       annualSavings: { eur: Math.round(q.e.year1), local: Math.round(q.e.year1 * fx) },
       payback: { pess: pb(q.p), expc: pb(q.e), opti: pb(q.o) },

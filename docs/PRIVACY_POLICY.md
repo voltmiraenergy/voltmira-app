@@ -18,6 +18,12 @@ installers. Contact: contact@voltmira.com, [COMPANY LEGAL NAME, ADDRESS].
 **Where.** All data is stored in the EU (Frankfurt). Sub-processors:
 Supabase (database/auth), Vercel (hosting), Stripe (payments),
 [Resend/Postmark] (email). Each is bound by a DPA.
+If the optional proposal Q&A / follow-up automations (`docs/MAKE_AUTOMATIONS.md`)
+are enabled, real proposal data also passes through Make.com and whichever
+LLM provider its scenario calls (e.g. Anthropic/OpenAI/Google) — add both as
+named sub-processors here, and enable Make.com's EU-region data processing
+option (paid org tiers) before turning either feature on for real clients;
+otherwise this section's "all data stored in the EU" claim is no longer true.
 
 **How long.** Account data: life of the account + 30 days. Proposal analytics:
 24 months. Backups: 30 days rolling.

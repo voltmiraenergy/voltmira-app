@@ -55,7 +55,9 @@ export default function LegalShell({ title, updated, children }) {
         <div style={{ ...wrap, padding: "28px 24px", display: "flex", gap: 22, flexWrap: "wrap", fontSize: 13.5, color: "var(--app-muted)" }}>
           <span>© 2026 VoltMira</span>
           <Link href="/privacy" style={{ color: "#1E6B4E", textDecoration: "none", fontWeight: 500 }}>Privacy</Link>
+          <Link href="/cookies" style={{ color: "#1E6B4E", textDecoration: "none", fontWeight: 500 }}>Cookies</Link>
           <Link href="/terms" style={{ color: "#1E6B4E", textDecoration: "none", fontWeight: 500 }}>Terms</Link>
+          <Link href="/refunds" style={{ color: "#1E6B4E", textDecoration: "none", fontWeight: 500 }}>Refunds</Link>
           <a href="mailto:voltmiraenergy@gmail.com" style={{ color: "#1E6B4E", textDecoration: "none", fontWeight: 500 }}>voltmiraenergy@gmail.com</a>
         </div>
       </footer>

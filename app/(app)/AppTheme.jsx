@@ -91,6 +91,30 @@ const CSS = `
   }
   .avatar.sm{width:30px;height:30px;font-size:12px}
   .avatar.green{background:var(--green-tint);color:var(--green)}
+
+  /* Initials tile for projects and clients (lib/Avatar.jsx). Square-ish, to
+     stay visually distinct from the round .avatar that means "a person".
+     Eight tones, picked from the name so a list reads as distinct rows. */
+  .av-sq{
+    flex:none;display:grid;place-items:center;
+    font-family:var(--font-d);font-weight:700;letter-spacing:.01em;
+    color:#fff;line-height:1;user-select:none;
+  }
+  .av-c0{background:#2F6FB3}
+  .av-c1{background:#C9781E}
+  .av-c2{background:#6B54C6}
+  .av-c3{background:#C4543B}
+  .av-c4{background:#2E8C6A}
+  .av-c5{background:#B0417E}
+  .av-c6{background:#3E7D8C}
+  .av-c7{background:#8A6D2F}
+  .av-c8{background:#4E6BA8}
+  .av-c9{background:#A0552B}
+  html[data-theme="dark"] .av-sq{color:#F2F5F0}
+
+  /* project/client row: tile + the existing title/sub stack */
+  .row-id{display:flex;align-items:center;gap:11px;min-width:0}
+  .row-id .row-id-tx{min-width:0}
   .profile .who{line-height:1.3;min-width:0}
   .profile .who b{display:block;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .profile .who span{font-size:11.5px;color:var(--white-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
@@ -259,6 +283,15 @@ const CSS = `
   .app input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--amber);border:3px solid var(--paper-2);box-shadow:0 0 0 1px var(--amber),0 2px 8px rgba(20,42,33,.25);cursor:grab}
   .app input[type=range]::-moz-range-progress{height:6px;border-radius:99px;background:var(--amber)}
 
+  /* A slider alone can't hit an exact value once its range is wide — pair it
+     with a plain number box wherever precision matters. */
+  .slider-row{display:flex;align-items:center;gap:10px}
+  .slider-row input[type=range]{flex:1;min-width:0}
+  .slider-num{width:78px;flex:none;text-align:right;font-variant-numeric:tabular-nums;
+    padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--paper-2);
+    color:var(--ink);font-size:13px}
+  .slider-num:focus{outline:2px solid var(--amber);outline-offset:1px}
+
   .check{
     display:flex;align-items:center;gap:12px;cursor:pointer;
     background:var(--paper-2);border:1px solid var(--line);
@@ -273,6 +306,15 @@ const CSS = `
   .check input:focus-visible + .toggle-pill{outline:2px solid var(--amber);outline-offset:2px}
   .check .txt{font-size:13.5px;font-weight:500;line-height:1.35}
   .check .txt small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+
+  /* A 2-way segmented choice — e.g. grid-tied vs hybrid system type — where a
+     toggle switch undersells the fact that these are two distinct options,
+     not an on/off modifier. */
+  .seg2{display:flex;border:1px solid var(--line);border-radius:11px;padding:3px;gap:3px;margin-top:10px;background:var(--paper)}
+  .seg2 button{flex:1;padding:9px 10px;border:none;border-radius:8px;background:none;color:var(--muted);
+    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
+  .seg2 button:hover{color:var(--ink)}
+  .seg2 button.on{background:var(--green);color:#fff}
 
   /* Tables */
   .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -318,14 +360,6 @@ const CSS = `
   .tbl .col-sel input{width:15px;height:15px;accent-color:var(--green);cursor:pointer;vertical-align:middle}
 
   /* Dashboard "Needs follow-up" strip */
-  .followup-strip{background:var(--amber-tint);border:1px solid rgba(232,155,45,.4);border-radius:var(--radius);padding:16px 18px;margin-bottom:18px}
-  .followup-strip h3{color:#8A5A0F;margin:0 0 3px;font-size:13px;text-transform:uppercase;letter-spacing:.07em}
-  .fu-sub{font-size:13px;color:#8A5A0F;opacity:.92;margin-bottom:10px}
-  .fu-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid rgba(232,155,45,.28)}
-  .fu-row .fu-who{flex:1;min-width:0}
-  .fu-row .fu-who b{display:block;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .fu-row .fu-who span{font-size:12px;color:#8A5A0F}
-  .fu-row .fu-age{font-size:12px;font-weight:700;color:var(--red);white-space:nowrap}
 
   /* KPI strip */
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px}
@@ -353,6 +387,21 @@ const CSS = `
   .band .yrs small{font-size:12.5px;font-weight:500;color:var(--muted)}
   .band .roi{font-size:12px;color:var(--muted);margin-top:6px}
   .band .roi b{color:var(--ink)}
+
+  /* yield calibration measured from the installed base */
+  .cal-note{margin-top:10px;padding:11px 13px;background:var(--green-tint);border-radius:10px}
+  .cal-note .cal-h{font-size:12.5px;font-weight:600;color:var(--green);line-height:1.45}
+  .cal-note .cal-s{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.45}
+
+  /* NPV / IRR / LCOE, under the payback bands */
+  .fin-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:16px}
+  .fin-metrics .fm{background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+  .fin-metrics .fm b{display:block;font-family:var(--font-d);font-size:18px;font-weight:700;letter-spacing:-.01em;
+    font-variant-numeric:tabular-nums;color:var(--ink)}
+  .fin-metrics .fm span{display:block;margin-top:2px;font-size:10.5px;color:var(--muted);line-height:1.35}
+  .disc-row{display:block;margin-top:12px;font-size:12px;font-weight:600;color:var(--muted)}
+  .disc-row output{color:var(--green);font-family:var(--font-d);font-weight:700;margin-left:6px}
+  .disc-row input[type=range]{margin-top:6px}
 
   /* Chart legend + trend legend */
   .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;color:var(--muted);margin-top:8px}
@@ -388,6 +437,7 @@ const CSS = `
   .proj-title:hover{border-color:var(--line)}
   .proj-title:focus{border-color:var(--green);background:var(--paper-2);outline:none}
   .pvgis-data{margin-top:9px;padding:9px 12px;border:1px solid var(--green);background:var(--green-tint);border-radius:10px;font-size:12.5px;color:var(--muted);text-align:center}
+  .pvgis-src{margin-top:4px;font-size:10.5px;color:var(--muted);opacity:.8}
   .pvgis-data .pvg-k{font-family:var(--font-d);font-weight:700;color:var(--green);font-size:15px}
   /* Headline figures sit in one tight row. They used to be gap:24px with a
      flex spacer pushing the donut to the far edge, which opened a dead band
@@ -450,6 +500,7 @@ const CSS = `
   .modal p.sub{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5}
   .link-row{display:flex;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:5px 5px 5px 13px;align-items:center;margin-bottom:16px}
   .link-row code{font-family:var(--font-d);font-size:13px;color:var(--green);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prop-refresh-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-6px 0 16px}
   .modal-acts{display:flex;gap:9px;flex-wrap:wrap}
   .modal-acts .btn{flex:1}
 
@@ -470,6 +521,62 @@ const CSS = `
   .dash-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;align-items:start}
   .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
   .filters .input{width:220px}
+
+  /* ---------------- Leads tab ---------------- */
+  .lead-card{position:relative;background:var(--paper-2);border:1px solid var(--line);border-radius:16px;
+    padding:15px 17px;transition:border-color .2s,box-shadow .2s}
+  .lead-card:hover{border-color:#CBC7B6}
+  .lead-card.editing{border-color:var(--green);box-shadow:0 0 0 3px var(--green-tint)}
+  html[data-theme="dark"] .lead-card:hover{border-color:#39443B}
+
+  .lead-top{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
+  .lead-main{flex:1 1 260px;min-width:0}
+  .lead-name-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .lead-name{font-family:var(--font-d);font-weight:700;font-size:16px;color:var(--ink);letter-spacing:-.01em}
+  .lead-hot{width:7px;height:7px;border-radius:50%;background:var(--red);flex:none;box-shadow:0 0 0 3px rgba(196,84,59,.18)}
+  .lead-status{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border-radius:99px;padding:3px 9px;white-space:nowrap}
+
+  /* origin (read-only, the app knows it) + marketing channel (installer sets it) */
+  .lead-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px}
+  .lead-src{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--ink-soft);
+    background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:4px 9px 4px 8px;white-space:nowrap}
+  .lead-src svg{width:13px;height:13px;flex:none;opacity:.72}
+  .lead-chan{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:8px;
+    padding:3px 8px 3px 9px;background:var(--paper);position:relative}
+  .lead-chan-dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .lead-chan select{appearance:none;-webkit-appearance:none;-moz-appearance:none;border:none;background:transparent;
+    color:var(--ink);font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;padding-right:14px;outline:none}
+  .lead-chan .caret{position:absolute;right:8px;font-size:9px;color:var(--muted);pointer-events:none}
+
+  .lead-contact{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:13.5px}
+  .lead-contact a{color:var(--green);text-decoration:none;font-weight:500}
+  .lead-contact a:hover{text-decoration:underline;text-underline-offset:2px}
+  .lead-contact .none{color:var(--muted)}
+  .lead-address{margin-top:8px;font-size:12.5px;color:var(--muted);line-height:1.4}
+  .lead-note{margin-top:10px;font-size:13px;color:var(--ink-soft);line-height:1.55;
+    padding:8px 12px;background:var(--paper);border-radius:9px;border-left:2px solid var(--amber)}
+
+  .lead-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex:none}
+  .lead-time{font-size:11.5px;color:var(--muted);font-family:var(--font-m,monospace);white-space:nowrap}
+
+  /* Smooth expanding editor: grid-template-rows 0fr->1fr animates height without
+     a fixed pixel value, so the drawer opens cleanly whatever it contains. */
+  .lead-editor{display:grid;grid-template-rows:0fr;opacity:0;margin-top:0;
+    transition:grid-template-rows .34s cubic-bezier(.22,.9,.28,1),opacity .24s ease,margin-top .34s cubic-bezier(.22,.9,.28,1)}
+  .lead-editor-inner{overflow:hidden;min-height:0}
+  .lead-card.editing .lead-editor{grid-template-rows:1fr;opacity:1;margin-top:14px}
+  .lead-ed-fields{display:flex;flex-wrap:wrap;gap:8px;padding-top:14px;border-top:1px dashed var(--line)}
+  .lead-ed-input{padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;
+    font-family:inherit;color:var(--ink);background:var(--paper);min-width:0;
+    transition:border-color .2s,box-shadow .2s}
+  .lead-ed-input::placeholder{color:#A9B1AA}
+  .lead-ed-input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-tint);outline:none}
+  .lead-ed-actions{display:flex;gap:8px;align-items:center;margin-left:auto}
+  @media (prefers-reduced-motion:reduce){ .lead-editor{transition:opacity .12s} }
+  @media (max-width:640px){
+    .lead-side{flex-direction:row;align-items:center;width:100%;justify-content:space-between}
+    .lead-ed-actions{margin-left:0;width:100%;justify-content:flex-end}
+  }
   .fchip{font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:99px;background:var(--paper-2);border:1px solid var(--line);color:var(--muted);text-decoration:none;transition:all .15s}
   .fchip:hover{border-color:var(--green);color:var(--green)}
   .fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
@@ -497,7 +604,7 @@ const CSS = `
   }
   @media(max-width:520px){.team-hero{grid-template-columns:minmax(0,1fr)}.th-item{border-left:none}}
 
-  .team-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;align-items:start}
+  .team-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;align-items:start}
   /* minmax(0,1fr), not 1fr: a bare 1fr is minmax(auto,1fr), so one long
      unbreakable string (a member email) sets the track min-content and pushes
      every card past the viewport. At 375px this blew the cards out to 469px. */
@@ -614,7 +721,6 @@ const CSS = `
     .app .fchip{min-height:38px}
     .app .member{padding-top:16px;padding-bottom:16px}
     /* Onboarding + follow-up rows are links, not buttons — give them real height */
-    .app .followup-strip .fu-row .btn{min-height:40px}
     .app .ob-step{min-height:44px}
     .app .tr-tab{min-height:40px;min-width:44px}
     .app .role-opt{min-height:42px}
@@ -624,11 +730,19 @@ const CSS = `
     .app{grid-template-columns:1fr}
     .input,.proj-title{font-size:16px}
     /* Bottom nav (option A): a tidy single row of the 4 primary tabs + a "More"
-       button that opens a bottom sheet with the rest. No cramming 9 tabs. */
+       button that opens a bottom sheet with the rest. No cramming 9 tabs.
+       --mnav-h is the bar's own content height (icons+labels+its padding,
+       measured, not counting the home-indicator inset) — a couple of extra
+       px above the raw measurement so the row sits with a little breathing
+       room instead of pressed right against the inset. Anything that needs
+       to clear the bar (the page's own bottom padding, a toast) adds
+       env(safe-area-inset-bottom) to this same number rather than guessing
+       at a second, easily-stale constant. */
+    :root{--mnav-h:66px}
     .sidebar{
       position:fixed;inset:auto 0 0 0;height:auto;z-index:60;
       flex-direction:row;align-items:stretch;
-      padding:6px 6px env(safe-area-inset-bottom);
+      padding:8px 6px calc(env(safe-area-inset-bottom) + 8px);
       border-top:1px solid rgba(255,255,255,.14);
     }
     .logo,.side-foot{display:none}
@@ -667,9 +781,12 @@ const CSS = `
     .more-sheet .side-theme,.more-sheet .reset-link{display:flex;align-items:center;gap:14px;width:100%;justify-content:flex-start;text-align:left;padding:14px;border-radius:11px;background:none;border:none;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--white-dim)}
     .more-sheet .side-theme svg{width:20px;height:20px;flex:none;opacity:.9}
     .more-sheet .reset-link{color:#E88E7A}
-    .view{padding:18px 16px 92px}
+    .view{padding:18px 16px calc(var(--mnav-h) + env(safe-area-inset-bottom) + 20px)}
     .filters .input{width:100%}
     .proj-title{width:170px;font-size:18px}
+    /* Otherwise a save/copy toast lands behind the bottom nav instead of
+       above it — the one other fixed-bottom element on the page. */
+    .toast{bottom:calc(var(--mnav-h) + env(safe-area-inset-bottom) + 14px)}
   }
 `;
 

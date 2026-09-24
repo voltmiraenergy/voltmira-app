@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoltMira — Solar quotes your clients can fact-check</title>
+<meta name="description" content="Solar quoting software for installers: honest three-band payback from real PVGIS data, tracked proposals with open alerts, WhatsApp sharing, one-tap acceptance and a full pipeline. Free trial. Romania &amp; Moldova.">
+<meta name="author" content="Bogdan Toctarov">
+<meta name="keywords" content="solar quoting software, solar installer software, PV payback calculator, PVGIS, tracked solar proposal, Casa Verde subsidy, net metering Romania, net billing Moldova, VoltMira, Bogdan Toctarov">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#142A21">
+<script>(function(){try{var t=localStorage.getItem("voltmira_theme");if(t!=="dark"&&t!=="light"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0F1310":"#142A21");}catch(e){}})();</script>
+
+<!-- Canonical + language alternates -->
+<link rel="canonical" href="https://voltmira.com/">
+<link rel="alternate" hreflang="en" href="https://voltmira.com/">
+<link rel="alternate" hreflang="ro" href="https://voltmira.com/ro">
+<link rel="alternate" hreflang="ru" href="https://voltmira.com/ru">
+<link rel="alternate" hreflang="x-default" href="https://voltmira.com/">
+
+<!-- Social sharing -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="VoltMira">
+<meta property="og:url" content="https://voltmira.com/">
+<meta property="og:title" content="VoltMira — Solar quotes your clients can fact-check">
+<meta property="og:description" content="Three honest payback scenarios from real PVGIS data, tracked proposal links with open alerts, WhatsApp sharing and one-tap client acceptance. Free trial for solar installers in Romania and Moldova.">
+<meta property="og:image" content="https://voltmira.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="VoltMira — solar quotes your clients can fact-check">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ro_RO">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="VoltMira — Solar quotes your clients can fact-check">
+<meta name="twitter:description" content="Three honest payback scenarios from real PVGIS data, tracked proposals with open alerts, WhatsApp sharing and one-tap acceptance. Free trial for solar installers.">
+<meta name="twitter:image" content="https://voltmira.com/og.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+<!-- Structured data: product + FAQ rich results -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"VoltMira","applicationCategory":"BusinessApplication","operatingSystem":"Web","description":"Solar quoting software for installers: three honest payback scenarios from real PVGIS data, tracked proposals with open alerts and one-tap client acceptance.","offers":{"@type":"Offer","price":"49","priceCurrency":"EUR"},"areaServed":["RO","MD"]}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Where do the solar numbers come from?","acceptedAnswer":{"@type":"Answer","text":"Yearly and monthly yield come from PVGIS, the European Commission's satellite-derived solar database, for the exact coordinates of the roof. Tariff schemes are applied automatically per market. Every assumption is printed on the proposal."}},
+{"@type":"Question","name":"Why show a pessimistic number? Won't it scare clients?","acceptedAnswer":{"@type":"Answer","text":"The opposite, in practice. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself."}},
+{"@type":"Question","name":"Does it work for Moldova's net billing?","acceptedAnswer":{"@type":"Answer","text":"Yes. Moldova's low export price makes self-consumption the whole game, so the engine models it month by month and values battery storage correctly."}},
+{"@type":"Question","name":"What does a tracked proposal mean for my client's privacy?","acceptedAnswer":{"@type":"Answer","text":"The link records opens, time on page, and interactions with the quote itself — nothing else. No ad trackers, no profiling, EU-hosted."}}
+]}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Organization","name":"VoltMira","url":"https://voltmira.com/","logo":"https://voltmira.com/og.png","founder":{"@type":"Person","name":"Bogdan Toctarov"}}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"VoltMira","url":"https://voltmira.com/","inLanguage":["en","ro","ru"]}
+</script>
+<link rel="sitemap" type="application/xml" href="/sitemap.xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+<!-- Vercel Analytics — this page is raw HTML outside the React layout, so the script is included directly -->
+<script defer src="/_vercel/insights/script.js"></script>
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 34"><rect width="34" height="34" rx="8" fill="%23142A21"/><path d="M8 26 L14 12" stroke="%23C4543B" stroke-width="3.2" stroke-linecap="round"/><path d="M14.5 26 L20.5 8" stroke="%23E89B2D" stroke-width="3.2" stroke-linecap="round"/><path d="M21 26 L27 5.5" stroke="%233FAE6A" stroke-width="3.2" stroke-linecap="round"/></svg>'>
+<style>
+/* ============================================================
+   VoltMira v3 — "Precision Instrument"
+   Design thesis: the category (Aurora, OpenSolar, Solargraf) is
+   uniformly cold blue-on-white SaaS. VoltMira's warm ink/amber/
+   three-band palette is already the differentiator — so this
+   redesign amplifies it rather than swapping it for the same
+   template everyone else uses. The three scenario colours are
+   treated as a real brand system, not decoration: they carry
+   meaning (pessimistic / expected / optimistic) everywhere they
+   appear, which is the product's entire argument.
+   ============================================================ */
+
+:root{
+  --ink:#0E1A14; --ink-soft:#2C4136; --muted:#6B7C72;
+  --paper:#FAF8F2; --paper-2:#F2EFE5; --surface:#FFFFFF;
+  --line:#E4E0D3; --line-soft:#EFEBE0;
+  --amber:#E89B2D; --amber-deep:#C87D14; --amber-tint:#FDF3E0;
+  --green:#1E6B4E; --green-bright:#3FAE6A; --green-tint:#E6F1EA;
+  --terra:#C4543B;
+  --shadow-sm:0 1px 2px rgba(14,26,20,.05), 0 2px 8px rgba(14,26,20,.04);
+  --shadow-md:0 4px 12px rgba(14,26,20,.07), 0 12px 32px rgba(14,26,20,.06);
+  --shadow-lg:0 12px 28px rgba(14,26,20,.10), 0 32px 72px rgba(14,26,20,.10);
+  --glass:rgba(255,255,255,.72);
+  --font-d:'Inter Tight',Inter,system-ui,sans-serif;
+  --font-b:Inter,system-ui,-apple-system,sans-serif;
+  --r-sm:10px; --r:16px; --r-lg:22px; --r-xl:30px;
+  --wrap:1200px;
+}
+html[data-theme="dark"]{
+  --ink:#ECF2ED; --ink-soft:#BFCCC3; --muted:#8B9C91;
+  --paper:#0B1310; --paper-2:#101A15; --surface:#131F19;
+  --line:#22322A; --line-soft:#1A2721;
+  --amber-tint:rgba(232,155,45,.14); --green-tint:rgba(63,174,106,.13);
+  --glass:rgba(19,31,25,.72);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+  --shadow-md:0 4px 14px rgba(0,0,0,.45);
+  --shadow-lg:0 16px 40px rgba(0,0,0,.55), 0 40px 90px rgba(0,0,0,.4);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--font-b);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+img{max-width:100%;display:block}
+a{color:inherit}
+/* padding-inline, never the shorthand: .break-grid is also a .wrap, and a
+   `padding: 0 24px` here silently zeroed that card's vertical padding. */
+.wrap{max-width:var(--wrap);margin:0 auto;padding-inline:24px}
+h1,h2,h3,h4{font-family:var(--font-d);font-weight:800;letter-spacing:-.035em;line-height:1.02;margin:0}
+.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:2.5px solid var(--amber);outline-offset:3px;border-radius:6px}
+
+/* ---------- ambient aurora field (the signature background) ---------- */
+.aura{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.aura i{position:absolute;display:block;border-radius:50%;filter:blur(90px);opacity:.34}
+.aura .a1{width:52vw;height:52vw;left:-14vw;top:-16vw;background:radial-gradient(circle,#E89B2D,transparent 68%);animation:drift1 26s ease-in-out infinite}
+.aura .a2{width:46vw;height:46vw;right:-12vw;top:6vh;background:radial-gradient(circle,#3FAE6A,transparent 68%);animation:drift2 32s ease-in-out infinite}
+.aura .a3{width:38vw;height:38vw;left:34vw;top:54vh;background:radial-gradient(circle,#C4543B,transparent 70%);opacity:.2;animation:drift3 38s ease-in-out infinite}
+html[data-theme="dark"] .aura i{opacity:.26}
+@keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(7vw,5vh) scale(1.12)}}
+@keyframes drift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-6vw,8vh) scale(1.08)}}
+@keyframes drift3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(4vw,-6vh) scale(1.15)}}
+main,nav,footer,header,section{position:relative;z-index:1}
+
+/* ---------- scroll progress ---------- */
+.scroll-progress{position:fixed;top:0;left:0;right:0;height:2.5px;z-index:120;background:transparent}
+.scroll-progress i{display:block;height:100%;width:0;
+  background:linear-gradient(90deg,var(--terra),var(--amber) 48%,var(--green-bright));
+  box-shadow:0 0 14px rgba(232,155,45,.5);transition:width .1s linear}
+
+/* ---------- nav ---------- */
+.nav{position:sticky;top:0;z-index:100;padding:14px 0;
+  transition:background .3s, box-shadow .3s, padding .3s, backdrop-filter .3s}
+.nav.scrolled{padding:9px 0;background:var(--glass);backdrop-filter:blur(18px) saturate(1.6);
+  -webkit-backdrop-filter:blur(18px) saturate(1.6);box-shadow:0 1px 0 var(--line),0 8px 30px rgba(14,26,20,.06)}
+.nav-in{display:flex;align-items:center;gap:10px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--font-d);
+  font-weight:800;font-size:21px;letter-spacing:-.03em;margin-right:6px}
+.logo svg{flex:none;transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
+.logo:hover svg{transform:rotate(-8deg) scale(1.08)}
+.logo b{font-weight:800}
+.logo span span{color:var(--green-bright)}
+.nav-links{display:flex;gap:4px;margin-left:14px}
+/* nowrap: Russian labels ("Отслеживаемые предложения") otherwise break mid-item
+   and push the bar to two rows. The mid-width step below buys back the room. */
+.nav-links a{position:relative;white-space:nowrap;text-decoration:none;color:var(--ink-soft);
+  font-size:14.5px;font-weight:500;padding:8px 13px;border-radius:9px;transition:color .2s,background .2s}
+.nav-links a::after{content:"";position:absolute;left:13px;right:13px;bottom:4px;height:1.5px;
+  background:var(--amber);transform:scaleX(0);transform-origin:left;transition:transform .28s cubic-bezier(.4,0,.2,1)}
+.nav-links a:hover{color:var(--ink)}
+.nav-links a:hover::after{transform:scaleX(1)}
+/* flex:none on every bar item. Without it the browser shrinks them to fit and
+   the CTA collapsed to a 34px sliver with its label clipped around 800px. */
+.logo,.nav-signin,.lang,.theme-toggle,.nav-in>.btn{flex:none}
+.nav-links{min-width:0}
+.nav-signin{margin-left:auto;white-space:nowrap;text-decoration:none;color:var(--ink-soft);
+  font-size:14.5px;font-weight:600;padding:8px 12px;border-radius:9px;transition:color .2s,background .2s}
+.nav-signin:hover{color:var(--ink);background:var(--paper-2)}
+
+/* language picker */
+.lang{position:relative}
+.lang-btn{display:flex;align-items:center;gap:7px;background:none;border:1px solid var(--line);
+  border-radius:10px;padding:6px 9px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;
+  color:var(--ink-soft);transition:border-color .2s,background .2s,transform .2s}
+.lang-btn:hover{border-color:var(--amber);background:var(--amber-tint);transform:translateY(-1px)}
+.lf{width:19px;height:13.5px;border-radius:2.5px;display:block;box-shadow:0 0 0 1px rgba(0,0,0,.09)}
+.lang-chev{width:13px;height:13px;transition:transform .28s}
+.lang.open .lang-chev{transform:rotate(180deg)}
+.lang-menu{position:absolute;top:calc(100% + 9px);right:0;min-width:186px;background:var(--surface);
+  border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);padding:6px;
+  opacity:0;visibility:hidden;transform:translateY(-8px) scale(.97);transition:all .24s cubic-bezier(.34,1.3,.64,1);z-index:60}
+.lang.open .lang-menu{opacity:1;visibility:visible;transform:none}
+.lang-opt{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;
+  padding:9px 11px;border-radius:9px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;
+  color:var(--ink);text-align:left;transition:background .16s}
+.lang-opt:hover{background:var(--paper-2)}
+.lang-opt span{flex:1}
+.lang-tick{width:15px;height:15px;color:var(--green-bright);opacity:0}
+.lang-opt[aria-selected="true"] .lang-tick{opacity:1}
+.lang-opt[aria-selected="true"]{font-weight:700}
+
+.theme-toggle{display:grid;place-items:center;width:37px;height:37px;border-radius:10px;
+  border:1px solid var(--line);background:none;cursor:pointer;color:var(--ink-soft);
+  transition:border-color .2s,color .2s,transform .3s}
+.theme-toggle:hover{border-color:var(--amber);color:var(--amber);transform:rotate(18deg)}
+.theme-toggle svg{width:17px;height:17px}
+.ic-sun{display:none}
+html[data-theme="dark"] .ic-sun{display:block}
+html[data-theme="dark"] .ic-moon{display:none}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  padding:12px 22px;border-radius:12px;border:1px solid transparent;
+  font-family:inherit;font-size:14.5px;font-weight:700;text-decoration:none;cursor:pointer;
+  transition:transform .22s cubic-bezier(.34,1.4,.64,1), box-shadow .22s, background .2s, border-color .2s;
+  position:relative;overflow:hidden;white-space:nowrap}
+.btn::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.28),transparent 70%);
+  transform:translateX(-120%);transition:transform .6s}
+.btn:hover::before{transform:translateX(120%)}
+.btn-sm{padding:9px 16px;font-size:13.5px;border-radius:10px}
+.btn-lg{padding:15px 28px;font-size:15.5px;border-radius:14px}
+.btn-primary{background:var(--ink);color:#fff;box-shadow:var(--shadow-md)}
+.btn-primary:hover{transform:translateY(-2.5px);box-shadow:var(--shadow-lg)}
+html[data-theme="dark"] .btn-primary{background:#EDF3EE;color:#0B1310}
+.btn-amber{background:linear-gradient(135deg,var(--amber),var(--amber-deep));color:#231402;
+  box-shadow:0 4px 14px rgba(232,155,45,.34)}
+.btn-amber:hover{transform:translateY(-2.5px);box-shadow:0 10px 30px rgba(232,155,45,.46)}
+.btn-ghost{border-color:var(--line);color:var(--ink);background:var(--surface)}
+.btn-ghost:hover{border-color:var(--ink);transform:translateY(-2.5px);box-shadow:var(--shadow-md)}
+
+/* ---------- reveal ---------- */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .75s cubic-bezier(.2,.7,.3,1),transform .75s cubic-bezier(.2,.7,.3,1)}
+.rv.in{opacity:1;transform:none}
+.rv-group>.rv:nth-child(2){transition-delay:.11s}
+.rv-group>.rv:nth-child(3){transition-delay:.22s}
+.rv-group>.rv:nth-child(4){transition-delay:.33s}
+@media(prefers-reduced-motion:reduce){
+  .rv{opacity:1;transform:none;transition:none}
+  .aura i{animation:none}
+  html{scroll-behavior:auto}
+}
+
+/* ---------- hero ---------- */
+.hero{padding:62px 0 74px}
+.hero-grid{display:grid;grid-template-columns:1.06fr .94fr;gap:56px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;padding:6px 14px 6px 7px;border-radius:99px;
+  background:var(--surface);border:1px solid var(--line);font-size:12.5px;font-weight:700;
+  color:var(--ink-soft);letter-spacing:.01em;margin-bottom:22px;box-shadow:var(--shadow-sm)}
+.eyebrow .pip{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:99px;
+  background:var(--green-tint);color:var(--green);font-size:11px;font-weight:800}
+.eyebrow .pip::after{content:"";width:7px;height:7px;border-radius:99px;background:var(--green-bright);
+  box-shadow:0 0 0 0 rgba(63,174,106,.6);animation:pulse 2.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(63,174,106,.55)}70%{box-shadow:0 0 0 9px rgba(63,174,106,0)}100%{box-shadow:0 0 0 0 rgba(63,174,106,0)}}
+
+.hh{font-size:clamp(42px,6.2vw,78px);letter-spacing:-.045em;line-height:.98;margin-bottom:24px;text-wrap:balance}
+.hh .hl{position:relative;display:inline-block;
+  background:linear-gradient(100deg,var(--amber-deep),var(--amber) 42%,var(--green-bright));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  background-size:220% 100%;animation:shimmer 7s ease-in-out infinite}
+@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hh .hl svg{position:absolute;left:0;right:0;bottom:-.14em;width:100%;height:.3em;overflow:visible}
+.hh .hl svg path{fill:none;stroke:var(--amber);stroke-width:5;stroke-linecap:round;
+  stroke-dasharray:420;stroke-dashoffset:420;animation:draw 1.5s .7s cubic-bezier(.4,0,.2,1) forwards;opacity:.85}
+@keyframes draw{to{stroke-dashoffset:0}}
+.lead{font-size:18.5px;line-height:1.62;color:var(--ink-soft);max-width:52ch;margin:0 0 30px}
+.lead b{color:var(--ink);font-weight:700}
+.hero-cta-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.wl-note{font-size:13px;color:var(--muted);margin:20px 0 0;display:flex;align-items:center;gap:8px}
+.wl-note::before{content:"";width:6px;height:6px;border-radius:99px;background:var(--green-bright);flex:none}
+
+/* hero visual: photo + floating glass proposal card */
+.hero-visual{position:relative;perspective:1400px}
+.hero-photo{position:relative;border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-lg);
+  aspect-ratio:4/3.1;transform:rotateY(-5deg) rotateX(2deg);transition:transform .8s cubic-bezier(.2,.7,.3,1)}
+.hero-visual:hover .hero-photo{transform:rotateY(-2deg) rotateX(1deg)}
+.hero-photo img{width:100%;height:100%;object-fit:cover;transform:scale(1.08);will-change:transform}
+.hero-photo::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(190deg,transparent 40%,rgba(11,19,16,.55))}
+.hero-photo .cap{position:absolute;left:18px;bottom:16px;z-index:2;color:#fff;font-size:12.5px;
+  font-weight:600;letter-spacing:.02em;text-shadow:0 2px 10px rgba(0,0,0,.5);display:flex;align-items:center;gap:7px}
+.hero-photo .cap::before{content:"";width:6px;height:6px;border-radius:99px;background:var(--amber)}
+
+.tprop{position:absolute;right:-16px;bottom:-34px;width:min(310px,84%);
+  background:var(--glass);backdrop-filter:blur(22px) saturate(1.7);-webkit-backdrop-filter:blur(22px) saturate(1.7);
+  border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;box-shadow:var(--shadow-lg);
+  animation:float 7s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-11px)}}
+.tp-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:11px}
+.tp-from{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--ink)}
+.tp-badge{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:99px;
+  background:var(--green-tint);color:var(--green);letter-spacing:.02em}
+.tp-client{font-family:var(--font-d);font-weight:700;font-size:15px;letter-spacing:-.02em;margin-bottom:2px}
+.tp-sub{font-size:12px;color:var(--muted);margin-bottom:13px}
+.tp-h{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.tp-bands{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:13px}
+.tp-band{border-radius:11px;padding:9px 7px;text-align:center;border:1px solid var(--line-soft)}
+.tp-band span{display:block;font-size:9.5px;font-weight:700;color:var(--muted);margin-bottom:3px}
+.tp-band b{font-family:var(--font-d);font-size:19px;letter-spacing:-.03em}
+.tp-band.p{background:rgba(196,84,59,.09)}.tp-band.p b{color:var(--terra)}
+.tp-band.e{background:rgba(232,155,45,.13)}.tp-band.e b{color:var(--amber-deep)}
+.tp-band.o{background:rgba(63,174,106,.11)}.tp-band.o b{color:var(--green)}
+.tp-accept{text-align:center;padding:10px;border-radius:11px;background:var(--ink);color:#fff;
+  font-size:12.5px;font-weight:700}
+html[data-theme="dark"] .tp-accept{background:#EDF3EE;color:#0B1310}
+
+/* ---------- trust marquee ---------- */
+.stat-strip{padding:8px 0 2px;overflow:hidden;
+  border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);background:var(--paper-2)}
+.marquee{display:flex;overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent)}
+.marquee-track{display:flex;gap:0;flex:none;animation:slide 46s linear infinite}
+.stat-strip:hover .marquee-track{animation-play-state:paused}
+@keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.stat{flex:none;display:flex;flex-direction:column;gap:2px;padding:18px 34px;border-right:1px solid var(--line-soft);min-width:272px}
+.stat b{font-family:var(--font-d);font-size:17px;letter-spacing:-.025em;color:var(--ink)}
+.stat span{font-size:12.5px;color:var(--muted);line-height:1.45}
+
+/* ---------- section shell ---------- */
+section{padding:92px 0}
+.sec-h{font-size:clamp(30px,4.1vw,50px);margin-bottom:18px;text-wrap:balance}
+.sec-lead{font-size:17.5px;color:var(--ink-soft);max-width:62ch;line-height:1.62;margin:0 0 42px}
+.sec-tag{display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--amber-deep);margin-bottom:14px}
+
+/* ---------- how it works ---------- */
+.hiw-grid{display:grid;grid-template-columns:.92fr 1.08fr;gap:52px;align-items:center}
+.hiw-photo{border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-lg);aspect-ratio:4/4.4}
+.hiw-photo img{width:100%;height:100%;object-fit:cover;transition:transform 1.1s cubic-bezier(.2,.7,.3,1)}
+.hiw-photo:hover img{transform:scale(1.06)}
+.hiw-steps{display:flex;flex-direction:column;gap:12px;position:relative}
+.hiw-step{display:flex;gap:20px;padding:22px;border-radius:var(--r-lg);border:1px solid transparent;
+  transition:border-color .3s,background .3s,transform .3s}
+.hiw-step:hover{border-color:var(--line);background:var(--surface);transform:translateX(6px);box-shadow:var(--shadow-sm)}
+.hiw-n{flex:none;font-family:var(--font-d);font-size:13px;font-weight:800;color:var(--amber-deep);
+  width:40px;height:40px;display:grid;place-items:center;border-radius:12px;
+  background:var(--amber-tint);border:1px solid rgba(232,155,45,.3)}
+.hiw-step h3{font-size:19.5px;margin-bottom:7px}
+.hiw-step p{margin:0;font-size:15px;color:var(--ink-soft);line-height:1.6}
+.hiw-step p b{color:var(--ink)}
+
+/* ---------- the three bands (signature) ---------- */
+.bands3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:26px}
+.bcard{position:relative;padding:30px 26px 28px;border-radius:var(--r-lg);background:var(--surface);
+  border:1px solid var(--line);overflow:hidden;transition:transform .4s cubic-bezier(.2,.7,.3,1),box-shadow .4s}
+.bcard::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;transform:scaleX(0);
+  transform-origin:left;transition:transform .9s cubic-bezier(.2,.7,.3,1)}
+.bcard.in::before{transform:scaleX(1)}
+.bcard.pess::before{background:var(--terra)}
+.bcard.expc::before{background:var(--amber)}
+.bcard.opti::before{background:var(--green-bright)}
+.bcard:hover{transform:translateY(-7px);box-shadow:var(--shadow-lg)}
+.bcard .tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  padding:5px 12px;border-radius:99px;margin-bottom:18px}
+.bcard.pess .tag{background:rgba(196,84,59,.11);color:var(--terra)}
+.bcard.expc .tag{background:var(--amber-tint);color:var(--amber-deep)}
+.bcard.opti .tag{background:var(--green-tint);color:var(--green)}
+.bcard .yrs{font-family:var(--font-d);font-size:52px;font-weight:800;letter-spacing:-.045em;
+  line-height:1;margin-bottom:14px;font-variant-numeric:tabular-nums}
+.bcard .yrs small{font-size:16px;font-weight:600;color:var(--muted);letter-spacing:-.01em}
+.bcard.pess .yrs b{color:var(--terra)}
+.bcard.expc .yrs b{color:var(--amber-deep)}
+.bcard.opti .yrs b{color:var(--green)}
+.bcard p{margin:0;font-size:14.5px;color:var(--ink-soft);line-height:1.62}
+.bcard p b{color:var(--ink)}
+
+.assump-strip{border-radius:var(--r-lg);border:1px dashed var(--line);padding:22px 26px;background:var(--paper-2)}
+.as-t{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+.as-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.as-kv{display:flex;flex-direction:column;gap:3px}
+.as-kv .k{font-size:12.5px;color:var(--muted)}
+.as-kv .v{font-family:var(--font-d);font-size:16px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+
+/* ---------- break / compare ---------- */
+.break-sec{padding:0}
+.break-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;
+  background:var(--ink);border-radius:var(--r-xl);padding:64px 56px;color:#EDF3EE;position:relative;overflow:hidden}
+html[data-theme="dark"] .break-grid{background:#09110D;border:1px solid var(--line)}
+.break-q{font-family:var(--font-d);font-size:clamp(26px,3.4vw,40px);font-weight:800;letter-spacing:-.035em;
+  line-height:1.1;margin:0 0 18px}
+.break-q em{font-style:normal;color:var(--amber)}
+.break-sub{font-size:16px;line-height:1.65;color:rgba(237,243,238,.72);margin:0 0 26px;max-width:46ch}
+.break-copy,.break-visual{position:relative;z-index:2}
+.break-visual{min-height:290px}
+/* Full-bleed inside the dark card, faded in from the left: scoped to the right
+   column instead, the texture ended on a hard vertical seam mid-card. */
+.bv-bg{position:absolute;inset:0;opacity:.16;overflow:hidden;z-index:0;border-radius:var(--r-xl);
+  mask-image:linear-gradient(90deg,transparent 22%,#000 62%);
+  -webkit-mask-image:linear-gradient(90deg,transparent 22%,#000 62%)}
+.bv-bg img{width:100%;height:100%;object-fit:cover}
+.mock-sheet,.mock-quote{position:absolute;border-radius:var(--r);box-shadow:var(--shadow-lg)}
+.mock-sheet{left:-4%;top:2%;width:66%;background:#F4F5F2;color:#333;padding:12px;font-size:11px;
+  transform:rotate(-4deg);transition:transform .6s cubic-bezier(.2,.7,.3,1);border:1px solid rgba(0,0,0,.08)}
+.break-visual:hover .mock-sheet{transform:rotate(-7deg) translateX(-10px) scale(.97)}
+.ms-title{font-weight:700;font-size:10.5px;color:#6a6a6a;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #ddd}
+.ms-row{display:grid;grid-template-columns:1.4fr .6fr .8fr;gap:6px;padding:4px 0;border-bottom:1px solid #eee}
+.ms-row.ms-h{font-weight:700;color:#888;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em}
+.ms-dim{opacity:.4}
+.mock-quote{right:-3%;bottom:-4%;width:58%;background:var(--surface);color:var(--ink);padding:15px;
+  transform:rotate(3deg);transition:transform .6s cubic-bezier(.2,.7,.3,1);border:1px solid var(--line);z-index:2}
+.break-visual:hover .mock-quote{transform:rotate(1deg) translateY(-8px) scale(1.03)}
+.mq-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.mq-badge{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--amber-deep)}
+.mq-open{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--green-tint);color:var(--green)}
+.mq-name{font-family:var(--font-d);font-weight:800;font-size:16px;letter-spacing:-.025em}
+.mq-sub{font-size:11.5px;color:var(--muted);margin-bottom:11px}
+.mq-bands{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:11px}
+.mq-b{border-radius:9px;padding:7px 4px;text-align:center}
+.mq-b span{display:block;font-size:8.5px;font-weight:700;color:var(--muted)}
+.mq-b b{font-family:var(--font-d);font-size:15px;letter-spacing:-.03em}
+.mq-b.p{background:rgba(196,84,59,.1)}.mq-b.p b{color:var(--terra)}
+.mq-b.e{background:rgba(232,155,45,.14)}.mq-b.e b{color:var(--amber-deep)}
+.mq-b.o{background:rgba(63,174,106,.12)}.mq-b.o b{color:var(--green)}
+.mq-accept{text-align:center;padding:8px;border-radius:9px;background:var(--green);color:#fff;font-size:11.5px;font-weight:700}
+
+/* ---------- tracking ---------- */
+.track-grid{display:grid;grid-template-columns:1fr .92fr;gap:56px;align-items:center}
+.feat-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:15px}
+.feat-list li{display:flex;gap:13px;font-size:15.5px;color:var(--ink-soft);line-height:1.58}
+.feat-list b{color:var(--ink)}
+.feat-list .dot{flex:none;width:23px;height:23px;border-radius:99px;background:var(--green-tint);
+  color:var(--green);display:grid;place-items:center;font-size:12px;font-weight:800;margin-top:1px}
+.feedbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:24px;box-shadow:var(--shadow-md)}
+.fb-t{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+  margin-bottom:16px;padding-bottom:13px;border-bottom:1px solid var(--line-soft)}
+.fev{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line-soft);font-size:13.5px}
+.fev:last-child{border-bottom:none}
+.fev .ic{flex:none;width:28px;height:28px;border-radius:9px;background:var(--paper-2);
+  display:grid;place-items:center;font-size:13px;color:var(--amber-deep)}
+.fev .ic.g{background:var(--green-tint);color:var(--green)}
+.fev .tx{flex:1;color:var(--ink-soft)}
+.fev .tx b{color:var(--ink);font-weight:600}
+.fev time{font-size:11.5px;color:var(--muted);flex:none;font-variant-numeric:tabular-nums}
+
+/* ---------- scale / bento ---------- */
+.scale-photo{border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-lg);margin-bottom:26px;aspect-ratio:21/7}
+.scale-photo img{width:100%;height:100%;object-fit:cover;transition:transform 1.2s cubic-bezier(.2,.7,.3,1)}
+.scale-photo:hover img{transform:scale(1.05)}
+.scale-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.scale-it{padding:26px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);
+  transition:transform .35s cubic-bezier(.2,.7,.3,1),box-shadow .35s,border-color .35s}
+.scale-it:hover{transform:translateY(-6px);box-shadow:var(--shadow-md);border-color:rgba(232,155,45,.5)}
+.scale-it h4{font-size:17px;margin-bottom:9px;display:flex;align-items:center;gap:10px}
+.scale-it h4 i{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;
+  background:var(--amber-tint);color:var(--amber-deep);flex:none}
+.scale-it p{margin:0;font-size:14.5px;color:var(--ink-soft);line-height:1.6}
+
+/* ---------- pricing ---------- */
+.prices{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start}
+.price{position:relative;padding:32px 28px;border-radius:var(--r-lg);background:var(--surface);
+  border:1px solid var(--line);transition:transform .38s cubic-bezier(.2,.7,.3,1),box-shadow .38s,border-color .38s}
+.price:hover{transform:translateY(-8px);box-shadow:var(--shadow-lg)}
+.price.hot{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber),var(--shadow-md)}
+.price.hot::after{content:"POPULAR";position:absolute;top:-10px;right:22px;font-size:10px;font-weight:800;
+  letter-spacing:.11em;padding:4px 11px;border-radius:99px;
+  background:linear-gradient(135deg,var(--amber),var(--amber-deep));color:#231402;box-shadow:0 3px 10px rgba(232,155,45,.4)}
+.price h3{font-size:20px;margin-bottom:12px}
+.price .amt{font-family:var(--font-d);font-size:44px;font-weight:800;letter-spacing:-.045em;
+  line-height:1;margin-bottom:6px;font-variant-numeric:tabular-nums}
+.price .amt small{font-size:15px;font-weight:600;color:var(--muted);letter-spacing:-.01em}
+.price .for{font-size:13.5px;color:var(--muted);margin-bottom:22px;padding-bottom:20px;border-bottom:1px solid var(--line-soft)}
+.price ul{list-style:none;padding:0;margin:0 0 26px;display:flex;flex-direction:column;gap:11px}
+.price li{position:relative;padding-left:25px;font-size:14.5px;color:var(--ink-soft);line-height:1.5}
+.price li::before{content:"";position:absolute;left:0;top:7px;width:14px;height:8px;
+  border-left:2.2px solid var(--green-bright);border-bottom:2.2px solid var(--green-bright);
+  transform:rotate(-45deg);border-radius:1px}
+.price .btn{width:100%}
+
+/* ---------- FAQ ---------- */
+.faq{max-width:840px;display:flex;flex-direction:column;gap:11px}
+.faq details{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  overflow:hidden;transition:border-color .25s,box-shadow .25s}
+.faq details[open]{border-color:rgba(232,155,45,.5);box-shadow:var(--shadow-sm)}
+.faq summary{list-style:none;cursor:pointer;padding:19px 22px;font-family:var(--font-d);font-weight:700;
+  font-size:16.5px;letter-spacing:-.02em;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .pl{flex:none;width:26px;height:26px;border-radius:8px;background:var(--paper-2);
+  display:grid;place-items:center;font-size:17px;font-weight:600;color:var(--amber-deep);
+  transition:transform .3s cubic-bezier(.34,1.4,.64,1),background .25s}
+.faq details[open] summary .pl{transform:rotate(45deg);background:var(--amber-tint)}
+.faq p{margin:0;padding:0 22px 21px;font-size:15px;color:var(--ink-soft);line-height:1.66;max-width:72ch}
+
+/* ---------- final CTA ---------- */
+.final-sec{padding:70px 0 96px}
+.final{position:relative;border-radius:var(--r-xl);background:var(--ink);color:#EDF3EE;
+  padding:70px 48px;text-align:center;overflow:hidden}
+html[data-theme="dark"] .final{background:#09110D;border:1px solid var(--line)}
+.final-glow{position:absolute;width:560px;height:560px;left:50%;top:-58%;transform:translateX(-50%);
+  background:radial-gradient(circle,rgba(232,155,45,.34),transparent 62%);filter:blur(28px);animation:glowPulse 9s ease-in-out infinite}
+@keyframes glowPulse{0%,100%{opacity:.75;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.14)}}
+.final-mark{position:absolute;right:-30px;bottom:-56px;width:270px;opacity:.11}
+.final-in{position:relative;z-index:2}
+.final h2{font-size:clamp(30px,4.4vw,52px);margin-bottom:16px;text-wrap:balance}
+.final p{font-size:17.5px;color:rgba(237,243,238,.76);margin:0 auto 30px;max-width:48ch}
+.final .hero-cta-row{justify-content:center}
+.final-chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+.final-chips span{font-size:12.5px;font-weight:600;padding:7px 15px;border-radius:99px;
+  background:rgba(237,243,238,.09);border:1px solid rgba(237,243,238,.16);color:rgba(237,243,238,.82)}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line);padding:62px 0 34px;background:var(--paper-2)}
+.foot-grid{display:grid;grid-template-columns:1.35fr 1fr 1fr 1fr;gap:40px;padding-bottom:40px}
+.foot-brand p{font-size:13.5px;color:var(--muted);max-width:30ch;margin-top:12px;line-height:1.6}
+.foot-saasbrowser{display:inline-flex;margin-top:18px;border-radius:12px;transition:transform .25s}
+.foot-saasbrowser:hover{transform:translateY(-2px)}
+.foot-saasbrowser img{display:block;max-width:100%}
+/* Their badge is a fixed SVG with near-black lettering, so on the dark footer
+   "Listed on" and "Browser" disappeared. Sit it on a light plate rather than
+   recolouring someone else's mark. */
+html[data-theme="dark"] .foot-saasbrowser{background:#FAF8F2;padding:9px 12px}
+.foot-col h5{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.11em;color:var(--muted);margin:0 0 15px}
+.foot-col ul{list-style:none;display:grid;gap:11px;padding:0;margin:0}
+.foot-col a{text-decoration:none;color:var(--ink-soft);font-size:14px;transition:color .2s,padding-left .2s}
+.foot-col a:hover{color:var(--green-bright);padding-left:3px}
+.foot-bottom{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;padding-top:26px;
+  border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.foot-bottom a{color:var(--muted);text-decoration:none;transition:color .2s}
+.foot-bottom a:hover{color:var(--ink)}
+.foot-bottom .founder a{text-decoration:underline;text-underline-offset:2px}
+.foot-bottom .sp{flex:1 1 auto;min-width:8px}
+.foot-trust{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.foot-trust-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;letter-spacing:.05em;color:var(--muted);opacity:.85}
+.foot-trust-meta svg{flex:none;opacity:.8}
+.foot-dot{width:3px;height:3px;border-radius:50%;background:var(--muted);opacity:.6;display:inline-block}
+
+/* ---------- responsive ---------- */
+/* Tighten the bar before anything is dropped, so the longest language (ru)
+   still fits on one row down to the point where the links hide entirely. */
+@media(max-width:1340px){
+  .nav-links{margin-left:4px;gap:0}
+  .nav-links a{padding:8px 9px;font-size:13.5px}
+  .nav-links a::after{left:9px;right:9px}
+  .logo{font-size:19px}
+}
+@media(max-width:1130px){
+  .nav-links a{padding:7px 7px;font-size:12.8px}
+  .nav-links a::after{left:7px;right:7px}
+  .nav-signin{padding:8px 8px}
+}
+/* Nothing shrinks any more, so past these widths the bar drops items instead of
+   overflowing: "Sign in" first (the amber CTA points at /login too), then the
+   links, which the footer repeats in full. */
+@media(max-width:1040px){
+  .nav-signin{display:none}
+  .nav-links{margin-left:auto}
+}
+@media(max-width:880px){
+  .nav-links{display:none}
+  .logo{margin-right:auto}
+}
+@media(max-width:1000px){
+  .hero-grid,.hiw-grid,.track-grid,.break-grid{grid-template-columns:1fr;gap:44px}
+  .hero-photo{transform:none}
+  /* Stacked, the card no longer floats beside the photo — overlapping it just
+     buried the photo caption, so give it a clean gap instead. */
+  .tprop{position:relative;right:auto;bottom:auto;width:100%;margin-top:14px;animation:none}
+  .bands3,.scale-cols,.prices{grid-template-columns:1fr}
+  .as-grid{grid-template-columns:repeat(2,1fr)}
+  .break-grid{padding:44px 30px}
+  /* Stacked, the copy sits above rather than beside, so the texture fades in
+     from the top instead of the left. */
+  .bv-bg{mask-image:linear-gradient(180deg,transparent 4%,#000 34%);
+    -webkit-mask-image:linear-gradient(180deg,transparent 4%,#000 34%)}
+  /* Drop the horizontal bleed: with one column there is no copy to tuck under,
+     and it put the sheet's left edge outside the card. */
+  .mock-sheet{left:0}
+  .mock-quote{right:0}
+  .foot-grid{grid-template-columns:1fr 1fr;gap:34px}
+  .hiw-photo{aspect-ratio:16/9}
+}
+@media(max-width:720px){
+  .nav-in{gap:8px}
+  section{padding:66px 0}
+  .hero{padding:40px 0 56px}
+  .scale-photo{aspect-ratio:16/9}
+  .foot-grid{grid-template-columns:1fr}
+  .final{padding:52px 24px}
+  .break-grid{padding:36px 22px}
+  .hero-cta-row .btn{flex:1 1 100%}
+}
+/* Phone bar. Nothing shrinks any more, so the room has to be found by dropping
+   the least load-bearing parts: the "EN" code (the flag still says it), then the
+   wordmark (the three-bar mark carries it and still links home). */
+@media(max-width:560px){
+  .lang-code{display:none}
+  .lang-btn{padding:6px 8px}
+  .nav-in>.btn{padding:9px 13px;font-size:13px}
+  .logo{font-size:18px}
+  .logo svg{width:28px;height:28px}
+}
+@media(max-width:440px){
+  .logo span{display:none}
+  .nav-in>.btn{padding:9px 11px;font-size:12.5px}
+  .theme-toggle{width:33px;height:33px}
+  /* The two mock cards keep their size as the column narrows, so the stack
+     grows taller — 290px cut the quote card's Accept button off. */
+  .break-visual{min-height:430px}
+  .mock-quote{bottom:0}
+}
+@media(max-width:420px){
+  .as-grid{grid-template-columns:1fr}
+  .wrap{padding-inline:18px}
+}
+</style>
+</head>
+<body>
+
+<div class="aura" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+<div class="scroll-progress" aria-hidden="true"><i id="scrollBar"></i></div>
+
+<nav class="nav" id="siteNav">
+  <div class="wrap nav-in">
+    <a class="logo" href="#top">
+      <svg width="32" height="32" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+        <rect width="34" height="34" rx="8" fill="#142A21"/>
+        <path d="M8 25 L14 12" stroke="#C4543B" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M14.5 25 L20.5 9" stroke="#E89B2D" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M21 25 L27 6.5" stroke="#3FAE6A" stroke-width="2.6" stroke-linecap="round"/>
+        <circle cx="20.5" cy="9" r="2.1" fill="#E89B2D"/>
+      </svg>
+      <span data-i18n="v2_001"><b>Volt</b><span>Mira</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="#honesty" data-i18n="v2_002">Honesty engine</a>
+      <a href="#tracking" data-i18n="v2_003">Tracked proposals</a>
+      <a href="#pricing" data-i18n="v2_004">Pricing</a>
+      <a href="#faq" data-i18n="v2_005">FAQ</a>
+      <a href="/demo" data-i18n="v2_006">Live demo</a>
+    </div>
+    <a class="nav-signin" href="/login" data-i18n="v2_007">Sign in</a>
+    <div class="lang" id="langWrap">
+      <button type="button" class="lang-btn" id="langBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Change language">
+        <span class="lang-flag" id="langFlag"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="15" fill="#012169"/><path d="M0 0l21 15M21 0L0 15" stroke="#fff" stroke-width="3"/><path d="M0 0l21 15M21 0L0 15" stroke="#C8102E" stroke-width="1.6"/><path d="M10.5 0v15M0 7.5h21" stroke="#fff" stroke-width="5"/><path d="M10.5 0v15M0 7.5h21" stroke="#C8102E" stroke-width="3"/></svg></span>
+        <span class="lang-code" id="langCode" data-i18n="v2_008">EN</span>
+        <svg class="lang-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="lang-menu" id="langMenu" role="listbox" aria-label="Language">
+        <button type="button" role="option" class="lang-opt" data-lang="ro" data-path="/ro" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="7" height="15" fill="#002B7F"/><rect x="7" width="7" height="15" fill="#FCD116"/><rect x="14" width="7" height="15" fill="#CE1126"/></svg><span data-i18n="v2_009">Română</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+        <button type="button" role="option" class="lang-opt" data-lang="en" data-path="/" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="15" fill="#012169"/><path d="M0 0l21 15M21 0L0 15" stroke="#fff" stroke-width="3"/><path d="M0 0l21 15M21 0L0 15" stroke="#C8102E" stroke-width="1.6"/><path d="M10.5 0v15M0 7.5h21" stroke="#fff" stroke-width="5"/><path d="M10.5 0v15M0 7.5h21" stroke="#C8102E" stroke-width="3"/></svg><span data-i18n="v2_010">English</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+        <button type="button" role="option" class="lang-opt" data-lang="ru" data-path="/ru" aria-selected="false"><svg viewBox="0 0 21 15" class="lf" aria-hidden="true"><rect width="21" height="5" fill="#fff"/><rect y="5" width="21" height="5" fill="#0039A6"/><rect y="10" width="21" height="5" fill="#D52B1E"/></svg><span data-i18n="v2_011">Русский</span><svg class="lang-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+      </div>
+    </div>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">
+      <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2 12h2.4M19.6 12H22M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg>
+    </button>
+    <a href="/login" class="btn btn-amber btn-sm" data-i18n="v2_012">Start free trial</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow rv in"><span class="pip"></span><span data-i18n="v2_013">For solar installers · Romania and Moldova</span></span>
+      <h1 class="hh" data-i18n="v2_147">Solar quotes<br>your clients can<br><span class="hl">fact&nbsp;check.<svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M4 30 C 80 12, 180 34, 260 20 S 380 22, 396 14"/></svg></span></h1>
+      <p class="lead" data-i18n="v2_014">Most quoting tools show one flattering number. VoltMira shows <b>three honest scenarios</b>, computed from real sun data for the client's roof — and tells you the moment they open your proposal.</p>
+      <div class="hero-cta-row">
+        <a class="btn btn-amber btn-lg" href="/login" data-i18n="v2_015">Start free trial</a>
+        <a class="btn btn-ghost btn-lg" href="#honesty" data-i18n="v2_016">See how it works</a>
+        <a class="btn btn-ghost btn-lg" href="/demo" data-i18n="v2_006">Live demo</a>
+      </div>
+      <p class="wl-note" data-i18n="v2_017">No credit card required · Free during our beta · Set up in 2 minutes</p>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-photo" data-i18n="v2_018">
+        <img src="/landing/hero-rooftop.jpg" alt="Residential rooftop solar installation on a tiled roof under a clear blue sky">
+        <span class="cap">Casa Popescu · Iași</span>
+      </div>
+      <div class="tprop">
+        <div class="tp-head">
+          <div class="tp-from">
+            <svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="8" fill="#142A21"/><path d="M8 25 L14 12" stroke="#C4543B" stroke-width="2.6" stroke-linecap="round"/><path d="M14.5 25 L20.5 9" stroke="#E89B2D" stroke-width="2.6" stroke-linecap="round"/><path d="M21 25 L27 6.5" stroke="#3FAE6A" stroke-width="2.6" stroke-linecap="round"/><circle cx="20.5" cy="9" r="2.1" fill="#E89B2D"/></svg>
+            SolarTech SRL
+          </div>
+          <span class="tp-badge" data-i18n="v2_019">Opened 2×</span>
+        </div>
+        <div class="tp-client" data-i18n="v2_020">8.4 kW rooftop · 12 panels + battery</div>
+        <div class="tp-sub" data-i18n="v2_021">Lifetime savings €18,240</div>
+        <div class="tp-h" data-i18n="v2_022">Payback — three honest scenarios</div>
+        <div class="tp-bands">
+          <div class="tp-band p" data-i18n="v2_023"><span>Pessim.</span><b>9.1<small style="font-size:9px;font-weight:600"> yr</small></b></div>
+          <div class="tp-band e" data-i18n="v2_024"><span>Expected</span><b>7.3<small style="font-size:9px;font-weight:600"> yr</small></b></div>
+          <div class="tp-band o" data-i18n="v2_025"><span>Optim.</span><b>6.2<small style="font-size:9px;font-weight:600"> yr</small></b></div>
+        </div>
+        <div class="tp-accept" data-i18n="v2_026">Accept proposal ✓</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="stat-strip">
+  <div class="marquee">
+    <div class="marquee-track" id="mqTrack">
+      <div class="stat" data-i18n="v2_027"><b>3 scenarios</b><span>Pessimistic · expected · optimistic on every quote</span></div>
+      <div class="stat" data-i18n="v2_028"><b>PVGIS satellite data</b><span>Real irradiance for the exact roof, not an average</span></div>
+      <div class="stat" data-i18n="v2_029"><b>RO · MD</b><span>Net metering, net billing &amp; feed-in tariffs built in</span></div>
+      <div class="stat" data-i18n="v2_030"><b>&lt; 2 min</b><span>From address to a sendable proposal</span></div>
+    </div>
+  </div>
+</div>
+
+<section class="hiw" aria-label="How it works">
+  <div class="wrap">
+    <h2 class="sec-h rv" data-i18n="v2_032">Built for the installer<br>standing on the roof.</h2>
+    <div class="hiw-grid">
+      <div class="hiw-photo rv">
+        <img src="/landing/installers.jpg" alt="Two installers mounting monocrystalline solar panels on a residential tile roof">
+      </div>
+      <div class="hiw-steps rv-group">
+        <article class="hiw-step rv">
+          <span class="hiw-n">01</span>
+          <div><h3 data-i18n="v2_033">Type the address</h3><p data-i18n="v2_034">VoltMira pulls the real irradiance for that exact roof from <b>PVGIS</b> and applies the right tariff scheme for the market — automatically.</p></div>
+        </article>
+        <article class="hiw-step rv">
+          <span class="hiw-n">02</span>
+          <div><h3 data-i18n="v2_035">Get three honest numbers</h3><p data-i18n="v2_036">Pessimistic, expected, optimistic — with <b>every assumption printed</b> on the proposal, ready to defend at the kitchen table.</p></div>
+        </article>
+        <article class="hiw-step rv">
+          <span class="hiw-n">03</span>
+          <div><h3 data-i18n="v2_037">Send the link, watch the feed</h3><p data-i18n="v2_038">One link to the client's phone. You see <b>opens, minutes viewed, battery toggles</b> — and Accept lands the deal in your pipeline.</p></div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="honesty">
+  <div class="wrap">
+    <span class="sec-tag rv">The honesty engine</span>
+    <h2 class="sec-h rv" data-i18n="v2_040">One number is a sales pitch.<br>Three numbers is the truth.</h2>
+    <p class="sec-lead rv" data-i18n="v2_041">Every VoltMira quote shows the payback under pessimistic, expected and optimistic assumptions — with every assumption printed on the proposal. Clients trust what they can verify. Trust closes roofs.</p>
+    <div class="bands3 rv-group">
+      <article class="bcard pess rv">
+        <div class="tag" data-i18n="v2_042">Pessimistic</div>
+        <div class="yrs" data-i18n="v2_043"><b class="cu" data-count="6.6" data-decimals="1">6.6</b><small> years</small></div>
+        <p data-i18n="v2_044"><b>Low sun, flat prices.</b> −8% yield, 0.8%/yr panel degradation, zero electricity inflation. If even this number works, the deal is safe.</p>
+      </article>
+      <article class="bcard expc rv">
+        <div class="tag" data-i18n="v2_045">Expected</div>
+        <div class="yrs" data-i18n="v2_046"><b class="cu" data-count="6.0" data-decimals="1">6.0</b><small> years</small></div>
+        <p data-i18n="v2_047"><b>The likeliest outcome.</b> PVGIS yield for the exact roof, 0.5%/yr degradation, 3% price inflation. The number you stand behind.</p>
+      </article>
+      <article class="bcard opti rv">
+        <div class="tag" data-i18n="v2_048">Optimistic</div>
+        <div class="yrs" data-i18n="v2_049"><b class="cu" data-count="5.7" data-decimals="1">5.7</b><small> years</small></div>
+        <p data-i18n="v2_050"><b>If prices keep climbing.</b> +8% yield, 0.3%/yr degradation, 5% inflation. Shown honestly as the best case — never the headline.</p>
+      </article>
+    </div>
+    <div class="assump-strip rv">
+      <div class="as-t" data-i18n="v2_051">Printed on every proposal</div>
+      <div class="as-grid">
+        <div class="as-kv" data-i18n="v2_052"><span class="k">Yield (PVGIS)</span><span class="v">1,168 kWh/kWp</span></div>
+        <div class="as-kv" data-i18n="v2_053"><span class="k">Degradation</span><span class="v">0.5%/yr</span></div>
+        <div class="as-kv" data-i18n="v2_054"><span class="k">Price inflation</span><span class="v">3%/yr</span></div>
+        <div class="as-kv" data-i18n="v2_055"><span class="k">Tariff scheme</span><span class="v">Net metering 1:1</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="break-sec">
+  <div class="wrap break-grid">
+    <div class="break-copy">
+      <p class="break-q" data-i18n="v2_057">Not a spreadsheet.<br>A quote your client <em>believes.</em></p>
+      <p class="break-sub" data-i18n="v2_058">Clients have heard too many perfect promises. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself.</p>
+      <a class="btn btn-amber" href="#pricing" data-i18n="v2_059">See pricing</a>
+    </div>
+    <div class="break-visual">
+      <div class="bv-bg" aria-hidden="true"><img src="/landing/cell-texture-bg.jpg" alt=""></div>
+      <div class="mock-sheet" aria-hidden="true">
+        <div class="ms-title" data-i18n="v2_060">export_quotes_final_v3.xlsx</div>
+        <div class="ms-row ms-h" data-i18n="v2_061"><span>Client</span><span>kW</span><span>Payback</span></div>
+        <div class="ms-row" data-i18n="v2_062"><span>Popescu I.</span><span>6.0</span><span>7.2 yr</span></div>
+        <div class="ms-row" data-i18n="v2_063"><span>Rusu V.</span><span>8.4</span><span>6.1 yr</span></div>
+        <div class="ms-row" data-i18n="v2_064"><span>Ceban A.</span><span>4.5</span><span>9.4 yr</span></div>
+        <div class="ms-row ms-dim" data-i18n="v2_065"><span>Ionescu M.</span><span>5.2</span><span>&mdash;</span></div>
+      </div>
+      <div class="mock-quote" aria-hidden="true">
+        <div class="mq-top" data-i18n="v2_066"><span class="mq-badge">Solar quote</span><span class="mq-open">Opened 2&times;</span></div>
+        <div class="mq-name" data-i18n="v2_067">Casa Rusu</div>
+        <div class="mq-sub" data-i18n="v2_068">8.4 kW &middot; Chi&#537;in&#259;u</div>
+        <div class="mq-bands">
+          <div class="mq-b p" data-i18n="v2_069"><span>Pessim.</span><b>6.6<small> yr</small></b></div>
+          <div class="mq-b e" data-i18n="v2_070"><span>Expected</span><b>6.0<small> yr</small></b></div>
+          <div class="mq-b o" data-i18n="v2_071"><span>Optim.</span><b>5.7<small> yr</small></b></div>
+        </div>
+        <div class="mq-accept" data-i18n="v2_072">Accept quote &#10003;</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="tracking">
+  <div class="wrap track-grid">
+    <div>
+      <span class="sec-tag rv">Tracked proposals</span>
+      <h2 class="sec-h rv" data-i18n="v2_074">Know the moment<br>they open it.</h2>
+      <p class="sec-lead rv" style="margin-bottom:28px" data-i18n="v2_075">Stop guessing when to follow up. Send a live link instead of a dead PDF — and watch what happens on the other side.</p>
+      <ul class="feat-list rv">
+        <li data-i18n="v2_076"><span class="dot">✓</span><span><b>Opens &amp; time viewed</b> — "Ion opened it twice, 3 minutes each" beats "sent last Tuesday, no reply."</span></li>
+        <li data-i18n="v2_077"><span class="dot">✓</span><span><b>Interaction signals</b> — they toggled the battery on? That's a buying question. Call about batteries.</span></li>
+        <li data-i18n="v2_078"><span class="dot">✓</span><span><b>Accept from the page</b> — one tap on their phone marks the deal Won in your pipeline.</span></li>
+        <li data-i18n="v2_079"><span class="dot">✓</span><span><b>Your data stays yours</b> — export every quote and client to CSV in one click, no lock-in.</span></li>
+      </ul>
+    </div>
+    <div class="feedbox rv">
+      <div class="fb-t" data-i18n="v2_080">Your activity feed</div>
+      <div class="fev" data-i18n="v2_081"><span class="ic">◉</span><span class="tx"><b>Ion Popescu</b> opened <b>Casa Popescu</b></span><time>just now</time></div>
+      <div class="fev" data-i18n="v2_082"><span class="ic">⏱</span><span class="tx">Viewed for <b>3m 34s</b> — longest so far</span><time>2m</time></div>
+      <div class="fev" data-i18n="v2_083"><span class="ic">⚡</span><span class="tx">Toggled the <b>battery on</b> · payback recalculated</span><time>3m</time></div>
+      <div class="fev" data-i18n="v2_084"><span class="ic">◉</span><span class="tx">Opened again — <b>2nd visit today</b></span><time>1h</time></div>
+      <div class="fev" data-i18n="v2_085"><span class="ic g">✓</span><span class="tx"><b>Accepted the quote</b> — project marked Won</span><time>1h</time></div>
+    </div>
+  </div>
+</section>
+
+<section class="scale-sec">
+  <div class="wrap">
+    <h2 class="sec-h rv" data-i18n="v2_087">The same honest math,<br>6 kW or 600 kW.</h2>
+    <div class="scale-photo rv">
+      <img src="/landing/commercial-rooftop.jpg" alt="A large commercial rooftop covered edge-to-edge in solar panels">
+    </div>
+    <div class="scale-cols rv-group">
+      <div class="scale-it rv">
+        <h4 data-i18n="v2_148"><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></i>Three honest scenarios</h4>
+        <p data-i18n="v2_088">Pessimistic, expected, optimistic — every assumption printed on the quote, ready to defend.</p>
+      </div>
+      <div class="scale-it rv">
+        <h4 data-i18n="v2_149"><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg></i>PVGIS data per roof</h4>
+        <p data-i18n="v2_089">Satellite yield for the exact coordinates, not a rough national average.</p>
+      </div>
+      <div class="scale-it rv">
+        <h4 data-i18n="v2_150"><i aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="2.6"/></svg></i>See when they read it</h4>
+        <p data-i18n="v2_090">Opens, minutes viewed, battery toggled — you know exactly when to call.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <span class="sec-tag rv">Pricing</span>
+    <h2 class="sec-h rv" data-i18n="v2_092">Costs less than the coffee<br>at one lost deal.</h2>
+    <p class="sec-lead rv" style="margin-bottom:36px" data-i18n="v2_093">Free 21-day trial — no card. One extra deal a year pays for VoltMira for ~20 years.</p>
+    <div class="prices rv-group">
+      <div class="price hot rv">
+        <h3 data-i18n="v2_094">Pro</h3>
+        <div class="amt" data-i18n="v2_095"><b class="cu" data-count="49" data-prefix="€">€49</b><small>/mo</small></div>
+        <div class="for" data-i18n="v2_096">For the installer who sells</div>
+        <ul>
+          <li data-i18n="v2_097">Your logo on every proposal &amp; PDF</li>
+          <li data-i18n="v2_098">Tracked proposal links + open alerts</li>
+          <li data-i18n="v2_099">Website lead widget</li>
+          <li data-i18n="v2_100">Saved clients &amp; full pipeline</li>
+        </ul>
+        <a href="/login" class="btn btn-amber" data-i18n="v2_101">Start free trial</a>
+      </div>
+      <div class="price rv">
+        <h3 data-i18n="v2_102">Team</h3>
+        <div class="amt" data-i18n="v2_103"><b class="cu" data-count="119" data-prefix="€">€119</b><small>/mo</small></div>
+        <div class="for" data-i18n="v2_104">Up to 5 people, one pipeline</div>
+        <ul>
+          <li data-i18n="v2_105">Everything in Pro</li>
+          <li data-i18n="v2_106">5 seats with project owners</li>
+          <li data-i18n="v2_107">Shared clients &amp; win-rate analytics</li>
+          <li data-i18n="v2_108">Priority support in RO/RU/EN</li>
+        </ul>
+        <a href="/login" class="btn btn-primary" data-i18n="v2_109">Start free trial</a>
+      </div>
+      <div class="price rv">
+        <h3 data-i18n="v2_110">Enterprise</h3>
+        <div class="amt" data-i18n="v2_111"><b style="font-size:22px">Custom</b></div>
+        <div class="for" data-i18n="v2_112">For multi-branch installers</div>
+        <ul>
+          <li data-i18n="v2_113">Everything in Team, unlimited seats</li>
+          <li data-i18n="v2_114">Full audit log of every change</li>
+          <li data-i18n="v2_115">Custom subsidy &amp; tariff rules</li>
+          <li data-i18n="v2_116">Dedicated manager &amp; SLA</li>
+        </ul>
+        <a href="mailto:voltmiraenergy@gmail.com?subject=VoltMira%20Enterprise" class="btn btn-primary" data-i18n="v2_117">Talk to us</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <h2 class="sec-h rv" style="margin-bottom:36px" data-i18n="v2_119">Fair questions.</h2>
+    <div class="faq rv">
+      <details open>
+        <summary data-i18n="v2_151">Where do the solar numbers come from?<span class="pl">+</span></summary>
+        <p data-i18n="v2_120">Yearly and monthly yield come from PVGIS, the European Commission's satellite-derived solar database, for the exact coordinates of the roof. Tariff schemes are applied automatically per market. Every assumption is printed on the proposal.</p>
+      </details>
+      <details>
+        <summary data-i18n="v2_152">Why show a pessimistic number? Won't it scare clients?<span class="pl">+</span></summary>
+        <p data-i18n="v2_121">The opposite, in practice. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself.</p>
+      </details>
+      <details>
+        <summary data-i18n="v2_153">Does it work for Moldova's net billing?<span class="pl">+</span></summary>
+        <p data-i18n="v2_122">Yes — that's home turf. Moldova's low export price makes self-consumption the whole game, so the engine models it month by month and values battery storage correctly.</p>
+      </details>
+      <details>
+        <summary data-i18n="v2_154">How do I start?<span class="pl">+</span></summary>
+        <p data-i18n="v2_123">Sign up and you're in — no waitlist, no card. Full access to build quotes and send tracked proposals straight away, free through the beta.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="final-sec">
+  <div class="wrap">
+    <div class="final rv">
+      <div class="final-glow" aria-hidden="true"></div>
+      <svg class="final-mark" viewBox="0 0 240 240" fill="none" aria-hidden="true">
+        <path d="M38 208 L86 96" stroke="#C4543B" stroke-width="17" stroke-linecap="round"/>
+        <path d="M104 208 L158 66" stroke="#E89B2D" stroke-width="17" stroke-linecap="round"/>
+        <path d="M170 208 L222 34" stroke="#3FAE6A" stroke-width="17" stroke-linecap="round"/>
+      </svg>
+      <div class="final-in">
+        <h2 data-i18n="v2_124">Be the installer whose<br>numbers hold up.</h2>
+        <p data-i18n="v2_125">Start free today in Romania and Moldova — no waitlist, no card, set up in minutes.</p>
+        <div class="hero-cta-row">
+          <a class="btn btn-amber btn-lg" href="/login" data-i18n="v2_126">Start free</a>
+        </div>
+        <div class="final-chips" data-i18n="v2_127">
+          <span>No card required</span><span>Free during beta</span><span>Cancel anytime</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="logo" href="#top" style="font-size:18px">
+          <svg width="26" height="26" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+            <rect width="34" height="34" rx="8" fill="#142A21"/>
+            <path d="M8 25 L14 12" stroke="#C4543B" stroke-width="2.6" stroke-linecap="round"/>
+            <path d="M14.5 25 L20.5 9" stroke="#E89B2D" stroke-width="2.6" stroke-linecap="round"/>
+            <path d="M21 25 L27 6.5" stroke="#3FAE6A" stroke-width="2.6" stroke-linecap="round"/>
+            <circle cx="20.5" cy="9" r="2.1" fill="#E89B2D"/>
+          </svg>
+          <span data-i18n="v2_128"><b>Volt</b><span>Mira</span></span>
+        </a>
+        <p data-i18n="v2_129">The quoting tool your clients can fact-check. Built for installers in Moldova and Romania.</p>
+        <a href="https://saasbrowser.com/en/saas/1577574/voltmira" target="_blank" rel="nofollow noopener" class="foot-saasbrowser">
+          <img src="https://static-files.saasbrowser.com/saas-browser-badge-1.svg" alt="VoltMira - SaaS search engine" width="200" loading="lazy">
+        </a>
+      </div>
+      <div class="foot-col">
+        <h5>Product</h5>
+        <ul>
+          <li><a href="#honesty" data-i18n="v2_130">Honesty engine</a></li>
+          <li><a href="#tracking" data-i18n="v2_131">Tracked proposals</a></li>
+          <li><a href="#pricing" data-i18n="v2_132">Pricing</a></li>
+          <li><a href="#faq" data-i18n="v2_133">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Company</h5>
+        <ul>
+          <li><a href="/login" data-i18n="v2_134">Sign in</a></li>
+          <li><a href="/login" data-i18n="v2_135">Start free trial</a></li>
+          <li><a href="/demo" data-i18n="v2_136">Live demo</a></li>
+          <li><a href="/refer" data-i18n="v2_137">Refer an installer</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Get in touch</h5>
+        <ul>
+          <li><a href="mailto:voltmiraenergy@gmail.com" data-i18n="v2_138">voltmiraenergy@gmail.com</a></li>
+          <li><a href="https://wa.me/37362121019" target="_blank" rel="noopener" data-i18n="v2_139">WhatsApp</a></li>
+          <li><a href="https://instagram.com/voltmira.energy" target="_blank" rel="noopener" data-i18n="v2_140">Instagram</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span data-i18n="v2_141">© 2026 VoltMira. All rights reserved.</span>
+      <span class="founder">Founded by <a href="https://voltmira.com/" rel="author" data-i18n="v2_142">Bogdan Toctarov</a></span>
+      <span class="sp"></span>
+      <a href="/privacy" data-i18n="v2_143">Privacy</a>
+      <a href="/cookies">Cookies</a>
+      <a href="/terms" data-i18n="v2_144">Terms</a>
+      <a href="/refunds" data-i18n="v2_145">Refunds</a>
+      <a href="/credits" data-i18n="v2_146">Credits</a>
+    </div>
+    <div class="foot-trust">
+      <span class="foot-trust-meta">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+        </svg>
+        EU-hosted <span class="foot-dot"></span> GDPR-ready <span class="foot-dot"></span> RO · MD · EU
+      </span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- theme toggle ---- */
+  try{
+    var t = localStorage.getItem('voltmira_theme');
+    if(t === 'dark' || t === 'light'){ document.documentElement.setAttribute('data-theme', t); }
+  }catch(e){}
+  var tbtn = document.getElementById('themeToggle');
+  if(tbtn) tbtn.addEventListener('click', function(){
+    var cur = document.documentElement.getAttribute('data-theme');
+    var mql = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var isDark = cur ? cur === 'dark' : mql;
+    var next = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    var m = document.querySelector('meta[name="theme-color"]');
+    if(m) m.setAttribute('content', next === 'dark' ? '#0F1310' : '#142A21');
+    try{ localStorage.setItem('voltmira_theme', next); }catch(e){}
+  });
+
+  /* ---- marquee: duplicate the track so the loop is seamless ----
+     Done in JS rather than hand-duplicated in the markup so each stat
+     keeps exactly one data-i18n key — a second copy in the HTML would
+     need its own keys and would drift out of sync with the dictionary. */
+  var track = document.getElementById('mqTrack');
+  if(track && !reduceMotion){
+    track.innerHTML = track.innerHTML + track.innerHTML;
+  }
+
+  /* ---- staggered scroll reveal ---- */
+  var els = document.querySelectorAll('.rv');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, {threshold:.12, rootMargin:'0px 0px -5% 0px'});
+    els.forEach(function(el){ io.observe(el); });
+  } else {
+    els.forEach(function(el){ el.classList.add('in'); });
+  }
+
+  /* ---- count-up numbers ----
+     The rendered text is the template, not data-prefix: each language writes
+     the figure its own way ("6.6" / "6,6", "€49" / "49 €"), and rebuilding the
+     string from data-prefix + toFixed() would animate the Romanian page from
+     "49 €" to "€49". So keep the served text and swap only the digits, reusing
+     whichever decimal separator that translation already used. */
+  var counters = document.querySelectorAll('.cu');
+  function animateCount(el){
+    var target = parseFloat(el.getAttribute('data-count'));
+    var decimals = parseInt(el.getAttribute('data-decimals') || '0', 10);
+    var tpl = el.textContent;
+    var numMatch = /\d[\d.,   ]*\d|\d/.exec(tpl);
+    if(isNaN(target) || !numMatch){ return; }
+    var sep = /,\d/.test(numMatch[0]) ? ',' : '.';
+    var head = tpl.slice(0, numMatch.index), tail = tpl.slice(numMatch.index + numMatch[0].length);
+    var render = function(v){
+      el.textContent = head + v.toFixed(decimals).replace('.', sep) + tail;
+    };
+    if(reduceMotion){ render(target); return; }
+    var start = null, dur = 1200;
+    function step(ts){
+      if(!start) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      render(target * (1 - Math.pow(1 - p, 3)));
+      if(p < 1) requestAnimationFrame(step); else render(target);
+    }
+    requestAnimationFrame(step);
+  }
+  if('IntersectionObserver' in window && counters.length){
+    var cio = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){ animateCount(en.target); cio.unobserve(en.target); }
+      });
+    }, {threshold:.6});
+    counters.forEach(function(el){ cio.observe(el); });
+  } else { counters.forEach(animateCount); }
+
+  /* ---- scroll progress + nav elevation + hero parallax ---- */
+  var progressBar = document.getElementById('scrollBar');
+  var nav = document.getElementById('siteNav');
+  var heroImg = document.querySelector('.hero-photo img');
+  var ticking = false;
+  function onScroll(){
+    var doc = document.documentElement;
+    var scrollTop = doc.scrollTop || document.body.scrollTop;
+    var scrollH = (doc.scrollHeight - doc.clientHeight) || 1;
+    if(progressBar) progressBar.style.width = (Math.min(scrollTop / scrollH, 1) * 100) + '%';
+    if(nav) nav.classList.toggle('scrolled', scrollTop > 8);
+    if(heroImg && !reduceMotion){
+      heroImg.style.transform = 'translateY(' + Math.min(scrollTop * 0.07, 38) + 'px) scale(1.08)';
+    }
+    ticking = false;
+  }
+  window.addEventListener('scroll', function(){
+    if(!ticking){ requestAnimationFrame(onScroll); ticking = true; }
+  }, {passive:true});
+  onScroll();
+
+  /* ---- pointer spotlight on cards ---- */
+  if(!reduceMotion && window.matchMedia('(hover:hover)').matches){
+    document.querySelectorAll('.price, .scale-it, .bcard').forEach(function(card){
+      card.addEventListener('pointermove', function(e){
+        var r = card.getBoundingClientRect();
+        card.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+        card.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+      });
+    });
+  }
+})();
+
+/* ---------------- language switcher ----------------
+   The page is rendered per language on the server (lib/landing.js), so the
+   control only has to navigate. Current language comes from the path, which
+   keeps it correct on every entry point without waiting for a dictionary. */
+(function(){
+  var wrap = document.getElementById('langWrap');
+  if(!wrap) return;
+  var btn = document.getElementById('langBtn'),
+      menu = document.getElementById('langMenu'),
+      code = document.getElementById('langCode'),
+      flag = document.getElementById('langFlag'),
+      opts = [].slice.call(menu.querySelectorAll('.lang-opt'));
+
+  var path = location.pathname.replace(/\/+$/, '');
+  var cur = path === '/ro' ? 'ro' : path === '/ru' ? 'ru' : 'en';
+
+  opts.forEach(function(o){
+    var on = o.getAttribute('data-lang') === cur;
+    o.setAttribute('aria-selected', String(on));
+    if(on){
+      code.textContent = o.getAttribute('data-lang').toUpperCase();
+      flag.innerHTML = o.querySelector('.lf').outerHTML;
+    }
+    o.addEventListener('click', function(){
+      var target = o.getAttribute('data-path');
+      try{ localStorage.setItem('voltmira_lang', o.getAttribute('data-lang')); }catch(e){}
+      if(target !== (path || '/')) location.assign(target); else close();
+    });
+  });
+
+  function open(){ wrap.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+  function close(){ wrap.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    wrap.classList.contains('open') ? close() : open();
+  });
+  document.addEventListener('click', function(e){ if(!wrap.contains(e.target)) close(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') close(); });
+})();
+</script>
+</body>
+</html>

@@ -37,3 +37,8 @@ coverage/
 # local debug artifacts / editor backups
 _probe_user_id.txt
 *.bak
+
+# generated full-source export (scripts/export-for-review.mjs) — regenerable,
+# not part of the app, and large enough it has no business in git history
+voltmira-full-source.txt
+voltmira-source-download.html

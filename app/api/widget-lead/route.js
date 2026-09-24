@@ -1,11 +1,17 @@
 // app/api/widget-lead/route.js — PUBLIC endpoint behind the embeddable widget.
-// POST { companyId, name, address?, bill?, email?, phone?, message? }
+// POST { companyId, name, address?, bill?, email?, phone?, message?,
+//        estKw?, estCostLocal?, estPaybackYears? }
+// The est* fields are what the widget's calculator step (app/api/estimate)
+// showed the homeowner, if they ran it — folded into `note` so the installer
+// sees what was quoted, not just that someone asked. All optional: a
+// submission that skipped the calculator behaves exactly as before.
 // Heavily rate-limited + honeypot field; leads land in the installer's dashboard.
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabase.js";
 import { escapeHtml } from "../../../lib/safe.js";
 import { logActivity } from "../../../lib/activity.js";
 import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
+import { sendCrmWebhook } from "../../../lib/crmWebhook.js";
 
 export async function POST(req) {
   const ip = clientIp(req);
@@ -24,11 +30,29 @@ export async function POST(req) {
 
   const phone = String(b.phone || "").trim().slice(0, 40);
   const bill = String(b.bill || "").trim().slice(0, 20);
+  const address = String(b.address || "").trim().slice(0, 200);
+  // A structured number for "Generate a full offer" (createProjectFromLead) to
+  // size a system from \u2014 `bill` above stays the display string in `note`.
+  const billNum = Number(bill);
+  const monthlyBill = Number.isFinite(billNum) && billNum > 0 ? billNum : null;
+
+  // What the calculator step showed this homeowner, if they ran it \u2014 so the
+  // installer isn't guessing what was promised before they even open the lead.
+  const estKw = Number(b.estKw);
+  const estCostLocal = Number(b.estCostLocal);
+  const estPaybackYears = Number(b.estPaybackYears);
+  const estimateLine = Number.isFinite(estKw) && estKw > 0
+    ? `Estimate shown: ${estKw} kW` +
+      (Number.isFinite(estCostLocal) && estCostLocal > 0 ? `, ${Math.round(estCostLocal).toLocaleString("en")}` : "") +
+      (Number.isFinite(estPaybackYears) && estPaybackYears > 0 ? `, ~${estPaybackYears}y payback` : "")
+    : null;
+
   const note = [
     phone && `Phone: ${phone}`,
-    bill && `~\u20AC${bill}/mo bill`,
+    bill && `~${bill}/mo bill`,
+    estimateLine,
     String(b.message || "").trim().slice(0, 500) || "Requested an estimate",
-    String(b.address || "").trim().slice(0, 200),
+    address,
   ].filter(Boolean).join(" \u00B7 ");
 
   // `hot` used to be hardcoded true, so every website lead arrived flagged and
@@ -40,10 +64,17 @@ export async function POST(req) {
   // returned {ok:true}: the visitor saw "Thank you!" and the installer never
   // learned that someone had tried to reach them. Losing a lead silently is the
   // worst thing this endpoint can do.
-  const { error: insErr } = await db.from("leads").insert({
+  const base = {
     company_id: companyId, name, note, hot, source: "widget",
     email: String(b.email || "").trim().slice(0, 120), phone,
-  });
+  };
+  // address/monthly_bill need add-lead-details.sql; degrade to the base insert
+  // (note still carries both as text) if a workspace hasn't run it yet.
+  let { error: insErr } = await db.from("leads")
+    .insert({ ...base, address: address || null, monthly_bill: monthlyBill });
+  if (insErr && /address|monthly_bill/i.test(insErr.message || "")) {
+    ({ error: insErr } = await db.from("leads").insert(base));
+  }
   if (insErr) {
     console.error("[widget-lead] insert failed:", insErr.message);
     return NextResponse.json({ error: "save_failed" }, { status: 500 });
@@ -53,5 +84,10 @@ export async function POST(req) {
     text: `New lead from the website widget: <b>${escapeHtml(name)}</b>`,
     link: "/leads",
   });
+  // Awaited (not fire-and-forget): a serverless function can be frozen the
+  // instant this handler returns, killing an unawaited promise before its
+  // fetch ever lands — sendCrmWebhook() itself never throws and is capped at
+  // a 5s timeout, so this can't fail or meaningfully slow the response.
+  await sendCrmWebhook(companyId, "lead.created", { name, email: base.email, phone, address, monthlyBill, source: "widget" });
   return NextResponse.json({ ok: true });
 }
