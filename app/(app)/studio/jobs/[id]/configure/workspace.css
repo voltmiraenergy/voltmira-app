@@ -1,0 +1,122 @@
+/* app/(app)/studio/jobs/[id]/configure/workspace.css — Tailwind, scoped to
+   just this route. No Preflight import on purpose: Preflight resets default
+   element styling (button/h1/ul/...) globally, which would bleed into every
+   other page sharing this same document (the Studio shell, the sidebar) even
+   though only this route imports this file. Theme + utilities only. */
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+/* The app switches theme via data-theme="dark"/"light" on <html> (see
+   app/(app)/ThemeToggle.jsx), not Tailwind's default .dark class or
+   prefers-color-scheme — key dark: off that same attribute so this page
+   matches whatever the rest of the app is currently showing. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* VoltMira's actual brand palette (the same colors app/(app)/AppTheme.jsx's
+   --green/--amber tokens already use everywhere else in the product — not an
+   invented accent), given full Tailwind color-scale treatment here so every
+   shade/opacity utility (bg-brand-50, text-brand-700, border-accent-200/50,
+   hover:bg-brand-700, ...) works normally. brand-600/accent-500 are the exact
+   light-mode hex values; brand-400/accent-400 are the exact dark-mode ones —
+   used deliberately at those steps so `dark:bg-brand-400` etc. lands on
+   pixel-identical color to the rest of the app in dark mode, not just "a
+   green" and "an orange." brand = sage green (primary actions AND success —
+   the real app already uses one green for both, e.g. .btn.primary and
+   .chip.won share --green). accent = warm orange (secondary emphasis,
+   warnings). */
+@theme {
+  --color-brand-50: #EAF4EF;
+  --color-brand-100: #D2E8DE;
+  --color-brand-200: #A8D1BF;
+  --color-brand-300: #7DB99F;
+  --color-brand-400: #4FB584;
+  --color-brand-500: #2E8863;
+  --color-brand-600: #1E6B4E;
+  --color-brand-700: #175640;
+  --color-brand-800: #114132;
+  --color-brand-900: #0B2C22;
+
+  --color-accent-50: #FBF0DD;
+  --color-accent-100: #F6DFB3;
+  --color-accent-200: #F0C983;
+  --color-accent-300: #E9B155;
+  --color-accent-400: #F0AC42;
+  --color-accent-500: #E89B2D;
+  --color-accent-600: #C97F1A;
+  --color-accent-700: #B4700F;
+  --color-accent-800: #8F5A0C;
+  --color-accent-900: #6B4409;
+}
+
+/* app/(app)/AppTheme.jsx (the shared chrome wrapping the whole authenticated
+   app, Studio included) carries `.app button{background:none}` — specificity
+   (0,1,1) — which silently wins over any single bg-* utility class applied
+   straight to a <button> (0,1,0), regardless of source order, since the
+   library CSS's specificity is higher even though it loads first. Confirmed
+   live: computed background-color came back transparent despite the
+   bg-brand-600 class being present in the DOM. These two-class selectors
+   (0,2,1) reliably beat it without needing !important — added alongside the
+   existing bg-brand-600 or bg-accent-600 utility class (kept for its hover
+   and dark variants, and for non-button uses of the same conditional)
+   wherever a button in this Workspace needs a real background fill, not
+   just text or border color. */
+.pv-wrap button.ws-fill-brand { background-color: var(--color-brand-600); }
+.pv-wrap button.ws-fill-brand-tint { background-color: var(--color-brand-50); }
+[data-theme="dark"] .pv-wrap button.ws-fill-brand-tint { background-color: color-mix(in srgb, var(--color-brand-500) 14%, transparent); }
+.pv-wrap button.ws-fill-dark { background-color: rgba(0, 0, 0, .6); }
+.pv-wrap button.ws-fill-slate { background-color: rgba(248, 250, 252, .6); }
+[data-theme="dark"] .pv-wrap button.ws-fill-slate { background-color: rgba(30, 41, 59, .4); }
+
+/* Custom slider (Slider.jsx). The shared Studio shell wraps every /studio/*
+   page (including this one) in a .pv-wrap div carrying its own global rule
+   for every input[type=range] — the old surfaces' amber-filled track. Higher
+   specificity here (.pv-wrap + .ws-range + the type selector, vs. the
+   shell's .pv-wrap + type selector) overrides it with a real filled-track
+   design: a brand-green gradient up to the live value (--fill, set inline by
+   Slider.jsx per render — plain CSS can't read a React prop), a plain track
+   the rest of the way, and a white ring-bordered thumb. Kept as a real
+   <input type=range> (not a hand-built pointer-tracking widget) so dragging,
+   keyboard arrows and screen readers all keep working for free. */
+.pv-wrap input.ws-range[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-brand-600) var(--fill, 0%), #E2E8F0 var(--fill, 0%));
+  outline: none;
+  cursor: pointer;
+}
+.pv-wrap input.ws-range[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--color-brand-600);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .2), 0 0 0 4px var(--color-brand-100);
+  cursor: grab;
+  transition: box-shadow .15s;
+}
+.pv-wrap input.ws-range[type="range"]:active::-webkit-slider-thumb { cursor: grabbing; box-shadow: 0 1px 3px rgba(15, 23, 42, .2), 0 0 0 6px var(--color-brand-100); }
+.pv-wrap input.ws-range[type="range"]::-moz-range-track { height: 6px; border-radius: 999px; background: #E2E8F0; border: none; }
+.pv-wrap input.ws-range[type="range"]::-moz-range-progress { height: 6px; border-radius: 999px; background: var(--color-brand-600); }
+.pv-wrap input.ws-range[type="range"]::-moz-range-thumb {
+  width: 20px; height: 20px; border-radius: 50%; background: #fff;
+  border: 3px solid var(--color-brand-600); box-shadow: 0 1px 3px rgba(15, 23, 42, .2); cursor: grab;
+}
+
+[data-theme="dark"] .pv-wrap input.ws-range[type="range"] {
+  background: linear-gradient(to right, var(--color-brand-400) var(--fill, 0%), #334155 var(--fill, 0%));
+}
+[data-theme="dark"] .pv-wrap input.ws-range[type="range"]::-moz-range-track { background: #334155; }
+[data-theme="dark"] .pv-wrap input.ws-range[type="range"]::-moz-range-progress { background: var(--color-brand-400); }
+[data-theme="dark"] .pv-wrap input.ws-range[type="range"]::-webkit-slider-thumb {
+  background: #1E293B; border-color: var(--color-brand-400); box-shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 0 0 4px rgba(79, 181, 132, .18);
+}
+[data-theme="dark"] .pv-wrap input.ws-range[type="range"]::-moz-range-thumb { background: #1E293B; border-color: var(--color-brand-400); }
+
+@keyframes ws-step-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.pv-wrap .ws-step-enter { animation: ws-step-in .22s ease-out; }
+@media (prefers-reduced-motion: reduce) { .pv-wrap .ws-step-enter { animation: none; } }

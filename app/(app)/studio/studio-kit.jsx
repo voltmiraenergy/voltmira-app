@@ -5,17 +5,27 @@
 //
 // Design language is the app's own (AppTheme.jsx tokens: --paper-2, --line,
 // --green, --amber, --ink …). Preview-only classes are namespaced `.pv-`.
-import { useEffect, useState, createContext, useContext } from "react";
+import { useEffect, useState, useRef, createContext, useContext } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { defaultEngineSettings } from "./_engine.js";
 import { PREVIEW_FEATURES, PREVIEW_BASE } from "./features.js";
-import { DEFAULT_IDS, systemFor } from "./catalog-data.js";
+import { systemFor } from "./catalog-data.js";
+import {
+  CLIENT_PRESETS, STAGES, stageIndex, jobProgress, newJobId,
+  loadJobsState, saveJobsState,
+} from "./jobs-data.js";
+export {
+  CLIENT_PRESETS, STAGES, stageIndex, jobProgress, newJobId,
+  jobMoneySummary, jobCostEur, payRecord, setPayRecord, WEEK_KEY, installKey, actualsKey,
+  readJSON, writeJSON, loadTickets, addTicket, toggleTicket,
+  jobStageContext, isStepDone,
+} from "./jobs-data.js";
 import AddressField from "./address-field.jsx";
 export {
   PANELS, INVERTERS, BATTERIES, MOUNTS, ALL_PRODUCTS, SUPPLIERS,
   DEFAULT_IDS, systemFor, findPanel, findInverter, findBattery, findMount, findSupplier,
-  recommendInverter, recommendBattery, recommendPanel,
+  recommendInverter, recommendBattery, recommendPanel, stringSizing,
 } from "./catalog-data.js";
 
 /* ------------------------------------------------------------------ i18n ---- */
@@ -145,46 +155,85 @@ export function protRows(lang) {
   }));
 }
 
-/* ------------------------------------------------------- editable client ---- */
-// Every Studio surface reads its client + system inputs from here, so the annex,
-// the site layout, the pricing view and the P50/P90 export all reflect the same
-// client and update together. Persisted per browser; NOT written to Supabase.
-export const CLIENT_PRESETS = [
-  { id: "rusu", name: "Familia Rusu", address: "str. Alexandru cel Bun 15, Ialoveni, MD-6801", lat: 46.9412, lng: 28.7770, contractNo: "PE-IAL-2026-03318", ref: "VM-2026-0331", market: "MD", kw: 6.5, cons: 6200, price: 0.185, batteryKwh: 9.6, phases: 3, atestat: "ANRE-MC nr. 2026/PV-0148",
-    panelId: DEFAULT_IDS.panel, inverterId: DEFAULT_IDS.inverter, batteryId: DEFAULT_IDS.battery, mountId: DEFAULT_IDS.mount },
-  { id: "popescu", name: "Familie Popescu", address: "str. Donath 128, Cluj-Napoca", lat: 46.7623, lng: 23.5558, contractNo: "DEER-CJ-2026-11832", ref: "VM-2026-1183", market: "RO", kw: 8.5, cons: 8000, price: 0.21, batteryKwh: 0, phases: 1, atestat: "ANRE tip B nr. 2026/24417",
-    panelId: DEFAULT_IDS.panel, inverterId: "growatt-min6000tl-xh", batteryId: DEFAULT_IDS.battery, mountId: DEFAULT_IDS.mount },
-  { id: "logipark", name: "Hala Chiajna — LogiPark SRL", address: "DN7 km 12, Chiajna, jud. Ilfov", lat: 44.4682, lng: 25.9760, contractNo: "EDMuntenia-2026-55901", ref: "VM-BNK-2026-0093", market: "RO", kw: 180, cons: 240000, price: 0.142, batteryKwh: 0, phases: 3, atestat: "ANRE tip B nr. 2026/24417",
-    panelId: "jinko-tigerneo-615", inverterId: "sofar-hyd20ktl-3ph", batteryId: DEFAULT_IDS.battery, mountId: "k2-crossrail" },
-  { id: "agronord", name: "Fabrica AgroNord SRL", address: "str. Uzinelor 210, Chișinău, MD-2036", lat: 47.0304, lng: 28.8912, contractNo: "PE-CHI-2026-09920", ref: "VM-CI-2026-0300", market: "MD", kw: 300, cons: 540000, price: 0.16, batteryKwh: 0, phases: 3, atestat: "ANRE-MC nr. 2026/PV-0300",
-    panelId: "longi-hi-mo9-610", inverterId: "huawei-sun2000-100ktl", batteryId: DEFAULT_IDS.battery, mountId: "k2-crossrail" },
-];
-const StudioClientCtx = createContext(null);
+/* ---------------------------------------------------------------- jobs ------ */
+// Studio used to hold exactly one shared "active client" object; every surface
+// read/wrote that same object, and switching the ClientBar's sample dropdown
+// overwrote it in place. This is now a real list of jobs (still localStorage-
+// only — never written to Supabase): `useStudioClient()` keeps its EXACT old
+// shape (`{client, update}`, patching the active job) so survey/annex/
+// bankability need no changes at all; `useStudioJobs()` is the new multi-job
+// access point for the job hub and payments.
+const StudioJobsCtx = createContext(null);
 export function StudioClientProvider({ children }) {
-  // Start from the preset on both server AND first client render (identical HTML,
-  // no hydration mismatch), then hydrate from localStorage in an effect.
-  const [client, setClient] = useState(() => ({ ...CLIENT_PRESETS[0] }));
+  // Start from the presets on both server AND first client render (identical
+  // HTML, no hydration mismatch), then hydrate from localStorage in an effect.
+  const [jobs, setJobs] = useState(() => CLIENT_PRESETS.map((p) => ({ ...p })));
+  const [activeId, setActiveId] = useState(CLIENT_PRESETS[0].id);
+  // Stage/money are derived partly from localStorage keys that live OUTSIDE
+  // this state (the schedule/monitoring/payments tools write them directly),
+  // so a consumer rendering before this hydration effect runs would compute
+  // a job's pipeline stage from the bare preset defaults — every job would
+  // flash "needs a survey" for one paint. `hydrated` lets the job hub/landing
+  // hold off on stage-dependent UI until the real saved state is in.
+  const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    try {
-      const s = localStorage.getItem("voltmira_studio_client");
-      if (s) setClient((c) => ({ ...c, ...JSON.parse(s) }));
-    } catch { /* private mode / disabled storage */ }
+    const loaded = loadJobsState();
+    if (loaded.jobs.length) setJobs(loaded.jobs);
+    setActiveId(loaded.activeId || loaded.jobs[0]?.id);
+    setHydrated(true);
   }, []);
-  const update = (patch) => setClient((c) => {
-    const n = { ...c, ...patch };
-    try { localStorage.setItem("voltmira_studio_client", JSON.stringify(n)); } catch { /* ignore */ }
-    return n;
-  });
-  return <StudioClientCtx.Provider value={{ client, update }}>{children}</StudioClientCtx.Provider>;
+  const persist = (nextJobs, nextActive) => {
+    setJobs(nextJobs);
+    if (nextActive !== undefined) setActiveId(nextActive);
+    saveJobsState(nextJobs, nextActive !== undefined ? nextActive : activeId);
+  };
+  const update = (patch) => persist(jobs.map((j) => (j.id === activeId ? { ...j, ...patch } : j)));
+  const updateJob = (id, patch) => persist(jobs.map((j) => (j.id === id ? { ...j, ...patch } : j)));
+  const selectJob = (id) => persist(jobs, id);
+  const addJob = (job) => { persist([...jobs, job], job.id); return job; };
+  // Bulk variants for the Monitoring tab's sample fleet: one persist, so the
+  // additions can't overwrite each other through a stale `jobs` closure, and
+  // the active job stays whatever the installer had open.
+  const addJobs = (list) => persist([...jobs, ...list]);
+  const removeJobs = (ids) => {
+    const drop = new Set(ids);
+    const next = jobs.filter((j) => !drop.has(j.id));
+    const fallback = next.length ? next : [{ ...CLIENT_PRESETS[0], id: newJobId() }];
+    persist(fallback, drop.has(activeId) ? fallback[0].id : undefined);
+  };
+  const removeJob = (id) => removeJobs([id]);
+  const client = jobs.find((j) => j.id === activeId) || jobs[0] || CLIENT_PRESETS[0];
+  return (
+    <StudioJobsCtx.Provider value={{ jobs, activeId, client, update, updateJob, selectJob, addJob, addJobs, removeJob, removeJobs, hydrated }}>
+      {children}
+    </StudioJobsCtx.Provider>
+  );
 }
 export function useStudioClient() {
-  return useContext(StudioClientCtx) || { client: { ...CLIENT_PRESETS[0] }, update: () => {} };
+  const ctx = useContext(StudioJobsCtx);
+  if (!ctx) return { client: { ...CLIENT_PRESETS[0] }, update: () => {} };
+  return { client: ctx.client, update: ctx.update };
+}
+// The multi-job access point: the job hub landing, the per-job hub page and
+// payments (which now shows every job's money, not just the active one).
+export function useStudioJobs() {
+  const ctx = useContext(StudioJobsCtx);
+  if (!ctx) {
+    const jobs = CLIENT_PRESETS.map((p) => ({ ...p }));
+    return { jobs, activeId: jobs[0].id, client: jobs[0], selectJob: () => {}, updateJob: () => {}, addJob: () => {}, addJobs: () => {}, removeJob: () => {}, removeJobs: () => {}, hydrated: false };
+  }
+  return ctx;
 }
 
-// The editable client + system bar shown at the top of each surface.
+// The editable client + system bar shown at the top of each surface. Starts
+// collapsed (a one-line summary): the full 8-field editor opening on every
+// single page load, on every surface, was the single biggest source of visual
+// clutter in Studio — "Edit" is one click away, but nobody has to see eight
+// inputs just to read a report.
 export function ClientBar({ lang }) {
   const { client, update } = useStudioClient();
-  const [open, setOpen] = useState(true);
+  const { jobs, activeId, selectJob } = useStudioJobs();
+  const [open, setOpen] = useState(false);
   const T = (o) => tx(o, lang);
   const num = (k, step, min, max) => (
     <input className="pv-input" type="number" step={step} min={min} max={max} value={client[k]}
@@ -194,11 +243,12 @@ export function ClientBar({ lang }) {
     <div className="pv-panel cl-bar">
       <div className="cl-head">
         <h3 style={{ margin: 0 }}>{T({ en: "Client & system", ro: "Client și sistem", ru: "Клиент и система" })}</h3>
-        <select className="cl-preset" value=""
-          onChange={(e) => { const p = CLIENT_PRESETS.find((x) => x.id === e.target.value); if (p) update({ ...p }); }}>
-          <option value="">{T({ en: "Load a sample client…", ro: "Încarcă un client exemplu…", ru: "Загрузить пример…" })}</option>
-          {CLIENT_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        <select className="cl-preset" value={activeId} onChange={(e) => selectJob(e.target.value)}>
+          {jobs.map((j) => <option key={j.id} value={j.id}>{j.name}</option>)}
         </select>
+        <Link href={`${PREVIEW_BASE}/jobs/${activeId}`} className="btn ghost sm">
+          {T({ en: "Open job hub", ro: "Deschide fișa lucrării", ru: "Открыть карточку объекта" })}
+        </Link>
         <span className="spacer" style={{ flex: 1 }} />
         <button className="btn ghost sm" onClick={() => setOpen((o) => !o)}>
           {open ? T({ en: "Collapse", ro: "Restrânge", ru: "Свернуть" }) : T({ en: "Edit", ro: "Editează", ru: "Изменить" })}
@@ -234,8 +284,14 @@ export function ClientBar({ lang }) {
         </div>
       ) : (
         <div className="cl-summary">
-          {client.name} · {String(client.address).split(",")[0]} · {(+client.kw).toFixed(1)} kW · {client.market}
-          {+client.batteryKwh > 0 ? ` · ${client.batteryKwh} kWh` : ""} · {client.phases === 3 ? "3~" : "1~"}
+          {[
+            client.name,
+            String(client.address || "").split(",")[0].trim(),
+            `${(+client.kw || 0).toFixed(1)} kW`,
+            client.market,
+            +client.batteryKwh > 0 ? `${client.batteryKwh} kWh` : null,
+            client.phases === 3 ? "3~" : "1~",
+          ].filter(Boolean).join(" · ")}
         </div>
       )}
     </div>
@@ -247,7 +303,6 @@ const IC = {
   // the VoltMira mark (three rising rays + sun dot), monochrome — Studio's home glyph
   overview: <><path d="M5 19 8.6 9" /><path d="M10.6 19 15 6" /><path d="M16 19 19.4 8" /><circle cx="15" cy="6" r="1.6" fill="currentColor" stroke="none" /></>,
   survey: <><path d="M3 20h18" /><path d="M5 20V10l7-5 7 5v10" /><path d="M9 20v-5h6v5" /><circle cx="18" cy="6" r="2.2" /></>,
-  catalog: <><rect x="3" y="3" width="7.5" height="7.5" rx="1.4" /><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.4" /><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.4" /><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.4" /></>,
   annex: <><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M14 3v5h5M9 13h6M9 17h6M9 9h2" /></>,
   payments: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /><path d="M6 15h4" /></>,
   schedule: <><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4" /><path d="M8 14l2.5 2.5L16 11" /></>,
@@ -323,6 +378,30 @@ export function MockNote({ children }) {
   );
 }
 
+// The full printable document (annex, invoice, handover certificate, report,
+// bankability export) starts COLLAPSED behind this toggle, showing a headline
+// summary above it instead. Every surface used to render its whole A4-length
+// legal/financial document inline, always expanded — a page you opened just
+// to check one number came with a 7-section document attached whether you
+// wanted it or not. The document itself is unchanged and still exists in the
+// page (so "Print / PDF" always finds it, expanded or not — the @media print
+// rule below forces it visible for printing regardless of the on-screen
+// toggle), it just isn't the first thing you see.
+export function DocReveal({ lang, children }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={"pv-docreveal" + (open ? " open" : "")}>
+      <button type="button" className="btn ghost doc-reveal-btn" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span>{open
+          ? tx({ en: "Hide the full document", ro: "Ascunde documentul complet", ru: "Скрыть документ" }, lang)
+          : tx({ en: "Show the full document", ro: "Arată documentul complet", ru: "Показать документ" }, lang)}</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+      </button>
+      <div className="pv-doc-scroll">{children}</div>
+    </div>
+  );
+}
+
 // Tiny inline sparkline for tables.
 export function Spark({ data, w = 84, h = 24, up }) {
   if (!data || data.length < 2) return null;
@@ -348,6 +427,31 @@ export function CopyButton({ text, label, done, className = "btn sm ghost" }) {
       setOk(true); setTimeout(() => setOk(false), 1600);
     }}>{ok ? (done || "Copied ✓") : label}</button>
   );
+}
+
+// Lightweight confirmation toast for a state-changing click (picked a product,
+// scheduled a client, saved a job) — the .pv-toast CSS already existed in this
+// file with nothing rendering it, so every one of those actions happened
+// silently; the only feedback was a badge or row changing somewhere the user
+// might not be looking. `fire(text)` shows it for ~2.2s; a second fire() while
+// one is visible just restarts the timer with the new text, like a real
+// snackbar. Usage: `const [toast, fire] = useToast();` then render `{toast}`
+// once per page and call `fire("…")` from a handler.
+export function useToast() {
+  const [msg, setMsg] = useState(null);
+  const timer = useRef(null);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  const fire = (text) => {
+    setMsg(text);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setMsg(null), 2200);
+  };
+  const node = (
+    <div className={"pv-toast" + (msg ? " show" : "")} role="status" aria-live="polite" aria-hidden={msg ? undefined : "true"}>
+      {msg || ""}
+    </div>
+  );
+  return [node, fire];
 }
 
 // Print helper — the preview docs (annex, bankability) render a white A4-ish
@@ -577,6 +681,71 @@ html[data-theme="dark"] .pv-tab:hover{border-color:#39443B}
 .st-row-go{flex:none;color:var(--muted);transition:color .15s,transform .15s;margin-top:5px}
 .st-row:hover .st-row-go{color:var(--green);transform:translateX(2px)}
 
+/* Stage chip — a job's current pipeline stage, reusing the same tokens as
+   everything else in Studio (no new palette). */
+.pv-stage{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
+  border-radius:99px;padding:4px 11px;white-space:nowrap}
+.pv-stage::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.pv-stage.blue{background:var(--blue-tint);color:var(--blue)}
+.pv-stage.amber{background:var(--amber-tint);color:#B4700F}
+.pv-stage.green-soft{background:var(--green-tint);color:var(--green-soft)}
+.pv-stage.green{background:var(--green-tint);color:var(--green)}
+
+/* Job Hub landing — a filterable list of job cards (KPI strip lives in
+   .pv-metrics above it; filter chips reuse .pv-fchip). */
+.jb-list{display:grid;gap:10px}
+.jb-card{display:flex;align-items:center;gap:14px;background:var(--paper-2);border:1px solid var(--line);
+  border-radius:14px;padding:15px 18px;box-shadow:var(--shadow);text-decoration:none;color:inherit;
+  transition:border-color .15s,transform .12s}
+.jb-card:hover{border-color:var(--green);transform:translateY(-1px)}
+.jb-card:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+.jb-card-tx{flex:1;min-width:0}
+.jb-card-tx b{display:block;font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.jb-card-tx span{display:block;font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
+.jb-card-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.jb-money{font-size:11px;color:var(--muted);font-family:var(--font-m,monospace)}
+.jb-money.owed{color:#B4472F}
+.jb-money.ok{color:var(--green)}
+.jb-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
+.jb-new{display:flex;justify-content:flex-end;margin-top:14px}
+
+/* Per-job hub page: five fixed stage nodes with done/current/upcoming states,
+   reusing the landing's own connector-line-and-numbered-node visual. */
+.jb-tracker{display:flex;gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  background:var(--paper-2);box-shadow:var(--shadow);padding:22px 18px 18px}
+.jb-step{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;gap:8px}
+.jb-step:not(:last-child)::after{content:"";position:absolute;top:13px;left:calc(50% + 20px);right:calc(-50% + 20px);
+  height:2px;background:var(--line)}
+.jb-step.done:not(:last-child)::after{background:var(--green)}
+.jb-step-dot{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;flex:none;z-index:1;
+  background:var(--paper);border:2px solid var(--line);color:var(--muted)}
+.jb-step.current .jb-step-dot{background:var(--amber-tint);border-color:var(--amber);color:#B4700F}
+.jb-step.done .jb-step-dot{background:var(--green);border-color:var(--green);color:#fff}
+.jb-step-lbl{font-size:12px;font-weight:700;color:var(--muted)}
+.jb-step.current .jb-step-lbl{color:var(--ink)}
+.jb-step.done .jb-step-lbl{color:var(--green)}
+@media(max-width:640px){.jb-tracker{overflow-x:auto}.jb-step-lbl{font-size:10.5px}}
+
+.jb-todos{display:grid;gap:2px}
+.jb-todo{display:flex;align-items:center;gap:11px;padding:11px 4px;text-decoration:none;color:inherit;
+  border-bottom:1px solid var(--line);transition:background .12s}
+.jb-todo:last-child{border-bottom:none}
+.jb-todo:hover{background:var(--paper)}
+.jb-todo-ic{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;
+  border:2px solid var(--line);color:transparent}
+.jb-todo.done .jb-todo-ic{background:var(--green);border-color:var(--green);color:#fff}
+.jb-todo-tx{flex:1;font-size:13px;color:var(--ink)}
+.jb-todo.done .jb-todo-tx{color:var(--muted);text-decoration:line-through}
+.jb-todo-go{flex:none;color:var(--muted)}
+
+.jb-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.jb-tool{display:flex;flex-direction:column;gap:8px;background:var(--paper);border:1px solid var(--line);
+  border-radius:12px;padding:14px;text-decoration:none;color:inherit;transition:border-color .15s}
+.jb-tool:hover{border-color:var(--green)}
+.jb-tool-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--paper-2);
+  border:1px solid var(--line);color:var(--green)}
+.jb-tool b{font-size:13px;color:var(--ink)}
+
 /* generic building blocks reused by feature pages */
 .pv-panel{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
 .pv-panel + .pv-panel{margin-top:16px}
@@ -666,6 +835,16 @@ html[data-theme="dark"] .pv-code{background:#080B09}
 .pv-doc .doc-sign div{border-top:1px solid #999;padding-top:6px;font-size:10.5px;color:#666}
 .pv-doc-scroll{overflow-x:auto}
 
+/* DocReveal: the document sheet is closed by default (a one-line summary sits
+   above it on the page) and opens on click. On screen only — print always
+   forces it open below, regardless of this toggle's state. */
+.pv-docreveal{margin-top:18px}
+.doc-reveal-btn{width:100%;justify-content:space-between}
+.doc-reveal-btn svg{flex:none;transition:transform .2s}
+.pv-docreveal.open .doc-reveal-btn svg{transform:rotate(180deg)}
+.pv-docreveal .pv-doc-scroll{display:none}
+.pv-docreveal.open .pv-doc-scroll{display:block;margin-top:16px}
+
 @media print{
   /* Only the white document sheet prints. Every piece of the editor around it —
      the section heading, the "these numbers are real" note, the client/system
@@ -673,9 +852,14 @@ html[data-theme="dark"] .pv-code{background:#080B09}
      of the client-facing document, so it's all dropped. The document already
      restates the client + system figures the control bar holds. */
   .sidebar,.skip-link,.demo-bar,.pv-topbar,.pv-tabs,.pv-head,.cl-bar,.pv-mocknote,
-  .pv-head-right,.pv-noprint,.pv-toast{display:none!important}
+  .pv-head-right,.pv-noprint,.pv-toast,.doc-reveal-btn{display:none!important}
   .app .main{margin:0!important;padding:0!important;background:#fff!important}
   .pv-wrap{max-width:none;margin:0;padding:0}
+  /* The document itself stays in the DOM even when collapsed on screen (so the
+     "Print / PDF" button, which queries for .pv-doc, always finds it) — this
+     forces it visible for the print/PDF output no matter what the on-screen
+     toggle was left at. */
+  .pv-docreveal .pv-doc-scroll{display:block!important}
   .pv-doc-scroll{overflow:visible!important}
   .pv-doc{max-width:none;margin:0;border:none;border-radius:0;box-shadow:none;padding:0}
   /* keep the green headings, highlighted rows and coloured figures on paper */

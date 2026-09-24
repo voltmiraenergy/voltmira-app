@@ -33,3 +33,16 @@ export const ALL_PRODUCTS = [
   ..._BATTERIES.map((p) => ({ ...p, kind: "baterie" })),
   ..._MOUNTS.map((p) => ({ ...p, kind: "structura" })),
 ];
+
+// Module count → string layout → cold-morning string Voc, for a given system
+// size and panel. Shared by the technical annex (which needs it for the
+// equipment schedule) and the Configuration Workspace (which needs it to
+// warn when a string's Voc would exceed the chosen inverter's maxDcV).
+export function stringSizing(kw, panel) {
+  const modules = Math.max(1, Math.ceil((kw * 1000) / panel.watt));
+  const dcKw = (modules * panel.watt) / 1000;
+  const strings = dcKw > 5.2 ? Math.max(2, Math.ceil(dcKw / 5.5)) : 1;
+  const perString = Math.ceil(modules / strings);
+  const vocCold = perString * panel.voc * 1.13;   // ~ −10 °C correction
+  return { modules, dcKw, strings, perString, vocCold };
+}

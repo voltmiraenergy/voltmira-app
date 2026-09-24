@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   useLang, makeT, PreviewHeader, MockNote, EUR, NUM, engineSettings, downloadStudioDoc,
-  useStudioClient, ClientBar, systemFor,
+  useStudioClient, ClientBar, systemFor, DocReveal,
 } from "../studio-kit.jsx";
 import { simulate, SOLAR_SEASON, effectiveYield, FX } from "../_engine.js";
 import {
@@ -37,6 +37,11 @@ const TX = {
   disc: { en: "Discount rate", ro: "Rată de actualizare", ru: "Ставка дисконт." },
   pdf: { en: "Export PDF", ro: "Exportă PDF", ru: "Экспорт PDF" },
   csv: { en: "Export data (CSV)", ro: "Exportă datele (CSV)", ru: "Экспорт данных (CSV)" },
+  m_payback: { en: "Payback (P50)", ro: "Recuperare (P50)", ru: "Окупаемость (P50)" },
+  m_dscr: { en: "Min. DSCR (P90)", ro: "DSCR minim (P90)", ru: "Мин. DSCR (P90)" },
+  m_npv: { en: "NPV", ro: "VAN", ru: "NPV" },
+  m_irr: { en: "IRR", ro: "RIR", ru: "IRR" },
+  m_years: { en: "yrs", ro: "ani", ru: "лет" },
 };
 
 // Internal rate of return by bisection on the P50 cashflow series (cf[0] = −capex).
@@ -297,8 +302,15 @@ export default function BankabilityPreview() {
         </div>
       </div>
 
+      <div className="pv-metrics" style={{ marginBottom: 16 }}>
+        <div className="pv-metric"><b>{model.paybackP50 == null ? "—" : `${model.paybackP50.toFixed(1)} ${t("m_years")}`}</b><span>{t("m_payback")}</span></div>
+        <div className={"pv-metric" + (model.dscrMinP90 < 1.2 ? " warn" : " good")}><b>{model.dscrMinP90.toFixed(2)}×</b><span>{t("m_dscr")}</span></div>
+        <div className={"pv-metric" + (model.npv >= 0 ? " good" : " warn")}><b>{EUR(model.npv)}</b><span>{t("m_npv")}</span></div>
+        <div className="pv-metric"><b>{model.irr == null ? "n/a" : `${(model.irr * 100).toFixed(1)}%`}</b><span>{t("m_irr")}</span></div>
+      </div>
+
       {/* the document */}
-      <div className="pv-doc-scroll">
+      <DocReveal lang={lang}>
       <div className="pv-doc">
         <div className="doc-co">VoltMira · {d("Energy Yield Assessment & Bankability Summary", "Evaluarea producției de energie & rezumat de bancabilitate")} · {new Date().toLocaleDateString(loc)}</div>
         <h1>{project.name}</h1>
@@ -466,7 +478,7 @@ export default function BankabilityPreview() {
           <div>{d("Reviewed by — [independent engineer]", "Verificat de — [inginer independent]")}</div>
         </div>
       </div>
-      </div>
+      </DocReveal>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .bk-doclang{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:12px;font-weight:600;color:var(--muted)}

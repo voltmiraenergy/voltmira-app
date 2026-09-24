@@ -11,40 +11,16 @@
 
 export const PREVIEW_FEATURES = [
   {
-    slug: "survey",
-    en: { name: "Site survey", nav: "Vizită", short: "Before the quote: real roof pitch, azimuth and shading feed an adjusted PVGIS yield, a 1~/3~ and string-voltage check flags an unbuildable design, and the site photos live on the job — so the payback number is honest for this roof, not a national average." },
-    ro: { name: "Vizită tehnică", nav: "Vizită", short: "Înainte de ofertă: înclinarea reală a acoperișului, orientarea și umbrirea dau un randament PVGIS ajustat, o verificare 1~/3~ și tensiune șir semnalează un proiect nefezabil, iar pozele de la fața locului stau pe lucrare — ca amortizarea să fie onestă pentru acest acoperiș, nu o medie națională." },
-    ru: { name: "Техобследование", nav: "Осмотр", short: "До расчёта: реальный уклон крыши, азимут и затенение дают скорректированную выработку PVGIS, проверка 1~/3~ и напряжения цепочки ловит нереализуемую схему, а фото объекта хранятся при заявке — чтобы окупаемость была честной для этой крыши." },
-  },
-  {
-    slug: "catalog",
-    en: { name: "Equipment catalog", nav: "Catalog", short: "Panels, inverters, batteries and mounting — every SKU with real specifications, stock and lead time, filterable by class. The quote, the annex and the install schedule all read from this one catalog, so a system is never quoted from a fictional part." },
-    ro: { name: "Catalog echipamente", nav: "Catalog", short: "Panouri, invertoare, baterii și structuri — fiecare SKU cu specificații reale, stoc și termen de livrare, filtrabil pe clasă. Oferta, anexa și planificarea de montaj citesc din acest catalog, ca un sistem să nu fie ofertat pe un echipament fictiv." },
-    ru: { name: "Каталог оборудования", nav: "Каталог", short: "Панели, инверторы, батареи и крепления — каждый SKU с реальными характеристиками, наличием и сроком поставки. Расчёт, приложение и график монтажа читают из этого каталога." },
-  },
-  {
-    slug: "annex",
-    en: { name: "Technical annex", nav: "Anexă", short: "Generates the single-line diagram and equipment schedule for an ANRE / Premier Energy / Moldelectrica connection request — modules, inverter, protections and cable sizes filled from the quote. An engineer reviews and stamps it." },
-    ro: { name: "Anexă tehnică", nav: "Anexă", short: "Generează schema electrică monofilară și borderoul de echipamente pentru dosarul de racordare la ANRE / Premier Energy / Moldelectrica — module, invertor, protecții și secțiuni de cablu completate din ofertă. Un inginer o verifică și o ștampilează." },
-    ru: { name: "Техническое приложение", nav: "Приложение", short: "Формирует однолинейную схему и спецификацию оборудования для заявки на подключение в ANRE / Premier Energy / Moldelectrica — модули, инвертор, защиты и сечения кабеля из расчёта. Инженер проверяет и заверяет." },
-  },
-  {
     slug: "payments",
     en: { name: "Payments & cashflow", nav: "Încasări", short: "Every job's money on one screen — deposit and balance with the amount and the date, an overdue flag, a monthly in / owed / committed cashflow view, and the fiscal invoice (factură fiscală, plus the SFS e-Factura XML for a company client) generated from the quote." },
     ro: { name: "Încasări & flux de numerar", nav: "Încasări", short: "Banii fiecărei lucrări pe un singur ecran — avans și rest cu suma și data, marcaj de întârziere, o vedere lunară încasat / de încasat / angajat, și factura fiscală (plus XML-ul e-Factura SFS pentru un client firmă) generată din ofertă." },
     ru: { name: "Оплаты и денежный поток", nav: "Оплаты", short: "Деньги каждого объекта на одном экране — аванс и остаток с суммой и датой, флаг просрочки, месячная сводка получено / к получению / законтрактовано и налоговая накладная (плюс XML e-Factura SFS для клиента-фирмы) из расчёта." },
   },
   {
-    slug: "schedule",
-    en: { name: "Install schedule", nav: "Montaj", short: "The week's installs on a calendar with the crew assigned and a materials-ready check against the catalog — and a phone view of the on-site checklist, photos and the client's signature that works with no signal and syncs when it's back." },
-    ro: { name: "Planificare montaj", nav: "Montaj", short: "Montajele săptămânii pe un calendar cu echipa alocată și o verificare a materialelor față de catalog — plus o vedere de telefon a listei de la fața locului, poze și semnătura clientului, care merge fără semnal și se sincronizează când revine." },
-    ru: { name: "График монтажа", nav: "Монтаж", short: "Монтажи недели в календаре с назначенной бригадой и проверкой готовности материалов по каталогу — плюс телефонный вид чек-листа на объекте, фото и подпись клиента, работающий без связи и синхронизирующийся при её появлении." },
-  },
-  {
     slug: "monitoring",
-    en: { name: "Fleet monitoring", nav: "Monitorizare", short: "After handover: real production pulled from the inverter portal against the P50 estimate you promised, per-component warranty with reminders, and a service-ticket log — so the installed base is a referral engine, and VoltMira has the regional actual-vs-P50 data nobody else does." },
-    ro: { name: "Monitorizare parc", nav: "Monitorizare", short: "După predare: producția reală luată din portalul invertorului față de estimarea P50 promisă, garanție pe componente cu memento-uri, și un jurnal de tichete de service — ca baza instalată să fie un motor de recomandări, iar VoltMira să aibă datele regionale real-vs-P50 pe care nu le are nimeni." },
-    ru: { name: "Мониторинг парка", nav: "Мониторинг", short: "После сдачи: реальная выработка из портала инвертора против обещанного P50, гарантия по компонентам с напоминаниями и журнал сервисных заявок — чтобы установленная база работала на рекомендации, а у VoltMira были региональные данные факт-против-P50." },
+    en: { name: "Fleet monitoring", nav: "Monitoring", short: "Every system you've handed over, against the P50 its quote promised: what needs a visit and why, what each client saved this year, and a monthly update you can send them on WhatsApp or Viber." },
+    ro: { name: "Monitorizarea parcului", nav: "Monitorizare", short: "Fiecare sistem predat, față de P50-ul promis în ofertă: ce are nevoie de o vizită și de ce, cât a economisit fiecare client anul acesta și un raport lunar pe care i-l trimiți pe WhatsApp sau Viber." },
+    ru: { name: "Мониторинг систем", nav: "Мониторинг", short: "Каждая сданная система против P50 из её расчёта: что требует выезда и почему, сколько клиент сэкономил за год и ежемесячный отчёт, который можно отправить в WhatsApp или Viber." },
   },
   {
     slug: "bankability",

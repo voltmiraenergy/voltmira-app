@@ -134,6 +134,16 @@ const nextConfig = {
       // (307) rather than permanent so a bookmark isn't cached forever against
       // a path we may reuse.
       { source: "/studio/quote", destination: "/projects", permanent: false },
+      // Survey/Annex/Schedule were retired as standalone pages — their real
+      // logic now lives as steps inside the per-job Configuration Workspace
+      // (app/(app)/studio/jobs/[id]/configure), so a job's roof pitch,
+      // equipment and paperwork state stop having two disagreeing copies.
+      // These have no job-id context of their own, so they land on the Job
+      // Hub rather than guessing which job to deep-link into. /studio/monitoring
+      // is live again as the fleet view; it reads the workspace's own readings.
+      { source: "/studio/survey", destination: "/studio", permanent: false },
+      { source: "/studio/annex", destination: "/studio", permanent: false },
+      { source: "/studio/schedule", destination: "/studio", permanent: false },
     ];
   },
 };
