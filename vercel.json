@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/reap-demo",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/inverter-sync",
+      "schedule": "0 5 * * *"
     }
   ]
 }
