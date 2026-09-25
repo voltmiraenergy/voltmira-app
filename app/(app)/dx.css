@@ -1,0 +1,260 @@
+/* app/(app)/dx.css — the shared workspace look: page header, cards, small
+ * buttons, tabs, empty states and the command palette. Imported by the
+ * Dashboard, Quotes, Leads and Studio pages so they read as one product.
+ *
+ * Built on the app tokens from AppTheme.jsx (--paper, --ink, --green, ...), so
+ * both themes follow html[data-theme].
+ *
+ * Every selector starts with `.app`: AppTheme's <style> sits after this file in
+ * the document and resets `.app *{margin:0;padding:0}` and `.app button`, so a
+ * bare `.dx-card` would lose every tie to it.
+ */
+
+.app .dx {
+  --dx-d: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --amber-ink: #B4700F;
+  --dx-radius: 16px;
+  --dx-hover: color-mix(in srgb, var(--ink) 4.5%, transparent);
+  --dx-soft: color-mix(in srgb, var(--ink) 80%, var(--paper-2));
+  --dx-on-green: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+html[data-theme="dark"] .app .dx {
+  --amber-ink: #EBA542;
+  --dx-on-green: #07130D;
+}
+.app .dx .sample-bar { margin-bottom: 0; }
+.app .dx .sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Sections settle in one after another, once, on first paint. */
+@keyframes dx-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.app .dx > * { animation: dx-in .5s cubic-bezier(.2, .7, .2, 1) both; }
+.app .dx > *:nth-child(2) { animation-delay: .04s; }
+.app .dx > *:nth-child(3) { animation-delay: .08s; }
+.app .dx > *:nth-child(4) { animation-delay: .12s; }
+.app .dx > *:nth-child(5) { animation-delay: .16s; }
+.app .dx > *:nth-child(6) { animation-delay: .2s; }
+.app .dx > *:nth-child(n+7) { animation-delay: .24s; }
+
+/* ---------------------------------------------------------------- header */
+.app .dx-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap; padding: 4px 0 2px;
+}
+.app .dx-hello { min-width: 0; flex: 1 1 380px; }
+.app .dx-date {
+  font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+}
+.app .dx h1 {
+  font-family: var(--dx-d); font-size: 32px; line-height: 1.12; font-weight: 700;
+  letter-spacing: -.03em; color: var(--ink); text-wrap: balance;
+}
+.app .dx-summary { font-size: 14.5px; color: var(--muted); margin-top: 7px; max-width: 62ch; line-height: 1.5; }
+.app .dx-head-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.app .dx-search {
+  display: inline-flex; align-items: center; gap: 9px; height: 40px; min-width: 260px;
+  padding: 0 8px 0 13px; border-radius: 11px; background: var(--paper-2) !important;
+  border: 1px solid var(--line) !important; color: var(--muted) !important; font-size: 13.5px;
+  box-shadow: 0 1px 2px rgba(20, 42, 33, .04); transition: border-color .18s, box-shadow .18s;
+}
+.app .dx-search svg { flex: none; }
+.app .dx-search span { flex: 1; min-width: 0; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .dx-search:hover { border-color: color-mix(in srgb, var(--green) 55%, var(--line)) !important; box-shadow: 0 2px 10px rgba(20, 42, 33, .07); }
+.app .dx kbd {
+  font-family: var(--font-b); font-size: 11px; font-weight: 600; line-height: 1;
+  padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); border-bottom-width: 2px;
+  background: var(--paper); color: var(--muted); white-space: nowrap;
+}
+.app .dx-new {
+  display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px;
+  border-radius: 11px; background: var(--green) !important; color: var(--dx-on-green) !important;
+  font-size: 14px; font-weight: 600; white-space: nowrap;
+  box-shadow: 0 3px 12px rgba(30, 107, 78, .25);
+  transition: transform .14s, background .18s, box-shadow .18s;
+}
+.app .dx-new:hover { background: var(--green-soft) !important; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(30, 107, 78, .3); }
+.app .dx-new:active { transform: scale(.97); }
+
+/* ---------------------------------------------------------------- cards */
+.app .dx-card, .app .dx .card {
+  background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--dx-radius);
+  padding: 20px 22px; box-shadow: var(--shadow); min-width: 0;
+}
+.app .dx .card h3 {
+  font-family: var(--dx-d); font-size: 16px; font-weight: 700; letter-spacing: -.01em;
+  text-transform: none; color: var(--ink);
+}
+.app .dx-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.app .dx-card-head h2 {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--dx-d); font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: var(--ink);
+}
+.app .dx-card-head p { font-size: 12.5px; color: var(--muted); margin-top: 3px; line-height: 1.45; }
+.app .dx-count {
+  font-family: var(--font-b); font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+  padding: 2px 8px; border-radius: 99px; background: var(--paper); border: 1px solid var(--line); color: var(--muted);
+}
+.app .dx-link {
+  font-size: 12.5px; font-weight: 600; color: var(--green) !important; text-decoration: none;
+  white-space: nowrap; padding: 2px 0;
+}
+.app .dx-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.app .dx-muted-note { font-size: 13px; color: var(--muted); line-height: 1.55; padding: 6px 0 2px; }
+
+.app .dx-grid { display: grid; gap: 18px; align-items: start; }
+.app .dx-grid-main { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+.app .dx-grid-half { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.app .dx-stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+/* shared small buttons */
+.app .dx-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 31px; padding: 0 12px; border-radius: 9px; white-space: nowrap;
+  border: 1px solid var(--line) !important; background: var(--paper-2) !important; color: var(--ink) !important;
+  font-size: 12.5px; font-weight: 600; text-decoration: none;
+  transition: border-color .16s, color .16s, background .16s, transform .12s;
+}
+.app .dx-btn:hover { border-color: var(--green) !important; color: var(--green) !important; }
+.app .dx-btn:active { transform: scale(.97); }
+.app .dx-btn.primary { background: var(--green) !important; border-color: var(--green) !important; color: var(--dx-on-green) !important; }
+.app .dx-btn.primary:hover { background: var(--green-soft) !important; border-color: var(--green-soft) !important; color: var(--dx-on-green) !important; }
+.app .dx-btn:disabled { opacity: .55; cursor: default; }
+.app .dx-btn[aria-busy="true"] { cursor: progress; opacity: .7; }
+.app .dx-btn.on { background: var(--green-tint) !important; border-color: var(--green) !important; color: var(--green) !important; }
+.app .dx-btn.icon { width: 31px; padding: 0; color: var(--muted) !important; }
+.app .dx-btn.del:hover { border-color: var(--red) !important; color: var(--red) !important; background: var(--red-tint) !important; }
+/* LeadActions' row (Leads page + dashboard). */
+.app .lead-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+.app .lead-acts[aria-busy="true"] { opacity: .7; }
+.app .dx-hot {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 99px; background: var(--amber-tint); color: var(--amber-ink);
+}
+
+/* ---------------------------------------------------------------- find (inline search box) */
+.app .dx-find {
+  display: flex; align-items: center; gap: 9px; flex: 1 1 280px; max-width: 420px; height: 40px;
+  padding: 0 10px 0 13px; border-radius: 11px; background: var(--paper-2); border: 1px solid var(--line);
+  color: var(--muted); transition: border-color .16s, box-shadow .16s;
+}
+.app .dx-find:focus-within { border-color: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 16%, transparent); }
+.app .dx-find svg { flex: none; }
+.app .dx-find input { flex: 1; min-width: 0; height: 100%; border: none; outline: none; background: transparent; font-size: 14px; color: var(--ink); }
+.app .dx-find input::placeholder { color: var(--muted); }
+.app .dx-find-x { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--muted); }
+.app .dx-find-x:hover { background: var(--dx-hover); color: var(--ink); }
+
+
+/* ---------------------------------------------------------------- tabs */
+.app .dx-tabs {
+  display: flex; gap: 3px; padding: 3px; margin-bottom: 6px; border-radius: 11px;
+  background: var(--paper); border: 1px solid var(--line); overflow-x: auto; scrollbar-width: none;
+}
+.app .dx-tabs::-webkit-scrollbar { display: none; }
+.app .dx-tabs button, .app .dx-tabs a {
+  display: inline-flex; align-items: center; gap: 7px; flex: none;
+  padding: 6px 11px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--muted);
+  transition: background .16s, color .16s, box-shadow .16s;
+}
+.app .dx-tabs button span, .app .dx-tabs a span { font-size: 11px; font-variant-numeric: tabular-nums; opacity: .75; }
+.app .dx-tabs button:hover, .app .dx-tabs a:hover { color: var(--ink); }
+.app .dx-tabs button.on, .app .dx-tabs a.on { background: var(--paper-2); color: var(--ink); box-shadow: 0 1px 3px rgba(20, 42, 33, .1); }
+
+/* ---------------------------------------------------------------- empty state */
+.app .dx-empty {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;
+  padding: 34px 16px 30px; color: var(--muted); font-size: 13px; line-height: 1.55;
+}
+.app .dx-empty b { font-family: var(--dx-d); font-size: 15.5px; color: var(--ink); }
+.app .dx-empty span { max-width: 42ch; }
+.app .dx-empty-ic { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--green-tint); color: var(--green); margin-bottom: 4px; }
+
+/* ---------------------------------------------------------------- numbers */
+.app .dx-num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- command palette */
+.app .dx-pal-wrap {
+  position: fixed; inset: 0; z-index: 90; display: flex; justify-content: center; align-items: flex-start;
+  padding: 11vh 16px 16px; background: rgba(10, 22, 16, .38);
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  animation: dx-fade .14s ease both;
+}
+@keyframes dx-fade { from { opacity: 0; } to { opacity: 1; } }
+.app .dx-pal {
+  width: min(640px, 100%); max-height: calc(100dvh - 11vh - 32px); display: flex; flex-direction: column;
+  background: var(--paper-2); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 24px 70px -12px rgba(10, 22, 16, .45), 0 2px 8px rgba(10, 22, 16, .12);
+  animation: dx-pal-in .18s cubic-bezier(.2, .8, .2, 1) both;
+}
+@keyframes dx-pal-in { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: none; } }
+.app .dx-pal-in { display: flex; align-items: center; gap: 11px; padding: 0 14px; border-bottom: 1px solid var(--line); color: var(--muted); }
+.app .dx-pal-in input {
+  flex: 1; min-width: 0; height: 54px; border: none; outline: none; background: transparent;
+  font-size: 16px; color: var(--ink);
+}
+.app .dx-pal-in input::placeholder { color: var(--muted); }
+.app .dx-pal-list { overflow-y: auto; padding: 6px; flex: 1; min-height: 0; }
+.app .dx-pal-group + .dx-pal-group { margin-top: 4px; }
+.app .dx-pal-gt { font-size: 11px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 8px 10px 5px; }
+.app .dx-pal-opt {
+  display: flex; align-items: center; gap: 11px; padding: 8px 10px; border-radius: 10px; cursor: pointer; min-height: 44px;
+}
+.app .dx-pal-opt.on { background: var(--dx-hover); }
+.app .dx-pal-ic { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex: none; background: var(--paper); border: 1px solid var(--line); color: var(--muted); }
+.app .dx-pal-opt.on .dx-pal-ic { color: var(--green); border-color: color-mix(in srgb, var(--green) 40%, var(--line)); }
+.app .dx-pal-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.app .dx-pal-tx b { font-size: 13.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .dx-pal-tx small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .dx-pal-opt .chip { padding: 3px 9px; font-size: 11px; }
+.app .dx-pal-enter { color: var(--muted); display: grid; place-items: center; }
+.app .dx-pal-none { padding: 22px 12px; text-align: center; font-size: 13px; color: var(--muted); }
+.app .dx-pal-hint { font-size: 11.5px; color: var(--muted); padding: 9px 14px; border-top: 1px solid var(--line); background: var(--paper); }
+
+/* ---------------------------------------------------------------- responsive */
+@media (max-width: 1240px) {
+  .app .dx-grid-main { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+}
+@media (max-width: 1080px) {
+  .app .dx-grid-main { grid-template-columns: minmax(0, 1fr); }
+  .app .dx-stack { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+}
+@media (max-width: 860px) {
+  .app .dx-grid-half, .app .dx-stack { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 768px) {
+  .app .dx { gap: 14px; }
+  .app .dx h1 { font-size: 25px; }
+  .app .dx-summary { font-size: 13.5px; }
+  .app .dx-head { align-items: stretch; }
+  .app .dx-head-tools { width: 100%; flex-wrap: nowrap; }
+  .app .dx-head-tools form { flex: none; }
+  .app .dx-search { flex: 1; min-width: 0; }
+  .app .dx-search kbd { display: none; }
+  .app .dx-card, .app .dx .card { padding: 16px; border-radius: 14px; }
+  .app .dx-pal-wrap { padding-top: 16px; }
+  .app .dx-pal { max-height: calc(100dvh - 32px); }
+}
+@media (max-width: 560px) {
+  /* Badge and link on one line, the sentence full width underneath. */
+  .app .dx .sample-note { flex-basis: 100%; order: 3; }
+  .app .dx .sample-cta { margin-left: auto; }
+}
+@media (max-width: 420px) {
+  .app .dx-search span { font-size: 13px; }
+  .app .dx-new { padding: 0 13px; }
+}
+@media (pointer: coarse) {
+  .app .dx-btn { height: 40px; padding: 0 14px; }
+  .app .dx-btn.icon { width: 40px; padding: 0; }
+  .app .dx-tabs button, .app .dx-tabs a { padding: 9px 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app .dx > *, .app .dx-pal, .app .dx-pal-wrap { animation: none !important; }
+}

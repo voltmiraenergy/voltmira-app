@@ -403,10 +403,8 @@ const CSS = `
   .disc-row output{color:var(--green);font-family:var(--font-d);font-weight:700;margin-left:6px}
   .disc-row input[type=range]{margin-top:6px}
 
-  /* Chart legend + trend legend */
+  /* Chart legend */
   .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;color:var(--muted);margin-top:8px}
-  .tr-leg{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
-  .tr-leg i{width:10px;height:10px;border-radius:3px;display:inline-block}
 
   /* Activity feed */
   .feed{list-style:none;display:flex;flex-direction:column}
@@ -722,7 +720,6 @@ const CSS = `
     .app .member{padding-top:16px;padding-bottom:16px}
     /* Onboarding + follow-up rows are links, not buttons — give them real height */
     .app .ob-step{min-height:44px}
-    .app .tr-tab{min-height:40px;min-width:44px}
     .app .role-opt{min-height:42px}
     .app .tbl .t-title{display:inline-flex;align-items:center;min-height:40px}
   }

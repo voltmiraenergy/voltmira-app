@@ -85,9 +85,11 @@ async function downloadCleanPdf(nodeRef, filename, title) {
   }
 }
 
-export default function LegalDocsModal({ lang, onClose, company, project }) {
+export default function LegalDocsModal({ lang, onClose, company, project, initialTab = "contract" }) {
   const isMd = project.market === "MD";
-  const [docType, setDocType] = useState("contract"); // "contract" | "racordare" | "commissioning" | "diagram"
+  // initialTab lets the Documents page deep-link straight to one document.
+  const [docType, setDocType] = useState(() =>
+    ["contract", "commissioning", "diagram"].includes(initialTab) || (initialTab === "racordare" && isMd) ? initialTab : "contract"); // "contract" | "racordare" | "commissioning" | "diagram"
   const [contractText, setContractText] = useState(() => buildServiceContract({
     companyLegalName: company.legal_name || company.name, companyRegNo: company.reg_no,
     companyAddress: company.legal_address, companyIban: company.iban,

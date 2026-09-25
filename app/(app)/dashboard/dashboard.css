@@ -1,0 +1,272 @@
+/* app/(app)/dashboard/dashboard.css — the parts only the dashboard has: the
+ * lead-to-live line, next moves, pulse, vitals, the install board and the
+ * installed-base band. The shared header, cards, buttons and palette live in
+ * app/(app)/dx.css. Same `.app` prefix rule as there.
+ */
+
+/* the installed-base band keeps its own dark ground in both themes */
+.app .dx {
+  --dx-base-bg: #12291F;
+  --dx-base-ink: #F1EFE8;
+  --dx-base-muted: rgba(241, 239, 232, .62);
+}
+html[data-theme="dark"] .app .dx { --dx-base-bg: #0B1510; }
+
+/* ---------------------------------------------------------------- flow line */
+.app .dx-flow { background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--dx-radius); padding: 20px 22px 16px; box-shadow: var(--shadow); }
+.app .dx-flow-head { display: flex; align-items: baseline; gap: 6px 14px; flex-wrap: wrap; }
+.app .dx-flow-head h2 { font-family: var(--dx-d); font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
+.app .dx-flow-head p { font-size: 12.5px; color: var(--muted); }
+.app .dx-flow-line {
+  list-style: none; display: grid; grid-template-columns: repeat(7, minmax(122px, 1fr));
+  margin-top: 18px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 4px;
+  scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+}
+.app .dx-stage { position: relative; padding-top: 26px; scroll-snap-align: start; min-width: 0; }
+.app .dx-stage::before {
+  content: ""; position: absolute; top: 0; left: 0; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 18%, transparent);
+}
+.app .dx-stage.zero::before { background: var(--paper-2); border: 2px solid var(--line); box-shadow: none; }
+.app .dx-join {
+  position: absolute; top: 5px; left: 22px; right: 10px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 60%, var(--line)), var(--line));
+}
+.app .dx-stage.zero .dx-join { background: var(--line); }
+.app .dx-join em {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-style: normal; font-size: 10.5px; font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums;
+  background: var(--paper-2); border: 1px solid var(--line); color: var(--dx-soft);
+  padding: 2px 7px; border-radius: 99px;
+}
+.app .dx-stage-in {
+  display: flex; flex-direction: column; gap: 1px; padding: 2px 10px 6px 0;
+  text-decoration: none; color: inherit; border-radius: 10px;
+}
+.app .dx-stage-lbl { font-size: 11.5px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.app .dx-stage-n {
+  font-family: var(--dx-d); font-size: 30px; font-weight: 700; line-height: 1.15; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 3px; transition: color .16s;
+}
+.app .dx-stage-eur { font-size: 13px; font-weight: 650; color: var(--c); font-variant-numeric: tabular-nums; min-height: 18px; }
+.app .dx-stage-sub { font-size: 12px; color: var(--muted); min-height: 17px; line-height: 1.35; }
+.app .dx-stage.zero .dx-stage-n { color: color-mix(in srgb, var(--muted) 60%, transparent); }
+.app .dx-stage-in:hover .dx-stage-n { color: var(--c); }
+.app .dx-stage-in:hover .dx-stage-lbl { color: var(--ink); }
+.app .s-leads { --c: var(--amber-ink); }
+.app .s-drafts { --c: var(--muted); }
+.app .s-sent { --c: var(--blue); }
+.app .s-opened { --c: var(--amber); }
+.app .s-won { --c: var(--green); }
+.app .s-installing { --c: var(--green-soft); }
+.app .s-live { --c: var(--green); }
+
+/* ---------------------------------------------------------------- next moves */
+.app .dx-move-list { list-style: none; display: flex; flex-direction: column; }
+.app .dx-move {
+  --k: var(--muted); --kt: var(--paper);
+  display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 14px; align-items: start;
+  padding: 15px 12px; margin: 0 -12px; border-radius: 13px; position: relative;
+  transition: background .16s;
+}
+.app .dx-move + .dx-move::before {
+  content: ""; position: absolute; top: 0; left: 12px; right: 12px; height: 1px; background: var(--line);
+}
+.app .dx-move:hover { background: var(--dx-hover); }
+.app .dx-move:hover::before, .app .dx-move:hover + .dx-move::before { opacity: 0; }
+.app .dx-move-ic {
+  position: relative; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center;
+  background: var(--kt); color: var(--k);
+}
+.app .k-live { --k: var(--green); --kt: var(--green-tint); background: linear-gradient(90deg, color-mix(in srgb, var(--green) 7%, transparent), transparent 70%); }
+.app .k-hot, .app .k-lead { --k: var(--amber-ink); --kt: var(--amber-tint); }
+.app .k-followup, .app .k-invoice { --k: var(--blue); --kt: var(--blue-tint); }
+.app .k-won_start, .app .k-install { --k: var(--green); --kt: var(--green-tint); }
+.app .k-health { --k: var(--red); --kt: var(--red-tint); }
+.app .k-unopened, .app .k-quiet, .app .k-draft, .app .k-nodata { --k: var(--muted); --kt: var(--paper); }
+.app .k-unopened .dx-move-ic, .app .k-quiet .dx-move-ic, .app .k-draft .dx-move-ic, .app .k-nodata .dx-move-ic { border: 1px solid var(--line); }
+.app .dx-ping {
+  position: absolute; top: -3px; right: -3px; width: 11px; height: 11px; border-radius: 50%;
+  background: var(--green); border: 2px solid var(--paper-2);
+}
+.app .dx-ping::after {
+  content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--green);
+  animation: dx-ping 1.6s cubic-bezier(0, 0, .2, 1) infinite;
+}
+@keyframes dx-ping { from { transform: scale(1); opacity: .8; } to { transform: scale(2.4); opacity: 0; } }
+
+.app .dx-move-body { min-width: 0; }
+.app .dx-move-meta { display: flex; align-items: center; gap: 8px; min-height: 18px; }
+.app .dx-kind { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--k); }
+.app .dx-move-meta time { margin-left: auto; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app .dx-move-who { display: flex; align-items: baseline; gap: 4px 9px; flex-wrap: wrap; margin-top: 3px; min-width: 0; }
+.app .dx-move-title {
+  font-family: var(--dx-d); font-size: 15px; font-weight: 650; letter-spacing: -.005em; color: var(--ink);
+  text-decoration: none; overflow-wrap: anywhere;
+}
+.app .dx-move-title:hover { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+.app .dx-move-sub { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.app .dx-move-reason { font-size: 13.5px; line-height: 1.5; color: var(--dx-soft); margin-top: 4px; }
+.app .dx-move-reason b { color: var(--ink); font-weight: 650; }
+.app .dx-move-note {
+  font-size: 12.5px; line-height: 1.5; color: var(--muted); margin-top: 6px; padding-left: 10px;
+  border-left: 2px solid var(--line);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.app .dx-move-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.app .dx-done {
+  width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+  border: 1px solid var(--line) !important; color: var(--muted) !important; opacity: .7;
+  transition: opacity .16s, color .16s, border-color .16s, background .16s;
+}
+.app .dx-move:hover .dx-done, .app .dx-done:focus-visible { opacity: 1; }
+.app .dx-done:hover { color: var(--green) !important; border-color: var(--green) !important; background: var(--green-tint) !important; }
+.app .dx-moves-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px;
+}
+.app .dx-hidden { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+
+/* ---------------------------------------------------------------- pulse */
+.app .dx-live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); position: relative; flex: none; }
+.app .dx-live-dot.on { background: var(--green); }
+.app .dx-live-dot.on::after {
+  content: ""; position: absolute; inset: -1px; border-radius: 50%; border: 2px solid var(--green);
+  animation: dx-ping 1.6s cubic-bezier(0, 0, .2, 1) infinite;
+}
+.app .dx-pulse-list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.app .dx-pulse-list a {
+  display: flex; align-items: center; gap: 11px; padding: 8px 10px; margin: 0 -10px;
+  border-radius: 11px; text-decoration: none; color: inherit; transition: background .15s;
+}
+.app .dx-pulse-list a:hover { background: var(--dx-hover); }
+.app .dx-pulse-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.app .dx-pulse-tx b { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .dx-pulse-tx small { font-size: 12px; color: var(--muted); }
+.app .dx-pulse-list li.live small { color: var(--green); font-weight: 600; }
+.app .dx-pulse-n {
+  font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums; color: var(--dx-soft);
+  padding: 3px 8px; border-radius: 99px; background: var(--paper); border: 1px solid var(--line);
+}
+
+/* ---------------------------------------------------------------- vitals */
+.app .dx-vital-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+}
+.app .dx-vital-grid > div { background: var(--paper-2); padding: 13px 14px 12px; display: flex; flex-direction: column; min-width: 0; }
+.app .dx-vital-grid dt { font-size: 11px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.app .dx-vital-grid dd {
+  font-family: var(--dx-d); font-size: 21px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2;
+  font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 5px; overflow-wrap: anywhere;
+}
+.app .dx-vital-grid dd.dx-v-sub { font-family: var(--font-b); font-size: 11.5px; font-weight: 500; letter-spacing: 0; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+
+/* ---------------------------------------------------------------- quotes table */
+.app .dx-tbl td { padding: 11px 12px; }
+.app .dx-num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.app .dx-eng { font-size: 12.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.app .dx-eng.hot { color: var(--amber-ink); font-weight: 650; }
+.app .dx-feed.feed-scroll { max-height: 520px; }
+
+/* ---------------------------------------------------------------- leads */
+.app .dx-leads { list-style: none; display: flex; flex-direction: column; }
+.app .dx-leads li { padding: 13px 0; }
+.app .dx-leads li + li { border-top: 1px solid var(--line); }
+.app .dx-lead-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.app .dx-ch { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.app .dx-lead-top b { font-size: 14px; font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app .dx-lead-ch { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.app .dx-lead-top time { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.app .dx-lead-note {
+  font-size: 13px; color: var(--muted); line-height: 1.5; margin: 5px 0 0 16px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.app .dx-lead-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; margin-top: 9px; padding-left: 16px; }
+.app .dx-phone { font-size: 13px; font-weight: 600; color: var(--green) !important; text-decoration: none; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app .dx-phone:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------------------------------------------------------------- install board */
+.app .dx-jobs { list-style: none; display: flex; flex-direction: column; }
+.app .dx-job { padding: 14px 0; }
+.app .dx-job + .dx-job { border-top: 1px solid var(--line); }
+.app .dx-job-top { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.app .dx-job-title { font-size: 14px; font-weight: 650; color: var(--ink); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.app .dx-job-title:hover { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+.app .dx-job-client { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+.app .dx-job-n { margin-left: auto; font-size: 12px; font-weight: 650; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app .dx-steps { list-style: none; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; margin: 10px 0 10px; }
+.app .dx-steps li { height: 7px; border-radius: 99px; background: var(--line); transition: background .25s; }
+.app .dx-steps li.done { background: var(--green); }
+.app .dx-steps li.next { background: var(--amber-tint); box-shadow: inset 0 0 0 1.5px var(--amber); }
+.app .dx-job-next { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.app .dx-job-next b { color: var(--ink); font-weight: 600; }
+/* Full width, the jobs sit side by side as tiles instead of one long list. */
+.app .dx-inst .dx-jobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.app .dx-inst .dx-job { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.app .dx-inst .dx-job + .dx-job { border-top: 1px solid var(--line); }
+
+/* ---------------------------------------------------------------- paperwork */
+.app .dx-paper-list { list-style: none; display: flex; flex-direction: column; }
+.app .dx-paper-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px 14px; flex-wrap: wrap; padding: 11px 0; }
+.app .dx-paper-list li + li { border-top: 1px solid var(--line); }
+.app .dx-paper-who { display: flex; flex-direction: column; min-width: 0; text-decoration: none; color: inherit; }
+.app .dx-paper-who b { font-size: 14px; font-weight: 650; color: var(--ink); }
+.app .dx-paper-who:hover b { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+.app .dx-paper-who small { font-size: 12px; color: var(--muted); }
+.app .dx-paper-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.app .dx-paper-tags i {
+  font-style: normal; font-size: 11.5px; font-weight: 650; padding: 3px 9px; border-radius: 99px;
+  background: var(--amber-tint); color: var(--amber-ink); white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- installed base */
+.app .dx-base {
+  position: relative; overflow: hidden; border-radius: 18px; padding: 26px 28px 28px;
+  background:
+    radial-gradient(120% 140% at 100% 100%, rgba(63, 174, 106, .16), transparent 55%),
+    var(--dx-base-bg);
+  color: var(--dx-base-ink); border: 1px solid transparent;
+}
+html[data-theme="dark"] .app .dx-base { border-color: var(--line); }
+.app .dx-base-in { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 22px; padding-right: 180px; }
+.app .dx-base-copy h2 { font-family: var(--dx-d); font-size: 20px; font-weight: 700; letter-spacing: -.02em; color: var(--dx-base-ink); }
+.app .dx-base-copy p { font-size: 13.5px; line-height: 1.55; color: var(--dx-base-muted); margin-top: 5px; max-width: 60ch; }
+.app .dx-base-copy p b { color: var(--dx-base-ink); }
+.app .dx-base-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 22px; }
+.app .dx-base-stats > div { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 3px; min-width: 0; }
+.app .dx-base-stats dd {
+  font-family: var(--dx-d); font-size: 30px; font-weight: 700; letter-spacing: -.025em; line-height: 1.1;
+  font-variant-numeric: tabular-nums; color: var(--dx-base-ink); overflow-wrap: anywhere;
+}
+.app .dx-base-stats dt { font-size: 12.5px; color: var(--dx-base-muted); line-height: 1.35; }
+.app .dx-base-mark { position: absolute; right: 8px; bottom: -34px; width: 196px; height: 196px; opacity: .92; }
+
+/* ---------------------------------------------------------------- responsive */
+@media (max-width: 1080px) {
+  .app .dx-base-in { padding-right: 150px; }
+  .app .dx-base-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 768px) {
+  .app .dx-flow { padding: 16px; border-radius: 14px; }
+  .app .dx-flow-line { grid-template-columns: repeat(7, minmax(116px, 1fr)); margin-right: -16px; padding-right: 16px; }
+  .app .dx-stage-n { font-size: 26px; }
+  /* The table scrolls sideways on a phone; give the quote name room first. */
+  .app .dx-tbl td:first-child { min-width: 216px; }
+  .app .dx-move { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 11px; padding: 14px 10px; margin: 0 -10px; }
+  .app .dx-move-ic { width: 34px; height: 34px; border-radius: 10px; }
+  .app .dx-base { padding: 20px 18px 22px; }
+  .app .dx-base-in { padding-right: 0; }
+  .app .dx-base-stats dd { font-size: 25px; }
+  .app .dx-base-mark { width: 150px; height: 150px; right: -18px; bottom: auto; top: -26px; opacity: .2; }
+}
+@media (max-width: 560px) {
+  .app .dx-lead-bottom { flex-direction: column; align-items: flex-start; }
+  .app .dx-lead-bottom > span:empty { display: none; }
+}
+@media (pointer: coarse) {
+  .app .dx-done { width: 40px; height: 40px; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app .dx-ping::after, .app .dx-live-dot.on::after { animation: none !important; }
+}
