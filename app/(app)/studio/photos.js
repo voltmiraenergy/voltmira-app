@@ -4,7 +4,10 @@
 // actual file. This reads a real file, resizes it client-side to a small JPEG
 // before storing (a handful of full-resolution photos would blow past
 // localStorage's quota fast; a 480px-wide JPEG is typically 20-60KB), and
-// persists it per job — still localStorage-only, Studio never touches Supabase.
+// persists it per job through the same readJSON/writeJSON as the rest of
+// Studio, so the photos are saved to the workspace along with the job.
+import { readJSON, writeJSON } from "./jobs-data.js";
+
 export const photoKey = (jobId, group) => `voltmira_studio_photos_${jobId}_${group}`;
 
 export function readImageAsDataUrl(file, maxDim = 480) {
@@ -32,11 +35,9 @@ export function readImageAsDataUrl(file, maxDim = 480) {
 }
 
 export function loadPhotos(jobId, group) {
-  try {
-    const s = localStorage.getItem(photoKey(jobId, group));
-    return s ? JSON.parse(s) : [];
-  } catch { return []; }
+  const v = readJSON(photoKey(jobId, group), []);
+  return Array.isArray(v) ? v : [];
 }
 export function savePhotos(jobId, group, list) {
-  try { localStorage.setItem(photoKey(jobId, group), JSON.stringify(list)); } catch { /* private mode / quota */ }
+  writeJSON(photoKey(jobId, group), list);
 }

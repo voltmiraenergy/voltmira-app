@@ -7,7 +7,7 @@ import { simulate, effectiveYield, SOLAR_SEASON, MARKETS, FX } from "./_engine.j
 import { defaultEngineSettings } from "./_engine.js";
 import { DEFAULT_IDS } from "./catalog-data.js";
 import {
-  readJSON, writeJSON, actualsKey, installKey, payKey, ticketsKey, jobStageContext,
+  readJSON, writeJSON, removeJSON, actualsKey, installKey, payKey, ticketsKey, jobStageContext,
 } from "./jobs-data.js";
 import { assessSystem } from "../../../lib/fleetHealth.js";
 
@@ -171,6 +171,6 @@ export function buildSampleFleet(existingIds, now = new Date()) {
 
 export function clearJobStorage(jobId) {
   for (const key of [actualsKey(jobId), installKey(jobId), payKey(jobId), ticketsKey(jobId), "voltmira_studio_notes_" + jobId]) {
-    try { localStorage.removeItem(key); } catch { /* storage disabled */ }
+    removeJSON(key);
   }
 }

@@ -261,7 +261,7 @@ export default function TeamActions({ lang, meId, me, members, counts = {}, pend
             )}
           </div>
         ); })}
-        <div className="seat-note"><b>{cap == null ? t("seats_used_unl", lang, { n: members.length }) : t("seats_used", lang, { n: members.length, cap })}</b> · {t("team_plan_note", lang)}</div>
+        <div className="seat-note"><b>{cap == null ? t("seats_used_unl", lang, { n: members.length }) : t("seats_used", lang, { n: members.length, cap })}.</b> {t("team_plan_note", lang)}</div>
       </section>
 
       {isOwner ? (

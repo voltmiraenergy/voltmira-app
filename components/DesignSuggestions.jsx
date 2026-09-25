@@ -34,8 +34,8 @@ export default function DesignSuggestions({ lang, bom, kw, battKwh, phases, mark
     // cards, read as a stray control rather than part of the flow.
     return (
       <section className={className + " ds-closed"}>
-        <button type="button" className="btn ghost sm ds-trigger" onClick={() => setOpen(true)}>
-          {t3(lang, "Sugestii de proiectare — compară invertoare", "Design suggestions — compare inverters", "Варианты дизайна — сравнить инверторы")}
+        <button type="button" className="btn ghost sm ds-trigger qb-expand" onClick={() => setOpen(true)}>
+          {t3(lang, "Sugestii de proiectare: compară invertoare", "Design suggestions: compare inverters", "Варианты дизайна: сравнить инверторы")}
         </button>
       </section>
     );
@@ -51,9 +51,9 @@ export default function DesignSuggestions({ lang, bom, kw, battKwh, phases, mark
       </div>
       <p className="ds-lead">
         {t3(lang,
-          `Fiecare combinație de invertoare care poate deservi acest array de ${d.dcKw.toFixed(1)} kWp — nu doar cea aleasă acum. „Captură energetică” arată cât din producție NU se pierde prin limitare — nu o estimare de profitabilitate.`,
-          `Every inverter combination that can serve this ${d.dcKw.toFixed(1)} kWp array — not just the one currently picked. "Energy capture" is how much of the output ISN'T lost to clipping — not a profitability estimate.`,
-          `Все комбинации инверторов для этого массива ${d.dcKw.toFixed(1)} кВт·п. «Захват энергии» — доля выработки, не потерянная на ограничении, а не оценка доходности.`)}
+          `Fiecare combinație de invertoare care poate deservi acest array de ${d.dcKw.toFixed(1)} kWp, nu doar cea aleasă acum. „Captură energetică” arată cât din producție NU se pierde prin limitare, nu o estimare de profitabilitate.`,
+          `Every inverter combination that can serve this ${d.dcKw.toFixed(1)} kWp array, not just the one currently picked. "Energy capture" is how much of the output ISN'T lost to clipping, not a profitability estimate.`,
+          `Все комбинации инверторов для этого массива ${d.dcKw.toFixed(1)} кВт·п. «Захват энергии»: доля выработки, не потерянная на ограничении, а не оценка доходности.`)}
       </p>
 
       {rows.length === 0 ? (

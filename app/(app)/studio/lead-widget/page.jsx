@@ -15,14 +15,14 @@ import AddressField from "../address-field.jsx";
 const TX = {
   title: { en: "Public calculator widget", ro: "Widget calculator public", ru: "Публичный калькулятор" },
   sub: {
-    en: "The homeowner calculator you embed on your own site — Romanian or Russian. Every estimate becomes a lead in your VoltMira pipeline.",
-    ro: "Calculatorul pentru proprietari pe care îl pui pe site-ul tău — în română sau rusă. Fiecare estimare devine un lead în fluxul tău VoltMira.",
-    ru: "Калькулятор для домовладельцев, который вы встраиваете на свой сайт — на румынском или русском. Каждая оценка становится лидом в вашей воронке VoltMira.",
+    en: "The homeowner calculator you embed on your own site, in Romanian or Russian. Every estimate becomes a lead in your VoltMira pipeline.",
+    ro: "Calculatorul pentru proprietari pe care îl pui pe site-ul tău, în română sau rusă. Fiecare estimare devine un lead în fluxul tău VoltMira.",
+    ru: "Калькулятор для домовладельцев, который вы встраиваете на свой сайт, на румынском или русском. Каждая оценка становится лидом в вашей воронке VoltMira.",
   },
   note: {
-    en: "The panel on the left is the embedded widget as a visitor sees it. Try it — the range and price come from the engine, and a submitted request lands in your Leads.",
-    ro: "Panoul din stânga este widgetul încorporat, așa cum îl vede un vizitator. Încearcă-l — intervalul și prețul vin din motor, iar o cerere trimisă ajunge în Contacte.",
-    ru: "Панель слева — встроенный виджет, каким его видит посетитель. Попробуйте — диапазон и цена из движка, а отправленная заявка попадает в «Заявки».",
+    en: "The panel on the left is the embedded widget as a visitor sees it. Try it: the range and price come from the engine, and a submitted request lands in your Leads.",
+    ro: "Panoul din stânga este widgetul încorporat, așa cum îl vede un vizitator. Încearcă-l: intervalul și prețul vin din motor, iar o cerere trimisă ajunge în Contacte.",
+    ru: "Слева встроенный виджет, каким его видит посетитель. Попробуйте: диапазон и цена из движка, а отправленная заявка попадает в «Заявки».",
   },
   leads: { en: "Leads in VoltMira", ro: "Lead-uri în VoltMira", ru: "Лиды в VoltMira" },
   embed: { en: "Embed code", ro: "Cod de încorporare", ru: "Код для вставки" },
@@ -44,7 +44,7 @@ const W = {
     sys: "Sistem recomandat", prod: "Producție anuală estimată", price: "Preț sistem, la cheie",
     payback: "Amortizare", save25: "Economie estimată pe 25 de ani", years: "ani",
     cta: "Cere o ofertă detaliată", name: "Nume", phone: "Telefon", send: "Trimite cererea",
-    sent: "Cerere trimisă — te contactăm în curând.",
+    sent: "Cerere trimisă. Te contactăm în curând.",
     disc: "Estimare orientativă pe baza datelor introduse. Oferta finală depinde de vizita tehnică.",
   },
   ru: {
@@ -54,8 +54,8 @@ const W = {
     sys: "Рекомендуемая система", prod: "Ожидаемая выработка в год", price: "Стоимость системы, под ключ",
     payback: "Окупаемость", save25: "Экономия за 25 лет", years: "лет",
     cta: "Запросить подробное предложение", name: "Имя", phone: "Телефон", send: "Отправить заявку",
-    sent: "Заявка отправлена — скоро свяжемся.",
-    disc: "Ориентировочный расчёт по введённым данным. Итоговое предложение — после технического визита.",
+    sent: "Заявка отправлена. Скоро свяжемся.",
+    disc: "Ориентировочный расчёт по введённым данным. Итоговое предложение будет после технического визита.",
   },
 };
 
@@ -73,7 +73,7 @@ const MDL = (eur) => NUM(Math.round(eur * FX.MDL)) + " MDL";
 export default function LeadWidgetPreview() {
   const lang = useLang();
   const T = (o) => tx(o, lang);
-  useEffect(() => { document.title = "Public calculator widget — VoltMira Studio"; }, []);
+  useEffect(() => { document.title = "Public calculator widget · VoltMira"; }, []);
 
   const [wl, setWl] = useState(lang === "ru" ? "ru" : "ro");
   useEffect(() => { setWl(lang === "ru" ? "ru" : "ro"); }, [lang]);

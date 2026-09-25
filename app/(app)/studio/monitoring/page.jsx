@@ -9,8 +9,9 @@
 //   3. A monthly update for the client, ready to send over WhatsApp/Viber —
 //      the after-sales touch that keeps a one-off install a relationship.
 //
-// Readings are the per-job ones the workspace's Monitoring step writes; this
-// page keeps no copy of its own.
+// Readings are the per-job ones the workspace's Monitoring step holds: typed
+// in there, or filled every night from a linked inverter-portal station
+// (InverterPortals.jsx). This page keeps no copy of its own.
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -23,6 +24,8 @@ import {
   fleetRows, localLei, isSample, buildSampleFleet, clearJobStorage,
 } from "../fleet-data.js";
 import { compareUrgency, fleetRatio, THRESH } from "../../../../lib/fleetHealth.js";
+import { hydrate } from "../studio-sync.js";
+import InverterPortals from "./InverterPortals.jsx";
 
 const MONTHS = {
   en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
@@ -45,9 +48,9 @@ const T = {
     ru: "Каждая сданная система против P50 из её собственного расчёта. Что требует выезда и почему, сколько сэкономил каждый клиент, и ежемесячный отчёт клиенту в одно касание.",
   },
   note: {
-    en: "Readings come from each job's Monitoring step, where you enter the month's kWh from the inverter app. Automatic sync with inverter portals (Solarman, FusionSolar, SolarEdge) isn't connected yet.",
-    ro: "Citirile vin din pasul Monitorizare al fiecărei lucrări, unde introduci kWh-ul lunii din aplicația invertorului. Sincronizarea automată cu portalurile invertoarelor (Solarman, FusionSolar, SolarEdge) nu e conectată încă.",
-    ru: "Показания берутся из шага «Мониторинг» каждого объекта, куда вы вносите кВт·ч за месяц из приложения инвертора. Автоматическая синхронизация с порталами инверторов (Solarman, FusionSolar, SolarEdge) пока не подключена.",
+    en: "Readings come from each job's Monitoring step. A job linked to a station in a connected inverter portal (FusionSolar, Deye/Solarman, Growatt) fills its finished months every night; for any other, enter the month's kWh from the inverter app.",
+    ro: "Citirile vin din pasul Monitorizare al fiecărei lucrări. O lucrare legată de o stație dintr-un portal de invertor conectat (FusionSolar, Deye/Solarman, Growatt) își completează lunile încheiate în fiecare noapte; pentru celelalte, introdu kWh-ul lunii din aplicația invertorului.",
+    ru: "Показания берутся из шага «Мониторинг» каждого объекта. Объект, привязанный к станции в подключённом портале инвертора (FusionSolar, Deye/Solarman, Growatt), получает завершённые месяцы каждую ночь; для остальных вносите кВт·ч за месяц из приложения инвертора.",
   },
   k_systems: { en: "systems handed over", ro: "sisteme predate", ru: "сданных систем" },
   k_ratio: { en: "fleet vs P50 this year (median)", ro: "parcul față de P50 anul acesta (median)", ru: "парк против P50 за год (медиана)" },
@@ -350,16 +353,24 @@ function FleetMonitoring() {
   const [selId, setSelId] = useState(null);
   const [msgLang, setMsgLang] = useState(null);
   const [ticketRev, setTicketRev] = useState(0);
+  const [readingsRev, setReadingsRev] = useState(0);
   const detailRef = useRef(null);
   const now = useMemo(() => new Date(), []);
   const m = MONTHS[lang] || MONTHS.en;
 
-  useEffect(() => { document.title = tx(T.title, lang) + " — VoltMira Studio"; }, [lang]);
+  useEffect(() => { document.title = tx(T.title, lang) + " · VoltMira"; }, [lang]);
 
   // Readings live in their own localStorage keys, so the job list is the only
   // React state they hang off: loading/removing the sample fleet changes
-  // `jobs`, and a reading edited in the workspace remounts this page.
-  const rows = useMemo(() => (hydrated ? fleetRows(jobs, now) : []), [jobs, hydrated, now]);
+  // `jobs`, a reading edited in the workspace remounts this page, and a portal
+  // sync bumps `readingsRev` once the new months are pulled in.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rows = useMemo(() => (hydrated ? fleetRows(jobs, now) : []), [jobs, hydrated, now, readingsRev]);
+  const linkable = useMemo(() => jobs.filter((j) => !isSample(j)), [jobs]);
+  async function readingsArrived() {
+    await hydrate();
+    setReadingsRev((v) => v + 1);
+  }
   const asOf = rows[0]?.asOf ?? ((now.getMonth() + 11) % 12);
 
   const stats = useMemo(() => {
@@ -444,6 +455,7 @@ function FleetMonitoring() {
       <PreviewHeader slug="monitoring" lang={lang} title={t(T.title)} sub={t(T.sub)}
         right={hasSample ? <button className="btn ghost sm" onClick={removeSample}>{t(T.removeSample)}</button> : null} />
       <MockNote>{t(T.note)}</MockNote>
+      <InverterPortals lang={lang} jobs={linkable} fire={fire} onReadings={readingsArrived} />
 
       {rows.length === 0 ? (
         <div className="pv-panel mn-empty">

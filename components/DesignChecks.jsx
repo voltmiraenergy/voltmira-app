@@ -32,7 +32,7 @@ export default function DesignChecks({ lang, bom, kw, battKwh, consKwh, phases, 
               <div className="dc-detail">
                 {r.detail}
                 {r.note ? <> · <i>{r.note}</i></> : null}
-                {r.warn ? <> — <em>{r.warn}</em></> : null}
+                {r.warn ? <>: <em>{r.warn}</em></> : null}
               </div>
             </div>
           </li>
@@ -56,7 +56,7 @@ export default function DesignChecks({ lang, bom, kw, battKwh, consKwh, phases, 
 
       {allClear && (
         <div className="dc-clear">
-          {t3(lang, "Toate verificările trec — sistemul e coerent.", "Every check passes — the design is sound.", "Все проверки пройдены.")}
+          {t3(lang, "Toate verificările trec: sistemul e coerent.", "Every check passes: the design is sound.", "Все проверки пройдены.")}
         </div>
       )}
 

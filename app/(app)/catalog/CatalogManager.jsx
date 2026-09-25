@@ -3,6 +3,10 @@
 // image-led catalog: add / edit / delete products grouped by kind, each with a
 // real product photo (or a clean kind icon when none is set). Prices here feed
 // the bill of materials that drives a quote's real cost.
+//
+// Above the grid: what the stock is worth, what is running low or gone, and the
+// average margin, then a type filter, a search and a "needs reorder" view, so
+// the page answers "what do I need to order?" without scrolling every card.
 import { useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { addProduct, updateProduct, deleteProduct, seedStarterCatalog } from "../../../lib/actions.js";
@@ -32,6 +36,21 @@ function KindGlyph({ kind }) {
       {KIND_SVG[kind] || KIND_SVG.other}
     </svg>
   );
+}
+
+// Small line icons for the header and toolbar (Lucide geometry).
+const ICONS = {
+  store: <><path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5" /><path d="M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244" /><path d="M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05" /></>,
+  upload: <><path d="M12 3v12" /><path d="m17 8-5-5-5 5" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /></>,
+  download: <><path d="M12 15V3" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /></>,
+  plus: <><path d="M5 12h14" /><path d="M12 5v14" /></>,
+  search: <><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></>,
+  x: <><path d="M18 6 6 18" /><path d="m6 6 12 12" /></>,
+  alert: <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></>,
+  trash: <><path d="M4 7h16" /><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" /></>,
+};
+function Ic({ d, size = 15, w = 2 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICONS[d]}</svg>;
 }
 
 // Product photo with graceful fallback to the kind glyph if the URL is empty or
@@ -195,6 +214,9 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState(EMPTY);
   const [viewing, setViewing] = useState(null); // the product shown in MyProductDetailModal, or null
+  const [kindTab, setKindTab] = useState("all");
+  const [query, setQuery] = useState("");
+  const [reorder, setReorder] = useState(false);
   const [pending, start] = useTransition();
 
   const fmt = (n) => "€" + (Math.round(Number(n) || 0)).toLocaleString("en-IE");
@@ -286,6 +308,10 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
     </div>
   );
 
+  // Units free to sell: physical stock minus what WON deals have claimed.
+  const availOf = (p) => Math.max(0, Math.round(Number(p.stock) || 0)) - (committed[p.id] || 0);
+  const stockTier = (p) => (!p.track_stock ? null : availOf(p) <= 0 ? "out" : availOf(p) <= LOW_STOCK ? "low" : "ok");
+
   // Inventory badge for a product card. Available = physical stock minus units
   // committed in WON deals. Open-quote reservations show as a soft hint only.
   function stockBadge(p) {
@@ -310,20 +336,66 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
   }
 
   const hasItems = items.length > 0;
+  const nameOf = (p) => [p.brand, p.model].filter(Boolean).join(" ") || t("cat_untitled", lang);
+  const tracked = items.filter((p) => p.track_stock);
+  // What the units on the shelf would bill at list price (stock not yet claimed by a won deal).
+  const stockValue = tracked.reduce((s, p) => s + Math.max(0, availOf(p)) * (Number(p.unit_price) || 0), 0);
+  const low = tracked.filter((p) => stockTier(p) === "low");
+  const out = tracked.filter((p) => stockTier(p) === "out");
+  const withCost = items.filter((p) => marginPct(p) != null);
+  const avgMargin = withCost.length ? withCost.reduce((s, p) => s + marginPct(p), 0) / withCost.length : null;
+  const q = query.trim().toLowerCase();
+  const shown = items.filter((p) =>
+    (kindTab === "all" || p.kind === kindTab) &&
+    (!reorder || stockTier(p) === "low" || stockTier(p) === "out") &&
+    (!q || [p.brand, p.model, p.spec].some((v) => String(v || "").toLowerCase().includes(q))));
 
   return (
-    <>
+    <div className="dx cx">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <div className="page-head">
-        <h1>{t("nav_catalog", lang)}</h1>
-        <span className="spacer" />
-        <span style={{ color: "var(--muted)", fontSize: 13 }}>{t("cat_count", lang, { n: items.length })}</span>
-        {!browsing && <button className="btn ghost" onClick={() => { setAdding(false); setImporting(false); setBrowsing(true); }}>⇪ {t("cat_sup_browse", lang)}</button>}
-        {!importing && <button className="btn ghost" onClick={() => { setAdding(false); setBrowsing(false); setImporting(true); }}>⇧ {t("cat_imp_open", lang)}</button>}
-        {!adding && <button className="btn primary" onClick={() => { setBrowsing(false); setImporting(false); setForm(EMPTY); setAdding(true); }}>+ {t("cat_add", lang)}</button>}
-      </div>
+      <header className="dx-head">
+        <div className="dx-hello">
+          <h1>{t("nav_catalog", lang)}</h1>
+          <p className="dx-summary">{t("cat_sub", lang)}</p>
+        </div>
+        <div className="dx-head-tools">
+          {!browsing && <button type="button" className="btn ghost" onClick={() => { setAdding(false); setImporting(false); setBrowsing(true); }}><Ic d="store" />{t("cat_sup_browse", lang)}</button>}
+          {!importing && <button type="button" className="btn ghost" onClick={() => { setAdding(false); setBrowsing(false); setImporting(true); }}><Ic d="upload" />{t("cat_imp_open", lang)}</button>}
+          {!adding && <button type="button" className="dx-new" onClick={() => { setBrowsing(false); setImporting(false); setForm(EMPTY); setAdding(true); }}><Ic d="plus" w={2.4} />{t("cat_add", lang)}</button>}
+        </div>
+      </header>
 
-      <p className="cat-sub">{t("cat_sub", lang)}</p>
+      {hasItems && (
+        <dl className="cx-strip">
+          <div><dt>{t("cx_products", lang)}</dt><dd>{items.length}</dd><dd className="cx-sub">{t("cx_kinds", lang, { n: KINDS.filter((k) => items.some((p) => p.kind === k)).length })}</dd></div>
+          <div><dt>{t("cx_stock_value", lang)}</dt><dd>{tracked.length ? fmt(stockValue) : "—"}</dd><dd className="cx-sub">{tracked.length ? t("cx_tracked", lang, { n: tracked.length }) : t("cx_untracked", lang)}</dd></div>
+          <div className={low.length ? "warn" : ""}><dt>{t("cx_low", lang)}</dt><dd>{low.length}</dd><dd className="cx-sub">{low.length ? low.slice(0, 2).map(nameOf).join(", ") : t("cx_low_none", lang, { n: LOW_STOCK })}</dd></div>
+          <div className={out.length ? "bad" : ""}><dt>{t("inv_out", lang)}</dt><dd>{out.length}</dd><dd className="cx-sub">{out.length ? out.slice(0, 2).map(nameOf).join(", ") : t("cx_out_none", lang)}</dd></div>
+          <div><dt>{t("cx_margin", lang)}</dt><dd>{avgMargin == null ? "—" : Math.round(avgMargin) + "%"}</dd><dd className="cx-sub">{avgMargin == null ? t("cx_margin_none", lang) : t("cx_margin_sub", lang, { n: withCost.length })}</dd></div>
+        </dl>
+      )}
+
+      {hasItems && (
+        <div className="cx-bar">
+          <nav className="dx-tabs" aria-label={t("cat_field_kind", lang)}>
+            {["all", ...KINDS].filter((k) => k === "all" || items.some((p) => p.kind === k)).map((k) => (
+              <button key={k} type="button" className={kindTab === k ? "on" : ""} aria-pressed={kindTab === k} onClick={() => setKindTab(k)}>
+                {t("cat_kind_" + k, lang)}<span>{k === "all" ? items.length : items.filter((p) => p.kind === k).length}</span>
+              </button>
+            ))}
+          </nav>
+          <label className="dx-find cx-find">
+            <Ic d="search" size={16} />
+            <input id="cx-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("cx_search", lang)} aria-label={t("cx_search", lang)} />
+            {query && <button type="button" className="dx-find-x" onClick={() => setQuery("")} aria-label={t("q_view_clear", lang)}><Ic d="x" size={14} /></button>}
+          </label>
+          {(low.length + out.length) > 0 && (
+            <button type="button" className={"cx-reorder" + (reorder ? " on" : "")} aria-pressed={reorder} onClick={() => setReorder((v) => !v)}>
+              <Ic d="alert" size={14} />{t("cx_reorder", lang)}<span>{low.length + out.length}</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {browsing && (
         <SupplierCatalogBrowser lang={lang}
@@ -360,26 +432,30 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
           <p>{t("cat_starter_hint", lang)}</p>
           <div style={{ display: "flex", gap: 9, justifyContent: "center", flexWrap: "wrap" }}>
             <button className="btn primary" disabled={pending} onClick={() => setBrowsing(true)}>
-              ⇪ {t("cat_sup_browse", lang)}
+              <Ic d="store" />{t("cat_sup_browse", lang)}
             </button>
             <button className="btn ghost" disabled={pending} onClick={loadStarter}>
-              {pending ? "…" : "⬇ " + t("cat_load_starter", lang)}
+              <Ic d="download" />{t("cat_load_starter", lang)}
             </button>
-            <button className="btn ghost" disabled={pending} onClick={() => setImporting(true)}>⇧ {t("cat_imp_open", lang)}</button>
-            <button className="btn ghost" disabled={pending} onClick={() => { setForm(EMPTY); setAdding(true); }}>+ {t("cat_add", lang)}</button>
+            <button className="btn ghost" disabled={pending} onClick={() => setImporting(true)}><Ic d="upload" />{t("cat_imp_open", lang)}</button>
+            <button className="btn ghost" disabled={pending} onClick={() => { setForm(EMPTY); setAdding(true); }}><Ic d="plus" w={2.4} />{t("cat_add", lang)}</button>
           </div>
           <p style={{ margin: "14px 0 0", fontSize: 12 }}>{t("cat_starter_note", lang)}</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 22 }}>
+        <div className="cx-groups">
+          {shown.length === 0 && (
+            <div className="dx-card"><div className="dx-empty"><b>{t("cat_sup_none", lang)}</b>
+              <button type="button" className="dx-btn" onClick={() => { setQuery(""); setReorder(false); setKindTab("all"); }}>{t("q_view_clear", lang)}</button></div></div>
+          )}
           {KINDS.map(kind => {
-            const group = items.filter(p => p.kind === kind);
+            const group = shown.filter(p => p.kind === kind);
             if (group.length === 0) return null;
             return (
               <section key={kind}>
                 <h3 className="cat-group-h">
                   <span aria-hidden="true"><KindGlyph kind={kind} /></span>
-                  {t("cat_kind_" + kind, lang)}<span className="n">· {group.length}</span>
+                  {t("cat_kind_" + kind, lang)}<span className="n">{group.length}</span>
                 </h3>
                 {group.some(p => p.id === editId) && (
                   <section className="card" style={{ marginBottom: 12, borderColor: "var(--green)" }}>
@@ -392,7 +468,7 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
                 )}
                 <div className="cat-grid">
                   {group.map(p => (
-                    <article key={p.id} className="cat-card" onClick={() => setViewing(p)}
+                    <article key={p.id} className={"cat-card" + (stockTier(p) === "out" ? " is-out" : "")} onClick={() => setViewing(p)}
                       role="button" tabIndex={0}
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setViewing(p); } }}>
                       <ProductThumb kind={p.kind} src={p.image_url || ""} />
@@ -423,7 +499,7 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
                             <button className="cat-iconbtn" onClick={(e) => { e.stopPropagation(); startEdit(p); }} disabled={pending}
                               aria-label={t("cat_edit", lang)} title={t("cat_edit", lang)}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
                             <button className="cat-iconbtn" onClick={(e) => { e.stopPropagation(); remove(p.id); }} disabled={pending}
-                              aria-label={t("cat_delete", lang)} title={t("cat_delete", lang)}>✕</button>
+                              aria-label={t("cat_delete", lang)} title={t("cat_delete", lang)}><Ic d="trash" size={13} /></button>
                           </div>
                         </div>
                       </div>
@@ -435,6 +511,6 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
           })}
         </div>
       )}
-    </>
+    </div>
   );
 }

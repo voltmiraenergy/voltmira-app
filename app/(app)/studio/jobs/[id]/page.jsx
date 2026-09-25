@@ -88,7 +88,7 @@ export default function JobHub() {
             <h1>{job.name}</h1>
             <span className={"pv-stage " + progress.meta.chip}>{progress.meta.label[lang] || progress.meta.label.en}</span>
           </div>
-          <p>{[job.address, `${(+job.kw || 0).toFixed(1)} kW`, job.market, +job.batteryKwh > 0 ? `${job.batteryKwh} kWh` : null].filter(Boolean).join(" · ")}</p>
+          <p>{[job.address, `${(+job.kw || 0).toFixed(1)} kW`, job.market, +job.batteryKwh > 0 ? `${job.batteryKwh} kWh` : null].filter(Boolean).join(", ")}</p>
         </div>
         <div className="pv-head-right">
           <Link href={`${PREVIEW_BASE}/jobs/${job.id}/configure`} className="btn primary sm">{t(T.openWorkspace)}</Link>
@@ -132,10 +132,10 @@ export default function JobHub() {
         <h3>{t(T.money)}</h3>
         <div className="pv-metrics">
           <div className={"pv-metric" + (money.depPaid || money.done ? " good" : " warn")}>
-            <b>{EUR(money.dep)}</b><span>{t(T.deposit)} · {money.depPaid || money.done ? t(T.paid) : t(T.notPaid)}</span>
+            <b>{EUR(money.dep)}</b><span>{t(T.deposit)}: {money.depPaid || money.done ? t(T.paid) : t(T.notPaid)}</span>
           </div>
           <div className={"pv-metric" + (money.done ? " good" : "")}>
-            <b>{money.done ? EUR(0) : EUR(money.bal)}</b><span>{t(T.balance)} · {money.done ? t(T.paidFull) : (money.depPaid ? t(T.notPaid) : "—")}</span>
+            <b>{money.done ? EUR(0) : EUR(money.bal)}</b><span>{t(T.balance)}{money.done ? ": " + t(T.paidFull) : money.depPaid ? ": " + t(T.notPaid) : ""}</span>
           </div>
         </div>
         <p style={{ margin: "12px 0 0" }}><Link href={`${PREVIEW_BASE}/payments`} className="btn ghost sm">{t(T.managePayments)}</Link></p>

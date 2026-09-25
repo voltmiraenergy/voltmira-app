@@ -1,0 +1,135 @@
+/* app/(app)/leads/leads.css — the Leads inbox: status tabs, grouped lead
+ * cards, the channel panel and the "Add lead" dialog. Shared header, cards,
+ * buttons and the search box come from app/(app)/dx.css; same `.app` prefix
+ * rule as there. The edit drawer keeps its AppTheme styling (.lead-editor).
+ */
+
+.app .ld-search { flex: none; width: 300px; }
+
+.app .ld-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+.app .ld-main-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.app .ld-side-col { position: sticky; top: 18px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+/* status tabs: a dot in each status's colour */
+.app .ld-tabs { align-self: flex-start; max-width: 100%; margin-bottom: 0; }
+.app .ld-tab { text-decoration: none; }
+.app .ld-tab i, .app .ld-group-h i { width: 7px; height: 7px; border-radius: 50%; background: var(--c, var(--muted)); flex: none; }
+.app .t-new { --c: var(--green); }
+.app .t-contacted { --c: var(--amber); }
+.app .t-converted { --c: var(--blue); }
+.app .t-archived { --c: var(--muted); }
+
+.app .ld-group { display: flex; flex-direction: column; gap: 10px; }
+.app .ld-group-h {
+  display: flex; align-items: center; gap: 8px; margin: 6px 2px 0;
+  font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.app .ld-group-h span { font-variant-numeric: tabular-nums; font-weight: 600; letter-spacing: 0; }
+.app .ld-list { display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------------------------------------------------------------- lead card */
+.app .ld-card { padding: 16px 18px; border-radius: 16px; box-shadow: var(--shadow); }
+.app .ld-card.hot { box-shadow: inset 3px 0 0 var(--amber), var(--shadow); }
+.app .ld-card.hot.editing { box-shadow: inset 3px 0 0 var(--amber), 0 0 0 3px var(--green-tint); }
+.app .ld-top { display: flex; align-items: flex-start; gap: 12px; }
+.app .ld-main { flex: 1; min-width: 0; }
+.app .ld-name-row { display: flex; align-items: center; gap: 6px 9px; flex-wrap: wrap; min-height: 26px; }
+.app .ld-name { font-family: var(--dx-d); font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); overflow-wrap: anywhere; }
+.app .ld-hot { display: inline-flex; align-items: center; gap: 4px; }
+.app .ld-status {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 99px; white-space: nowrap;
+}
+.app .ld-status.s-new { background: var(--green-tint); color: var(--green); }
+.app .ld-status.s-contacted { background: var(--amber-tint); color: var(--amber-ink); }
+.app .ld-status.s-converted { background: var(--blue-tint); color: var(--blue); }
+.app .ld-status.s-archived { background: var(--paper); color: var(--muted); border: 1px solid var(--line); }
+.app .ld-time { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.app .ld-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.app .ld-wait {
+  display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px; border-radius: 8px;
+  font-size: 11.5px; font-weight: 650; white-space: nowrap;
+  background: var(--paper); border: 1px solid var(--line); color: var(--muted);
+}
+.app .ld-wait.warn { background: var(--amber-tint); border-color: transparent; color: var(--amber-ink); }
+.app .ld-wait.bad { background: var(--red-tint); border-color: transparent; color: var(--red); }
+
+.app .ld-body { padding-left: 52px; margin-top: 11px; display: flex; flex-direction: column; gap: 8px; }
+.app .ld-contact { display: flex; flex-wrap: wrap; gap: 6px; }
+.app .ld-reach {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: 99px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--ink) !important;
+  font-size: 12.5px; font-weight: 600; text-decoration: none; font-variant-numeric: tabular-nums;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: border-color .16s, color .16s, background .16s;
+}
+.app .ld-reach svg { flex: none; color: var(--green); }
+.app .ld-reach:hover { border-color: var(--green); color: var(--green) !important; }
+.app .ld-reach.wa svg { color: #25A560; }
+.app .ld-reach.wa:hover { border-color: #25A560; color: #1D8A50 !important; }
+html[data-theme="dark"] .app .ld-reach.wa:hover { color: #4FCB84 !important; }
+.app .ld-none { font-size: 12.5px; color: var(--muted); }
+.app .ld-address { display: flex; align-items: flex-start; gap: 6px; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+.app .ld-address svg { flex: none; margin-top: 2px; }
+.app .ld-note {
+  font-size: 13px; line-height: 1.55; color: var(--dx-soft); padding: 8px 12px; border-radius: 10px;
+  background: var(--paper); border-left: 3px solid color-mix(in srgb, var(--amber) 70%, transparent);
+}
+.app .ld-foot { padding-left: 52px; margin-top: 12px; }
+.app .ld-foot .lead-acts { justify-content: flex-start; }
+
+/* ---------------------------------------------------------------- channel panel */
+.app .ld-attr-cols, .app .ld-attr-top { display: grid; grid-template-columns: minmax(0, 1fr) 56px 84px; gap: 8px; align-items: center; }
+.app .ld-attr-cols { font-size: 10.5px; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.app .ld-attr-cols span { text-align: right; }
+.app .ld-attr-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.app .ld-attr-ch { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink); min-width: 0; }
+.app .ld-attr-ch i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.app .ld-attr-n { text-align: right; font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
+.app .ld-attr-won { text-align: right; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app .ld-attr-won.on { color: var(--green); font-weight: 650; }
+.app .ld-attr-bar { display: block; height: 6px; margin-top: 6px; border-radius: 99px; background: var(--paper); overflow: hidden; }
+.app .ld-attr-bar i { display: block; height: 100%; border-radius: 99px; background: color-mix(in srgb, currentColor 32%, transparent); }
+.app .ld-attr-bar b { display: block; height: 100%; border-radius: 99px; background: currentColor; }
+.app .ld-attr-note { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+/* ---------------------------------------------------------------- add-lead dialog */
+.app .ld-dlg { width: min(560px, 100%); overflow-y: auto; }
+.app .ld-dlg-head { padding: 20px 22px 6px; }
+.app .ld-dlg-head h2 { font-family: var(--dx-d); font-size: 19px; font-weight: 700; letter-spacing: -.015em; color: var(--ink); }
+.app .ld-dlg-head p { font-size: 13px; color: var(--muted); line-height: 1.5; margin-top: 4px; max-width: 52ch; }
+.app .ld-dlg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 12px; padding: 14px 22px 16px; }
+.app .ld-dlg-grid label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: var(--muted); min-width: 0; }
+.app .ld-dlg-grid .wide { grid-column: 1 / -1; }
+.app .ld-dlg-grid input:not([type="checkbox"]), .app .ld-dlg-grid select, .app .ld-dlg-grid textarea {
+  height: 40px; padding: 0 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--paper-2);
+  font-size: 14px; font-weight: 400; color: var(--ink); outline: none; width: 100%;
+  transition: border-color .16s, box-shadow .16s;
+}
+.app .ld-dlg-grid textarea { height: auto; padding: 10px 12px; resize: vertical; line-height: 1.5; font-family: inherit; }
+.app .ld-dlg-grid input:focus, .app .ld-dlg-grid select:focus, .app .ld-dlg-grid textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-tint); }
+.app .ld-dlg-grid input[aria-invalid="true"] { border-color: var(--red); }
+.app .ld-dlg-check { flex-direction: row !important; align-items: center; align-self: end; gap: 9px !important; height: 40px; font-size: 13.5px !important; color: var(--ink) !important; cursor: pointer; }
+.app .ld-dlg-check input { width: 17px; height: 17px; accent-color: var(--amber); }
+.app .ld-dlg-err { color: var(--red); font-size: 13px; padding: 0 22px 12px; }
+.app .ld-dlg-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 22px; border-top: 1px solid var(--line); background: var(--paper); }
+
+/* ---------------------------------------------------------------- responsive */
+@media (max-width: 1080px) {
+  .app .ld-layout { grid-template-columns: minmax(0, 1fr); }
+  .app .ld-side-col { position: static; }
+}
+@media (max-width: 768px) {
+  .app .ld-search { flex: 1; width: auto; min-width: 0; }
+  .app .ld-tabs { align-self: stretch; }
+}
+@media (max-width: 560px) {
+  .app .ld-card { padding: 14px; }
+  .app .ld-body, .app .ld-foot { padding-left: 0; }
+  .app .ld-dlg-grid { grid-template-columns: minmax(0, 1fr); padding: 12px 16px 14px; }
+  .app .ld-dlg-head { padding: 18px 16px 4px; }
+  .app .ld-dlg-foot { padding: 12px 16px; }
+}
+@media (pointer: coarse) {
+  .app .ld-reach { height: 40px; padding: 0 14px; }
+}

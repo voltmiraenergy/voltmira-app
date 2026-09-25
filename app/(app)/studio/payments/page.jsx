@@ -15,14 +15,14 @@ import { FX } from "../_engine.js";
 const TX = {
   title: { en: "Payments & cashflow", ro: "Încasări & flux de numerar", ru: "Оплаты и денежный поток" },
   sub: {
-    en: "Deposit, balance, due dates and overdue flags per job — plus the month's in / owed / committed, and the fiscal invoice generated from the quote.",
-    ro: "Avans, rest, termene și marcaje de întârziere per lucrare — plus încasat / de încasat / angajat pe lună, și factura fiscală generată din ofertă.",
-    ru: "Аванс, остаток, сроки и флаги просрочки по объекту — плюс за месяц получено / к получению / законтрактовано и налоговая накладная из расчёта.",
+    en: "Deposit, balance, due dates and overdue flags per job, plus the month's in / owed / committed, and the fiscal invoice generated from the quote.",
+    ro: "Avans, rest, termene și marcaje de întârziere per lucrare, plus încasat / de încasat / angajat pe lună, și factura fiscală generată din ofertă.",
+    ru: "Аванс, остаток, сроки и флаги просрочки по объекту, плюс за месяц получено / к получению / законтрактовано и налоговая накладная из расчёта.",
   },
   note: {
-    en: "Every job from the Studio hub, with its real deposit/balance worked out from the quote — mark a deposit paid or a job settled here, and the hub's money badge updates too. The month's cashflow adds them all up live.",
-    ro: "Toate lucrările din hub-ul Studio, cu avans/rest calculate real din ofertă — marchează aici avansul plătit sau lucrarea achitată, și eticheta de bani din hub se actualizează la fel. Fluxul lunii le însumează live.",
-    ru: "Все объекты из хаба Studio, с реальным авансом/остатком по расчёту — отметьте здесь оплату аванса или закрытие объекта, и денежный значок в хабе обновится так же. Денежный поток месяца суммирует их вживую.",
+    en: "Every job from the Studio hub, with its real deposit/balance worked out from the quote. Mark a deposit paid or a job settled here, and the hub's money badge updates too. The month's cashflow adds them all up live.",
+    ro: "Toate lucrările din hub-ul Studio, cu avans/rest calculate real din ofertă. Marchează aici avansul plătit sau lucrarea achitată, și eticheta de bani din hub se actualizează la fel. Fluxul lunii le însumează live.",
+    ru: "Все объекты из хаба Studio, с реальным авансом/остатком по расчёту. Отметьте здесь оплату аванса или закрытие объекта, и денежный значок в хабе обновится так же. Денежный поток месяца суммирует их вживую.",
   },
   addJobLink: { en: "Add a job from the Studio hub →", ro: "Adaugă o lucrare din hub-ul Studio →", ru: "Добавить объект в хабе Studio →" },
   markPaidDep: { en: "deposit paid", ro: "avans plătit", ru: "аванс оплачен" },
@@ -71,7 +71,7 @@ export default function PaymentsPreview() {
   // `tick` is a real, read dependency (not just the setter, which never
   // changes reference and would silently never invalidate the memo below).
   const [tick, bump] = useState(0);
-  useEffect(() => { document.title = "Payments & cashflow — VoltMira Studio"; }, []);
+  useEffect(() => { document.title = "Payments & cashflow · VoltMira"; }, []);
 
   const activeEur = useMemo(() => jobMoneySummary(client).eur, [client]);
   const rows = useMemo(
@@ -162,7 +162,7 @@ export default function PaymentsPreview() {
       {/* fiscal invoice */}
       <DocReveal lang={lang}>
         <div className="pv-doc">
-          <div className="doc-co">VoltMira · {new Date().toLocaleDateString(lang === "ru" ? "ru-RU" : "ro-RO")} · {tx({ ro: "factură — verificați cu contabilul", en: "invoice — verify with your accountant", ru: "проверьте с бухгалтером" }, lang)}</div>
+          <div className="doc-co">VoltMira · {new Date().toLocaleDateString(lang === "ru" ? "ru-RU" : "ro-RO")} · {tx({ ro: "factură, verificați cu contabilul", en: "invoice, verify with your accountant", ru: "проверьте с бухгалтером" }, lang)}</div>
           <h1>{T(TX.invoice).toUpperCase()}</h1>
           <div className="doc-grid">
             <div className="doc-kv"><span>{T(TX.invNo)}</span><b>FF-2026-0148</b></div>
@@ -173,7 +173,7 @@ export default function PaymentsPreview() {
           <table>
             <thead><tr><th>{tx({ ro: "Denumire", en: "Description", ru: "Наименование" }, lang)}</th><th style={{ width: 60 }}>{tx({ ro: "Cant.", en: "Qty", ru: "Кол." }, lang)}</th><th style={{ width: 150 }}>{tx({ ro: "Valoare", en: "Amount", ru: "Сумма" }, lang)}</th></tr></thead>
             <tbody>
-              <tr><td>{T(TX.invLine)} — {(+client.kw || 0).toFixed(1)} kW{+client.batteryKwh > 0 ? ` + ${client.batteryKwh} kWh` : ""}</td><td>1</td><td>{NUM(netMdl)} lei</td></tr>
+              <tr><td>{T(TX.invLine)}, {(+client.kw || 0).toFixed(1)} kW{+client.batteryKwh > 0 ? ` + ${client.batteryKwh} kWh` : ""}</td><td>1</td><td>{NUM(netMdl)} lei</td></tr>
             </tbody>
           </table>
           <div className="doc-grid" style={{ maxWidth: 320, marginLeft: "auto" }}>

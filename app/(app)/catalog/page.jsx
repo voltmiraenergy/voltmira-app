@@ -1,6 +1,8 @@
 // app/(app)/catalog/page.jsx — the installer's equipment library. Panels,
 // inverters, batteries, mounting and extras with real prices, reused on quotes
 // to build a bill of materials that drives the real cost.
+import "../dx.css";
+import "./catalog.css";
 import { supabaseServer } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
 import { normLang } from "../../../lib/i18n.js";

@@ -3,6 +3,12 @@
 // engine. Autosaves to Supabase (debounced 600ms). PVGIS button pulls real yield
 // for the address. Proposal button creates the tracked link. Visual language
 // matches the live demo (editor grid, cards, bands, financing, modal).
+//
+// A summary bar under the header stays pinned while the inputs scroll, so the
+// numbers the client will see (price, payback, savings) and the margin behind
+// them update in view as each input changes.
+import "../../dx.css";
+import "./builder.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
 import { createProposal, regenerateProposal, saveQuoteTemplate } from "../../../../lib/actions.js";
@@ -22,7 +28,7 @@ import SignedContract from "./SignedContract.jsx";
 import ShareCard from "./ShareCard.jsx";
 import LegalDocsModal from "./LegalDocsModal.jsx";
 import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
-import { financials } from "../../../../lib/quoteAnalysis.js";
+import { financials, bomTotal } from "../../../../lib/quoteAnalysis.js";
 import { applyCalibration } from "../../../../lib/yieldCalibration.js";
 import { t } from "../../../../lib/i18n.js";
 import { autoBom, recommendMount } from "../../../../lib/supplierCatalog.js";
@@ -43,6 +49,23 @@ function monthLabels(lang) {
 }
 
 /* ---------- small SVG helpers ---------- */
+// Line icons for the header actions and tool buttons (Lucide geometry).
+const QI = {
+  pdf: <><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /><path d="M14 2v5a1 1 0 0 0 1 1h5" /><path d="M12 18v-6" /><path d="m9 15 3 3 3-3" /></>,
+  receipt: <><path d="M13 16H8" /><path d="M14 8H8" /><path d="M16 12H8" /><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z" /></>,
+  scale: <><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" /><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" /><path d="M7 21h10" /><path d="M12 3v18" /><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" /></>,
+  bookmark: <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />,
+  link: <><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></>,
+  roof: <><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9v11h14V9" /><path d="M9 20v-6h6v6" /></>,
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></>,
+  upload: <><path d="M12 3v12" /><path d="m17 8-5-5-5 5" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /></>,
+  chev: <path d="m9 18 6-6-6-6" />,
+  check: <path d="M20 6 9 17l-5-5" />,
+};
+const Qi = ({ d, size = 15, w = 2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{QI[d]}</svg>
+);
+
 function Chart({ q, lang }) {
   const W = 560, H = 170, PAD = 8, years = q.e.horizon;
   const all = [...q.p.rows, ...q.e.rows, ...q.o.rows, 0, -q.e.cost];
@@ -138,6 +161,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // the URL. 0 = invoice the full amount.
   const [invOpen, setInvOpen] = useState(false);
   const [legalDocsOpen, setLegalDocsOpen] = useState(false);
+  const [legalTab, setLegalTab] = useState("contract");
   const [siteDesignerOpen, setSiteDesignerOpen] = useState(false);
   const [siteDesignApplying, setSiteDesignApplying] = useState(false);
   const [depPct, setDepPct] = useState(30);
@@ -304,6 +328,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const addOption = () => { if (p.options.length < 2) update({ options: [...p.options, { label: "", kw: p.kw, battKwh: 0 }] }); };
   const removeOption = (i) => update({ options: p.options.filter((_, j) => j !== i) });
   useEffect(() => () => clearTimeout(timer.current), []);
+  // /projects/<id>?docs=contract (from the Documents page) opens the legal
+  // documents straight on that tab.
+  useEffect(() => {
+    const d = new URLSearchParams(window.location.search).get("docs");
+    if (d) { setLegalTab(d); setLegalDocsOpen(true); }
+  }, []);
 
   // A row picked from Design Suggestions replaces whatever inverter line(s)
   // are already in the BOM — never adds a second, competing one alongside it.
@@ -544,45 +574,84 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     </label>
   );
 
+  // The margin behind the price, from the same bill-of-materials total BomCard shows.
+  const materials = bomTotal(p.bom);
+  const margin = q.e.grossCost - materials;
+  const clientLine = [p.client, String(p.address || "").split(",").slice(0, 2).join(",").trim()].filter(Boolean).join(", ");
+
   return (
-    <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-      <div className="ed-head">
+    <div className="qb">
+      <header className="qb-head">
         <BackLink href="/projects">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
-          {tr("back_projects").replace("← ", "")}
+          {tr("nav_projects")}
         </BackLink>
-        <input className="proj-title" value={p.title} onChange={e => update({ title: e.target.value })} />
-        <span style={{ fontSize: 12, color: saved === "error" ? "var(--red)" : "var(--muted)", fontWeight: saved === "error" ? 700 : 400 }}>
-          {saved === "saving" ? tr("saving") : saved === "error" ? tr("save_failed") : tr("saved")}
-          {saved === "error" && (
-            <button className="btn sm danger" style={{ marginLeft: 8 }} onClick={() => { setSaved("saving"); persist(p); }}>{tr("retry")}</button>
-          )}
-        </span>
-        <span className="spacer" />
-        {tplOpen ? (
-          <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-            <input autoFocus className="input" value={tplName} maxLength={40}
-              onChange={e => setTplName(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") saveTemplate(); if (e.key === "Escape") setTplOpen(false); }}
-              placeholder={tr("tpl_name_ph")} style={{ width: 160, padding: "8px 11px" }} />
-            <button className="btn primary" disabled={tplBusy || !tplName.trim()} onClick={saveTemplate}>{tr("tpl_save_confirm")}</button>
-            <button className="btn ghost" onClick={() => setTplOpen(false)} aria-label={tr("tpl_cancel")}>✕</button>
-          </span>
-        ) : (
-          <button className="btn ghost" onClick={openTemplate}>{tplSaved ? tr("tpl_saved") : tr("tpl_save")}</button>
-        )}
-        <button className="btn ghost" onClick={downloadPdf}>{tr("dl_pdf")}</button>
-        <button className="btn ghost" onClick={() => setInvOpen(true)}>{tr("inv_button")}</button>
-        <button className="btn ghost" onClick={() => setLegalDocsOpen(true)}>{tr("ld_open")}</button>
-        <button className="btn primary" onClick={makeProposal}>{tr("gen_proposal")}</button>
-      </div>
-
-      {proposalSentAt && (
-        <div style={{ margin: "-8px 0 16px", fontSize: 12.5, fontWeight: quoteStale ? 700 : 400,
-          color: quoteStale ? "var(--red)" : "var(--muted)" }}>
-          {tr("q_valid_until", { d: validUntilStr })}{quoteStale ? " · " + tr("q_stale") : ""}
+        <div className="qb-head-main">
+          <div className="qb-id">
+            <div className="qb-title-row">
+              {/* A hidden copy of the title sizes the field (see .qb-title-wrap), so the
+                  status and save state sit right after the name at any length. */}
+              <span className="qb-title-wrap" data-value={p.title || " "}>
+                <input className="proj-title qb-title" value={p.title} aria-label={tr("col_project")} size={1}
+                  onChange={e => update({ title: e.target.value })} />
+              </span>
+              <span className={"chip static " + p.status}>{tr("st_" + p.status)}</span>
+              <span className={"qb-saved s-" + saved} role="status">
+                <i aria-hidden="true" />
+                {saved === "saving" ? tr("saving") : saved === "error" ? tr("save_failed") : tr("saved")}
+                {saved === "error" && (
+                  <button className="btn sm danger" style={{ marginLeft: 8 }} onClick={() => { setSaved("saving"); persist(p); }}>{tr("retry")}</button>
+                )}
+              </span>
+            </div>
+            <p className="qb-sub">
+              {clientLine}
+              {proposalSentAt && (
+                <span className={"qb-valid" + (quoteStale ? " stale" : "")}>
+                  {tr("q_valid_until", { d: validUntilStr })}{quoteStale ? ", " + tr("q_stale").toLowerCase() : ""}
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="qb-actions">
+            {tplOpen ? (
+              <span className="qb-tpl">
+                <input autoFocus className="input" value={tplName} maxLength={40}
+                  onChange={e => setTplName(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") saveTemplate(); if (e.key === "Escape") setTplOpen(false); }}
+                  placeholder={tr("tpl_name_ph")} />
+                <button className="btn primary sm" disabled={tplBusy || !tplName.trim()} onClick={saveTemplate}>{tr("tpl_save_confirm")}</button>
+                <button className="btn ghost sm" onClick={() => setTplOpen(false)} aria-label={tr("tpl_cancel")}>✕</button>
+              </span>
+            ) : (
+              <button className="btn ghost" onClick={openTemplate}><Qi d={tplSaved ? "check" : "bookmark"} />{tplSaved ? tr("tpl_saved") : tr("tpl_save")}</button>
+            )}
+            <button className="btn ghost" onClick={downloadPdf}><Qi d="pdf" />{tr("dl_pdf")}</button>
+            <button className="btn ghost" onClick={() => setInvOpen(true)}><Qi d="receipt" />{tr("inv_button")}</button>
+            <button className="btn ghost" onClick={() => { setLegalTab("contract"); setLegalDocsOpen(true); }}><Qi d="scale" />{tr("ld_open")}</button>
+            <button className="dx-new" onClick={makeProposal}><Qi d="link" w={2.2} />{tr("gen_proposal")}</button>
+          </div>
         </div>
-      )}
+      </header>
+
+      {/* What the client will see, and what it leaves you, pinned while you edit. */}
+      <dl className="qb-bar" aria-live="polite">
+        <div><dt>{tr("qb_pays")}</dt><dd>{fmt(q.e.cost)}</dd>
+          <dd className="qb-bar-sub">{grants > 0 ? tr("qb_pays_grant", { v: fmt(grants) }) : costPerW > 0 ? costPerW.toFixed(2) + " €/W" : ""}</dd></div>
+        <div className="hi"><dt>{tr("qb_payback")}</dt><dd>{yrs(q.e.payback)} <small>{tr("yrs")}</small></dd>
+          <dd className="qb-bar-sub">{tr("qb_range", { a: yrs(q.o.payback), b: yrs(q.p.payback) })}</dd></div>
+        <div><dt>{tr("savings_y1")}</dt><dd>{fmt(q.e.year1)}</dd>
+          <dd className="qb-bar-sub">{tr("qb_month", { v: fmt(mSave) })}</dd></div>
+        <div><dt>{tr("qb_prod")}</dt><dd>{num(q.e.prod0)} <small>kWh</small></dd>
+          <dd className="qb-bar-sub">{p.yieldOverride ? tr("qb_prod_pvgis") : tr("qb_prod_default")}</dd></div>
+        <div><dt>{tr("qb_self")}</dt><dd>{Math.round(q.e.self * 100)}%</dd>
+          <dd className="qb-bar-sub">{consEff > 0 ? tr("qb_cover", { n: Math.round(coverage * 100) }) : ""}</dd></div>
+        <div className={materials > 0 ? (margin < 0 ? "neg" : "pos") : ""}><dt>{materials > 0 ? tr("qb_margin") : tr("qb_price")}</dt>
+          <dd>{materials > 0 ? fmt(margin) : fmt(q.e.grossCost)}</dd>
+          <dd className="qb-bar-sub">{materials > 0
+            ? tr("qb_margin_sub", { p: q.e.grossCost > 0 ? Math.round((margin / q.e.grossCost) * 100) : 0, v: fmt(q.e.grossCost) })
+            : tr("qb_margin_none")}</dd></div>
+      </dl>
 
       <div className="editor">
         {/* left: inputs */}
@@ -613,19 +682,24 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             {/* Draw the roof on real satellite imagery instead of assuming one
                 flat 35°-south plane — see components/SiteDesigner.jsx. Needs a
                 resolved pin, same requirement as the PVGIS fetch below. */}
-            <button className="btn ghost" style={{ width: "100%", marginBottom: 10 }}
-              disabled={p.lat == null || p.lon == null}
-              title={p.lat == null || p.lon == null ? tr("site_designer_need_address") : undefined}
-              onClick={() => setSiteDesignerOpen(true)}>
-              {tr("site_designer_open")}
-            </button>
-
-            <button className={p.yieldOverride ? "btn amber" : "btn ghost"} style={{ width: "100%" }}
-              onClick={fetchPVGIS} disabled={pvgisBusy}>
-              {pvgisBusy ? tr("pvgis_fetching")
-                : p.yieldOverride ? tr("pvgis_real", { n: Math.round(p.yieldOverride) })
-                : tr("pvgis_use")}
-            </button>
+            <div className="qb-tools">
+              <button type="button" className={"qb-tool" + (Array.isArray(p.siteDesign?.planes) && p.siteDesign.planes.length ? " done" : "")}
+                disabled={p.lat == null || p.lon == null}
+                title={p.lat == null || p.lon == null ? tr("site_designer_need_address") : undefined}
+                onClick={() => setSiteDesignerOpen(true)}>
+                <span className="qb-tool-ic"><Qi d="roof" size={17} /></span>
+                <span className="qb-tool-tx"><b>{tr("site_designer_open")}</b><small>{p.lat == null || p.lon == null ? tr("site_designer_need_address") : tr("qb_tool_roof_sub")}</small></span>
+                <Qi d="chev" size={15} />
+              </button>
+              <button type="button" className={"qb-tool" + (p.yieldOverride ? " done" : "")} onClick={fetchPVGIS} disabled={pvgisBusy} aria-busy={pvgisBusy}>
+                <span className="qb-tool-ic"><Qi d={p.yieldOverride ? "check" : "sun"} size={17} /></span>
+                <span className="qb-tool-tx">
+                  <b>{pvgisBusy ? tr("pvgis_fetching") : p.yieldOverride ? tr("qb_pvgis_done", { n: Math.round(p.yieldOverride) }) : tr("pvgis_use")}</b>
+                  <small>{p.yieldOverride ? tr("qb_pvgis_again") : tr("qb_tool_pvgis_sub")}</small>
+                </span>
+                <Qi d="chev" size={15} />
+              </button>
+            </div>
             {p.yieldOverride && (
               <div className="pvgis-data">
                 <span className="pvg-k">{Math.round(p.yieldOverride)}</span> {tr("unit_kwp_yr")}
@@ -752,9 +826,11 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             )}
             {/* AI energy-bill extractor — snap the client's bill, review, apply */}
             <input ref={billInput} type="file" accept="image/*,application/pdf" hidden onChange={handleBill} />
-            <button type="button" className="btn ghost" style={{ width: "100%", marginTop: 8 }}
-              onClick={() => billInput.current && billInput.current.click()} disabled={billBusy}>
-              {billBusy ? tr("bill_reading") : tr("bill_upload")}
+            <button type="button" className="qb-tool" style={{ marginTop: 10 }}
+              onClick={() => billInput.current && billInput.current.click()} disabled={billBusy} aria-busy={billBusy}>
+              <span className="qb-tool-ic"><Qi d="upload" size={17} /></span>
+              <span className="qb-tool-tx"><b>{billBusy ? tr("bill_reading") : tr("bill_upload")}</b><small>{tr("qb_tool_bill_sub")}</small></span>
+              <Qi d="chev" size={15} />
             </button>
             {billErr && <div style={{ fontSize: 12.5, color: "var(--red)", marginTop: 6 }}>{billErr}</div>}
             {billRes && (
@@ -1103,7 +1179,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       )}
 
       {legalDocsOpen && (
-        <LegalDocsModal lang={lang} onClose={() => setLegalDocsOpen(false)}
+        <LegalDocsModal lang={lang} onClose={() => setLegalDocsOpen(false)} initialTab={legalTab}
           company={{ name: companyName, ...companyLegal }}
           project={{ id: initial.id, clientName: p.client, address: p.address, kw: p.kw, price: q.e.cost, currency: "EUR", batt: p.batt, battKwh: p.battKwh, market: p.market, bom: p.bom }} />
       )}

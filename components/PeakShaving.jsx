@@ -77,7 +77,7 @@ export default function PeakShaving({ lang, lat, lon, kw, cons, battKwh, market,
 
   if (!open) {
     return (
-      <button type="button" className="btn ghost sm" onClick={() => setOpen(true)}>
+      <button type="button" className="btn ghost sm qb-expand" onClick={() => setOpen(true)}>
         {t3(lang, "Descărcare de vârf (baterie)", "Peak shaving (battery)", "Сглаживание пика (батарея)")}
       </button>
     );

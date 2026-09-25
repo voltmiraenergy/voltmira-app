@@ -8,8 +8,11 @@
 // This file turns that into a real list of jobs, each carrying a PIPELINE
 // STAGE that is always DERIVED from what has actually happened in the other
 // tools — never hand-set — so it can't drift stale the way a manually-picked
-// status field would. Still localStorage-only: Studio never touches Supabase.
+// status field would. Reads come from a localStorage cache; every write is also sent
+// to the workspace (studio_state, see studio-sync.js), so a job entered on one
+// device is there on the next.
 import { DEFAULT_IDS } from "./catalog-data.js";
+import { queueWrite, queueDelete } from "./studio-sync.js";
 import { simulate, effectiveYield } from "./_engine.js";
 import { defaultEngineSettings } from "./_engine.js";
 
@@ -23,6 +26,11 @@ export function readJSON(key, fallback) {
 }
 export function writeJSON(key, val) {
   try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* private mode */ }
+  queueWrite(key, val);
+}
+export function removeJSON(key) {
+  try { localStorage.removeItem(key); } catch { /* private mode */ }
+  queueDelete(key);
 }
 
 /* --------------------------------------------------------------- seed jobs -- */
@@ -33,7 +41,7 @@ export const CLIENT_PRESETS = [
     panelId: DEFAULT_IDS.panel, inverterId: DEFAULT_IDS.inverter, batteryId: DEFAULT_IDS.battery, mountId: DEFAULT_IDS.mount },
   { id: "popescu", name: "Familie Popescu", address: "str. Donath 128, Cluj-Napoca", lat: 46.7623, lng: 23.5558, contractNo: "DEER-CJ-2026-11832", ref: "VM-2026-1183", market: "RO", kw: 8.5, cons: 8000, price: 0.21, batteryKwh: 0, phases: 1, atestat: "ANRE tip B nr. 2026/24417",
     panelId: DEFAULT_IDS.panel, inverterId: "growatt-min6000tl-xh", batteryId: DEFAULT_IDS.battery, mountId: DEFAULT_IDS.mount },
-  { id: "logipark", name: "Hala Chiajna — LogiPark SRL", address: "DN7 km 12, Chiajna, jud. Ilfov", lat: 44.4682, lng: 25.9760, contractNo: "EDMuntenia-2026-55901", ref: "VM-BNK-2026-0093", market: "RO", kw: 180, cons: 240000, price: 0.142, batteryKwh: 0, phases: 3, atestat: "ANRE tip B nr. 2026/24417",
+  { id: "logipark", name: "Hala Chiajna, LogiPark SRL", address: "DN7 km 12, Chiajna, jud. Ilfov", lat: 44.4682, lng: 25.9760, contractNo: "EDMuntenia-2026-55901", ref: "VM-BNK-2026-0093", market: "RO", kw: 180, cons: 240000, price: 0.142, batteryKwh: 0, phases: 3, atestat: "ANRE tip B nr. 2026/24417",
     panelId: "jinko-tigerneo-615", inverterId: "sofar-hyd20ktl-3ph", batteryId: DEFAULT_IDS.battery, mountId: "k2-crossrail" },
   { id: "agronord", name: "Fabrica AgroNord SRL", address: "str. Uzinelor 210, Chișinău, MD-2036", lat: 47.0304, lng: 28.8912, contractNo: "PE-CHI-2026-09920", ref: "VM-CI-2026-0300", market: "MD", kw: 300, cons: 540000, price: 0.16, batteryKwh: 0, phases: 3, atestat: "ANRE-MC nr. 2026/PV-0300",
     panelId: "longi-hi-mo9-610", inverterId: "huawei-sun2000-100ktl", batteryId: DEFAULT_IDS.battery, mountId: "k2-crossrail" },

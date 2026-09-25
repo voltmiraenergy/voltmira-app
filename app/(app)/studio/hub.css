@@ -1,0 +1,154 @@
+/* app/(app)/studio/hub.css — the Studio job hub: stage line, job cards, the
+ * money panel and the tools list. Shared header/cards/buttons come from
+ * app/(app)/dx.css; same `.app` prefix rule as there.
+ */
+
+.app .sx-preview {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+  font-size: 12px; color: var(--muted);
+}
+.app .sx-preview i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex: none; }
+.app .sx-preview.s-saving i { background: var(--amber); }
+.app .sx-preview.s-offline { color: var(--amber-ink); }
+.app .sx-preview.s-offline i { background: var(--amber); }
+.app .sx-preview.s-local i { background: var(--muted); }
+
+/* stage colours follow the chip each stage already has in jobs-data.js */
+.app .c-blue { --c: var(--blue); --ct: var(--blue-tint); }
+.app .c-amber { --c: var(--amber-ink); --ct: var(--amber-tint); }
+.app .c-green-soft { --c: var(--green-soft); --ct: var(--green-tint); }
+.app .c-green { --c: var(--green); --ct: var(--green-tint); }
+
+/* ---------------------------------------------------------------- new job */
+.app .sx-new-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.app .sx-new-grid label, .app .sx-new-market { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: var(--muted); min-width: 0; }
+.app .sx-new-grid .wide { grid-column: 1 / -1; }
+.app .sx-new-grid input {
+  height: 40px; padding: 0 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--paper-2);
+  font-size: 14px; font-weight: 400; color: var(--ink); outline: none; width: 100%;
+  transition: border-color .16s, box-shadow .16s;
+}
+.app .sx-new-grid input:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-tint); }
+.app .sx-new-grid input[aria-invalid="true"] { border-color: var(--red); }
+.app .sx-seg { display: inline-flex; padding: 3px; gap: 3px; border-radius: 10px; background: var(--paper); border: 1px solid var(--line); align-self: flex-start; }
+.app .sx-seg button { height: 32px; padding: 0 16px; border-radius: 7px; font-size: 13px; font-weight: 650; color: var(--muted); }
+.app .sx-seg button.on { background: var(--paper-2); color: var(--ink); box-shadow: 0 1px 3px rgba(20, 42, 33, .1); }
+.app .sx-err { color: var(--red); font-size: 13px; margin-top: 10px; }
+.app .sx-new-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* ---------------------------------------------------------------- stage line */
+.app .sx-flow-head { display: flex; align-items: baseline; gap: 4px 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.app .sx-flow-head h2 { font-family: var(--dx-d); font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); }
+.app .sx-flow-head p { font-size: 12.5px; color: var(--muted); }
+.app .sx-flow-line { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+.app .sx-stage { position: relative; min-width: 0; }
+.app .sx-stage:not(:last-child)::after {
+  content: ""; position: absolute; right: -11px; top: 50%; width: 7px; height: 7px; margin-top: -4px;
+  border-top: 2px solid var(--line); border-right: 2px solid var(--line); transform: rotate(45deg);
+}
+.app .sx-stage button {
+  width: 100%; height: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
+  padding: 12px 14px 11px; border-radius: 12px; border: 1px solid var(--line) !important; background: var(--paper) !important;
+  position: relative; overflow: hidden; transition: border-color .16s, background .16s, box-shadow .16s;
+}
+.app .sx-stage button::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--c); opacity: .85; }
+.app .sx-stage button:hover { border-color: color-mix(in srgb, var(--c) 50%, var(--line)) !important; }
+.app .sx-stage.on button { background: var(--ct) !important; border-color: var(--c) !important; box-shadow: inset 0 0 0 1px var(--c); }
+.app .sx-stage.zero button::before { opacity: .25; }
+.app .sx-stage-lbl { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.app .sx-stage-n-i {
+  font-style: normal; width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0; background: var(--ct); color: var(--c);
+}
+.app .sx-stage.on .sx-stage-lbl { color: var(--c); }
+.app .sx-stage b {
+  font-family: var(--dx-d); font-size: 28px; font-weight: 700; line-height: 1.15; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 4px;
+}
+.app .sx-stage.zero b { color: color-mix(in srgb, var(--muted) 60%, transparent); }
+.app .sx-stage-eur { font-size: 12.5px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- jobs */
+.app .sx-jobs { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.app .sx-jobs-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 2px 2px 0; }
+.app .sx-jobs-head h2 { display: flex; align-items: center; gap: 8px; font-family: var(--dx-d); font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); }
+.app .sx-job-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.app .sx-job {
+  display: flex; flex-direction: column; gap: 12px; padding: 16px 16px 15px; min-width: 0;
+  background: var(--paper-2); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow);
+  text-decoration: none; color: inherit; transition: border-color .16s, transform .14s, box-shadow .16s;
+}
+.app .sx-job:hover { border-color: var(--green); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+.app .sx-job-top { display: flex; align-items: flex-start; gap: 11px; min-width: 0; }
+.app .sx-avatar {
+  width: 38px; height: 38px; border-radius: 11px; flex: none; display: grid; place-items: center;
+  background: var(--ct); color: var(--c); font-size: 13px; font-weight: 700; letter-spacing: .02em;
+}
+.app .sx-job-id { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.app .sx-job-id b { font-family: var(--dx-d); font-size: 15px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .sx-job-id small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.app .sx-job .pv-stage { flex: none; }
+.app .sx-specs { display: flex; flex-wrap: wrap; gap: 6px; }
+.app .sx-specs span {
+  font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 6px; font-variant-numeric: tabular-nums;
+  background: var(--paper); border: 1px solid var(--line); color: var(--dx-soft);
+}
+.app .sx-steps { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.app .sx-steps li { height: 6px; border-radius: 99px; background: var(--line); }
+.app .sx-steps li.done { background: var(--green); }
+.app .sx-steps li.now { background: var(--ct); box-shadow: inset 0 0 0 1.5px var(--c); }
+.app .sx-next { font-size: 12.5px; line-height: 1.45; color: var(--dx-soft); }
+.app .sx-next b { color: var(--ink); font-weight: 650; }
+.app .sx-money { display: flex; flex-direction: column; gap: 7px; padding-top: 11px; border-top: 1px solid var(--line); }
+.app .sx-pay { display: flex; gap: 3px; height: 6px; }
+.app .sx-pay i { height: 100%; border-radius: 99px; background: var(--line); }
+.app .sx-pay i.paid { background: var(--green); }
+.app .sx-money-tx { font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.app .sx-money-tx b { font-weight: 650; }
+.app .sx-money-tx b.owed { color: var(--amber-ink); }
+.app .sx-money-tx b.ok { color: var(--green); }
+.app .sx-money-tx small { color: var(--muted); font-size: 12px; }
+
+/* ---------------------------------------------------------------- money panel */
+.app .sx-cash-big { display: flex; flex-direction: column; gap: 2px; }
+.app .sx-cash-big b { font-family: var(--dx-d); font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; color: var(--ink); }
+.app .sx-cash-big span { font-size: 12.5px; color: var(--muted); }
+.app .sx-cash-bar { display: block; height: 8px; border-radius: 99px; background: var(--amber-tint); overflow: hidden; margin: 14px 0 12px; }
+.app .sx-cash-bar i { display: block; height: 100%; border-radius: 99px; background: var(--green); }
+.app .sx-cash-rows { display: flex; flex-direction: column; gap: 8px; }
+.app .sx-cash-rows div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 13px; }
+.app .sx-cash-rows dt { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); }
+.app .sx-cash-rows dt i { width: 8px; height: 8px; border-radius: 50%; }
+.app .sx-cash-rows dt i.ok { background: var(--green); }
+.app .sx-cash-rows dt i.owed { background: var(--amber); }
+.app .sx-cash-rows dd { font-weight: 650; color: var(--ink); font-variant-numeric: tabular-nums; }
+.app .sx-cash-rows dd small { font-weight: 500; color: var(--muted); margin-left: 4px; }
+
+/* ---------------------------------------------------------------- tools */
+.app .sx-tools ul { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.app .sx-tools a {
+  display: flex; align-items: center; gap: 12px; padding: 9px 10px; margin: 0 -10px; border-radius: 11px;
+  text-decoration: none; color: inherit; transition: background .15s;
+}
+.app .sx-tools a:hover { background: var(--dx-hover); }
+.app .sx-tool-ic { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; background: var(--green-tint); color: var(--green); }
+.app .sx-tool-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.app .sx-tool-tx b { font-size: 13.5px; font-weight: 650; color: var(--ink); }
+.app .sx-tool-tx small { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.app .sx-tool-go { color: var(--muted); flex: none; transition: transform .15s, color .15s; }
+.app .sx-tools a:hover .sx-tool-go { color: var(--green); transform: translateX(2px); }
+
+/* ---------------------------------------------------------------- responsive */
+@media (max-width: 860px) {
+  .app .sx-flow-line { grid-template-columns: repeat(5, minmax(128px, 1fr)); overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .app .sx-flow-line::-webkit-scrollbar { display: none; }
+}
+@media (max-width: 768px) {
+  .app .sx-flow-line { margin-right: -16px; padding-right: 16px; }
+  .app .sx-stage b { font-size: 24px; }
+  .app .sx-new-grid { grid-template-columns: minmax(0, 1fr); }
+  .app .sx-job-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app .sx-job, .app .sx-tool-go { transition: none; }
+}

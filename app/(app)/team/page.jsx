@@ -1,6 +1,8 @@
 // app/(app)/team/page.jsx — Team plan attribute: member list + seats + invites.
 // RLS lets any member read teammates; invite/remove happen via /api/team
 // (owner-gated server-side — the UI hiding is convenience, not security).
+import "../dx.css";
+import "./team.css";
 import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
 import { t, normLang } from "../../../lib/i18n.js";
@@ -93,12 +95,24 @@ export default async function Team() {
   const teamWonEur = Object.values(visibleStats).reduce((s, x) => s + (x.wonEur || 0), 0);
   const fmt = (n) => "€" + Math.round(n || 0).toLocaleString("en-IE");
 
+  // Who leads on won value, named only when this viewer may see teammates'
+  // numbers and someone has actually closed something.
+  const leader = restrictedView ? null : Object.entries(visibleStats)
+    .filter(([, x]) => x.wonEur > 0)
+    .sort((a, b) => b[1].wonEur - a[1].wonEur)[0] || null;
+  const leaderName = leader ? ((members || []).find((m) => m.id === leader[0])?.name || "").trim().split(/\s+/)[0] : "";
+
   return (
-    <div style={{ maxWidth: 980, margin: "0 auto" }}>
-      <div className="page-head">
-        <h1>{t("team_title", lang)}</h1>
-        <span className="sub">{t("team_sub", lang, { co: co?.name || "" })}</span>
-      </div>
+    <div className="dx tmx">
+      <header className="dx-head">
+        <div className="dx-hello">
+          <h1>{t("team_title", lang)}</h1>
+          <p className="dx-summary">
+            {t("team_sub", lang, { co: co?.name || "" })}
+            {leader && leaderName ? " " + t("team_leader", lang, { name: leaderName, v: fmt(leader[1].wonEur) }) : ""}
+          </p>
+        </div>
+      </header>
 
       {/* One measured strip instead of three floating tiles — seats read as
           discrete pips (you can count what's left at a glance), and the money
@@ -114,7 +128,7 @@ export default async function Team() {
                   <span key={i} className={"pip" + (i < memberCount ? " on" : "")} />
                 ))}
               </div>
-              <div className="th-sub">{t("team_seats_open", lang, { n: seatsOpen })}</div>
+              <div className="th-sub">{t(seatsOpen === 1 ? "team_seats_open_1" : "team_seats_open", lang, { n: seatsOpen })}</div>
             </>
           ) : (
             <>

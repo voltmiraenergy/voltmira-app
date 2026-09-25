@@ -78,13 +78,13 @@ export default function BatterySizingPanel({ lang, base, E, battKwh, onApply, mo
       <p className="bsp-lead">
         {spread
           ? t3(lang,
-              `Fiecare kWh exportat se răscumpără la ${spread.buybackMdl.toFixed(2)} lei; același kWh, stocat și folosit seara, valorează tariful din factură (${spread.retailMdl.toFixed(2)} lei). Diferența de ${spread.spreadMdl.toFixed(2)} lei e tot ce câștigă bateria pe kWh — curba de mai jos e calculul motorului pentru acest client.`,
-              `Every exported kWh is bought back at ${spread.buybackMdl.toFixed(2)} lei; the same kWh, stored and used in the evening, is worth the retail tariff (${spread.retailMdl.toFixed(2)} lei). The ${spread.spreadMdl.toFixed(2)} lei difference is all the battery earns per kWh — the curve below is the engine's calculation for this client.`,
-              `Каждый экспортированный кВт·ч выкупается по ${spread.buybackMdl.toFixed(2)} лей; тот же кВт·ч, сохранённый на вечер, стоит розничный тариф (${spread.retailMdl.toFixed(2)} лей). Разница в ${spread.spreadMdl.toFixed(2)} лей — весь заработок батареи на кВт·ч.`)
+              `Fiecare kWh exportat se răscumpără la ${spread.buybackMdl.toFixed(2)} lei; același kWh, stocat și folosit seara, valorează tariful din factură (${spread.retailMdl.toFixed(2)} lei). Diferența de ${spread.spreadMdl.toFixed(2)} lei e tot ce câștigă bateria pe kWh: curba de mai jos e calculul motorului pentru acest client.`,
+              `Every exported kWh is bought back at ${spread.buybackMdl.toFixed(2)} lei; the same kWh, stored and used in the evening, is worth the retail tariff (${spread.retailMdl.toFixed(2)} lei). The ${spread.spreadMdl.toFixed(2)} lei difference is all the battery earns per kWh: the curve below is the engine's calculation for this client.`,
+              `Каждый экспортированный кВт·ч выкупается по ${spread.buybackMdl.toFixed(2)} лей; тот же кВт·ч, сохранённый на вечер, стоит розничный тариф (${spread.retailMdl.toFixed(2)} лей). Разница в ${spread.spreadMdl.toFixed(2)} лей: весь заработок батареи на кВт·ч.`)
           : t3(lang,
-              "Surplusul exportat se creditează sub prețul din factură, iar același kWh stocat și folosit seara valorează tariful întreg. Curba de mai jos e calculul motorului pentru acest client — nu o ilustrare.",
-              "Exported surplus is credited below the retail price, while the same kWh stored and used in the evening is worth the full tariff. The curve below is the engine's own calculation for this client — not an illustration.",
-              "Экспортируемый излишек кредитуется ниже розничной цены, а тот же кВт·ч, сохранённый на вечер, стоит полный тариф. График ниже — расчёт движка для этого клиента.")}
+              "Surplusul exportat se creditează sub prețul din factură, iar același kWh stocat și folosit seara valorează tariful întreg. Curba de mai jos e calculul motorului pentru acest client, nu o ilustrare.",
+              "Exported surplus is credited below the retail price, while the same kWh stored and used in the evening is worth the full tariff. The curve below is the engine's own calculation for this client, not an illustration.",
+              "Экспортируемый излишек кредитуется ниже розничной цены, а тот же кВт·ч, сохранённый на вечер, стоит полный тариф. График ниже: расчёт движка для этого клиента.")}
       </p>
 
       <Curve pts={sweep.pts} deltas={sweep.deltas} knee={sweep.knee} paysOff={sweep.paysOff}
@@ -124,7 +124,7 @@ export default function BatterySizingPanel({ lang, base, E, battKwh, onApply, mo
 
       <style dangerouslySetInnerHTML={{ __html: `
         .bsp-lead{font-size:12.5px;color:var(--muted);margin:6px 0 14px;max-width:70ch;line-height:1.55}
-        /* four tiles: 4-up wide, 2x2 narrow — never 3 + a lonely one */
+        /* four tiles: 4-up wide, 2x2 narrow: never 3 + a lonely one */
         .bsp-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
         @media(max-width:900px){.bsp-metrics{grid-template-columns:1fr 1fr}}
         .bsp-m{background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:11px 13px}

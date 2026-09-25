@@ -100,9 +100,9 @@ export default function BomCard({
       </div>
       <p className="bom-lead">
         {t3(lang,
-          "Ce intră fizic în sistem, la prețurile tale de achiziție. Nu schimbă prețul din ofertă — acesta rămâne condus de puterea sistemului — ci arată marja: preț ofertă minus materiale.",
-          "What physically goes into the system, at your purchase prices. It doesn't change the quoted price — that stays driven by system size — it shows the margin: quote price minus materials.",
-          "Что физически входит в систему, по вашим закупочным ценам. Цена предложения не меняется — она зависит от мощности — но виден маржинальный доход: цена минус материалы.")}
+          "Ce intră fizic în sistem, la prețurile tale de achiziție. Nu schimbă prețul din ofertă (acesta rămâne condus de puterea sistemului). Arată marja: preț ofertă minus materiale.",
+          "What physically goes into the system, at your purchase prices. It doesn't change the quoted price (that stays driven by system size). It shows the margin: quote price minus materials.",
+          "Что физически входит в систему, по вашим закупочным ценам. Цена предложения не меняется (она зависит от мощности). Зато видна маржа: цена минус материалы.")}
       </p>
 
       {bom.length === 0 && (
@@ -186,9 +186,9 @@ export default function BomCard({
           {margin < 0 && (
             <div className="bom-warn">
               {t3(lang,
-                "Materialele costă mai mult decât prețul din ofertă — manopera și transportul nu sunt încă acoperite.",
-                "Materials cost more than the quoted price — labour and transport aren't covered yet.",
-                "Материалы дороже цены предложения — работа и доставка ещё не покрыты.")}
+                "Materialele costă mai mult decât prețul din ofertă: manopera și transportul nu sunt încă acoperite.",
+                "Materials cost more than the quoted price: labour and transport aren't covered yet.",
+                "Материалы дороже цены предложения: работа и доставка ещё не покрыты.")}
             </div>
           )}
         </div>

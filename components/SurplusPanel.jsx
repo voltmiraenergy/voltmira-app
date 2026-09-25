@@ -102,13 +102,13 @@ export default function SurplusPanel({ lang, buyback, prodKwh, selfRatio, mdlPer
     <section className={className}>
       <div className="sp-head">
         <h3 style={{ margin: 0, flex: 1 }}>{t3(lang, "Vânzarea surplusului", "Selling the surplus", "Продажа излишка")}</h3>
-        <span className="sp-src"><b>{BUYBACK_SOURCE.operator}</b> — {t3(lang, BUYBACK_SOURCE.label.ro, BUYBACK_SOURCE.label.en, BUYBACK_SOURCE.label.ru)}</span>
+        <span className="sp-src"><b>{BUYBACK_SOURCE.operator}</b>: {t3(lang, BUYBACK_SOURCE.label.ro, BUYBACK_SOURCE.label.en, BUYBACK_SOURCE.label.ru)}</span>
       </div>
       <p className="sp-lead">
         {t3(lang,
-          "Prețul de răscumpărare nu e o constantă — variază lună de lună și e cel mai mic exact primăvara-vara, când sistemul produce cel mai mult surplus. De asta prețul corect de pus în ofertă e media ponderată cu surplusul, nu media anuală simplă.",
-          "The buy-back price isn't a constant — it moves month to month, and it's lowest in exactly the spring and summer months when a PV system exports most. So the right figure for an offer is the surplus-weighted average, not the plain yearly mean.",
-          "Цена выкупа не постоянна — она меняется помесячно и ниже всего именно весной и летом, когда система отдаёт больше всего излишка. Поэтому в расчёт идёт средневзвешенная по излишку, а не простое годовое среднее.")}
+          "Prețul de răscumpărare nu e o constantă: variază lună de lună și e cel mai mic exact primăvara-vara, când sistemul produce cel mai mult surplus. De asta prețul corect de pus în ofertă e media ponderată cu surplusul, nu media anuală simplă.",
+          "The buy-back price isn't a constant: it moves month to month, and it's lowest in exactly the spring and summer months when a PV system exports most. So the right figure for an offer is the surplus-weighted average, not the plain yearly mean.",
+          "Цена выкупа не постоянна: она меняется помесячно и ниже всего именно весной и летом, когда система отдаёт больше всего излишка. Поэтому в расчёт идёт средневзвешенная по излишку, а не простое годовое среднее.")}
       </p>
 
       <BuybackChart lang={lang} seasonal={buyback.seasonal} weights={SOLAR_SEASON} weighted={buyback.weightedMdl} months={MONTHS_RO} />
@@ -124,8 +124,8 @@ export default function SurplusPanel({ lang, buyback, prodKwh, selfRatio, mdlPer
         <b>{buyback.spread.spreadMdl.toFixed(2)} lei</b>
         <span>
           {t3(lang,
-            `este cât valorează un kWh STOCAT, nu vândut: ${buyback.spread.retailMdl.toFixed(2)} lei tarif de la rețea − ${buyback.spread.buybackMdl.toFixed(2)} lei răscumpărare = ${buyback.spread.spreadMdl.toFixed(2)} lei (${buyback.spread.sharePct.toFixed(0)}% din tarif). Asta câștigă bateria pe fiecare kWh ciclat — nu tariful întreg, cum se scrie des în oferte.`,
-            `is what a kWh is worth STORED rather than sold: ${buyback.spread.retailMdl.toFixed(2)} lei grid tariff − ${buyback.spread.buybackMdl.toFixed(2)} lei buy-back = ${buyback.spread.spreadMdl.toFixed(2)} lei (${buyback.spread.sharePct.toFixed(0)}% of the tariff). That is what the battery earns per cycled kWh — not the full tariff, as offers often claim.`,
+            `este cât valorează un kWh STOCAT, nu vândut: ${buyback.spread.retailMdl.toFixed(2)} lei tarif de la rețea − ${buyback.spread.buybackMdl.toFixed(2)} lei răscumpărare = ${buyback.spread.spreadMdl.toFixed(2)} lei (${buyback.spread.sharePct.toFixed(0)}% din tarif). Asta câștigă bateria pe fiecare kWh ciclat, nu tariful întreg, cum se scrie des în oferte.`,
+            `is what a kWh is worth STORED rather than sold: ${buyback.spread.retailMdl.toFixed(2)} lei grid tariff − ${buyback.spread.buybackMdl.toFixed(2)} lei buy-back = ${buyback.spread.spreadMdl.toFixed(2)} lei (${buyback.spread.sharePct.toFixed(0)}% of the tariff). That is what the battery earns per cycled kWh, not the full tariff, as offers often claim.`,
             `— столько стоит кВт·ч, ОСТАВЛЕННЫЙ в батарее, а не проданный: ${buyback.spread.retailMdl.toFixed(2)} лей тариф − ${buyback.spread.buybackMdl.toFixed(2)} лей выкуп = ${buyback.spread.spreadMdl.toFixed(2)} лей (${buyback.spread.sharePct.toFixed(0)}% тарифа).`)}
         </span>
       </div>

@@ -39,7 +39,7 @@ export default function BosEstimate({ lang, bom, kw, battKwh, consKwh, phases, m
 
   if (!open) {
     return (
-      <button type="button" className="btn ghost sm" onClick={() => setOpen(true)}>
+      <button type="button" className="btn ghost sm qb-expand" onClick={() => setOpen(true)}>
         {t3(lang, "Deviz materiale (BOS)", "Materials list (BOS)", "Смета материалов (BOS)")}
       </button>
     );

@@ -20,14 +20,14 @@ import {
 const TX = {
   title: { en: "P50 / P90 export", ro: "Export P50 / P90", ru: "Экспорт P50 / P90" },
   sub: {
-    en: "An Energy Yield Assessment and bankability summary for this client's system — exceedance probabilities, an uncertainty budget, the 25-year schedule and a DSCR view, from the same engine.",
-    ro: "O evaluare a producției energetice și un rezumat de bancabilitate pentru sistemul acestui client — probabilități de depășire, buget de incertitudine, graficul pe 25 de ani și o vedere DSCR.",
-    ru: "Оценка выработки и сводка банкабельности для системы этого клиента — вероятности превышения, бюджет неопределённости, 25-летний график и DSCR.",
+    en: "An Energy Yield Assessment and bankability summary for this client's system: exceedance probabilities, an uncertainty budget, the 25-year schedule and a DSCR view, from the same engine.",
+    ro: "O evaluare a producției energetice și un rezumat de bancabilitate pentru sistemul acestui client: probabilități de depășire, buget de incertitudine, graficul pe 25 de ani și o vedere DSCR.",
+    ru: "Оценка выработки и сводка банкабельности для системы этого клиента: вероятности превышения, бюджет неопределённости, 25-летний график и DSCR.",
   },
   note: {
-    en: "P50 is the engine's expected band. P-values apply a combined uncertainty (σ ≈ 7.1%) to a normal distribution — the same method a lender's technical adviser uses. Everything below is built from the client's system in the bar above.",
-    ro: "P50 este banda „așteptat” a motorului. Valorile P aplică o incertitudine combinată (σ ≈ 7,1%) unei distribuții normale — metoda folosită de consultantul tehnic al unei bănci. Tot ce urmează se construiește din sistemul clientului din bara de sus.",
-    ru: "P50 — «ожидаемый» диапазон движка. P-значения применяют суммарную неопределённость (σ ≈ 7,1%) к нормальному распределению. Всё ниже строится из системы клиента в панели выше.",
+    en: "P50 is the engine's expected band. P-values apply a combined uncertainty (σ ≈ 7.1%) to a normal distribution, the same method a lender's technical adviser uses. Everything below is built from the client's system in the bar above.",
+    ro: "P50 este banda „așteptat” a motorului. Valorile P aplică o incertitudine combinată (σ ≈ 7,1%) unei distribuții normale, metoda folosită de consultantul tehnic al unei bănci. Tot ce urmează se construiește din sistemul clientului din bara de sus.",
+    ru: "P50 означает «ожидаемый» диапазон движка. P-значения применяют суммарную неопределённость (σ ≈ 7,1%) к нормальному распределению. Всё ниже строится из системы клиента в панели выше.",
   },
   docLangLabel: { en: "Document language", ro: "Limba documentului", ru: "Язык документа" },
   gearing: { en: "Debt gearing", ro: "Grad de îndatorare", ru: "Доля долга" },
@@ -95,7 +95,7 @@ export default function BankabilityPreview() {
   const lang = useLang();
   const t = makeT(TX, lang);
   const { client } = useStudioClient();
-  useEffect(() => { document.title = "P50 / P90 export — VoltMira Studio"; }, []);
+  useEffect(() => { document.title = "P50 / P90 export · VoltMira"; }, []);
 
   const [gearing, setGearing] = useState(70);
   const [rate, setRate] = useState(6.5);
@@ -247,7 +247,7 @@ export default function BankabilityPreview() {
 
   function exportCsv() {
     const rows = [
-      ["VoltMira — Energy Yield Assessment", project.name, project.ref],
+      ["VoltMira: Energy Yield Assessment", project.name, project.ref],
       [],
       ["Exceedance", "Annual MWh", "Specific yield kWh/kWp", "Capacity factor %"],
       ...PLEVELS.map((L) => [L, (model.byLevel[L].annual / 1000).toFixed(1), model.byLevel[L].spec.toFixed(0), (model.byLevel[L].cf * 100).toFixed(1)]),
@@ -326,7 +326,7 @@ export default function BankabilityPreview() {
           <div className="doc-kv"><span>{d("Combined P50 uncertainty (σ)", "Incertitudine P50 combinată (σ)")}</span><b>{SIGMA.toFixed(1)}%</b></div>
         </div>
 
-        <h2>{d("Energy yield — exceedance probabilities (year 1)", "Producția de energie — probabilități de depășire (anul 1)")}</h2>
+        <h2>{d("Energy yield: exceedance probabilities (year 1)", "Producția de energie: probabilități de depășire (anul 1)")}</h2>
         <table>
           <thead><tr><th>{d("Exceedance", "Depășire")}</th><th>{d("Annual energy", "Energie anuală")}</th><th>{d("Specific yield", "Producție specifică")}</th><th>{d("Capacity factor", "Factor de capacitate")}</th><th>{d("vs P50", "față de P50")}</th></tr></thead>
           <tbody>
@@ -391,31 +391,31 @@ export default function BankabilityPreview() {
           <p style={{ fontSize: "11.5px" }}>
             {battInfo.replaceYear
               ? d(
-                  `The selected battery (${battInfo.battery.brand} ${battInfo.battery.model}, ${battInfo.battery.chem}, rated ${NUM(battInfo.battery.cycles)} cycles) is projected to reach end-of-life at a solar duty cycle of ~330 full cycles/yr around year ${battInfo.replaceYear} (marked * above) — a full-pack replacement (≈ ${EUR(battInfo.replaceCostEur)}) is included in that year's net cashflow, not left off the page.`,
-                  `Bateria aleasă (${battInfo.battery.brand} ${battInfo.battery.model}, ${battInfo.battery.chem}, ${NUM(battInfo.battery.cycles)} cicluri) atinge sfârșitul de viață, la un regim solar de ~330 cicluri complete/an, în jurul anului ${battInfo.replaceYear} (marcat * mai sus) — o înlocuire completă (≈ ${EUR(battInfo.replaceCostEur)}) e inclusă în fluxul net al acelui an, nu ascunsă.`
+                  `The selected battery (${battInfo.battery.brand} ${battInfo.battery.model}, ${battInfo.battery.chem}, rated ${NUM(battInfo.battery.cycles)} cycles) is projected to reach end-of-life at a solar duty cycle of ~330 full cycles/yr around year ${battInfo.replaceYear} (marked * above): a full-pack replacement (≈ ${EUR(battInfo.replaceCostEur)}) is included in that year's net cashflow, not left off the page.`,
+                  `Bateria aleasă (${battInfo.battery.brand} ${battInfo.battery.model}, ${battInfo.battery.chem}, ${NUM(battInfo.battery.cycles)} cicluri) atinge sfârșitul de viață, la un regim solar de ~330 cicluri complete/an, în jurul anului ${battInfo.replaceYear} (marcat * mai sus): o înlocuire completă (≈ ${EUR(battInfo.replaceCostEur)}) e inclusă în fluxul net al acelui an, nu ascunsă.`
                 )
               : d(
-                  `The selected battery (${battInfo.battery.brand} ${battInfo.battery.model}, ${battInfo.battery.chem}, rated ${NUM(battInfo.battery.cycles)} cycles) comfortably clears 25 years at a solar duty cycle of ~330 full cycles/yr (≈ ${Math.round(battInfo.lifeYears)} years of headroom) — no replacement is scheduled in the cashflow.`,
-                  `Bateria aleasă (${battInfo.battery.brand} ${battInfo.battery.model}, ${battInfo.battery.chem}, ${NUM(battInfo.battery.cycles)} cicluri) depășește confortabil 25 de ani la un regim solar de ~330 cicluri complete/an (≈ ${Math.round(battInfo.lifeYears)} ani rezervă) — nicio înlocuire nu e programată în flux.`
+                  `The selected battery (${battInfo.battery.brand} ${battInfo.battery.model}, ${battInfo.battery.chem}, rated ${NUM(battInfo.battery.cycles)} cycles) comfortably clears 25 years at a solar duty cycle of ~330 full cycles/yr (≈ ${Math.round(battInfo.lifeYears)} years of headroom), so no replacement is scheduled in the cashflow.`,
+                  `Bateria aleasă (${battInfo.battery.brand} ${battInfo.battery.model}, ${battInfo.battery.chem}, ${NUM(battInfo.battery.cycles)} cicluri) depășește confortabil 25 de ani la un regim solar de ~330 cicluri complete/an (≈ ${Math.round(battInfo.lifeYears)} ani rezervă), deci nicio înlocuire nu e programată în flux.`
                 )}
           </p>
         ) : (
-          <p style={{ fontSize: "11.5px" }}>{d("No battery in this system — nothing to schedule.", "Fără baterie în acest sistem — nimic de programat.")}</p>
+          <p style={{ fontSize: "11.5px" }}>{d("No battery in this system, so nothing to schedule.", "Fără baterie în acest sistem, deci nimic de programat.")}</p>
         )}
 
-        <h2>{d("Lender view — debt service coverage", "Perspectiva finanțatorului — acoperirea serviciului datoriei")}</h2>
+        <h2>{d("Lender view: debt service coverage", "Perspectiva finanțatorului: acoperirea serviciului datoriei")}</h2>
         <div className="doc-grid">
           <div className="doc-kv"><span>{d("Gearing / debt amount", "Grad de îndatorare / sumă credit")}</span><b>{gearing}% · {EUR(model.debt)}</b></div>
           <div className="doc-kv"><span>{d("Rate / tenor", "Dobândă / scadență")}</span><b>{rate.toFixed(2)}% · {tenor} {d("yrs", "ani")}</b></div>
           <div className="doc-kv"><span>{d("Annual debt service", "Serviciul anual al datoriei")}</span><b>{EUR(model.annuity)}</b></div>
-          <div className="doc-kv"><span>{d("Payback — P50 / P90", "Amortizare — P50 / P90")}</span><b>{model.paybackP50 == null ? "25+" : model.paybackP50.toFixed(1)} / {model.paybackP90 == null ? "25+" : model.paybackP90.toFixed(1)} {d("yrs", "ani")}</b></div>
-          <div className="doc-kv"><span>{d("DSCR year 1 — P50 / P90", "DSCR anul 1 — P50 / P90")}</span><b>{model.dscrY1P50.toFixed(2)}x / {model.dscrY1P90.toFixed(2)}x</b></div>
-          <div className="doc-kv"><span>{d("Min DSCR over tenor — P50 / P90", "DSCR minim pe durată — P50 / P90")}</span><b>{model.dscrMinP50.toFixed(2)}x / {model.dscrMinP90.toFixed(2)}x</b></div>
+          <div className="doc-kv"><span>{d("Payback: P50 / P90", "Amortizare: P50 / P90")}</span><b>{model.paybackP50 == null ? "25+" : model.paybackP50.toFixed(1)} / {model.paybackP90 == null ? "25+" : model.paybackP90.toFixed(1)} {d("yrs", "ani")}</b></div>
+          <div className="doc-kv"><span>{d("DSCR year 1: P50 / P90", "DSCR anul 1: P50 / P90")}</span><b>{model.dscrY1P50.toFixed(2)}x / {model.dscrY1P90.toFixed(2)}x</b></div>
+          <div className="doc-kv"><span>{d("Min DSCR over tenor: P50 / P90", "DSCR minim pe durată: P50 / P90")}</span><b>{model.dscrMinP50.toFixed(2)}x / {model.dscrMinP90.toFixed(2)}x</b></div>
         </div>
         <p className="doc-note" style={{ marginTop: 8 }}>
           {model.dscrMinP90 >= 1.2
             ? d("P90 minimum DSCR clears a conventional 1.20x covenant across the tenor.", "DSCR-ul minim P90 depășește un covenant convențional de 1,20x pe toată durata.")
-            : d("P90 minimum DSCR is below a 1.20x covenant — reduce gearing or extend tenor to reach bankability.", "DSCR-ul minim P90 este sub covenantul de 1,20x — reduceți gradul de îndatorare sau prelungiți scadența pentru a atinge bancabilitatea.")}
+            : d("P90 minimum DSCR is below a 1.20x covenant. Reduce gearing or extend tenor to reach bankability.", "DSCR-ul minim P90 este sub covenantul de 1,20x. Reduceți gradul de îndatorare sau prelungiți scadența pentru a atinge bancabilitatea.")}
         </p>
 
         <h2>{d("Investment metrics (P50, discounted)", "Indicatori de investiție (P50, actualizați)")}</h2>
@@ -423,16 +423,16 @@ export default function BankabilityPreview() {
           <div className="doc-kv"><span>{d("Discount rate (real)", "Rată de actualizare (reală)")}</span><b>{disc.toFixed(1)}%</b></div>
           <div className="doc-kv"><span>{d("Net present value (NPV)", "Valoare actualizată netă (VAN)")}</span><b>{EUR(model.npv)}</b></div>
           <div className="doc-kv"><span>{d("Internal rate of return (IRR)", "Rata internă de rentabilitate (RIR)")}</span><b>{model.irr == null ? "—" : (model.irr * 100).toFixed(1) + "%"}</b></div>
-          <div className="doc-kv"><span>{d("LCOE — levelised cost of energy", "LCOE — cost nivelat al energiei")}</span><b>{model.lcoe == null ? "—" : "€" + model.lcoe.toFixed(3) + "/kWh"}</b></div>
+          <div className="doc-kv"><span>{d("LCOE: levelised cost of energy", "LCOE: cost nivelat al energiei")}</span><b>{model.lcoe == null ? "—" : "€" + model.lcoe.toFixed(3) + "/kWh"}</b></div>
         </div>
         <p className="doc-note" style={{ marginTop: 8 }}>
           {d(
-            "NPV and IRR are computed on the P50 net cashflow (energy value less O&M) over 25 years against CAPEX, at the discount rate above. LCOE = discounted lifetime cost (CAPEX + O&M) per discounted kWh produced — compare it to the retail tariff to see the margin.",
-            "VAN și RIR sunt calculate pe fluxul net P50 (valoarea energiei minus O&M) pe 25 de ani față de CAPEX, la rata de actualizare de mai sus. LCOE = costul actualizat pe durata de viață (CAPEX + O&M) pe kWh actualizat produs — comparați-l cu tariful de la rețea pentru a vedea marja."
+            "NPV and IRR are computed on the P50 net cashflow (energy value less O&M) over 25 years against CAPEX, at the discount rate above. LCOE = discounted lifetime cost (CAPEX + O&M) per discounted kWh produced. Compare it to the retail tariff to see the margin.",
+            "VAN și RIR sunt calculate pe fluxul net P50 (valoarea energiei minus O&M) pe 25 de ani față de CAPEX, la rata de actualizare de mai sus. LCOE = costul actualizat pe durata de viață (CAPEX + O&M) pe kWh actualizat produs. Comparați-l cu tariful de la rețea pentru a vedea marja."
           )}
         </p>
 
-        <h2>{d("Sensitivity — NPV drivers (P50)", "Sensibilitate — factori VAN (P50)")}</h2>
+        <h2>{d("Sensitivity: NPV drivers (P50)", "Sensibilitate: factori VAN (P50)")}</h2>
         <TornadoSVG
           rows={model.tornado} base={model.npv}
           label={(k) => ({
@@ -455,27 +455,27 @@ export default function BankabilityPreview() {
         <h2>{d("Methodology & limitations", "Metodologie și limitări")}</h2>
         <p style={{ fontSize: "11px" }}>
           {d(
-            "Resource from PVGIS-SARAH3 (2005–2023) for the site coordinates. Energy model and losses per the VoltMira engine (SR EN 50549-1 export scheme, per-market tariff rules). P-values assume a normal distribution of annual energy about P50 with the combined σ above. This is a screening assessment for financing discussions — not a substitute for an independent engineer's report where required by the facility.",
-            "Resursă din PVGIS-SARAH3 (2005–2023) pentru coordonatele sitului. Model energetic și pierderi conform motorului VoltMira (schemă de export SR EN 50549-1, reguli tarifare per piață). Valorile P presupun o distribuție normală a energiei anuale în jurul P50, cu σ combinat de mai sus. Este o evaluare de screening pentru discuții de finanțare — nu înlocuiește raportul unui inginer independent, acolo unde este cerut de facilitate."
+            "Resource from PVGIS-SARAH3 (2005–2023) for the site coordinates. Energy model and losses per the VoltMira engine (SR EN 50549-1 export scheme, per-market tariff rules). P-values assume a normal distribution of annual energy about P50 with the combined σ above. This is a screening assessment for financing discussions, not a substitute for an independent engineer's report where required by the facility.",
+            "Resursă din PVGIS-SARAH3 (2005–2023) pentru coordonatele sitului. Model energetic și pierderi conform motorului VoltMira (schemă de export SR EN 50549-1, reguli tarifare per piață). Valorile P presupun o distribuție normală a energiei anuale în jurul P50, cu σ combinat de mai sus. Este o evaluare de screening pentru discuții de finanțare, nu înlocuiește raportul unui inginer independent, acolo unde este cerut de facilitate."
           )}
         </p>
         <p style={{ fontSize: "11px" }}>
           {d(
-            "The energy-price escalation in the expected band is calibrated against published ANRE household tariff orders (Premier Energy / RED Nord, 2021–2026), not an arbitrary constant — replace with the facility's own regulatory forecast where one exists.",
-            "Creșterea de preț la energie din banda așteptată e calibrată pe ordinele ANRE publicate pentru tariful populației (Premier Energy / RED Nord, 2021–2026), nu pe o constantă arbitrară — înlocuiți-o cu prognoza reglementată a finanțatorului acolo unde există una."
+            "The energy-price escalation in the expected band is calibrated against published ANRE household tariff orders (Premier Energy / RED Nord, 2021–2026), not an arbitrary constant. Replace it with the facility's own regulatory forecast where one exists.",
+            "Creșterea de preț la energie din banda așteptată e calibrată pe ordinele ANRE publicate pentru tariful populației (Premier Energy / RED Nord, 2021–2026), nu pe o constantă arbitrară. Înlocuiți-o cu prognoza reglementată a finanțatorului acolo unde există una."
           )}
         </p>
         {project.market === "MD" && (
           <p style={{ fontSize: "11px" }}>
             {d(
-              `Exported energy is valued at ${BUYBACK_SOURCE.operator}'s published monthly purchase price for prosumer-delivered energy, weighted by the months this system actually exports in: ${buyback.weightedMdl.toFixed(2)} lei/kWh (€${buyback.weightedEur.toFixed(3)}). A flat calendar average would overstate it, because the price is lowest in the spring and summer months that carry most of the export. The published series itself has moved: ${buyback.years.map((r) => `${r.year} ${r.avg.toFixed(2)} lei${r.yoyPct != null ? ` (${r.yoyPct > 0 ? "+" : ""}${r.yoyPct.toFixed(0)}% like-for-like on ${r.yoyMonths} common months)` : ""}`).join("; ")}. That history is shown for reference only — the escalation applied to the cashflow is the band setting above, not an extrapolation of these figures.`,
-              `Energia exportată e evaluată la prețul mediu lunar publicat de ${BUYBACK_SOURCE.operator} pentru energia livrată de prosumatori, ponderat cu lunile în care acest sistem chiar exportă: ${buyback.weightedMdl.toFixed(2)} lei/kWh (€${buyback.weightedEur.toFixed(3)}). O medie calendaristică simplă ar supraevalua cifra, pentru că prețul e cel mai mic exact în lunile de primăvară-vară care duc cea mai mare parte a exportului. Seria publicată s-a mișcat astfel: ${buyback.years.map((r) => `${r.year} ${r.avg.toFixed(2)} lei${r.yoyPct != null ? ` (${r.yoyPct > 0 ? "+" : ""}${r.yoyPct.toFixed(0)}% comparabil, pe ${r.yoyMonths} luni comune)` : ""}`).join("; ")}. Istoricul e dat doar ca referință — creșterea aplicată fluxului de numerar e setarea de bandă de mai sus, nu o extrapolare a acestor cifre.`
+              `Exported energy is valued at ${BUYBACK_SOURCE.operator}'s published monthly purchase price for prosumer-delivered energy, weighted by the months this system actually exports in: ${buyback.weightedMdl.toFixed(2)} lei/kWh (€${buyback.weightedEur.toFixed(3)}). A flat calendar average would overstate it, because the price is lowest in the spring and summer months that carry most of the export. The published series itself has moved: ${buyback.years.map((r) => `${r.year} ${r.avg.toFixed(2)} lei${r.yoyPct != null ? ` (${r.yoyPct > 0 ? "+" : ""}${r.yoyPct.toFixed(0)}% like-for-like on ${r.yoyMonths} common months)` : ""}`).join("; ")}. That history is shown for reference only: the escalation applied to the cashflow is the band setting above, not an extrapolation of these figures.`,
+              `Energia exportată e evaluată la prețul mediu lunar publicat de ${BUYBACK_SOURCE.operator} pentru energia livrată de prosumatori, ponderat cu lunile în care acest sistem chiar exportă: ${buyback.weightedMdl.toFixed(2)} lei/kWh (€${buyback.weightedEur.toFixed(3)}). O medie calendaristică simplă ar supraevalua cifra, pentru că prețul e cel mai mic exact în lunile de primăvară-vară care duc cea mai mare parte a exportului. Seria publicată s-a mișcat astfel: ${buyback.years.map((r) => `${r.year} ${r.avg.toFixed(2)} lei${r.yoyPct != null ? ` (${r.yoyPct > 0 ? "+" : ""}${r.yoyPct.toFixed(0)}% comparabil, pe ${r.yoyMonths} luni comune)` : ""}`).join("; ")}. Istoricul e dat doar ca referință: creșterea aplicată fluxului de numerar e setarea de bandă de mai sus, nu o extrapolare a acestor cifre.`
             )}
           </p>
         )}
         <div className="doc-sign">
-          <div>{d("Prepared by — VoltMira (automated)", "Întocmit de — VoltMira (automat)")} · {new Date().toLocaleDateString(loc)}</div>
-          <div>{d("Reviewed by — [independent engineer]", "Verificat de — [inginer independent]")}</div>
+          <div>{d("Prepared by: VoltMira (automated)", "Întocmit de: VoltMira (automat)")} · {new Date().toLocaleDateString(loc)}</div>
+          <div>{d("Reviewed by: [independent engineer]", "Verificat de: [inginer independent]")}</div>
         </div>
       </div>
       </DocReveal>
@@ -537,8 +537,8 @@ function ExceedanceCurve({ model, docLang }) {
     .map(([L, ex]) => [X(model.byLevel[L].annual / 1000), Y(ex)]);
   const d = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
   const axisLabel = docLang === "ro"
-    ? "energie anuală (MWh) — probabilitate de depășire"
-    : "annual energy (MWh) — probability of exceedance";
+    ? "energie anuală (MWh), probabilitate de depășire"
+    : "annual energy (MWh), probability of exceedance";
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: 520, margin: "4px 0 2px" }}>
       <line x1={PADL} y1={Y(0)} x2={W - PADR} y2={Y(0)} stroke="#ccc" strokeWidth="1" />
