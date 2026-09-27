@@ -10,6 +10,7 @@ import { t, normLang, LANGS, LANG_NAMES } from "../../../lib/i18n.js";
 import { hasFeature, planFor } from "../../../lib/features.js";
 import UpsellModal from "../../../components/UpsellModal.jsx";
 import { CONTRACT_TOKENS, COMMISSIONING_TOKENS } from "../../../lib/legalDocs.js";
+import LeadAssistant from "./LeadAssistant.jsx";
 
 const ST_CSS = `
 .st-wrap{max-width:660px;margin:0 auto}
@@ -119,6 +120,8 @@ export default function Settings() {
         legal_name: co.legal_name, reg_no: co.reg_no, vat_no: co.vat_no,
         legal_address: co.legal_address, iban: co.iban, invoice_prefix: co.invoice_prefix,
         vat_rate: co.vat_rate, install_warranty_years: co.install_warranty_years,
+        // Only once add-proposal-agent.sql has added the column (select("*") then returns it).
+        ...("negotiation" in co ? { negotiation: co.negotiation || {} } : {}),
         contract_template_override: co.contract_template_override || "",
         commissioning_template_override: co.commissioning_template_override || "",
         engine: eng,
@@ -438,6 +441,41 @@ export default function Settings() {
         </div>
       </section>
 
+      {/* Proposal assistant — how far the chat on a client's proposal may go
+          on the owner's behalf (lib/negotiation.js; enforced server-side in
+          app/api/proposal/[code]/qa, never by the model). Off by default.
+          Owner-only: saveCompany() drops it for anyone else. Hidden until
+          add-proposal-agent.sql has added the column. */}
+      {isOwner && "negotiation" in co && (() => {
+        const neg = co.negotiation || {};
+        const setNeg = (patch) => { setCo({ ...co, negotiation: { ...neg, ...patch } }); touch(); };
+        return (
+          <section className="card st-sec">
+            <div className="st-head"><SecIcon name="sliders" /><h3>{t("s_assistant", lang)}</h3></div>
+            <div className="set-note" style={{ marginTop: -4, marginBottom: 12 }}>{t("s_assistant_sub", lang)}</div>
+            <label className="check">
+              <input type="checkbox" checked={neg.enabled === true} onChange={(e) => setNeg({ enabled: e.target.checked })} />
+              <span className="toggle-pill" />
+              <span className="txt">{t("s_neg_enable", lang)}<small>{t("s_neg_enable_note", lang)}</small></span>
+            </label>
+            {neg.enabled === true && (
+              <div className="set-grid" style={{ marginTop: 12 }}>
+                <div className="field">
+                  <label htmlFor="iNegMax">{t("s_neg_max", lang)} <span style={{ fontWeight: 400 }}>(%)</span></label>
+                  <input className="input" id="iNegMax" type="number" min={0} max={15} step={0.5}
+                    value={neg.maxDiscountPct ?? ""} onChange={(e) => setNeg({ maxDiscountPct: e.target.value === "" ? "" : Math.min(15, Math.max(0, +e.target.value)) })} />
+                </div>
+              </div>
+            )}
+            <label className="check" style={{ marginTop: 10 }}>
+              <input type="checkbox" checked={neg.allowOptions !== false} onChange={(e) => setNeg({ allowOptions: e.target.checked })} />
+              <span className="toggle-pill" />
+              <span className="txt">{t("s_neg_options", lang)}<small>{t("s_neg_options_note", lang)}</small></span>
+            </label>
+          </section>
+        );
+      })()}
+
       {/* Plan */}
       <section className="card st-sec">
         <div className="st-head"><SecIcon name="star" color="var(--amber)" /><h3>{t("s_plan", lang)}</h3>
@@ -455,6 +493,13 @@ export default function Settings() {
         <div className="st-head"><SecIcon name="code" /><h3>{t("s_widget", lang)}</h3></div>
         <p className="st-desc">{t("s_widget_note", lang)}</p>
         <WidgetEmbed companyId={co.id} lang={lang} />
+      </section>
+
+      {/* Lead assistant: the website chat and the installer's own Telegram bots. */}
+      <section className="card st-sec">
+        <div className="st-head"><SecIcon name="demo" /><h3>{t("s_lead_assistant", lang)}</h3></div>
+        <p className="st-desc">{t("s_lead_assistant_sub", lang)}</p>
+        <LeadAssistant lang={lang} />
       </section>
 
       {isOwner ? (<>
@@ -507,7 +552,7 @@ export default function Settings() {
             These buttons just quick-fill the editable fields below with
             whichever supplier's real published rate applies; nothing is
             locked to a supplier afterward. */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
           <button type="button" className="btn ghost sm"
             onClick={() => { setCo(c => ({ ...c, engine: { ...eng, mdDayRateMdl: 3.75, mdNightRateMdl: 2.94 } })); touch(); }}>
             {t("e_md_preset_premier", lang)}

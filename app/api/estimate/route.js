@@ -1,9 +1,10 @@
 // app/api/estimate/route.js — PUBLIC free estimator behind the landing widget.
 // GET ?address=...&bill=<monthly bill, local currency>&country=RO|MD|DE
 //
-// Flow: geocode the address -> real PVGIS yield for that exact roof (cached in
-// pvgis_cache, 30-day TTL) -> run the SAME engine as the paid product to produce
-// honest pessimistic/expected/optimistic payback. No auth; rate-limited by IP.
+// Flow (lib/estimateCore.js, shared with the lead assistant): geocode the
+// address -> real PVGIS yield for that exact roof (cached in pvgis_cache, 30-day
+// TTL) -> the SAME engine as the paid product -> honest pessimistic/expected/
+// optimistic payback. No auth; rate-limited by IP.
 //
 // CORS: responses are open (Access-Control-Allow-Origin: *) so the widget works
 // even from a sandboxed/preview context or an embed. The endpoint is read-only,
@@ -11,9 +12,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabase.js";
 import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
-import { getSolarYield, geocode } from "@voltmira/engine/pvgis";
-import { quote, defaultEngineSettings, MARKETS, FX } from "@voltmira/engine";
-import { annualConsFromBill, sizeSystemKw } from "../../../lib/leadSizing.js";
+import { estimateSavings, EstimateError } from "../../../lib/estimateCore.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -26,92 +25,21 @@ export function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS });
 }
 
-// Retail electricity price (EUR/kWh) used to value self-consumption, per market,
-// plus the display currency. Conservative 2026 consumer prices.
-const MARKET_CFG = {
-  RO: { price: 0.21, currency: "RON" },
-  MD: { price: 0.14, currency: "MDL" },
-  DE: { price: 0.32, currency: "EUR" },
-};
-
-const round1 = (v) => Math.round(v * 10) / 10;
-
-// Cache resilient enough that a DB hiccup can't fail a public estimate.
-function dbCache(admin) {
-  const TTL = 30 * 24 * 3600 * 1000;
-  return {
-    async get(k) {
-      try {
-        const { data } = await admin.from("pvgis_cache").select("value, created_at").eq("key", k).single();
-        if (!data) return null;
-        if (Date.now() - new Date(data.created_at).getTime() > TTL) return null;
-        return data.value;
-      } catch { return null; }
-    },
-    async set(k, v) {
-      try { await admin.from("pvgis_cache").upsert({ key: k, value: v, created_at: new Date().toISOString() }); }
-      catch { /* best-effort */ }
-    },
-  };
-}
-
 export async function GET(req) {
   const ip = clientIp(req);
   if (await isRateLimited(`estimate:${ip}`, 15, 60_000))
     return J({ error: "rate", message: "Too many requests — give it a minute." }, 429);
 
   const url = new URL(req.url);
-  const address = (url.searchParams.get("address") || "").trim().slice(0, 200);
-  const country = (url.searchParams.get("country") || "RO").toUpperCase();
-  const billRaw = parseFloat(url.searchParams.get("bill") || "");
-
-  if (!address) return J({ error: "no_address", message: "Enter an address." }, 400);
-  const cfg = MARKET_CFG[country] || MARKET_CFG.RO;
-  const mkt = MARKETS[country] || MARKETS.RO;
-  const fx = FX[cfg.currency] || 1;
-
   try {
-    // 1) address -> coordinates
-    const g = await geocode(address, { email: process.env.GEOCODER_EMAIL });
-    if (!g) return J({ error: "not_found", message: "We couldn't find that address — try adding the city." }, 404);
-
-    // 2) real PVGIS yield for that roof (south, 35° tilt — sensible residential default)
-    const admin = supabaseAdmin();
-    const { yieldPerKwp, monthlyShape } = await getSolarYield(g.lat, g.lon, { angle: 35, aspect: 0, cache: dbCache(admin) });
-
-    // 3) derive annual consumption from the monthly bill (or a typical household),
-    //    and 4) size the system to roughly cover it — lib/leadSizing.js, so this
-    //    stays identical to how lib/actions.js sizes the same lead later if it's
-    //    converted into a project (see that file's own header comment: two
-    //    copies of this formula is exactly the drift this product can't have).
-    const annualCons = annualConsFromBill(billRaw, cfg.price, fx);
-    const recommendedKw = sizeSystemKw(annualCons, yieldPerKwp);
-
-    // 5) run the SAME engine as the paid product
-    const E = defaultEngineSettings();
-    const p = {
-      kw: recommendedKw, price: cfg.price, cons: annualCons, batt: false,
-      market: country in MARKETS ? country : "RO",
-      yieldOverride: yieldPerKwp, monthlyYieldShape: monthlyShape,
-    };
-    const q = quote(p, E);
-    const pb = (x) => (x.payback == null ? null : round1(x.payback));
-
-    return J({
-      location: g.display,
-      lat: g.lat, lon: g.lon,
-      market: country, marketName: mkt.name, scheme: mkt.scheme,
-      currency: cfg.currency,
-      yieldPerKwp: Math.round(yieldPerKwp),
-      recommendedKw,
-      annualConsKwh: Math.round(annualCons),
-      prodKwh: Math.round(q.e.prod0),
-      cost: { eur: Math.round(q.e.cost), local: Math.round(q.e.cost * fx) },
-      annualSavings: { eur: Math.round(q.e.year1), local: Math.round(q.e.year1 * fx) },
-      payback: { pess: pb(q.p), expc: pb(q.e), opti: pb(q.o) },
-    });
+    return J(await estimateSavings({
+      address: url.searchParams.get("address") || "",
+      bill: url.searchParams.get("bill") || "",
+      country: url.searchParams.get("country") || "RO",
+      admin: supabaseAdmin(),
+    }));
   } catch (e) {
-    const msg = String(e && e.message || e);
-    return J({ error: "upstream", message: "The sun-data service is busy — try again in a moment.", detail: msg }, 502);
+    if (e instanceof EstimateError) return J({ error: e.code, message: e.message, ...(e.detail ? { detail: e.detail } : {}) }, e.status);
+    return J({ error: "upstream", message: "The sun-data service is busy — try again in a moment." }, 502);
   }
 }
