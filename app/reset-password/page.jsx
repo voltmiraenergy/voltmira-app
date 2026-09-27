@@ -108,9 +108,9 @@ export default function ResetPassword() {
   const lbl = { fontSize: 13, fontWeight: 600, color: "var(--app-muted)", display: "block", margin: "14px 0 6px" };
 
   return (
-    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "var(--app-bg)",
+    <main style={{ minHeight: "100dvh", display: "grid", gridTemplateColumns: "minmax(0, 1fr)", placeItems: "center", background: "var(--app-bg)",
       fontFamily: "Inter, system-ui, sans-serif", padding: 18 }}>
-      <div style={{ width: "100%", maxWidth: 400, background: "var(--app-surface)", border: "1px solid var(--app-line)",
+      <div style={{ width: "100%", maxWidth: 400, boxSizing: "border-box", background: "var(--app-surface)", border: "1px solid var(--app-line)",
         borderRadius: 16, padding: "30px 26px", color: "var(--app-text)" }}>
         <h1 style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 6px" }}>
           {t(invite ? "rp_title_invite" : "rp_title_reset", lang)}</h1>

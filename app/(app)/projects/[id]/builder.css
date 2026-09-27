@@ -136,6 +136,18 @@ html[data-theme="dark"] .app .qb { --amber-ink: #EBA542; --dx-on-green: #07130D;
   .app .qb-bar dd { font-size: 18px; }
   .app .qb .card { padding: 16px; border-radius: 14px; }
 }
+/* Narrow phone: three payback columns would clip "PESSIMISTIC"; each band
+   becomes a row, the label and return on the left, the years on the right. */
+@media (max-width: 480px) {
+  .app .qb .bands { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .app .qb .band {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "tag yrs" "roi yrs";
+    column-gap: 12px; align-items: center; padding: 12px 14px;
+  }
+  .app .qb .band .tag { grid-area: tag; margin-bottom: 2px; }
+  .app .qb .band .yrs { grid-area: yrs; }
+  .app .qb .band .roi { grid-area: roi; margin-top: 0; }
+}
 @media (prefers-reduced-motion: reduce) {
   .app .qb-saved.s-saving i { animation: none; }
 }

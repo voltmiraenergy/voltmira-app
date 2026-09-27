@@ -260,6 +260,25 @@ html[data-theme="dark"] .app .dx-base { border-color: var(--line); }
   .app .dx-base-stats dd { font-size: 25px; }
   .app .dx-base-mark { width: 150px; height: 150px; right: -18px; bottom: auto; top: -26px; opacity: .2; }
 }
+/* Phone: the seven stages read top to bottom, each a row of label and count,
+   with the line running down the left and each conversion rate on it. */
+@media (max-width: 560px) {
+  .app .dx-flow-line { grid-template-columns: minmax(0, 1fr); overflow: visible; margin-right: 0; padding-right: 0; margin-top: 14px; }
+  .app .dx-stage { padding: 0 0 30px 26px; }
+  .app .dx-stage:last-child { padding-bottom: 0; }
+  .app .dx-stage::before { top: 5px; }
+  .app .dx-join { top: 22px; bottom: 2px; left: 5px; right: auto; width: 2px; height: auto;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c) 60%, var(--line)), var(--line)); }
+  .app .dx-join em { top: auto; bottom: 13px; left: 12px; transform: translateY(50%); }
+  .app .dx-stage-in {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "lbl n" "sub eur";
+    column-gap: 12px; align-items: baseline; padding: 0;
+  }
+  .app .dx-stage-lbl { grid-area: lbl; }
+  .app .dx-stage-n { grid-area: n; font-size: 24px; margin-top: 0; line-height: 1; text-align: right; }
+  .app .dx-stage-eur { grid-area: eur; text-align: right; min-height: 0; }
+  .app .dx-stage-sub { grid-area: sub; min-height: 0; }
+}
 @media (max-width: 560px) {
   .app .dx-lead-bottom { flex-direction: column; align-items: flex-start; }
   .app .dx-lead-bottom > span:empty { display: none; }

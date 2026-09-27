@@ -235,6 +235,8 @@ html[data-theme="dark"] .app .dx {
   .app .dx-head { align-items: stretch; }
   .app .dx-head-tools { width: 100%; flex-wrap: nowrap; }
   .app .dx-head-tools form { flex: none; }
+  /* ...except an inline search box, which takes what's left of the row. */
+  .app .dx-head-tools .dx-find { flex: 1 1 auto; min-width: 0; max-width: none; }
   .app .dx-search { flex: 1; min-width: 0; }
   .app .dx-search kbd { display: none; }
   .app .dx-card, .app .dx .card { padding: 16px; border-radius: 14px; }

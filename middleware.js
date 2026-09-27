@@ -2,10 +2,34 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 
+// The public site lives on voltmira.com only. app.voltmira.com serves the same
+// Next app (it is where email links point), so without this its copies of the
+// marketing and legal pages compete with the real ones in Google's index.
+const SITE = "https://voltmira.com";
+const PUBLIC_PAGES = new Set(["/", "/ro", "/ru", "/privacy", "/terms", "/refunds", "/cookies", "/credits"]);
+const LANG_PATH = { en: "/", ro: "/ro", ru: "/ru" };
+
 export async function middleware(req) {
   const res = NextResponse.next({ request: req });
 
   const path = req.nextUrl.pathname;
+  const host = (req.headers.get("host") || "").toLowerCase();
+
+  if (PUBLIC_PAGES.has(path)) {
+    // Old homepage URLs: each language was once /?lang=xx. Google still has
+    // them on file, and they answered 200 with the English page.
+    const lang = req.nextUrl.searchParams.get("lang");
+    if (path === "/" && lang) {
+      const url = req.nextUrl.clone();
+      url.pathname = LANG_PATH[lang] || "/";
+      url.search = "";
+      return NextResponse.redirect(url, 301);
+    }
+    if (host === "app.voltmira.com") {
+      return NextResponse.redirect(SITE + path, 301);
+    }
+    return res;
+  }
 
   // Only the signed-in app surfaces require a session. Everything else — public
   // marketing/legal pages, /login, /p/* proposals, the /widget embed, API routes
@@ -16,7 +40,7 @@ export async function middleware(req) {
   const isProtected = path.startsWith("/dashboard") || path.startsWith("/projects")
     || path.startsWith("/settings") || path.startsWith("/team") || path.startsWith("/leads")
     || path.startsWith("/guide") || path.startsWith("/catalog") || path.startsWith("/profile")
-    || path.startsWith("/activity") || path.startsWith("/refer") || path.startsWith("/documents");
+    || path.startsWith("/activity") || path.startsWith("/documents");
 
   if (!isProtected) return res;
 

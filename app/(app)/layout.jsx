@@ -54,8 +54,9 @@ export default async function AppLayout({ children }) {
     <div className="app">
       <AppTheme />
       {/* Persist the workspace language so the client error boundary (which can't
-          read the server-side company lang) can localize itself. */}
-      <script dangerouslySetInnerHTML={{ __html: `try{localStorage.setItem('voltmira_lang',${JSON.stringify(lang)})}catch(e){}` }} />
+          read the server-side company lang) can localize itself, and as a cookie
+          so /login greets a signed-out user in the same language. */}
+      <script dangerouslySetInnerHTML={{ __html: `try{localStorage.setItem('voltmira_lang',${JSON.stringify(lang)})}catch(e){}document.cookie='voltmira_lang='+${JSON.stringify(lang)}+'; path=/; max-age=31536000; samesite=lax'` }} />
       <a className="skip-link" href="#main">{lang === "ro" ? "Sari la conținut" : lang === "ru" ? "К содержимому" : "Skip to content"}</a>
       <aside className="sidebar">
         <div className="logo"><Logo dark size={26} /></div>
