@@ -1,60 +1,63 @@
-// app/(legal)/credits/page.jsx — photography attribution for the homepage.
+// app/(legal)/credits/page.jsx — the photographs on the homepage and sign-in page.
 //
-// Two of these photographs are CC BY-SA licensed, where crediting the author is
-// a condition of the licence rather than a courtesy. The credits used to sit in
-// a paragraph at the foot of the landing page; moving them here keeps the
-// homepage clean while still discharging the obligation, which CC permits —
-// attribution may be given "in any reasonable manner based on the medium", and
-// a credits page linked from the footer is the usual form for a website.
-//
-// If a photograph is replaced with an original installation photo, delete its
-// entry here too. The last one may only be removed outright: it is public
-// domain and carries no attribution requirement at all.
+// All four come from Unsplash or Pexels, whose licences allow commercial use
+// without attribution; they are credited anyway. When a photo is swapped for
+// one of a real VoltMira installation, remove its entry here. The Wikimedia
+// photos this page used to credit are only in the retired landing versions
+// (landing-en-v2..v5.html), which are no longer served.
 import LegalShell from "../LegalShell.jsx";
 
 export const metadata = {
-  title: "Photography Credits · VoltMira",
-  description:
-    "Attribution for the photographs used on the VoltMira homepage, sourced from Wikimedia Commons.",
+  title: "Photo Credits | VoltMira",
+  description: "The photographers behind the images on the VoltMira homepage and sign-in page, and the licences they are used under.",
+  alternates: { canonical: "/credits" },
 };
+
+const UNSPLASH = { name: "Unsplash License", href: "https://unsplash.com/license" };
+const PEXELS = { name: "Pexels License", href: "https://www.pexels.com/license/" };
 
 const PHOTOS = [
   {
-    title: "Installation of photovoltaic modules on roof",
-    author: "Stefan Thiesen",
-    licence: "CC BY-SA 3.0",
-    licenceHref: "https://creativecommons.org/licenses/by-sa/3.0/",
-    href: "https://commons.wikimedia.org/wiki/File:Installation_of_photovoltaic_modules_on_roof.jpg",
-    note: null,
+    title: "Solar panels on a red tile roof",
+    author: "Sergio Martins",
+    source: "Unsplash",
+    href: "https://unsplash.com/photos/solar-panels-on-a-red-tile-roof-1UtCVFoZwn4",
+    licence: UNSPLASH,
+    where: "Homepage header and sign-in page",
   },
   {
-    title: "Rooftop Solar Panels",
-    author: "EY418",
-    licence: "CC BY-SA 4.0",
-    licenceHref: "https://creativecommons.org/licenses/by-sa/4.0/",
-    href: "https://commons.wikimedia.org/wiki/File:Rooftop_Solar_Panels.jpg",
-    note: "Cropped to remove the New York skyline.",
+    title: "A man installing solar panels",
+    author: "Trinh Trần",
+    source: "Pexels",
+    href: "https://www.pexels.com/photo/a-man-installing-solar-panels-14613939/",
+    licence: PEXELS,
+    where: "Homepage, how it works",
   },
   {
-    title: "Solar panels on a roof",
-    author: "Pujanak",
-    licence: "Public domain",
-    licenceHref: null,
-    href: "https://commons.wikimedia.org/wiki/File:Solar_panels_on_a_roof.jpg",
-    note: null,
+    title: "An aerial view of a parking lot with lots of solar panels",
+    author: "Bernd Dittrich",
+    source: "Unsplash",
+    href: "https://unsplash.com/photos/an-aerial-view-of-a-parking-lot-with-lots-of-solar-panels-g-SFUAYL0MY",
+    licence: UNSPLASH,
+    where: "Homepage, commercial projects",
+  },
+  {
+    title: "Close-up photo of a solar panel",
+    author: "Los Muertos Crew",
+    source: "Pexels",
+    href: "https://www.pexels.com/photo/close-up-photo-of-a-solar-panel-8853509/",
+    licence: PEXELS,
+    where: "Homepage, closing section",
   },
 ];
 
 export default function Credits() {
   return (
-    <LegalShell title="Photography Credits" updated="26 August 2026">
+    <LegalShell title="Photo Credits" updated="26 September 2026">
       <p className="note">
-        The photographs on our homepage are placeholders, used while we gather
-        photography from real VoltMira installations. They come from{" "}
-        <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener noreferrer">
-          Wikimedia Commons
-        </a>{" "}
-        and are credited below as their licences require.
+        The photographs on our homepage and sign-in page come from Unsplash and Pexels. Their licences
+        allow free commercial use without attribution, but the photographers deserve the credit, so
+        here it is. The photos show installations elsewhere, not VoltMira customer projects.
       </p>
 
       <h2>Photographs used</h2>
@@ -62,28 +65,17 @@ export default function Credits() {
         {PHOTOS.map((p) => (
           <li key={p.href}>
             <a href={p.href} target="_blank" rel="noopener noreferrer">&ldquo;{p.title}&rdquo;</a>
-            {" by "}<b>{p.author}</b>{" — "}
-            {p.licenceHref ? (
-              <a href={p.licenceHref} target="_blank" rel="noopener noreferrer">{p.licence}</a>
-            ) : (
-              p.licence
-            )}
-            {p.note ? <>. {p.note}</> : null}
+            {" by "}<b>{p.author}</b>{" on "}{p.source}, used under the{" "}
+            <a href={p.licence.href} target="_blank" rel="noopener noreferrer">{p.licence.name}</a>.
+            {" "}<span className="muted">Used on: {p.where}.</span>
           </li>
         ))}
       </ul>
 
-      <h2>Share-alike</h2>
-      <p>
-        The two CC BY-SA photographs above, and any adaptation of them we publish, remain available
-        under the same licence under which we received them. Nothing on this page restricts the
-        rights you already hold in that material under those licences.
-      </p>
-
       <h2>Corrections</h2>
       <p>
-        If you are the author of one of these photographs and the credit here is wrong, incomplete,
-        or you would prefer we stop using it, write to{" "}
+        If you took one of these photographs and the credit is wrong or incomplete, or you would
+        rather we stopped using it, write to{" "}
         <a href="mailto:voltmiraenergy@gmail.com">voltmiraenergy@gmail.com</a> and we will correct
         or remove it promptly.
       </p>

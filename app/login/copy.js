@@ -1,0 +1,161 @@
+// app/login/copy.js — every string on /login, in the site's three languages.
+//
+// Shared by the server page (brand pane, metadata) and the client form. Plain
+// data only: no imports, so the client bundle pays for the strings and nothing
+// else.
+
+export const LOGIN_LANGS = ["en", "ro", "ru"];
+export const SITE_PATH = { en: "/", ro: "/ro", ru: "/ru" };
+
+/** ?lang=, then the saved choice, then the browser's languages, then English. */
+export function pickLoginLang(param, cookie, acceptLanguage) {
+  for (const v of [param, cookie]) if (LOGIN_LANGS.includes(v)) return v;
+  const al = String(acceptLanguage || "").toLowerCase();
+  for (const part of al.split(",")) {
+    const code = part.trim().slice(0, 2);
+    if (code === "ro" || code === "ru" || code === "en") return code;
+  }
+  return "en";
+}
+
+export const COPY = {
+  en: {
+    meta_title: "Sign in | VoltMira",
+    meta_desc: "Sign in to VoltMira, or create a free workspace for your solar business.",
+    back: "Back to site",
+    theme: "Switch between light and dark",
+    lang: "Language",
+    // brand pane
+    h1: "Honest numbers<br>close <span class=\"hl\">more roofs.</span>",
+    lead: "Three payback scenarios from real sun data, tracked proposal links and one-tap acceptance, all in one workspace.",
+    // form
+    signin_h: "Welcome back",
+    signin_sub: "Sign in to your quotes, clients and pipeline.",
+    signup_h: "Create your workspace",
+    signup_sub: "Start free and send your first honest quote today.",
+    tab_in: "Sign in",
+    tab_up: "Create account",
+    tabs_label: "Sign in or create an account",
+    company: "Company name",
+    company_ph: "SolarTech SRL",
+    email: "Work email",
+    email_ph: "you@company.com",
+    password: "Password",
+    show: "Show",
+    hide: "Hide",
+    show_label: "Show password",
+    hide_label: "Hide password",
+    forgot: "Forgot password?",
+    submit_in: "Sign in",
+    submit_up: "Create account",
+    busy: "One moment…",
+    or: "or",
+    google: "Continue with Google",
+    new_q: "New to VoltMira?",
+    new_a: "Create a free account",
+    have_q: "Already have an account?",
+    have_a: "Sign in",
+    fine: "By continuing you agree to our <a href=\"/terms\">Terms</a> and <a href=\"/privacy\">Privacy Policy</a>.",
+    msg: {
+      signin: "Email or password is incorrect.",
+      signup: "We couldn't create an account with these details. If you've signed up before, use Sign in instead.",
+      captcha: "Please complete the verification below.",
+      setup: "Your account is ready, but setting up the workspace hit a snag. Sign in to finish.",
+      reset_need_email: "Type your email above first, then press Forgot password.",
+      reset_sent: "If an account exists for that email, a reset link is on its way. Check spam too.",
+      oauth: "Google sign-in didn't finish. Please try again.",
+    },
+  },
+
+  ro: {
+    meta_title: "Autentificare | VoltMira",
+    meta_desc: "Intră în VoltMira sau creează gratuit un spațiu de lucru pentru firma ta de panouri solare.",
+    back: "Înapoi la site",
+    theme: "Comută între tema luminoasă și cea întunecată",
+    lang: "Limba",
+    h1: "Cifrele oneste<br>închid <span class=\"hl\">mai multe acoperișuri.</span>",
+    lead: "Trei scenarii de amortizare din date solare reale, linkuri de ofertă urmărite și acceptare dintr-o atingere, totul într-un singur loc.",
+    signin_h: "Bine ai revenit",
+    signin_sub: "Intră în ofertele, clienții și pipeline-ul tău.",
+    signup_h: "Creează-ți spațiul de lucru",
+    signup_sub: "Începe gratuit și trimite prima ofertă onestă chiar azi.",
+    tab_in: "Intră în cont",
+    tab_up: "Cont nou",
+    tabs_label: "Intră în cont sau creează unul nou",
+    company: "Numele firmei",
+    company_ph: "SolarTech SRL",
+    email: "E-mail de serviciu",
+    email_ph: "tu@firma.ro",
+    password: "Parolă",
+    show: "Arată",
+    hide: "Ascunde",
+    show_label: "Arată parola",
+    hide_label: "Ascunde parola",
+    forgot: "Ai uitat parola?",
+    submit_in: "Intră în cont",
+    submit_up: "Creează contul",
+    busy: "O clipă…",
+    or: "sau",
+    google: "Continuă cu Google",
+    new_q: "Nou pe VoltMira?",
+    new_a: "Creează un cont gratuit",
+    have_q: "Ai deja cont?",
+    have_a: "Intră în cont",
+    fine: "Continuând, ești de acord cu <a href=\"/terms\">Termenii</a> și <a href=\"/privacy\">Politica de confidențialitate</a>.",
+    msg: {
+      signin: "E-mailul sau parola nu sunt corecte.",
+      signup: "Nu am putut crea un cont cu aceste date. Dacă te-ai mai înregistrat, folosește Intră în cont.",
+      captcha: "Te rugăm să completezi verificarea de mai jos.",
+      setup: "Contul e gata, dar configurarea spațiului de lucru s-a blocat. Intră în cont ca să termini.",
+      reset_need_email: "Scrie mai întâi e-mailul mai sus, apoi apasă Ai uitat parola.",
+      reset_sent: "Dacă există un cont pentru acest e-mail, linkul de resetare e pe drum. Verifică și folderul spam.",
+      oauth: "Autentificarea cu Google nu s-a încheiat. Încearcă din nou.",
+    },
+  },
+
+  ru: {
+    meta_title: "Вход | VoltMira",
+    meta_desc: "Войдите в VoltMira или бесплатно создайте рабочее пространство для своей солнечной компании.",
+    back: "Назад на сайт",
+    theme: "Переключить светлую и тёмную тему",
+    lang: "Язык",
+    h1: "Честные цифры<br>продают <span class=\"hl\">больше крыш.</span>",
+    lead: "Три сценария окупаемости по реальным солнечным данным, отслеживаемые ссылки на предложения и принятие в одно касание, всё в одном месте.",
+    signin_h: "С возвращением",
+    signin_sub: "Войдите в свои расчёты, клиентов и воронку.",
+    signup_h: "Создайте рабочее пространство",
+    signup_sub: "Начните бесплатно и отправьте первое честное предложение уже сегодня.",
+    tab_in: "Вход",
+    tab_up: "Регистрация",
+    tabs_label: "Вход или регистрация",
+    company: "Название компании",
+    company_ph: "SolarTech SRL",
+    email: "Рабочий e-mail",
+    email_ph: "you@company.md",
+    password: "Пароль",
+    show: "Показать",
+    hide: "Скрыть",
+    show_label: "Показать пароль",
+    hide_label: "Скрыть пароль",
+    forgot: "Забыли пароль?",
+    submit_in: "Войти",
+    submit_up: "Создать аккаунт",
+    busy: "Секунду…",
+    or: "или",
+    google: "Продолжить с Google",
+    new_q: "Впервые в VoltMira?",
+    new_a: "Создать бесплатный аккаунт",
+    have_q: "Уже есть аккаунт?",
+    have_a: "Войти",
+    fine: "Продолжая, вы соглашаетесь с <a href=\"/terms\">Условиями</a> и <a href=\"/privacy\">Политикой конфиденциальности</a>.",
+    msg: {
+      signin: "Неверный e-mail или пароль.",
+      signup: "Не удалось создать аккаунт с этими данными. Если вы уже регистрировались, используйте вход.",
+      captcha: "Пожалуйста, пройдите проверку ниже.",
+      setup: "Аккаунт создан, но настройка рабочего пространства не завершилась. Войдите, чтобы закончить.",
+      reset_need_email: "Сначала введите e-mail выше, затем нажмите «Забыли пароль?».",
+      reset_sent: "Если для этого e-mail есть аккаунт, ссылка для сброса уже в пути. Проверьте и папку «Спам».",
+      oauth: "Вход через Google не завершился. Попробуйте ещё раз.",
+    },
+  },
+};

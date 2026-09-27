@@ -1,23 +1,55 @@
-/* app/(legal)/legal.css — shared body styling for /privacy, /terms, /refunds,
-   /cookies, /credits. Was a literal <style> tag inlined in layout.jsx; moved
-   to a real stylesheet import because that inline tag caused a real
-   server/client hydration mismatch (React warned "Text content did not
-   match" on its own text node) on every legal page, including pre-existing
-   ones this change didn't otherwise touch — a plain CSS import is handled by
-   Next's bundler at build time, so there's no runtime tag for React to
-   reconcile and nothing left to mismatch. */
-.legal-body h2 { font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 22px;
-  letter-spacing: -.02em; margin: 38px 0 12px; color: var(--app-text); }
+/* app/(legal)/legal.css — styling for /privacy, /terms, /refunds, /cookies,
+   /credits. A real stylesheet import rather than an inline <style> tag: the
+   inline tag caused a server/client hydration mismatch on every legal page.
+   Colours come from the root layout's --app-* tokens, so both themes work. */
+
+.lg { background: var(--app-bg); color: var(--app-text); min-height: 100vh;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; line-height: 1.65;
+  -webkit-font-smoothing: antialiased; }
+.lg-wrap { max-width: 780px; margin: 0 auto; padding-inline: clamp(16px, 4vw, 28px); }
+
+.lg-head { position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--app-line);
+  background: color-mix(in srgb, var(--app-bg) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px); }
+.lg-head-in { height: 66px; display: flex; align-items: center; gap: 12px; }
+.lg-logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none;
+  font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
+.lg-logo b { color: var(--app-text); font-weight: 800; }
+.lg-logo i { color: var(--app-ok); font-style: normal; }
+.lg-back { margin-left: auto; color: var(--app-muted); text-decoration: none; font-size: 14.5px; font-weight: 600; }
+.lg-back:hover { color: var(--app-text); }
+
+.lg-main { padding-block: clamp(40px, 7vw, 64px) 88px; }
+.lg-main h1 { font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; font-weight: 800;
+  font-size: clamp(32px, 5vw, 48px); letter-spacing: -.03em; line-height: 1.04; margin: 0 0 10px; text-wrap: balance; }
+.lg-updated { font-size: 12.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--app-muted); margin: 0 0 36px; }
+
+.lg-foot { border-top: 1px solid var(--app-line); }
+.lg-foot-in { padding-block: 26px; display: flex; gap: 10px 22px; flex-wrap: wrap; font-size: 13.5px; color: var(--app-muted); }
+.lg-foot-in a { color: var(--app-ok); text-decoration: none; font-weight: 500; }
+.lg-foot-in a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+.legal-body h2 { font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 22px;
+  letter-spacing: -.02em; line-height: 1.2; margin: 40px 0 12px; color: var(--app-text); text-wrap: balance; }
 .legal-body h2:first-child { margin-top: 0; }
-.legal-body p { margin: 0 0 15px; color: var(--app-text); opacity: .86; font-size: 15.5px; }
+.legal-body p { margin: 0 0 15px; color: var(--app-text); opacity: .88; font-size: 15.5px; }
 .legal-body ul { margin: 0 0 15px; padding-left: 22px; }
-.legal-body li { margin: 0 0 9px; color: var(--app-text); opacity: .86; font-size: 15.5px; }
-.legal-body b, .legal-body strong { color: var(--app-text); opacity: 1; font-weight: 600; }
-.legal-body a { color: #1E6B4E; text-decoration: underline; text-underline-offset: 2px; }
-html[data-theme="dark"] .legal-body a { color: #4FB584; }
-.legal-body em { color: var(--app-muted); }
-.legal-body .note { background: #FBF0DD; border: 1px solid rgba(232,155,45,.35);
-  border-radius: 12px; padding: 16px 18px; font-size: 14px; color: #7a5a1a; margin: 0 0 28px; }
-html[data-theme="dark"] .legal-body .note { background: rgba(232,155,45,.12);
-  border-color: rgba(232,155,45,.35); color: #F2B85F; }
+.legal-body li { margin: 0 0 9px; color: var(--app-text); opacity: .88; font-size: 15.5px; }
+.legal-body b, .legal-body strong { color: var(--app-text); font-weight: 600; }
+.legal-body a { color: var(--app-ok); text-decoration: underline; text-underline-offset: 2px; }
+.legal-body em, .legal-body .muted { color: var(--app-muted); }
+.legal-body code { font-size: .9em; background: var(--app-ok-tint); color: var(--app-text);
+  padding: 1px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+.legal-body .note { background: var(--app-warn-tint); border: 1px solid rgba(232,155,45,.35);
+  border-radius: 12px; padding: 16px 18px; font-size: 14.5px; color: var(--app-warn-ink); opacity: 1; margin: 0 0 30px; max-width: none; }
 .legal-body hr { border: none; border-top: 1px solid var(--app-line); margin: 32px 0; }
+
+/* tables scroll inside their own box on a phone; the page never does */
+.legal-table { overflow-x: auto; margin: 0 0 18px; border: 1px solid var(--app-line); border-radius: 12px; }
+.legal-table table { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 460px; }
+.legal-table th { text-align: left; font-weight: 600; font-size: 12px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--app-muted); padding: 11px 14px; background: var(--app-surface); border-bottom: 1px solid var(--app-line); }
+.legal-table td { padding: 11px 14px; vertical-align: top; border-bottom: 1px solid var(--app-line); color: var(--app-text); }
+.legal-table tr:last-child td { border-bottom: none; }
+.legal-table td:first-child { font-weight: 600; }

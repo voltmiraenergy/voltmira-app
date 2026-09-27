@@ -28,8 +28,8 @@ export default function FinanceToggle({ cash, monthly, lang }) {
       </b>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
         <div style={{ display: "flex", gap: 2, background: "#EDEBE2", borderRadius: 8, padding: 2 }}>
-          <button type="button" style={seg(mode === "cash")} onClick={() => setMode("cash")}>{t("pp_pay_cash", lang)}</button>
-          <button type="button" style={seg(mode === "monthly")} onClick={() => setMode("monthly")}>{t("pp_pay_monthly", lang)}</button>
+          <button type="button" className="pp-seg-btn" style={seg(mode === "cash")} onClick={() => setMode("cash")}>{t("pp_pay_cash", lang)}</button>
+          <button type="button" className="pp-seg-btn" style={seg(mode === "monthly")} onClick={() => setMode("monthly")}>{t("pp_pay_monthly", lang)}</button>
         </div>
       </div>
       <span style={{ fontSize: 12, color: "#66756C" }}>

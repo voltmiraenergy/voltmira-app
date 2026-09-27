@@ -26,15 +26,19 @@
 
 export const I18N_V6 = {
   en: {
-    meta_title: "VoltMira: Solar quotes your clients can fact-check",
+    meta_title: "Solar Quoting Software for Installers | VoltMira",
     meta_desc:
-      "Solar quoting software for installers: honest three-band payback from real PVGIS data, tracked proposals with open alerts, WhatsApp sharing, one-tap acceptance and a full pipeline. Free trial. Romania & Moldova.",
+      "Solar quoting software for installers in Romania and Moldova: honest payback in three scenarios from real PVGIS data, tracked proposals and online acceptance.",
+    // social cards keep the slogan; search results lead with what people type
+    og_title: "VoltMira: Solar quotes your clients can fact-check",
   },
 
   ro: {
-    meta_title: "VoltMira: Oferte solare pe care clienții le pot verifica",
+    meta_title: "Program de ofertare fotovoltaică pentru instalatori | VoltMira",
     meta_desc:
-      "Software de ofertare fotovoltaică pentru instalatori: recuperarea investiției în trei scenarii oneste, din date PVGIS reale, oferte urmărite cu alerte la deschidere, partajare pe WhatsApp și acceptare dintr-o atingere. Probă gratuită. România și Moldova.",
+      "Program de ofertare pentru instalatorii de panouri solare din România și Moldova: amortizare în trei scenarii din date PVGIS reale, oferte urmărite și acceptare online.",
+    // social cards keep the slogan; search results lead with what people type
+    og_title: "VoltMira: Oferte solare pe care clienții le pot verifica",
 
     // nav
     v6_skip: "Sari la conținut",
@@ -50,13 +54,12 @@ export const I18N_V6 = {
 
     // hero
     v6_hero_img:
-      '<img src="/landing/hero-rooftop.jpg" alt="Instalație fotovoltaică rezidențială pe un acoperiș de țiglă, sub cer senin" fetchpriority="high">',
+      '<img src="/landing/hero-tile-roof.jpg" alt="Panouri solare pe acoperișul de țiglă roșie al unei case" fetchpriority="high">',
     v6_hero_h1: 'Oferte solare<br>pe care clienții<br><span class="hl">le pot verifica.</span>',
     v6_hero_lead:
       "Majoritatea programelor de ofertare arată un singur număr măgulitor. VoltMira arată <b>trei scenarii oneste</b>, calculate din date solare reale pentru acoperișul clientului. Afli chiar în clipa în care acesta deschide oferta.",
     v6_hero_cta1: "Începe gratuit",
     v6_hero_cta2: "Verifică un acoperiș",
-    v6_hero_note: "Fără card bancar, gratuit în perioada beta, configurare în 2 minute.",
     v6_hc_toast: "<b>Ion Rusu</b> ți-a deschis oferta",
     v6_t_now: "chiar acum",
     v6_hc_sr:
@@ -135,7 +138,7 @@ export const I18N_V6 = {
 
     // how it works
     v6_how_img:
-      '<img src="/landing/installers.jpg" alt="Doi instalatori montează panouri solare monocristaline pe un acoperiș de țiglă" loading="lazy">',
+      '<img src="/landing/installer-metal-roof.jpg" alt="Un instalator cu cască fixează panouri solare pe un acoperiș de tablă roșie" loading="lazy">',
     v6_how_h: "Construit pentru instalatorul care stă pe acoperiș.",
     v6_how_1_h: "Scrie adresa",
     v6_how_1_p:
@@ -176,7 +179,7 @@ export const I18N_V6 = {
 
     // scale band
     v6_sc_img:
-      '<img src="/landing/commercial-rooftop.jpg" alt="Un acoperiș comercial mare, acoperit complet cu panouri solare" loading="lazy">',
+      '<img src="/landing/warehouse-rooftop.jpg" alt="Vedere de sus a unui depozit logistic cu acoperișul acoperit de panouri solare și camioane la rampe" loading="lazy">',
     v6_sc_h: "Aceeași matematică onestă, 6&nbsp;kW sau 600&nbsp;kW.",
     v6_sc_p:
       "Case, ferme și hale trec prin același motor, cu aceleași trei scenarii și aceleași ipoteze tipărite.",
@@ -205,8 +208,6 @@ export const I18N_V6 = {
 
     // pricing
     v6_p_h: "Costă mai puțin decât cafeaua de la o afacere pierdută.",
-    v6_p_lead:
-      "Probă gratuită 21 de zile, fără card. O singură afacere în plus pe an plătește VoltMira pentru aproape 20 de ani.",
     v6_p_flag: "Începe de aici",
     v6_p_pro_amt: "<b>49 €</b><small>/ lună</small>",
     v6_p_pro_for: "Pentru instalatorul care vinde",
@@ -252,19 +253,18 @@ export const I18N_V6 = {
       "Începe gratuit astăzi în România și Moldova. Fără listă de așteptare, fără card, configurare în câteva minute.",
     v6_fin_cta: "Începe gratuit",
     v6_fin_demo: "Deschide demo-ul live",
-    v6_fin_chips: "<span>Fără card bancar</span><span>Gratuit în beta</span><span>Anulezi oricând</span>",
     v6_ft_blurb:
       "Instrumentul de ofertare pe care clienții tăi îl pot verifica. Construit pentru instalatori din Moldova și România.",
     v6_ft_prod: "Produs",
     v6_ft_comp: "Companie",
     v6_ft_touch: "Contact",
     v6_ft_track: "Oferte urmărite",
-    v6_ft_refer: "Recomandă un instalator",
     v6_ft_copy: "© 2026 VoltMira. Toate drepturile rezervate.",
     v6_ft_founder: 'Fondat de <a href="https://voltmira.com/" rel="author">Bogdan Toctarov</a>',
     v6_ft_priv: "Confidențialitate",
     v6_ft_terms: "Termeni",
     v6_ft_ref: "Rambursări",
+    v6_ft_cook: "Cookie-uri",
     v6_ft_cred: "Credite foto",
     v6_ft_t1: "Găzduit în UE",
     v6_ft_t2: "Pregătit pentru GDPR",
@@ -287,9 +287,11 @@ export const I18N_V6 = {
   },
 
   ru: {
-    meta_title: "VoltMira: Солнечные расчёты, которые клиент может проверить",
+    meta_title: "Программа расчёта солнечных станций для монтажников | VoltMira",
     meta_desc:
-      "Софт для расчёта солнечных станций: срок окупаемости в трёх честных сценариях на реальных данных PVGIS, отслеживаемые коммерческие предложения с уведомлениями об открытии, отправка в WhatsApp и приём в одно касание. Бесплатный доступ. Румыния и Молдова.",
+      "Программа для монтажников солнечных панелей в Молдове и Румынии: окупаемость в трёх сценариях по реальным данным PVGIS, отслеживаемые предложения и онлайн-подтверждение.",
+    // social cards keep the slogan; search results lead with what people type
+    og_title: "VoltMira: Солнечные расчёты, которые клиент может проверить",
 
     // nav
     v6_skip: "Перейти к содержимому",
@@ -305,13 +307,12 @@ export const I18N_V6 = {
 
     // hero
     v6_hero_img:
-      '<img src="/landing/hero-rooftop.jpg" alt="Солнечные панели на черепичной крыше частного дома под ясным небом" fetchpriority="high">',
+      '<img src="/landing/hero-tile-roof.jpg" alt="Солнечные панели на красной черепичной крыше жилого дома" fetchpriority="high">',
     v6_hero_h1: 'Солнечные расчёты,<br>которые клиент<br><span class="hl">может проверить.</span>',
     v6_hero_lead:
       "Большинство программ показывают одну красивую цифру. VoltMira показывает <b>три честных сценария</b>, рассчитанных по реальным солнечным данным для крыши клиента. Вы узнаёте об этом в тот момент, когда клиент открыл предложение.",
     v6_hero_cta1: "Начать бесплатно",
     v6_hero_cta2: "Проверить крышу",
-    v6_hero_note: "Без карты, бесплатно в бете, настройка за 2 минуты.",
     v6_hc_toast: "<b>Ion Rusu</b> открыл ваше предложение",
     v6_t_now: "только что",
     v6_hc_sr:
@@ -390,7 +391,7 @@ export const I18N_V6 = {
 
     // how it works
     v6_how_img:
-      '<img src="/landing/installers.jpg" alt="Двое монтажников устанавливают монокристаллические панели на черепичной крыше" loading="lazy">',
+      '<img src="/landing/installer-metal-roof.jpg" alt="Монтажник в каске крепит солнечные панели на красной металлической крыше" loading="lazy">',
     v6_how_h: "Сделано для монтажника, который стоит на крыше.",
     v6_how_1_h: "Введите адрес",
     v6_how_1_p:
@@ -431,7 +432,7 @@ export const I18N_V6 = {
 
     // scale band
     v6_sc_img:
-      '<img src="/landing/commercial-rooftop.jpg" alt="Крупная коммерческая крыша, полностью покрытая солнечными панелями" loading="lazy">',
+      '<img src="/landing/warehouse-rooftop.jpg" alt="Вид сверху на логистический склад с солнечными панелями на крыше и грузовиками у рамп" loading="lazy">',
     v6_sc_h: "Та же честная математика, 6&nbsp;кВт или 600&nbsp;кВт.",
     v6_sc_p:
       "Частные дома, фермы и склады считаются одним движком, с теми же тремя сценариями и теми же напечатанными допущениями.",
@@ -460,8 +461,6 @@ export const I18N_V6 = {
 
     // pricing
     v6_p_h: "Дешевле, чем кофе на одной упущенной сделке.",
-    v6_p_lead:
-      "21 день бесплатно, без карты. Одна дополнительная сделка в год окупает VoltMira примерно на 20 лет.",
     v6_p_flag: "Начните здесь",
     v6_p_pro_amt: "<b>49 €</b><small>/ мес</small>",
     v6_p_pro_for: "Для монтажника, который продаёт",
@@ -507,19 +506,18 @@ export const I18N_V6 = {
       "Начните бесплатно сегодня в Румынии и Молдове. Без листа ожидания, без карты, настройка за минуты.",
     v6_fin_cta: "Начать бесплатно",
     v6_fin_demo: "Открыть демо",
-    v6_fin_chips: "<span>Карта не нужна</span><span>Бесплатно в бете</span><span>Отмена в любой момент</span>",
     v6_ft_blurb:
       "Инструмент расчёта, который ваши клиенты могут проверить. Сделан для монтажников в Молдове и Румынии.",
     v6_ft_prod: "Продукт",
     v6_ft_comp: "Компания",
     v6_ft_touch: "Связь",
     v6_ft_track: "Отслеживаемые предложения",
-    v6_ft_refer: "Порекомендовать монтажника",
     v6_ft_copy: "© 2026 VoltMira. Все права защищены.",
     v6_ft_founder: 'Основатель: <a href="https://voltmira.com/" rel="author">Bogdan Toctarov</a>',
     v6_ft_priv: "Конфиденциальность",
     v6_ft_terms: "Условия",
     v6_ft_ref: "Возвраты",
+    v6_ft_cook: "Файлы cookie",
     v6_ft_cred: "Фотографии",
     v6_ft_t1: "Хостинг в ЕС",
     v6_ft_t2: "Соответствие GDPR",

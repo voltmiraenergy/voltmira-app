@@ -82,9 +82,10 @@ export default function ClientAudit({ inputs, assumptions: E, lang }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
+      {/* On a narrow phone (see the page's style block) the three become rows. */}
+      <div className="ca-bands" style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>
         {bands.map(([key, b, c]) => (
-          <div key={key} style={{ background: "#F6F5F0", borderLeft: `4px solid ${c}`, borderRadius: 10, padding: "12px 12px" }}>
+          <div key={key} className="ca-band" style={{ background: "#F6F5F0", borderLeft: `4px solid ${c}`, borderRadius: 10, padding: "12px 12px", minWidth: 0 }}>
             <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: c }}>{t(key, lang)}</div>
             <div style={{ fontSize: 22, fontFamily: DISPLAY, fontWeight: 800, lineHeight: 1.1 }}>
               {yrs(b.payback)} <small style={{ fontSize: 12, color: "#66756C", fontWeight: 500 }}>{t("pp_years", lang)}</small></div>

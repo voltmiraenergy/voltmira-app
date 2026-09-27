@@ -8,6 +8,8 @@ import PrintSheet from "./PrintSheet.jsx";
 import ClientAudit from "./ClientAudit.jsx";
 import { MonthlySVG, CashflowSVG } from "./charts.jsx";
 import FinanceToggle from "./FinanceToggle.jsx";
+import { notFound } from "next/navigation";
+import OfferBanner from "./OfferBanner.jsx";
 import { t, normLang } from "../../../lib/i18n.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { kindLabel, bomLineText } from "../../../lib/quoteAnalysis.js";
@@ -17,6 +19,7 @@ import { SOLAR_SEASON, effectiveConsumption, amortizedMonthlyPayment } from "@vo
 async function getProposal(code) {
   const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const res = await fetch(`${base}/api/proposal/${code}`, { cache: "no-store" });
+  if (res.status === 404) return { missing: true };
   if (!res.ok) return null;
   return res.json();
 }
@@ -52,11 +55,15 @@ export default async function ProposalPage({ params, searchParams }) {
   // own open counts), no accept/request buttons, auto print dialog.
   const printMode = searchParams?.print === "1";
   const data = await getProposal(params.code);
+  // A code that doesn't exist answers a real 404 (not-found.jsx), not a 200
+  // page that says "not found", which search engines log as a soft 404.
+  if (data?.missing) notFound();
   if (!data) {
     return <main style={S.wrap}><h1 style={S.h1}>{t("pp_not_found", "en")}</h1>
       <p style={S.muted}>{t("pp_expired", "en")}</p></main>;
   }
   const { company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null,
+    offer = null, chosenOption = null,
     roofAreaM2 = null, roofOrientation = null, roofPlanes = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
@@ -204,7 +211,10 @@ export default async function ProposalPage({ params, searchParams }) {
       {/* 2 — the energy itself. */}
       <section style={{ margin: "22px 0" }}>
         <SecHead n={bom.length > 0 ? 2 : 1}>{t("pdf_energy_h", lang)}</SecHead>
-        <div style={S.chart}><MonthlySVG prod={prodMonthly} cons={consMonthly} lang={lang} loc={loc} /></div>
+        <div style={S.chart}>
+          <div className="pp-cw"><MonthlySVG prod={prodMonthly} cons={consMonthly} lang={lang} loc={loc} /></div>
+          <div className="pp-cn"><MonthlySVG prod={prodMonthly} cons={consMonthly} lang={lang} loc={loc} narrow /></div>
+        </div>
       </section>
 
       {/* 3 — the money, as one continuous argument: scenarios, the year-by-year
@@ -226,7 +236,8 @@ export default async function ProposalPage({ params, searchParams }) {
           ))}
         </div>
         <div style={{ ...S.chart, marginTop: 14 }}>
-          <CashflowSVG bands={q.bands} cost={q.cost} horizon={q.horizon} lang={lang} money={fmt} />
+          <div className="pp-cw"><CashflowSVG bands={q.bands} cost={q.cost} horizon={q.horizon} lang={lang} money={fmt} /></div>
+          <div className="pp-cn"><CashflowSVG bands={q.bands} cost={q.cost} horizon={q.horizon} lang={lang} money={fmt} narrow /></div>
         </div>
         <details style={{ marginTop: 14 }}>
           <summary style={S.link}>{t("pp_assump", lang)}</summary>
@@ -274,16 +285,18 @@ export default async function ProposalPage({ params, searchParams }) {
           <div style={S.ctaContact}>
             <span style={{ color: "#66756C", fontSize: 13 }}>{t("pp_prepared_by", lang)}</span>{" "}
             <b style={{ color: "#142A21" }}>{preparedBy.name}</b>
-            {preparedBy.phone ? <> · <a href={`tel:${preparedBy.phone}`} style={{ color: "#1E6B4E", fontWeight: 600, textDecoration: "none" }}>{preparedBy.phone}</a></> : null}
+            {preparedBy.phone ? <> · <a className="pp-tel" href={`tel:${preparedBy.phone}`} style={{ color: "#1E6B4E", fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>{preparedBy.phone}</a></> : null}
           </div>
         )}
+        <OfferBanner lang={lang} accepted={accepted} offer={offer} chosenOption={chosenOption}
+          optionLabels={Object.fromEntries(options.map((o, i) => [i + 2, o.label || `${t("pp_option", lang)} ${i + 2}`]))} />
         <Tracker code={params.code} accepted={accepted} lang={lang} signedName={signedName} signedDate={signedDate} />
       </section>
 
-      {/* Grounded in THIS proposal's real, frozen numbers via a Make.com
-          scenario the installer configures (docs/MAKE_AUTOMATIONS.md) — see
-          QaWidget.jsx's own comment for why its output is never rendered as
-          HTML. Live-view only, never on the printed/emailed PDF. */}
+      {/* Grounded in THIS proposal's real, frozen numbers: VoltMira's own
+          assistant, or the installer's Make.com scenario (see
+          app/api/proposal/[code]/qa). QaWidget.jsx explains why its output is
+          never rendered as HTML. Live-view only, never on the printed PDF. */}
       <QaWidget code={params.code} lang={lang} preparedBy={preparedBy} />
 
       {/* Growth loop: every free-plan proposal a homeowner opens carries a
@@ -317,6 +330,10 @@ export default async function ProposalPage({ params, searchParams }) {
           wrote — a real, reproducible hydration mismatch on every load of
           this page, not a cosmetic one: it forced the whole <main> to
           client-render, discarding the server-rendered content. */}
+      {/* Phone layout. Injected raw: React escapes the quotes in content:"" when
+          it renders text, and a <style> element never decodes entities, so a
+          plain <style> child here caused a hydration mismatch. */}
+      <style dangerouslySetInnerHTML={{ __html: PHONE_CSS }} />
       <style>{`@media print{
         body{background:#fff!important}
         main{background:#fff!important;max-width:100%!important;padding:0!important}
@@ -328,6 +345,22 @@ export default async function ProposalPage({ params, searchParams }) {
     </main>
   );
 }
+
+const PHONE_CSS = `.pp-cn{display:none}
+      .pp-cw svg,.pp-cn svg{display:block;width:100%;height:auto}
+      @media screen and (max-width:560px){
+        .pp-cw{display:none} .pp-cn{display:block}
+      }
+      @media screen and (max-width:560px),screen and (pointer:coarse){
+        .pp-seg-btn{padding-top:9px!important;padding-bottom:9px!important;font-size:12.5px!important}
+        main details summary{padding:10px 0}
+        .pp-tel{position:relative}
+        .pp-tel::after{content:"";position:absolute;inset:-12px -6px}
+      }
+      @media screen and (max-width:440px){
+        .ca-bands{grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+        .ca-band{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:10px 14px!important}
+      }`;
 
 // Inter Tight for every headline number/title: the app already loads it (the
 // display face on /login) but this page never used it, so it read at the

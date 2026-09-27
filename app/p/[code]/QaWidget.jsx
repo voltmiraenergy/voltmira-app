@@ -1,8 +1,9 @@
 "use client";
 // app/p/[code]/QaWidget.jsx — "ask a question about your offer," grounded in
-// this specific proposal's real numbers via app/api/proposal/[code]/qa. The
-// LLM call itself lives outside this app (a Make.com scenario the installer
-// configures — see docs/MAKE_AUTOMATIONS.md); this component only ever
+// this specific proposal's real numbers via app/api/proposal/[code]/qa
+// (VoltMira's own assistant, or the installer's Make.com scenario, whichever
+// is set up there). When the assistant records a discount or option,
+// OfferBanner.jsx shows it by the accept button. This component only ever
 // renders whatever comes back as PLAIN TEXT, never HTML — a client's
 // question is attacker-controlled input from this component's point of
 // view, and rendering a model's output as markup would be a prompt-injection
@@ -39,6 +40,10 @@ export default function QaWidget({ code, lang = "en", preparedBy = null }) {
       const answer = typeof data?.answer === "string" && data.answer ? data.answer : null;
       setTurns((cur) => [...cur.slice(-(MAX_TURNS - 1)), { q: question, a: answer || t("qa_error", lang) }]);
       if (!answer) setErr(true);
+      // A discount or option the assistant just recorded: OfferBanner shows it by the accept button.
+      if (data && ("offer" in data || "option" in data)) {
+        window.dispatchEvent(new CustomEvent("voltmira:offer", { detail: { offer: data.offer ?? null, option: data.option ?? null } }));
+      }
     } catch {
       setTurns((cur) => [...cur.slice(-(MAX_TURNS - 1)), { q: question, a: t("qa_error", lang) }]);
       setErr(true);

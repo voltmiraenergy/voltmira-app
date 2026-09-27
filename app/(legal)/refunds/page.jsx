@@ -2,90 +2,79 @@
 import LegalShell from "../LegalShell.jsx";
 
 export const metadata = {
-  title: "Refund Policy · VoltMira",
-  description: "Refund terms for VoltMira subscriptions. 14-day EU right of withdrawal, handled through Paddle, our merchant of record.",
+  title: "Refund Policy | VoltMira",
+  description:
+    "Refunds for VoltMira subscriptions: the 14-day window, duplicate charges, outages and cancellations, handled with Paddle, our merchant of record.",
+  alternates: { canonical: "/refunds" },
 };
 
 export default function Refunds() {
   return (
-    <LegalShell title="Refund Policy" updated="13 July 2026">
+    <LegalShell title="Refund Policy" updated="26 September 2026">
       <p className="note">
-        Payments for VoltMira are processed by <b>Paddle</b>, our merchant of record. Refund
-        requests are handled by Paddle on our behalf under the terms below.
+        Payments for VoltMira are processed by <b>Paddle</b>, our merchant of record, so your receipt
+        comes from Paddle and refunds are paid back through Paddle to the card or account you paid
+        with.
       </p>
 
-      <h2>14-day right of withdrawal (EU consumers)</h2>
+      <h2>Free plans and trials</h2>
       <p>
-        If you are a consumer in the European Union, you have the right to withdraw from a
-        subscription within <b>14 days</b> of your first payment, without giving any reason. Where
-        you have started using the paid features during that period, you accept that the right of
-        withdrawal is limited to the unused portion of the service. To exercise this right,
-        contact us at <a href="mailto:voltmiraenergy@gmail.com">voltmiraenergy@gmail.com</a> or
-        Paddle support (details on your receipt) within 14 days of purchase.
+        Nothing is charged on a free plan or during beta access. Where a free trial is offered at
+        checkout, you are not charged if you cancel before the trial ends, and the date of the first
+        charge is shown before you confirm.
       </p>
 
-      <h2>What is refundable</h2>
+      <h2>14-day refund on your first payment</h2>
+      <p>
+        If you ask within <b>14 days</b> of your first payment for a plan, we refund it in full,
+        provided the workspace has not yet been used for paid-plan features during that period (such
+        as tracked proposal links, branded PDF exports or extra team seats). If you have used them, we
+        refund the unused part of the period. This is in addition to any right of withdrawal you have
+        as a consumer under the law of your country, which this policy never limits.
+      </p>
+
+      <h2>Other refunds</h2>
       <ul>
-        <li>
-          <b>First payment within 14 days</b> — full refund on request, no questions asked, provided
-          the account has not been used to generate paid-tier proposals (tracked links, PDF exports
-          with your branding, or team seats).
-        </li>
-        <li>
-          <b>Duplicate or accidental charges</b> — refunded in full at any time.
-        </li>
-        <li>
-          <b>Service outage attributable to us</b> — pro-rated credit or refund for the affected
-          period, on request, once the outage is confirmed.
-        </li>
-        <li>
-          <b>Downgrades and cancellations</b> — you can cancel at any time; access continues to
-          the end of the paid period. Fees already paid for the current period are not refunded
-          outside the 14-day window, unless required by law.
-        </li>
+        <li><b>Duplicate or mistaken charges</b>: refunded in full, at any time.</li>
+        <li><b>An outage caused by us</b>: a pro-rated credit or refund for the affected period, on
+          request, once the outage is confirmed.</li>
+        <li><b>Cancelling</b>: you can cancel at any time and keep access until the end of the period
+          you paid for. Outside the 14-day window, payments for the current period are not refunded
+          unless the law requires it.</li>
       </ul>
 
-      <h2>What is not refundable</h2>
+      <h2>What is not refunded</h2>
       <ul>
-        <li>Subscription periods that have already elapsed before the request.</li>
-        <li>Requests made more than 14 days after the initial payment, except in the cases above.</li>
-        <li>
-          Charges disputed after you continued to use the service for the whole billing period
-          without contacting us.
-        </li>
+        <li>Billing periods that ended before you asked.</li>
+        <li>Requests more than 14 days after the first payment, except in the cases above.</li>
       </ul>
 
-      <h2>How to request a refund</h2>
+      <h2>How to ask for a refund</h2>
       <ul>
         <li>
           Email <a href="mailto:voltmiraenergy@gmail.com">voltmiraenergy@gmail.com</a> from the
           address on your account, with your Paddle receipt or transaction ID.
         </li>
         <li>
-          You can also use the <b>manage-subscription</b> link at the bottom of any Paddle receipt
-          email to contact Paddle support directly.
+          Or use the link at the bottom of any Paddle receipt email to contact Paddle directly.
         </li>
         <li>
-          We respond within <b>2 business days</b>. Approved refunds are processed by Paddle and
-          typically appear on the original payment method within <b>5–10 business days</b>,
-          depending on your bank.
+          We reply within <b>2 business days</b>. Approved refunds usually reach your card or account
+          within 5 to 10 business days, depending on your bank.
         </li>
       </ul>
 
       <h2>Chargebacks</h2>
       <p>
-        Please contact us <em>before</em> filing a chargeback with your bank — most disputes can
-        be resolved directly and faster. Filing a chargeback while a refund request is being
-        processed may delay resolution and can result in your account being suspended until the
-        chargeback is closed.
+        Please write to us <em>before</em> disputing a charge with your bank: most problems are solved
+        faster directly. A chargeback filed while a refund request is open can delay it, and the
+        account may be paused until the dispute is closed.
       </p>
 
       <h2>Contact</h2>
       <p>
-        For any refund question:{" "}
-        <a href="mailto:voltmiraenergy@gmail.com">voltmiraenergy@gmail.com</a>. This policy is in
-        addition to any rights you have under applicable consumer-protection law, which are not
-        limited by this document.
+        Any refund question:{" "}
+        <a href="mailto:voltmiraenergy@gmail.com">voltmiraenergy@gmail.com</a>.
       </p>
     </LegalShell>
   );

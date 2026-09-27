@@ -17,6 +17,7 @@ import { sendCrmWebhook } from "../../../../lib/crmWebhook.js";
 import { quote } from "@voltmira/engine";
 import { snapshotEngine } from "../../../../lib/engineSettings.js";
 import { bomHasBattery } from "../../../../lib/quoteInput.js";
+import { loadOffers, offerFigures, acceptOffers } from "../../../../lib/proposalOffers.js";
 
 /** One email per proposal per this window, no matter how many opens. */
 const NOTIFY_THROTTLE_MS = 4 * 60 * 60 * 1000;
@@ -178,6 +179,16 @@ export async function GET(req, { params }) {
       afmSubsidy: !!prop.snapshot.afmSubsidy,
     },
     options,
+    // What the proposal assistant agreed and is still open (lib/proposalOffers.js):
+    // the price with the discount applied, and the option the client chose.
+    ...(await (async () => {
+      const st = await loadOffers(db, prop.code, Date.now(), { signed: !!prop.accepted_at });
+      const d = st.discount ? offerFigures({ grossEur: q.e.grossCost, costEur: q.e.cost }, st.discount) : null;
+      return {
+        offer: d ? { pct: d.pct, priceEur: d.costEur, discountEur: d.discountEur, since: st.discount.created_at } : null,
+        chosenOption: st.option ? st.option.option_no : null,
+      };
+    })()),
     // Never the installer's purchase cost or margin — this is a public,
     // capability-URL endpoint (the code IS the auth), and unit_price/
     // cost_price were never meant to reach it. Nothing client-facing has
@@ -291,10 +302,16 @@ export async function POST(req, { params }) {
     // than "…proposal crppgt6x".
     const { data: proj } = await db.from("projects").select("title, client_name").eq("id", prop.project_id).maybeSingle();
     const who = proj?.client_name || proj?.title || prop.code;
+    // Whatever the proposal assistant agreed (a discount, an attached option)
+    // becomes part of what was signed.
+    const agreed = await acceptOffers(db, prop.code);
+    const pct = Number(agreed.discount?.pct) || 0;
     await logActivity(db, {
-      companyId: prop.company_id, kind: "won", key: "act_proposal_accepted",
-      params: { b: who },
-      text: `<b>${escapeHtml(who)}</b> accepted your proposal`,
+      companyId: prop.company_id, kind: "won", key: pct ? "act_accepted_offer" : "act_proposal_accepted",
+      params: { b: who, ...(pct ? { n: pct } : {}) },
+      text: pct
+        ? `<b>${escapeHtml(who)}</b> accepted your proposal with the ${pct}% discount the assistant offered`
+        : `<b>${escapeHtml(who)}</b> accepted your proposal`,
       link: `/projects/${prop.project_id}`,
     });
   }
