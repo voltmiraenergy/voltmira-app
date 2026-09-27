@@ -11,7 +11,7 @@ import { batterySweep } from "../lib/quoteAnalysis.js";
 
 const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
 
-function Curve({ pts, deltas, knee, paysOff, current, max, step, money }) {
+function Curve({ pts, deltas, knee, paysOff, current, max, step, money, narrow = false }) {
   // Plot the value ADDED over having no battery at all, not the absolute yearly
   // saving. Against an absolute axis the whole curve sits near the top and looks
   // flat — the €100 that decides the battery is invisible next to the €700 the
@@ -19,7 +19,10 @@ function Curve({ pts, deltas, knee, paysOff, current, max, step, money }) {
   //
   // The axis has to span negatives too: where storage costs more than it saves
   // the curve belongs BELOW the zero line, not clipped flat against it.
-  const W = 640, H = 200, PADL = 56, PADR = 16, PADT = 20, PADB = 28;
+  // narrow: the phone drawing. 640 units shown on a 300 px screen shrank the
+  // labels to about 4 px; 360 units keep them near 10 px (see .bsp-cn below).
+  const [W, H, PADL, PADR, PADT, PADB] = narrow ? [360, 190, 48, 10, 22, 26] : [640, 200, 56, 16, 20, 28];
+  const FS = narrow ? 10.5 : 8.5, FS_T = narrow ? 10.5 : 9, FS_K = narrow ? 11 : 9.5;
   const hi = Math.max(...deltas, 0), lo = Math.min(...deltas, 0);
   const pad = (hi - lo) * 0.12 || 1;
   const top = hi + pad, bot = lo - pad;
@@ -38,20 +41,20 @@ function Curve({ pts, deltas, knee, paysOff, current, max, step, money }) {
       {/* the area is clipped at the zero line on each side, so a loss reads red */}
       <path d={area} fill={hi > 0 ? "var(--green)" : "#C4543B"} opacity=".14" />
       <line x1={PADL} y1={zero} x2={W - PADR} y2={zero} stroke="var(--line)" strokeWidth="1.2" />
-      <text x={PADL - 7} y={zero + 3} textAnchor="end" fontSize="8.5" fill="var(--muted)">{money(0)}</text>
-      <text x={PADL - 7} y={Y(hi) + 3} textAnchor="end" fontSize="8.5" fill="var(--muted)">{money(hi)}</text>
-      {lo < 0 && <text x={PADL - 7} y={Y(lo) + 3} textAnchor="end" fontSize="8.5" fill="#B4472F">{money(lo)}</text>}
+      <text x={PADL - 7} y={zero + 3} textAnchor="end" fontSize={FS} fill="var(--muted)">{money(0)}</text>
+      <text x={PADL - 7} y={Y(hi) + 3} textAnchor="end" fontSize={FS} fill="var(--muted)">{money(hi)}</text>
+      {lo < 0 && <text x={PADL - 7} y={Y(lo) + 3} textAnchor="end" fontSize={FS} fill="#B4472F">{money(lo)}</text>}
       <path d={line} fill="none" stroke={hi > 0 ? "var(--green)" : "#C4543B"} strokeWidth="2.4" strokeLinecap="round" />
       {paysOff && (
         <>
           <line x1={X(knee)} y1={PADT} x2={X(knee)} y2={Y(bot)} stroke="var(--amber)" strokeWidth="1.3" strokeDasharray="3 3" />
-          <text x={X(knee)} y={PADT - 6} textAnchor="middle" fontSize="9.5" fontWeight="700" fill="var(--amber)">{knee.toFixed(1)} kWh</text>
+          <text x={X(knee)} y={PADT - 6} textAnchor="middle" fontSize={FS_K} fontWeight="700" fill="var(--amber)">{knee.toFixed(1)} kWh</text>
         </>
       )}
       <circle cx={X(pts[curIdx].b)} cy={Y(deltas[curIdx])} r="4.5"
         fill={good ? "var(--ink)" : "#C4543B"} stroke="var(--paper-2)" strokeWidth="1.5" />
       {ticks.map((b, i) => (
-        <text key={b} x={X(b)} y={H - 8} textAnchor="middle" fontSize="9" fill="var(--muted)">
+        <text key={b} x={X(b)} y={H - 8} textAnchor={narrow && i === ticks.length - 1 ? "end" : "middle"} fontSize={FS_T} fill="var(--muted)">
           {Math.round(b)}{i === ticks.length - 1 ? " kWh" : ""}
         </text>
       ))}
@@ -87,8 +90,14 @@ export default function BatterySizingPanel({ lang, base, E, battKwh, onApply, mo
               "Экспортируемый излишек кредитуется ниже розничной цены, а тот же кВт·ч, сохранённый на вечер, стоит полный тариф. График ниже: расчёт движка для этого клиента.")}
       </p>
 
-      <Curve pts={sweep.pts} deltas={sweep.deltas} knee={sweep.knee} paysOff={sweep.paysOff}
+      <div className="bsp-cw">
+        <Curve pts={sweep.pts} deltas={sweep.deltas} knee={sweep.knee} paysOff={sweep.paysOff}
         current={battKwh} max={sweep.max} step={sweep.step} money={money} />
+      </div>
+      <div className="bsp-cn">
+        <Curve narrow pts={sweep.pts} deltas={sweep.deltas} knee={sweep.knee} paysOff={sweep.paysOff}
+        current={battKwh} max={sweep.max} step={sweep.step} money={money} />
+      </div>
 
       <div className="bsp-metrics">
         <div className={"bsp-m" + (sweep.paysOff ? " good" : " bad")}>
@@ -123,6 +132,8 @@ export default function BatterySizingPanel({ lang, base, E, battKwh, onApply, mo
       )}
 
       <style dangerouslySetInnerHTML={{ __html: `
+        .bsp-cn{display:none}
+        @media (max-width:560px){.bsp-cw{display:none}.bsp-cn{display:block}}
         .bsp-lead{font-size:12.5px;color:var(--muted);margin:6px 0 14px;max-width:70ch;line-height:1.55}
         /* four tiles: 4-up wide, 2x2 narrow: never 3 + a lonely one */
         .bsp-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}

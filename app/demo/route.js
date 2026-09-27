@@ -14,7 +14,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { createDemoWorkspace, resolvePdfDemoDest, resolveProposalDemoDest, resolveEditorDemoDest, resolveWidgetDemoDest } from "../../lib/demoSeed.js";
-import { isDemoEmail } from "../../lib/demo.js";
+import { isDemoEmail, isNonHumanAgent } from "../../lib/demo.js";
 import { isRateLimited, clientIp } from "../../lib/ratelimit.js";
 import { safeNext } from "../../lib/safeRedirect.js";
 
@@ -66,7 +66,8 @@ const NEXT_RESOLVERS = {
 function page(title, body, status = 200) {
   return new NextResponse(
     `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${title} — VoltMira</title>
+<meta name="robots" content="noindex, nofollow">
+<title>${title} | VoltMira</title>
 <style>
   :root{color-scheme:light dark}
   body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F6F5F0;color:#142A21;
@@ -88,6 +89,12 @@ export async function GET(req) {
   if (!URL_ || !ANON || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return page("Demo unavailable",
       `<h1>The demo isn't available right now</h1><p>Come back in a few minutes.</p><a class="alt" href="/">Back to the site</a>`, 503);
+  }
+
+  // Crawlers and link previews never provision a tenant (see isNonHumanAgent).
+  if (isNonHumanAgent(req.headers.get("user-agent"))) {
+    return page("Live demo",
+      `<h1>VoltMira live demo</h1><p>The demo opens a sample workspace with example clients, projects and proposals. Open this link in a browser to try it.</p><a class="go" href="/">Back to the site</a>`);
   }
 
   const url = new URL(req.url);
@@ -127,7 +134,7 @@ export async function GET(req) {
       const confirmHref = `/demo?confirm=1&lang=${lang}${nextQ ? `&next=${encodeURIComponent(nextQ)}` : ""}`;
       return page("Start the demo",
         `<h1>You're signed in to your own workspace</h1>
-         <p>Starting the demo signs you out of it. You can sign back in straight after — or open the demo in a private window to keep both.</p>
+         <p>Starting the demo signs you out of it. You can sign back in straight after, or open the demo in a private window to keep both.</p>
          <a class="go" href="${confirmHref}">Start the demo anyway</a>
          <a class="alt" href="/dashboard">Back to my dashboard</a>`);
     }

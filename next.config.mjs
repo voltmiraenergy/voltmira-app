@@ -109,8 +109,20 @@ const nextConfig = {
       { source: "/team/:path*", headers: noIndexHeaders },
       { source: "/settings/:path*", headers: noIndexHeaders },
       { source: "/profile/:path*", headers: noIndexHeaders },
-      { source: "/refer/:path*", headers: noIndexHeaders },
       { source: "/guide/:path*", headers: noIndexHeaders },
+      { source: "/studio/:path*", headers: noIndexHeaders },
+      { source: "/documents/:path*", headers: noIndexHeaders },
+      { source: "/traction/:path*", headers: noIndexHeaders },
+      { source: "/auth/:path*", headers: noIndexHeaders },
+      // /demo used to be a robots.txt Disallow, which Search Console reports as
+      // "Blocked by robots.txt" for every page that links to it. It is now
+      // crawlable but served noindex, and app/demo/route.js answers known
+      // crawlers with a plain page instead of provisioning a workspace.
+      { source: "/demo", headers: noIndexHeaders },
+      // Preview and project URLs on *.vercel.app serve the same pages as
+      // voltmira.com. The canonical tags already point at voltmira.com; this
+      // keeps those hosts out of the index outright.
+      { source: "/:path*", has: [{ type: "host", value: "(?<vhost>.+)\\.vercel\\.app" }], headers: noIndexHeaders },
       // Everything else (the negative lookahead keeps /widget from also matching
       // here and inheriting X-Frame-Options: DENY).
       { source: "/((?!widget).*)", headers: securityHeaders },
@@ -129,6 +141,15 @@ const nextConfig = {
         destination: "https://voltmira.com/:path*",
         permanent: true,
       },
+      // URLs Google still requests from older versions of the site. Each one
+      // used to answer 404 or bounce through /login; now each lands on the page
+      // that replaced it.
+      { source: "/en", destination: "/", permanent: true },
+      { source: "/index.html", destination: "/", permanent: true },
+      { source: "/pricing", destination: "/#pricing", permanent: true },
+      // The referral programme was retired; its page now only bounced to /login.
+      { source: "/refer", destination: "/", permanent: true },
+      { source: "/refer/:path*", destination: "/", permanent: true },
       // The Studio offer preview was retired — building an offer now happens on
       // the real project, which carries everything the preview had. Temporary
       // (307) rather than permanent so a bookmark isn't cached forever against

@@ -1,6 +1,10 @@
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
+  // Resolves every relative canonical and og:image to the public site, so the
+  // same page reached on app.voltmira.com or *.vercel.app still names
+  // voltmira.com as the copy to index.
+  metadataBase: new URL("https://voltmira.com"),
   title: "VoltMira: Solar quoting your clients can fact-check",
   description: "Honest three-band payback estimates, tracked proposals, and real PVGIS data for solar installers.",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "VoltMira" },
@@ -77,6 +81,25 @@ const THEME_VARS = `
       order:3;flex-basis:100%;border-top:1px solid rgba(255,255,255,.12);padding-top:8px!important;margin-top:4px!important}
     .app-side-foot .foot-co,.app-side-foot .foot-plan{display:none}
   }
+
+  /* ---- phones and tablets: the tool is used mostly on a phone ---- */
+  @media (max-width:760px),(pointer:coarse){
+    /* iOS Safari zooms the whole page into any field under 16px the moment it
+       is tapped, and the installer then has to pinch back out after every
+       entry. 16px is the threshold; !important because many fields set their
+       size inline. Checkboxes, radios and sliders have no text to zoom to. */
+    input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=button]):not([type=submit]):not([type=hidden]),
+    select,textarea{font-size:16px!important}
+    /* Small text links keep their look; an invisible halo makes them a
+       finger-sized target (about 40px tall) without moving anything. */
+    .demo-cta,.sample-cta,.app .dx-link,.lg-back,.lg-foot-in a{position:relative}
+    .demo-cta::after,.sample-cta::after,.app .dx-link::after,.lg-back::after,.lg-foot-in a::after{
+      content:"";position:absolute;inset:-12px -6px}
+    .bom-del{min-width:36px;min-height:36px;font-size:15px!important}
+    .app .ws-seg button{padding-top:10px!important;padding-bottom:10px!important}
+    .pv-seg button{min-height:36px}
+    .lead-chan select{padding-top:5px;padding-bottom:5px}
+  }
 `;
 
 // Runs before paint to set the theme attribute — prevents a light-then-dark flash.
@@ -88,16 +111,19 @@ const NO_FLASH = `(function(){try{var t=localStorage.getItem("voltmira_theme");i
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: NO_FLASH stamps data-theme on <html> before
+    // React hydrates, by design, so the attribute never matches the server's.
+    // It applies to this element's own attributes only, not to the tree below.
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#142A21" />
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH }} />
         <style dangerouslySetInnerHTML={{ __html: THEME_VARS }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        {/* Inter Tight is the display face on /login (var(--d)); Google only ships
-            the woff2 for faces a page actually renders, so pages that never use it
-            pay nothing beyond a slightly longer stylesheet URL. */}
+        {/* Inter Tight is the display face on /login and the legal pages; Google
+            only ships the woff2 for faces a page actually renders, so pages that
+            never use it pay nothing beyond a slightly longer stylesheet URL. */}
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body style={{ margin: 0 }}>{children}<Analytics /></body>

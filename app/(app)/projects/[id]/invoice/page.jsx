@@ -131,6 +131,18 @@ export default async function InvoicePage({ params, searchParams }) {
         }
         .inv-actions { max-width: 820px; margin: 12px auto 0; padding: 0 40px; display: flex; gap: 10px; }
         .inv-back-row { max-width: 820px; margin: 0 auto; padding: 16px 40px 0; }
+        @media screen and (max-width: 640px) {
+          .inv-page { padding: 22px 16px !important; }
+          .inv-head { flex-direction: column; gap: 14px !important; margin-bottom: 24px !important; }
+          .inv-head-r { text-align: left !important; }
+          .inv-head-r h1 { font-size: 24px !important; }
+          .inv-qty { width: 44px !important; }
+          .inv-amt { width: auto !important; }
+          .inv-page th:not(:first-child), .inv-page td:not(:first-child) { padding-left: 12px !important; }
+          .inv-totals { width: 100% !important; }
+          .inv-back-row, .inv-actions { padding-left: 16px; padding-right: 16px; }
+          .inv-actions { flex-wrap: wrap; }
+        }
       `}</style>
 
       {/* Reached only via a link from the project editor, with no route of its
@@ -144,9 +156,9 @@ export default async function InvoicePage({ params, searchParams }) {
         </BackLink>
       </div>
 
-      <div style={S.page}>
+      <div className="inv-page" style={S.page}>
         {/* header */}
-        <div style={{ ...S.row, alignItems: "flex-start", marginBottom: 34 }}>
+        <div className="inv-head" style={{ ...S.row, alignItems: "flex-start", marginBottom: 34 }}>
           <div>
             {/* With a logo: logo on top, company name under it. WITHOUT a logo the
                 name stands in for the logo — print it once, larger, not twice
@@ -164,7 +176,7 @@ export default async function InvoicePage({ params, searchParams }) {
               {co.legal_address || ""}
             </div>
           </div>
-          <div style={{ textAlign: "right" }}>
+          <div className="inv-head-r" style={{ textAlign: "right" }}>
             <h1 style={S.h1}>{t("inv_title", lang)}</h1>
             <div style={{ ...S.muted, marginTop: 8 }}>
               {t("inv_no", lang)}: <b style={{ color: "#142A21" }}>{invNo}</b><br />
@@ -184,8 +196,8 @@ export default async function InvoicePage({ params, searchParams }) {
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 22 }}>
           <thead><tr>
             <th style={S.th}>{t("inv_desc", lang)}</th>
-            <th style={{ ...S.th, textAlign: "right", width: 90 }}>{t("inv_qty", lang)}</th>
-            <th style={{ ...S.th, textAlign: "right", width: 150 }}>{t("inv_amount", lang)}</th>
+            <th className="inv-qty" style={{ ...S.th, textAlign: "right", width: 90 }}>{t("inv_qty", lang)}</th>
+            <th className="inv-amt" style={{ ...S.th, textAlign: "right", width: 150 }}>{t("inv_amount", lang)}</th>
           </tr></thead>
           <tbody>
             <tr>
@@ -198,7 +210,7 @@ export default async function InvoicePage({ params, searchParams }) {
 
         {/* totals */}
         <div style={{ ...S.row, justifyContent: "flex-end" }}>
-          <div style={{ width: 300 }}>
+          <div className="inv-totals" style={{ width: 300 }}>
             {showVat && (
               <>
                 <div style={S.tot}><span style={S.muted}>{t("inv_subtotal", lang)}</span><span>{money(net)}</span></div>
