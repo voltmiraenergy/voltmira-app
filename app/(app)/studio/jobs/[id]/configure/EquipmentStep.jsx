@@ -1,32 +1,30 @@
 "use client";
-// EquipmentStep.jsx — extracted out of WizardSteps.jsx (matching the other
-// steps' file pattern) and rebuilt from a card grid into real sortable
-// tables, one per category, each wrapped in an Accordion. A checkbox per row
-// (separate from the row-click-to-pick affordance) drives a real spec
-// comparison panel once 2+ items in the same category are checked — no new
-// data, every column and compared field comes straight off the shipped
-// catalog (lib/supplierCatalog.js via PANELS/INVERTERS/BATTERIES).
+// EquipmentStep.jsx — panels, inverter and battery, one sortable table per
+// category, each in an Accordion that names the part currently picked. Click
+// a row to pick it; tick two or more to compare them side by side. Every
+// column comes straight off the supplier catalog (lib/supplierCatalog.js via
+// PANELS/INVERTERS/BATTERIES).
 import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, ArrowUpDown, PanelsTopLeft, Zap, BatteryFull, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle, ArrowUpDown, PanelsTopLeft, Zap, BatteryFull, X } from "lucide-react";
 import { tx, EUR, PANELS, INVERTERS, BATTERIES } from "../../../studio-kit.jsx";
 import Accordion from "./Accordion.jsx";
 
 function SortHeader({ label, active, dir, onClick, align }) {
   return (
-    <th onClick={onClick}
-      className={"cursor-pointer select-none py-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600 dark:text-[#8A8A8A] dark:hover:text-[#D4D4D4] " +
-        (align === "right" ? "text-right pr-1" : "pr-2")}>
-      <span className={"inline-flex items-center gap-1 " + (align === "right" ? "flex-row-reverse" : "")}>
+    <th className={align === "right" ? "r" : ""} aria-sort={active ? (dir > 0 ? "ascending" : "descending") : undefined}>
+      <button type="button" onClick={onClick} className={active ? "on" : ""}>
         {label}
-        <ArrowUpDown className={"h-2.5 w-2.5 " + (active ? "text-brand-600 dark:text-brand-400" : "opacity-40")} />
-      </span>
+        <ArrowUpDown size={10} aria-hidden="true" style={{ opacity: active ? 1 : 0.45 }} />
+      </button>
     </th>
   );
 }
 
-// One category's table: sortable columns, a pick-by-row-click, and a
-// checkbox per row (own column, doesn't trigger the pick) feeding `compare`.
-function CategoryTable({ items, columns, selectedId, onPick, invalid, compare, onToggleCompare }) {
+const SR = { position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" };
+
+// One category's table: sortable columns, pick a part by clicking its row,
+// and a checkbox per row (its own column, not a pick) feeding `compare`.
+function CategoryTable({ items, columns, selectedId, onPick, invalid, compare, onToggleCompare, compareLabel }) {
   const [sort, setSort] = useState({ key: columns[0].key, dir: 1 });
   const sorted = useMemo(() => {
     const list = [...items];
@@ -43,69 +41,57 @@ function CategoryTable({ items, columns, selectedId, onPick, invalid, compare, o
   }
 
   return (
-    <div className={"overflow-hidden rounded-lg border " + (invalid ? "border-red-300 dark:border-red-500/50" : "border-slate-200 dark:border-[#2C2C2C]")}>
-      <div className="max-h-64 overflow-y-auto">
-        <table className="w-full border-collapse text-sm">
-          <thead className="sticky top-0 bg-white dark:bg-[#1E1E1E]">
-            <tr className="border-b border-slate-200 text-left dark:border-[#2C2C2C]">
-              <th className="w-7 py-2 pl-2"></th>
-              {columns.map((c) => (
-                <SortHeader key={c.key} label={c.label} align={c.align}
-                  active={sort.key === c.key} dir={sort.dir}
-                  onClick={() => toggleSort(c.key)} />
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((item) => {
-              const selected = item.id === selectedId;
-              return (
-                <tr key={item.id} onClick={() => onPick(item)}
-                  className={"cursor-pointer border-b border-slate-100 transition-colors last:border-b-0 dark:border-[#242424] " +
-                    (selected ? "bg-brand-50 dark:bg-brand-500/10" : "hover:bg-slate-50 dark:hover:bg-[#242424]/60")}>
-                  <td className="py-2 pl-2" onClick={(e) => e.stopPropagation()}>
-                    <input type="checkbox" checked={compare.has(item.id)} onChange={() => onToggleCompare(item.id)}
-                      className="h-3.5 w-3.5 accent-brand-600" />
+    <div className={"ws-tbl-wrap" + (invalid ? " invalid" : "")}>
+      <table className="ws-tbl">
+        <thead>
+          <tr>
+            <th className="cb"><span style={SR}>{compareLabel}</span></th>
+            {columns.map((c) => (
+              <SortHeader key={c.key} label={c.label} align={c.align}
+                active={sort.key === c.key} dir={sort.dir}
+                onClick={() => toggleSort(c.key)} />
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((item) => {
+            const selected = item.id === selectedId;
+            return (
+              <tr key={item.id} onClick={() => onPick(item)} className={selected ? "sel" : ""} aria-selected={selected}>
+                <td className="cb" onClick={(e) => e.stopPropagation()}>
+                  <input type="checkbox" checked={compare.has(item.id)} onChange={() => onToggleCompare(item.id)} aria-label={compareLabel} />
+                </td>
+                {columns.map((c, ci) => (
+                  <td key={c.key} className={(c.align === "right" ? "r" : "") + (ci === 0 ? " name" : "")}>
+                    {selected && ci === 0 && <CheckCircle2 size={14} aria-hidden="true" />}
+                    {c.format ? c.format(item[c.key], item) : item[c.key]}
                   </td>
-                  {columns.map((c) => (
-                    <td key={c.key} className={"py-2 " + (c.align === "right" ? "pr-1 text-right tabular-nums" : "pr-2") +
-                      (c.key === columns[0].key ? " font-medium text-slate-900 dark:text-white" : " text-slate-600 dark:text-[#C4C4C4]")}>
-                      {selected && c.key === columns[0].key && <CheckCircle2 className="mr-1 inline h-3 w-3 text-brand-600 dark:text-brand-400" />}
-                      {c.format ? c.format(item[c.key], item) : item[c.key]}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                ))}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
 
 function ComparePanel({ items, fields, onClose, onRemove, t }) {
   return (
-    <div className="mt-2 overflow-x-auto rounded-lg border border-brand-200 bg-brand-50/60 p-3 dark:border-brand-500/30 dark:bg-brand-500/5">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-semibold text-brand-800 dark:text-brand-300">
-          {t({ en: "Compare", ro: "Compară", ru: "Сравнить" })} ({items.length})
-        </span>
-        <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:text-[#8A8A8A] dark:hover:text-[#D4D4D4]">
-          <X className="h-3.5 w-3.5" />
-        </button>
+    <div className="ws-compare">
+      <div className="ws-compare-top">
+        <span>{t({ en: "Side by side", ro: "Comparație", ru: "Сравнение" })} ({items.length})</span>
+        <button type="button" className="ws-x" onClick={onClose} aria-label={t({ en: "Close", ro: "Închide", ru: "Закрыть" })}><X size={14} /></button>
       </div>
-      <table className="w-full min-w-[420px] border-collapse text-xs">
+      <table>
         <thead>
           <tr>
-            <th className="w-28 py-1 text-left font-semibold text-slate-400 dark:text-[#8A8A8A]"> </th>
+            <th />
             {items.map((it) => (
-              <th key={it.id} className="py-1 pr-3 text-left font-semibold text-slate-900 dark:text-white">
-                <div className="flex items-center gap-1">
-                  <span className="truncate">{it.brand} {it.model}</span>
-                  <button type="button" onClick={() => onRemove(it.id)} className="flex-none text-slate-400 hover:text-red-500">
-                    <X className="h-3 w-3" />
-                  </button>
+              <th key={it.id}>
+                <div>
+                  <span>{it.brand} {it.model}</span>
+                  <button type="button" className="ws-x" onClick={() => onRemove(it.id)} aria-label={t({ en: "Remove", ro: "Scoate", ru: "Убрать" })}><X size={12} /></button>
                 </div>
               </th>
             ))}
@@ -113,13 +99,9 @@ function ComparePanel({ items, fields, onClose, onRemove, t }) {
         </thead>
         <tbody>
           {fields.map((f) => (
-            <tr key={f.key} className="border-t border-brand-100 dark:border-brand-500/20">
-              <td className="py-1 pr-2 text-slate-500 dark:text-[#B0B0B0]">{f.label}</td>
-              {items.map((it) => (
-                <td key={it.id} className="py-1 pr-3 font-medium tabular-nums text-slate-800 dark:text-[#D4D4D4]">
-                  {f.format ? f.format(it[f.key], it) : it[f.key]}
-                </td>
-              ))}
+            <tr key={f.key}>
+              <td>{f.label}</td>
+              {items.map((it) => <td key={it.id}>{f.format ? f.format(it[f.key], it) : it[f.key]}</td>)}
             </tr>
           ))}
         </tbody>
@@ -201,20 +183,21 @@ export default function EquipmentStep({ job, patch, derived, lang }) {
   const comparedInverters = INVERTERS.filter((i) => compareInverters.has(i.id));
   const comparedBatteries = BATTERIES.filter((b) => compareBatteries.has(b.id));
 
+  const compareLabel = t({ en: "Compare", ro: "Compară", ru: "Сравнить" });
+  const sys = derived?.sys;
   return (
-    <div className="space-y-6">
-      <div className={"rounded-lg border p-3 " + (derived?.vocExceeds
-        ? "border-accent-300 bg-accent-50 dark:border-accent-500/40 dark:bg-accent-500/10"
-        : "border-brand-200 bg-brand-50 dark:border-brand-500/30 dark:bg-brand-500/10")}>
-        <div className="flex items-center gap-2 text-xs font-semibold">
-          {derived?.vocExceeds
-            ? <><AlertTriangle className="h-3.5 w-3.5 text-accent-600 dark:text-accent-400" /><span className="text-accent-800 dark:text-accent-300">{t({ en: "String voltage exceeds inverter limit", ro: "Tensiunea șirului depășește limita invertorului", ru: "Напряжение цепочки выше предела инвертора" })}</span></>
-            : <><CheckCircle2 className="h-3.5 w-3.5 text-brand-600 dark:text-brand-400" /><span className="text-brand-800 dark:text-brand-300">{t({ en: "String voltage OK", ro: "Tensiune șir OK", ru: "Напряжение цепочки в норме" })}</span></>}
-        </div>
-      </div>
+    <>
+      {noInverter ? (
+        <div className="ws-note err"><XCircle size={16} aria-hidden="true" /><div><b>{t({ en: "No inverter chosen yet.", ro: "Niciun invertor ales încă.", ru: "Инвертор ещё не выбран." })}</b> {t({ en: "Pick one below; the string-voltage check and the annex need it.", ro: "Alege unul mai jos; verificarea tensiunii și anexa au nevoie de el.", ru: "Выберите ниже; он нужен для проверки напряжения и приложения." })}</div></div>
+      ) : derived?.vocExceeds ? (
+        <div className="ws-note warn"><AlertTriangle size={16} aria-hidden="true" /><div><b>{t({ en: "String voltage is above this inverter's limit.", ro: "Tensiunea șirului depășește limita invertorului.", ru: "Напряжение цепочки выше предела инвертора." })}</b> {t({ en: "Choose an inverter with a higher DC input, or fewer panels per string.", ro: "Alege un invertor cu intrare DC mai mare sau mai puține panouri pe șir.", ru: "Выберите инвертор с большим DC-входом или меньше панелей в цепочке." })}</div></div>
+      ) : (
+        <div className="ws-note ok"><CheckCircle2 size={16} aria-hidden="true" /><div><b>{t({ en: "These parts work together.", ro: "Aceste componente merg împreună.", ru: "Эти компоненты совместимы." })}</b> {t({ en: "String voltage is within the inverter's limit.", ro: "Tensiunea șirului e în limita invertorului.", ru: "Напряжение цепочки в пределах инвертора." })}</div></div>
+      )}
 
-      <Accordion title={t({ en: "Panels", ro: "Panouri", ru: "Панели" })} icon={PanelsTopLeft}>
-        <CategoryTable items={PANELS} columns={panelCols} selectedId={job.panelId} invalid={noPanel}
+      <Accordion title={t({ en: "Panels", ro: "Panouri", ru: "Панели" })} icon={PanelsTopLeft}
+        aside={!noPanel && sys ? `${sys.panel.brand} ${sys.panel.watt} W` : ""}>
+        <CategoryTable items={PANELS} columns={panelCols} selectedId={job.panelId} invalid={noPanel} compareLabel={compareLabel}
           onPick={(p) => patch({ panelId: p.id })} compare={comparePanels} onToggleCompare={toggle(setComparePanels)} />
         {comparedPanels.length >= 2 && (
           <ComparePanel items={comparedPanels} fields={panelCompareFields} t={t}
@@ -222,34 +205,28 @@ export default function EquipmentStep({ job, patch, derived, lang }) {
         )}
       </Accordion>
 
-      <Accordion title={t({ en: "Inverter", ro: "Invertor", ru: "Инвертор" })} icon={Zap}>
-        <CategoryTable items={INVERTERS} columns={inverterCols} selectedId={job.inverterId} invalid={noInverter}
+      <Accordion title={t({ en: "Inverter", ro: "Invertor", ru: "Инвертор" })} icon={Zap}
+        aside={!noInverter && sys ? `${sys.inverter.brand} ${sys.inverter.kw} kW` : ""}>
+        <CategoryTable items={INVERTERS} columns={inverterCols} selectedId={job.inverterId} invalid={noInverter} compareLabel={compareLabel}
           onPick={(inv) => patch({ inverterId: inv.id })} compare={compareInverters} onToggleCompare={toggle(setCompareInverters)} />
-        {noInverter && (
-          <p className="mt-1.5 text-xs font-medium text-red-600 dark:text-red-400">
-            {t({ en: "Select an inverter to continue.", ro: "Selectează un invertor pentru a continua.", ru: "Выберите инвертор, чтобы продолжить." })}
-          </p>
-        )}
         {comparedInverters.length >= 2 && (
           <ComparePanel items={comparedInverters} fields={inverterCompareFields} t={t}
             onClose={() => setCompareInverters(new Set())} onRemove={remove(setCompareInverters)} />
         )}
       </Accordion>
 
-      <Accordion title={t({ en: "Battery", ro: "Baterie", ru: "Батарея" })} icon={BatteryFull}>
-        <button type="button" onClick={() => pickBattery(null)}
-          className={"mb-2 w-full rounded-lg border p-2.5 text-left text-sm font-medium transition-colors " +
-            (!hasBattery ? "ws-fill-brand-tint border-brand-600 bg-brand-50 text-brand-700 dark:border-brand-500 dark:bg-brand-500/10 dark:text-brand-300"
-              : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-[#2C2C2C] dark:text-[#C4C4C4]")}>
+      <Accordion title={t({ en: "Battery", ro: "Baterie", ru: "Батарея" })} icon={BatteryFull}
+        aside={hasBattery && sys ? `${sys.battery.brand} ${job.batteryKwh} kWh` : t({ en: "None", ro: "Fără", ru: "Нет" })}>
+        <button type="button" onClick={() => pickBattery(null)} className={"ws-choice" + (!hasBattery ? " on" : "")}>
           {t({ en: "No battery", ro: "Fără baterie", ru: "Без батареи" })}
         </button>
-        <CategoryTable items={BATTERIES} columns={batteryCols} selectedId={hasBattery ? job.batteryId : null} invalid={false}
+        <CategoryTable items={BATTERIES} columns={batteryCols} selectedId={hasBattery ? job.batteryId : null} invalid={false} compareLabel={compareLabel}
           onPick={pickBattery} compare={compareBatteries} onToggleCompare={toggle(setCompareBatteries)} />
         {comparedBatteries.length >= 2 && (
           <ComparePanel items={comparedBatteries} fields={batteryCompareFields} t={t}
             onClose={() => setCompareBatteries(new Set())} onRemove={remove(setCompareBatteries)} />
         )}
       </Accordion>
-    </div>
+    </>
   );
 }

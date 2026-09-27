@@ -1,24 +1,23 @@
 "use client";
-// Accordion.jsx — title + chevron + collapsible body, shared by Equipment
-// (panels/inverters/battery) and Monitoring (actuals/warranty+tickets) so
-// those two dense tabs don't force every section open at once. Defaults open
-// on first render so nothing that used to be always-visible regresses to
-// hidden-by-default.
+// Accordion.jsx — a titled, collapsible block, shared by Equipment (panels,
+// inverter, battery) and Monitoring (readings, warranty, tickets) so those
+// dense steps don't force every section open at once. Opens by default so
+// nothing that used to be visible starts hidden. `aside` is a short summary
+// shown on the title row (e.g. the part currently picked).
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-export default function Accordion({ title, icon: Icon, defaultOpen = true, children }) {
+export default function Accordion({ title, icon: Icon, aside, defaultOpen = true, children }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div>
-      <button type="button" onClick={() => setOpen((o) => !o)}
-        className="mb-2 flex w-full items-center justify-between gap-2 text-left">
-        <span className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-white">
-          {Icon && <Icon className="h-4 w-4 text-slate-400" />} {title}
-        </span>
-        <ChevronDown className={"h-4 w-4 flex-none text-slate-400 transition-transform " + (open ? "" : "-rotate-90")} />
+    <div className="ws-acc">
+      <button type="button" className="ws-acc-top" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        {Icon && <Icon size={16} aria-hidden="true" />}
+        {title}
+        <span className="ws-aside">{aside || ""}</span>
+        <ChevronDown size={16} className="chev" aria-hidden="true" />
       </button>
-      {open && children}
+      {open && <div className="ws-acc-body">{children}</div>}
     </div>
   );
 }

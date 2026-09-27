@@ -1,12 +1,10 @@
 "use client";
-// MonitoringStep.jsx — absorbs the old standalone Monitoring tool: monthly
-// actuals vs the P50 the quote promised, warranty terms, and service tickets.
-// The old hardcoded "Fleet" strip (38 systems / 312 kW / ...) is dropped, not
-// ported — it was never real at the single-job level this step operates at.
-// Tickets are now real and per-job (jobs-data.js), not a fixed list of 3
-// names unrelated to whichever job happens to be open.
+// MonitoringStep.jsx — this job after handover: monthly production against
+// the P50 its quote promised (typed in, or filled nightly from a linked
+// inverter portal), warranty terms and per-job service tickets. `touch` tells
+// the workspace a reading was saved, so the journey line updates at once.
 import { useMemo, useState } from "react";
-import { Plus, Wrench, FileText, AlertTriangle, ClipboardList, ShieldCheck } from "lucide-react";
+import { Plus, Wrench, FileText, AlertTriangle, ClipboardList, ShieldCheck, BarChart3, CheckCircle2 } from "lucide-react";
 import {
   tx, NUM, seeded, downloadStudioDoc, DocReveal, useToast,
   actualsKey, readJSON, writeJSON,
@@ -17,7 +15,7 @@ import Accordion from "./Accordion.jsx";
 
 const MONTHS = { ro: ["ian", "feb", "mar", "apr", "mai", "iun", "iul", "aug", "sep", "oct", "nov", "dec"], en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], ru: ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"] };
 
-export default function MonitoringStep({ job, lang }) {
+export default function MonitoringStep({ job, lang, touch = () => {} }) {
   const t = (o) => tx(o, lang);
   const [toast, fire] = useToast();
   const months = MONTHS[lang] || MONTHS.en;
@@ -27,7 +25,7 @@ export default function MonitoringStep({ job, lang }) {
     const s = readJSON(actKey, null);
     return Array.isArray(s) && s.length === 12 ? s : Array(12).fill("");
   });
-  const saveActuals = (next) => { setActuals(next); writeJSON(actKey, next); };
+  const saveActuals = (next) => { setActuals(next); writeJSON(actKey, next); touch(); };
   const setMonth = (i, v) => { const n = actuals.slice(); n[i] = v; saveActuals(n); };
 
   const [tickets, setTickets] = useState(() => loadTickets(job.id));
@@ -77,149 +75,111 @@ export default function MonitoringStep({ job, lang }) {
     return { monthIdx: m.i, p50: m.p50, actual: m.actual, shortfallPct: Math.round((1 - ratio) * 100) };
   }, [data.lastMonth]);
 
+  const ytdGood = data.filled.length > 0 && data.pct >= 100;
   return (
-    <div className="space-y-6">
+    <>
       {toast}
 
       {anomaly && (
-        <div className="flex items-start gap-3 rounded-lg border border-accent-300 bg-accent-50 p-3 dark:border-accent-500/40 dark:bg-accent-500/10">
-          <AlertTriangle className="mt-0.5 h-4 w-4 flex-none text-accent-600 dark:text-accent-400" />
-          <div className="text-xs">
-            <div className="font-semibold text-accent-800 dark:text-accent-300">
-              {t({ en: "Production is below P50", ro: "Producția este sub P50", ru: "Выработка ниже P50" })}
-            </div>
-            <div className="mt-0.5 text-accent-700 dark:text-accent-400">
-              {t({
-                en: `${months[anomaly.monthIdx]}: ${anomaly.shortfallPct}% below P50 (${NUM(anomaly.actual)} kWh vs ${NUM(anomaly.p50)} kWh expected). Check for shading, soiling, or an inverter fault.`,
-                ro: `${months[anomaly.monthIdx]}: cu ${anomaly.shortfallPct}% sub P50 (${NUM(anomaly.actual)} kWh față de ${NUM(anomaly.p50)} kWh estimat). Verifică umbrirea, murdărirea panourilor sau o defecțiune a invertorului.`,
-                ru: `${months[anomaly.monthIdx]}: на ${anomaly.shortfallPct}% ниже P50 (${NUM(anomaly.actual)} кВт·ч против ${NUM(anomaly.p50)} кВт·ч ожидаемых). Проверьте затенение, загрязнение панелей или неисправность инвертора.`,
-              })}
-            </div>
+        <div className="ws-note warn">
+          <AlertTriangle size={16} aria-hidden="true" />
+          <div>
+            <b>{t({ en: `${months[anomaly.monthIdx]} came in ${anomaly.shortfallPct}% below P50.`, ro: `${months[anomaly.monthIdx]}: cu ${anomaly.shortfallPct}% sub P50.`, ru: `${months[anomaly.monthIdx]}: на ${anomaly.shortfallPct}% ниже P50.` })}</b>{" "}
+            {t({
+              en: `${NUM(anomaly.actual)} kWh against ${NUM(anomaly.p50)} kWh expected. Check for shading, soiling or an inverter fault.`,
+              ro: `${NUM(anomaly.actual)} kWh față de ${NUM(anomaly.p50)} kWh estimat. Verifică umbrirea, murdăria de pe panouri sau o defecțiune a invertorului.`,
+              ru: `${NUM(anomaly.actual)} кВт·ч против ${NUM(anomaly.p50)} кВт·ч ожидаемых. Проверьте затенение, загрязнение или неисправность инвертора.`,
+            })}
           </div>
         </div>
       )}
 
-      <div>
-        <div className="mb-3 flex flex-wrap items-baseline gap-2">
-          <h3 className="flex-1 text-sm font-semibold text-slate-800 dark:text-white">{t({ en: "Production vs P50", ro: "Producție vs P50", ru: "Выработка vs P50" })}</h3>
-          <span className="text-xs text-slate-500 dark:text-[#B0B0B0]">
-            {t({ en: "Year to date", ro: "De la începutul anului", ru: "С начала года" })}: {" "}
-            <b className={data.filled.length === 0 ? "text-slate-400" : data.pct >= 100 ? "text-brand-600 dark:text-brand-400" : "text-accent-600 dark:text-accent-400"}>
-              {data.filled.length === 0 ? "—" : `${data.pct}% ${t({ en: "of P50", ro: "din P50", ru: "от P50" })}`}
-            </b>
+      <div className="ws-sec">
+        <div className="ws-sec-h"><BarChart3 size={16} aria-hidden="true" />{t({ en: "Production against P50", ro: "Producția față de P50", ru: "Выработка против P50" })}
+          <span className={"ws-aside " + (data.filled.length === 0 ? "" : ytdGood ? "ws-good" : "ws-bad")}>
+            {data.filled.length === 0 ? t({ en: "No readings yet", ro: "Fără citiri încă", ru: "Показаний пока нет" }) : t({ en: `${data.pct}% of P50 this year`, ro: `${data.pct}% din P50 anul acesta`, ru: `${data.pct}% от P50 за год` })}
           </span>
         </div>
-
-        <div className="grid grid-cols-12 items-end gap-1" style={{ height: 130 }}>
-          {data.rows.map((r, i) => (
-            <div key={i} className="relative flex h-full flex-col items-center justify-end gap-1"
-              onMouseEnter={() => setHoverIdx(i)} onMouseLeave={() => setHoverIdx((h) => (h === i ? null : h))}>
-              {hoverIdx === i && (
-                <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 w-max -translate-x-1/2 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] shadow-lg dark:border-[#2C2C2C] dark:bg-[#1E1E1E]">
-                  <div className="font-semibold text-slate-700 dark:text-white">{months[r.i]}</div>
-                  <div className="text-slate-500 dark:text-[#B0B0B0]">P50: {NUM(r.p50)} kWh</div>
-                  {r.actual != null && (
-                    <div className="text-brand-600 dark:text-brand-400">
-                      {t({ en: "Actual", ro: "Real", ru: "Факт" })}: {NUM(r.actual)} kWh
-                    </div>
-                  )}
+        <div className="ws-box" style={{ gap: 10 }}>
+          <div className="ws-bars">
+            {data.rows.map((r, i) => (
+              <div key={i} className="ws-bar" onMouseEnter={() => setHoverIdx(i)} onMouseLeave={() => setHoverIdx((h) => (h === i ? null : h))}>
+                {hoverIdx === i && (
+                  <div className="ws-bar-tip">
+                    <b>{months[r.i]}</b>
+                    P50 {NUM(r.p50)} kWh
+                    {r.actual != null && <><br />{t({ en: "Actual", ro: "Real", ru: "Факт" })} {NUM(r.actual)} kWh</>}
+                  </div>
+                )}
+                <div className="ws-bar-in">
+                  <span className="p50" style={{ height: (r.p50 / maxV) * 100 + "%" }} />
+                  {r.actual != null && <span className={"act" + (r.actual < r.p50 * 0.85 ? " low" : "")} style={{ height: (r.actual / maxV) * 100 + "%" }} />}
                 </div>
-              )}
-              <div className="flex h-full w-full items-end justify-center gap-0.5">
-                <span className="w-[44%] rounded-t bg-slate-300 dark:bg-[#383838]" style={{ height: (r.p50 / maxV) * 100 + "%" }} />
-                {r.actual != null && <span className="w-[44%] rounded-t bg-brand-500" style={{ height: (r.actual / maxV) * 100 + "%" }} />}
+                <span className="ws-bar-m">{months[r.i]}</span>
               </div>
-              <span className="font-mono text-[9px] text-slate-400">{months[r.i]}</span>
-            </div>
-          ))}
+            ))}
+          </div>
+          <div className="ws-legend">
+            <span><i style={{ background: "var(--line)" }} />{t({ en: "P50, what the quote promised", ro: "P50, ce a promis oferta", ru: "P50, обещано в расчёте" })}</span>
+            <span><i style={{ background: "var(--green)" }} />{t({ en: "Actual", ro: "Real", ru: "Факт" })}</span>
+          </div>
         </div>
-        <div className="mt-2 flex gap-4 text-xs text-slate-500 dark:text-[#B0B0B0]">
-          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-2.5 w-2.5 rounded-sm bg-slate-300 dark:bg-[#383838]" />{t({ en: "P50 estimate", ro: "estimare P50", ru: "оценка P50" })}</span>
-          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-2.5 w-2.5 rounded-sm bg-brand-500" />{t({ en: "actual", ro: "real", ru: "факт" })}</span>
-        </div>
-
       </div>
 
-      <Accordion title={t({ en: "Monthly actuals", ro: "Citiri lunare", ru: "Помесячные данные" })} icon={ClipboardList}>
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <div className="flex-1 text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-[#B0B0B0]">
-            {t({ en: "Enter kWh per month", ro: "Introdu kWh pe lună", ru: "Введите кВт·ч за месяц" })}
-          </div>
-          <button type="button" onClick={loadSample} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#3A3A3A] dark:text-[#D4D4D4] dark:hover:bg-[#242424]">
-            {t({ en: "Fill with a realistic sample", ro: "Completează cu un exemplu realist", ru: "Заполнить примером" })}
-          </button>
-          <button type="button" onClick={() => { saveActuals(Array(12).fill("")); fire(t({ en: "Readings cleared", ro: "Citiri golite", ru: "Данные очищены" })); }}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#3A3A3A] dark:text-[#D4D4D4] dark:hover:bg-[#242424]">
-            {t({ en: "Clear", ro: "Golește", ru: "Очистить" })}
-          </button>
-        </div>
-        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+      <Accordion title={t({ en: "Monthly readings", ro: "Citiri lunare", ru: "Помесячные показания" })} icon={ClipboardList}
+        aside={t({ en: `${data.filled.length} of 12 months`, ro: `${data.filled.length} din 12 luni`, ru: `${data.filled.length} из 12 мес.` })}>
+        <p className="ws-sec-note">{t({ en: "The month's kWh from the inverter app. A job linked to an inverter portal in Monitoring fills these in every night.", ro: "kWh-ul lunii din aplicația invertorului. O lucrare legată de un portal de invertor, în Monitorizare, le completează în fiecare noapte.", ru: "кВт·ч за месяц из приложения инвертора. Объект, привязанный к порталу инвертора в разделе «Мониторинг», заполняет их каждую ночь." })}</p>
+        <div className="ws-months">
           {months.map((m, i) => (
-            <label key={i} className="flex flex-col gap-1">
-              <span className="font-mono text-[10px] uppercase tracking-wide text-slate-400">{m}</span>
-              <input type="number" min="0" inputMode="numeric" placeholder="—" value={actuals[i]}
-                onChange={(e) => setMonth(i, e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-[#2C2C2C] dark:bg-[#242424] dark:text-white" />
+            <label key={i}>
+              {m}
+              <input type="number" min="0" inputMode="numeric" placeholder="—" value={actuals[i]} className="ws-input"
+                onChange={(e) => setMonth(i, e.target.value)} />
             </label>
           ))}
         </div>
-        {data.filled.length === 0 && (
-          <p className="mt-3 text-xs text-slate-500 dark:text-[#B0B0B0]">
-            {t({ en: "No readings yet — enter a month's kWh above, or load a sample.", ro: "Încă fără citiri — introdu kWh pentru o lună mai sus, sau încarcă un exemplu.", ru: "Пока нет данных — введите кВт·ч за месяц выше или загрузите пример." })}
-          </p>
-        )}
+        <div className="ws-actions">
+          <button type="button" onClick={loadSample} className="btn ghost sm">{t({ en: "Fill with a realistic sample", ro: "Completează cu un exemplu realist", ru: "Заполнить примером" })}</button>
+          <button type="button" onClick={() => { saveActuals(Array(12).fill("")); fire(t({ en: "Readings cleared", ro: "Citiri golite", ru: "Данные очищены" })); }} className="btn ghost sm">
+            {t({ en: "Clear", ro: "Golește", ru: "Очистить" })}
+          </button>
+        </div>
       </Accordion>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="ws-cols">
         <Accordion title={t({ en: "Warranty", ro: "Garanție", ru: "Гарантия" })} icon={ShieldCheck}>
-          <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 dark:divide-[#242424] dark:border-[#2C2C2C]">
-            <div className="flex items-center justify-between px-3 py-2.5 text-xs">
-              <span className="text-slate-500 dark:text-[#B0B0B0]">{t({ en: "Workmanship", ro: "Manoperă", ru: "Работы" })}</span>
-              <span className="font-semibold text-slate-800 dark:text-white">{t({ en: "until", ro: "până", ru: "до" })} 2028</span>
-            </div>
-            <div className="flex items-center justify-between px-3 py-2.5 text-xs">
-              <span className="text-slate-500 dark:text-[#B0B0B0]">{t({ en: "Inverter", ro: "Invertor", ru: "Инвертор" })}</span>
-              <span className="font-semibold text-slate-800 dark:text-white">{t({ en: "until", ro: "până", ru: "до" })} 2036</span>
-            </div>
-            <div className="flex items-center justify-between px-3 py-2.5 text-xs">
-              <span className="text-slate-500 dark:text-[#B0B0B0]">{t({ en: "Panels (product)", ro: "Panouri (produs)", ru: "Панели (продукт)" })}</span>
-              <span className="font-semibold text-slate-800 dark:text-white">{t({ en: "until", ro: "până", ru: "до" })} 2051</span>
-            </div>
+          <div className="ws-kv">
+            <div><span>{t({ en: "Workmanship", ro: "Manoperă", ru: "Работы" })}</span><b>{t({ en: "until", ro: "până în", ru: "до" })} 2028</b></div>
+            <div><span>{t({ en: "Inverter", ro: "Invertor", ru: "Инвертор" })}</span><b>{t({ en: "until", ro: "până în", ru: "до" })} 2036</b></div>
+            <div><span>{t({ en: "Panels (product)", ro: "Panouri (produs)", ru: "Панели (продукт)" })}</span><b>{t({ en: "until", ro: "până în", ru: "до" })} 2051</b></div>
           </div>
         </Accordion>
-        <Accordion title={t({ en: "Service tickets", ro: "Tichete de service", ru: "Сервисные заявки" })} icon={Wrench}>
-          <div className="mb-2 flex gap-2">
+        <Accordion title={t({ en: "Service tickets", ro: "Tichete de service", ru: "Сервисные заявки" })} icon={Wrench}
+          aside={tickets.some((tk) => tk.open) ? t({ en: `${tickets.filter((tk) => tk.open).length} open`, ro: `${tickets.filter((tk) => tk.open).length} deschise`, ru: `открыто: ${tickets.filter((tk) => tk.open).length}` }) : ""}>
+          <div className="ws-row">
             <input value={ticketText} onChange={(e) => setTicketText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitTicket()}
-              placeholder={t({ en: "Describe the issue…", ro: "Descrie problema…", ru: "Опишите проблему…" })}
-              className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm dark:border-[#2C2C2C] dark:bg-[#242424] dark:text-white" />
-            <button type="button" onClick={submitTicket} className="ws-fill-brand flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700">
-              <Plus className="h-4 w-4" />
+              placeholder={t({ en: "Describe the issue", ro: "Descrie problema", ru: "Опишите проблему" })} className="ws-input ws-grow"
+              aria-label={t({ en: "New ticket", ro: "Tichet nou", ru: "Новая заявка" })} />
+            <button type="button" onClick={submitTicket} className="btn primary sm" aria-label={t({ en: "Add ticket", ro: "Adaugă tichet", ru: "Добавить заявку" })}><Plus size={15} /></button>
+          </div>
+          {tickets.length === 0 && <p className="ws-sec-note">{t({ en: "No tickets for this job.", ro: "Niciun tichet pentru această lucrare.", ru: "Нет заявок по этому объекту." })}</p>}
+          {tickets.map((tk) => (
+            <button key={tk.id} type="button" onClick={() => flipTicket(tk.id)} className={"ws-ticket " + (tk.open ? "open" : "closed")}>
+              <span className="ic" aria-hidden="true">{tk.open ? <Wrench size={12} /> : <CheckCircle2 size={12} />}</span>
+              <div>
+                <b>{tk.issue}</b>
+                <small>{tk.open ? t({ en: "Open, tap when resolved", ro: "Deschis, atinge când e rezolvat", ru: "Открыт, нажмите, когда решено" }) : t({ en: "Resolved", ro: "Rezolvat", ru: "Решён" })}</small>
+              </div>
             </button>
-          </div>
-          <div className="space-y-2">
-            {tickets.length === 0 && <p className="text-xs text-slate-400">{t({ en: "No tickets for this job.", ro: "Niciun tichet pentru această lucrare.", ru: "Нет заявок по этому объекту." })}</p>}
-            {tickets.map((tk) => (
-              <button key={tk.id} type="button" onClick={() => flipTicket(tk.id)}
-                className="flex w-full items-start gap-2.5 rounded-lg border border-slate-200 px-3 py-2 text-left dark:border-[#2C2C2C]">
-                <span className={"mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full " + (tk.open ? "bg-accent-100 text-accent-700 dark:bg-accent-500/20 dark:text-accent-400" : "bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400")}>
-                  <Wrench className="h-3 w-3" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm text-slate-800 dark:text-white">{tk.issue}</div>
-                  <div className={"text-[10px] font-bold uppercase tracking-wide " + (tk.open ? "text-accent-600 dark:text-accent-400" : "text-brand-600 dark:text-brand-400")}>
-                    {tk.open ? t({ en: "open — tap to resolve", ro: "deschis — atinge pentru rezolvare", ru: "открыт — нажмите чтобы закрыть" }) : t({ en: "resolved", ro: "rezolvat", ru: "решён" })}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
+          ))}
         </Accordion>
       </div>
 
-      <button type="button" onClick={() => downloadStudioDoc("raport-performanta-" + (job.ref || "voltmira"))}
-        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#3A3A3A] dark:text-[#D4D4D4] dark:hover:bg-[#242424]">
-        <FileText className="h-4 w-4" /> {t({ en: "Performance report — Print / PDF", ro: "Raport performanță — Printează / PDF", ru: "Отчёт — Печать / PDF" })}
-      </button>
+      <div className="ws-actions">
+        <button type="button" onClick={() => downloadStudioDoc("raport-performanta-" + (job.ref || "voltmira"))} className="btn ghost sm">
+          <FileText size={15} aria-hidden="true" /> {t({ en: "Performance report: print or PDF", ro: "Raport de performanță: printează sau PDF", ru: "Отчёт о выработке: печать или PDF" })}
+        </button>
+      </div>
 
       <DocReveal lang={lang}>
         <div className="pv-doc">
@@ -263,6 +223,6 @@ export default function MonitoringStep({ job, lang }) {
           }, lang)}</p>
         </div>
       </DocReveal>
-    </div>
+    </>
   );
 }

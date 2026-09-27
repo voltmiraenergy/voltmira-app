@@ -1,21 +1,14 @@
 "use client";
-// SegmentedControl.jsx — a rounded gray track with a solid brand-filled
-// active pill, shared by Shading, Market and Payment method so the Workspace
-// has one segmented-control look instead of three slightly different button
-// rows. A solid brand-600 fill (not "white pill on gray track") is used
-// deliberately: a same-shade white-on-gray active state reads as barely
-// distinguishable from its neighbours once the surrounding card is also
-// near-white — this version reads unambiguously in both themes.
-export default function SegmentedControl({ options, value, onChange, columns }) {
+// SegmentedControl.jsx — one segmented-control look for Shading, Market,
+// Payment method and document language: a quiet track with the chosen option
+// filled in the brand green, readable in both themes. `full` stretches it to
+// the width of its container.
+export default function SegmentedControl({ options, value, onChange, full, label }) {
   return (
-    <div className={"gap-1 rounded-lg bg-slate-100 p-1 dark:bg-[#242424] " + (columns ? "grid w-full" : "inline-flex")}
-      style={columns ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}>
+    <div className={"ws-seg" + (full ? " full" : "")} role="radiogroup" aria-label={label}>
       {options.map((opt) => (
-        <button key={opt.value} type="button" onClick={() => onChange(opt.value)}
-          className={"rounded-md px-3 py-1.5 text-xs font-semibold transition-all " +
-            (value === opt.value
-              ? "ws-fill-brand bg-brand-600 text-white shadow-sm"
-              : "text-slate-500 hover:bg-white hover:text-slate-700 dark:text-[#B0B0B0] dark:hover:bg-[#2C2C2C] dark:hover:text-[#D4D4D4]")}>
+        <button key={opt.value} type="button" role="radio" aria-checked={value === opt.value}
+          className={value === opt.value ? "on" : ""} onClick={() => onChange(opt.value)}>
           {opt.label}
         </button>
       ))}

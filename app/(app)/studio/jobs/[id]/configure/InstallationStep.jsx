@@ -1,10 +1,11 @@
 "use client";
-// InstallationStep.jsx — absorbs the old standalone Schedule tool: the week
-// calendar, crew assignment, materials-readiness check, the field-mode
-// checklist and handover certificate. The 4 static gradient "photo" boxes
-// are replaced with PhotoGallery — an actual file capture, not a decoration.
+// InstallationStep.jsx — the install itself: the week calendar and crews,
+// whether the materials are in stock, the on-site checklist, photos from
+// site, the client's signature and the handover certificate. `touch` tells
+// the workspace a checklist tick or a signature was saved, so the journey
+// line above updates at once.
 import { useState } from "react";
-import { X, CheckCircle2, FileText, Users, Boxes } from "lucide-react";
+import { X, Check, FileText, Users, Boxes, CalendarDays, ListChecks, Camera, PenLine } from "lucide-react";
 import {
   tx, protRows, downloadStudioDoc, DocReveal, useToast,
   WEEK_KEY, installKey, readJSON, writeJSON,
@@ -32,7 +33,7 @@ const FLD_LABEL = {
   fld_test: { en: "First power + readings", ro: "Prima pornire + măsurători", ru: "Первый пуск + замеры" },
 };
 
-export default function InstallationStep({ job, derived, lang }) {
+export default function InstallationStep({ job, derived, lang, touch = () => {} }) {
   const t = (o) => tx(o, lang);
   const [toast, fire] = useToast();
   const { sys } = derived;
@@ -44,7 +45,7 @@ export default function InstallationStep({ job, derived, lang }) {
   const [steps, setSteps] = useState(() => readJSON(jobKey, { steps: BLANK_STEPS }).steps || BLANK_STEPS);
   const [signatureUrl, setSignatureUrl] = useState(() => readJSON(jobKey, {}).signatureDataUrl || null);
   const signed = !!signatureUrl;
-  const saveInstall = (patch) => writeJSON(jobKey, { ...readJSON(jobKey, {}), ...patch });
+  const saveInstall = (patch) => { writeJSON(jobKey, { ...readJSON(jobKey, {}), ...patch }); touch(); };
   const toggleStep = (s) => { const n = { ...steps, [s]: !steps[s] }; setSteps(n); saveInstall({ steps: n }); };
   const handleSignature = (dataUrl) => {
     setSignatureUrl(dataUrl);
@@ -90,7 +91,7 @@ export default function InstallationStep({ job, derived, lang }) {
 
   const [installs, setInstalls] = useState(() => readJSON(WEEK_KEY, SCHED));
   const [plan, setPlan] = useState({ day: 4, crew: 0 });
-  const persistWeek = (n) => { setInstalls(n); writeJSON(WEEK_KEY, n); };
+  const persistWeek = (n) => { setInstalls(n); writeJSON(WEEK_KEY, n); touch(); };
   const addActive = () => {
     persistWeek([...installs, { day: +plan.day, jobId: job.id, client: job.name, loc: String(job.address).split(",")[0], kw: +kw.toFixed(1), crew: +plan.crew }]);
     fire(t({ en: "Scheduled for {day}", ro: "Programat pentru {day}", ru: "Запланировано на {day}" }).replace("{day}", days[+plan.day]));
@@ -101,53 +102,38 @@ export default function InstallationStep({ job, derived, lang }) {
   const assignedCrew = (assignedInstall != null ? CREWS[assignedInstall.crew] : null) || CREWS[0];
 
   return (
-    <div className="space-y-6">
+    <>
       {toast}
 
-      {/* week calendar */}
-      <div>
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <h3 className="flex-1 text-sm font-semibold text-slate-800 dark:text-white">{t({ en: "This week", ro: "Săptămâna aceasta", ru: "Эта неделя" })}</h3>
-          <select value={plan.day} onChange={(e) => setPlan((p) => ({ ...p, day: +e.target.value }))}
-            className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-[#2C2C2C] dark:bg-[#242424] dark:text-white">
+      <div className="ws-sec">
+        <div className="ws-sec-h"><CalendarDays size={16} aria-hidden="true" />{t({ en: "This week", ro: "Săptămâna aceasta", ru: "Эта неделя" })}</div>
+        <div className="ws-row">
+          <select value={plan.day} onChange={(e) => setPlan((p) => ({ ...p, day: +e.target.value }))} className="ws-select" style={{ width: "auto" }}
+            aria-label={t({ en: "Day", ro: "Ziua", ru: "День" })}>
             {days.map((d, di) => <option key={di} value={di}>{d}</option>)}
           </select>
-          <select value={plan.crew} onChange={(e) => setPlan((p) => ({ ...p, crew: +e.target.value }))}
-            className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-[#2C2C2C] dark:bg-[#242424] dark:text-white">
+          <select value={plan.crew} onChange={(e) => setPlan((p) => ({ ...p, crew: +e.target.value }))} className="ws-select" style={{ width: "auto" }}
+            aria-label={t({ en: "Crew", ro: "Echipa", ru: "Бригада" })}>
             {CREWS.map((c, i) => <option key={i} value={i}>{c.name}</option>)}
           </select>
-          <button type="button" onClick={addActive} className="ws-fill-brand rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700">
-            + {t({ en: "Schedule this job", ro: "Programează lucrarea", ru: "Запланировать объект" })}
+          <button type="button" onClick={addActive} className="btn primary sm">
+            {t({ en: "Put this job in the week", ro: "Pune lucrarea în săptămână", ru: "Поставить объект в неделю" })}
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <div className="ws-week">
           {days.map((d, di) => {
             const dayJobs = installs.map((s, i) => [s, i]).filter(([s]) => s.day === di);
             return (
-              <div key={di} className="flex min-h-[140px] flex-col rounded-lg border border-slate-200 bg-slate-50 dark:border-[#2C2C2C] dark:bg-[#242424]/50">
-                <div className="flex items-center justify-between border-b border-slate-200 px-2 py-1.5 dark:border-[#2C2C2C]">
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-[#B0B0B0]">{d}</span>
-                  {dayJobs.length > 0 && (
-                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-slate-200 px-1 text-[9px] font-bold text-slate-600 dark:bg-[#383838] dark:text-[#D4D4D4]">
-                      {dayJobs.length}
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col gap-1.5 p-1.5">
-                  {dayJobs.length === 0 && (
-                    <div className="flex flex-1 items-center justify-center text-[10px] italic text-slate-300 dark:text-[#3A3A3A]">
-                      {t({ en: "no installs", ro: "fără montaje", ru: "нет монтажей" })}
-                    </div>
-                  )}
+              <div key={di} className="ws-day">
+                <div className="ws-day-top"><span>{d}</span>{dayJobs.length > 0 && <em>{dayJobs.length}</em>}</div>
+                <div className="ws-day-list">
+                  {dayJobs.length === 0 && <div className="ws-day-empty">{t({ en: "Free", ro: "Liber", ru: "Свободно" })}</div>}
                   {dayJobs.map(([s, i]) => (
-                    <div key={i} className="relative rounded-md border border-slate-200 bg-white p-1.5 pr-4 text-xs shadow-sm dark:border-[#2C2C2C] dark:bg-[#1E1E1E]"
-                      style={{ borderLeftWidth: 3, borderLeftColor: CREWS[s.crew]?.color || "#1E6B4E" }}>
-                      <button type="button" onClick={() => delInstall(i)} className="absolute right-1 top-1 text-slate-400 hover:text-red-500">
-                        <X className="h-3 w-3" />
-                      </button>
-                      <b className="block truncate font-semibold text-slate-800 dark:text-white">{s.client}</b>
-                      <span className="block text-slate-500 dark:text-[#B0B0B0]">{s.loc} · {s.kw} kW</span>
-                      <em className="not-italic font-medium" style={{ color: CREWS[s.crew]?.color }}>{CREWS[s.crew]?.name || "—"}</em>
+                    <div key={i} className="ws-slot" style={{ "--crew": CREWS[s.crew]?.color || "var(--green)" }}>
+                      <button type="button" onClick={() => delInstall(i)} className="ws-x" aria-label={t({ en: "Remove", ro: "Elimină", ru: "Убрать" })}><X size={12} /></button>
+                      <b>{s.client}</b>
+                      <span>{s.loc}, {s.kw} kW</span>
+                      <em>{CREWS[s.crew]?.name || "—"}</em>
                     </div>
                   ))}
                 </div>
@@ -157,85 +143,67 @@ export default function InstallationStep({ job, derived, lang }) {
         </div>
       </div>
 
-      {/* crews + materials */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-white">
-            <Users className="h-4 w-4 text-slate-400" /> {t({ en: "Crews", ro: "Echipe", ru: "Бригады" })}
-          </h3>
-          <div className="space-y-2">
+      <div className="ws-cols">
+        <div className="ws-sec">
+          <div className="ws-sec-h"><Users size={16} aria-hidden="true" />{t({ en: "Crews", ro: "Echipe", ru: "Бригады" })}</div>
+          <div className="ws-list">
             {CREWS.map((c, i) => (
-              <div key={i} className="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-[#2C2C2C] dark:bg-[#242424]/50">
-                <span className="h-2.5 w-2.5 flex-none rounded-full" style={{ background: c.color }} />
-                <div className="flex-1">
-                  <b className="block text-sm text-slate-800 dark:text-white">{c.name}</b>
-                  <div className="text-xs text-slate-500 dark:text-[#B0B0B0]">{c.who}</div>
-                </div>
-                <span className="text-xs text-slate-400">{installs.filter((s) => s.crew === i).length} {t({ en: "jobs", ro: "lucrări", ru: "объектов" })}</span>
+              <div key={i} className="ws-item">
+                <span className="ws-dot" style={{ background: c.color }} aria-hidden="true" />
+                <div><b>{c.name}</b><small>{c.who}</small></div>
+                <span className="ws-aside">{installs.filter((s) => s.crew === i).length} {t({ en: "jobs", ro: "lucrări", ru: "объектов" })}</span>
               </div>
             ))}
           </div>
         </div>
-        <div>
-          <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-white">
-            <Boxes className="h-4 w-4 text-slate-400" /> {t({ en: "Materials", ro: "Materiale", ru: "Материалы" })}
-          </h3>
-          <ul className="mb-3 space-y-2">
+        <div className="ws-sec">
+          <div className="ws-sec-h"><Boxes size={16} aria-hidden="true" />{t({ en: "Materials", ro: "Materiale", ru: "Материалы" })}</div>
+          <div className="ws-list" style={{ gap: 9 }}>
             {mats.map((m, i) => (
-              <li key={i} className="flex items-center gap-2 text-xs text-slate-700 dark:text-[#D4D4D4]">
-                <span className={"flex h-4 w-4 flex-none items-center justify-center rounded-full text-[9px] font-bold " +
-                  (m.st === "in" ? "bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400" : m.st === "arr" ? "bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400" : "bg-accent-100 text-accent-700 dark:bg-accent-500/20 dark:text-accent-400")}>
-                  {m.st === "in" ? "✓" : m.st === "arr" ? "→" : "!"}
-                </span>
-                <span className="flex-1">{m.label}</span>
-              </li>
+              <div key={i} className="ws-mat">
+                <i className={m.st === "ord" ? "ord" : "in"} aria-hidden="true">{m.st === "in" ? "✓" : m.st === "arr" ? "→" : "!"}</i>
+                <span>{m.label}</span>
+              </div>
             ))}
-          </ul>
-          <div className={"rounded-lg px-3 py-2 text-xs font-semibold " + (allReady ? "bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400" : "bg-accent-50 text-accent-700 dark:bg-accent-500/10 dark:text-accent-400")}>
-            {allReady ? t({ en: "Ready to install", ro: "Gata de montaj", ru: "Готово к монтажу" }) : t({ en: "Waiting on 1 line", ro: "Așteaptă 1 poziție", ru: "Ждём 1 позицию" })}
+          </div>
+          <div className={"ws-note " + (allReady ? "ok" : "warn")} style={{ padding: "9px 12px" }}>
+            <div><b>{allReady ? t({ en: "Everything is in stock.", ro: "Totul e pe stoc.", ru: "Всё есть на складе." }) : t({ en: "Waiting on one line.", ro: "Se așteaptă o poziție.", ru: "Ждём одну позицию." })}</b></div>
           </div>
         </div>
       </div>
 
-      {/* field checklist + real photos + signature */}
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-white">{t({ en: "Field checklist", ro: "Listă la fața locului", ru: "Полевой чек-лист" })}</h3>
-          <span className="text-xs font-semibold tabular-nums text-slate-500 dark:text-[#B0B0B0]">{doneN}/5</span>
-        </div>
-        <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-[#242424]">
-          <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: (doneN / 5) * 100 + "%" }} />
-        </div>
-        <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 dark:divide-[#242424] dark:border-[#2C2C2C]">
+      <div className="ws-sec">
+        <div className="ws-sec-h"><ListChecks size={16} aria-hidden="true" />{t({ en: "Site checklist", ro: "Lista de pe teren", ru: "Чек-лист на объекте" })}<span className="ws-aside">{doneN}/5</span></div>
+        <div className="ws-progress" aria-hidden="true"><i style={{ width: (doneN / 5) * 100 + "%" }} /></div>
+        <div className="ws-checks">
           {FIELD_STEPS.map((s) => (
-            <button key={s} type="button" onClick={() => toggleStep(s)}
-              className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm">
-              <span className={"flex h-5 w-5 flex-none items-center justify-center rounded-md " + (steps[s] ? "bg-brand-500 text-white" : "border-2 border-slate-300 dark:border-[#3A3A3A]")}>
-                {steps[s] && <CheckCircle2 className="h-3.5 w-3.5" />}
-              </span>
-              <span className="text-slate-800 dark:text-white">{FLD_LABEL[s][lang] || FLD_LABEL[s].en}</span>
+            <button key={s} type="button" onClick={() => toggleStep(s)} className={"ws-check" + (steps[s] ? " done" : "")} aria-pressed={steps[s]}>
+              <span className="box" aria-hidden="true">{steps[s] && <Check size={13} strokeWidth={3} />}</span>
+              <span className="lbl">{FLD_LABEL[s][lang] || FLD_LABEL[s].en}</span>
             </button>
           ))}
         </div>
-
-        <h3 className="mb-2 mt-5 text-sm font-semibold text-slate-800 dark:text-white">{t({ en: "On-site photos", ro: "Poze de la fața locului", ru: "Фото объекта" })}</h3>
-        <PhotoGallery jobId={job.id} group="install" />
-
-        <h3 className="mb-2 mt-5 text-sm font-semibold text-slate-800 dark:text-white">{t({ en: "Client signature", ro: "Semnătura clientului", ru: "Подпись клиента" })}</h3>
-        <SignaturePad initialValue={signatureUrl} onChange={handleSignature}
-          placeholder={t({ en: "Sign here with a finger, stylus, or mouse", ro: "Semnează aici cu degetul, stylus-ul sau mouse-ul", ru: "Подпишите здесь пальцем, стилусом или мышью" })}
-          clearLabel={t({ en: "Clear", ro: "Șterge", ru: "Очистить" })} />
-        {signed && (
-          <p className="mt-1.5 text-xs font-medium text-brand-600 dark:text-brand-400">
-            {t({ en: "Signed on site", ro: "Semnat la fața locului", ru: "Подписано на объекте" })}
-          </p>
-        )}
       </div>
 
-      <button type="button" onClick={() => downloadStudioDoc("proces-verbal-" + (job.ref || "voltmira"))}
-        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#3A3A3A] dark:text-[#D4D4D4] dark:hover:bg-[#242424]">
-        <FileText className="h-4 w-4" /> {t({ en: "Handover certificate — Print / PDF", ro: "Proces-verbal — Printează / PDF", ru: "Акт приёмки — Печать / PDF" })}
-      </button>
+      <div className="ws-sec">
+        <div className="ws-sec-h"><Camera size={16} aria-hidden="true" />{t({ en: "Photos from site", ro: "Poze de pe teren", ru: "Фото с объекта" })}</div>
+        <PhotoGallery jobId={job.id} group="install" addLabel={t({ en: "Add photo", ro: "Adaugă poză", ru: "Добавить фото" })} />
+      </div>
+
+      <div className="ws-sec">
+        <div className="ws-sec-h"><PenLine size={16} aria-hidden="true" />{t({ en: "Client signature", ro: "Semnătura clientului", ru: "Подпись клиента" })}
+          {signed && <span className="ws-aside ws-good">{t({ en: "Signed on site", ro: "Semnat pe teren", ru: "Подписано на объекте" })}</span>}
+        </div>
+        <SignaturePad initialValue={signatureUrl} onChange={handleSignature}
+          placeholder={t({ en: "Sign here with a finger, stylus or mouse", ro: "Semnați aici cu degetul, stylus-ul sau mouse-ul", ru: "Подпишите здесь пальцем, стилусом или мышью" })}
+          clearLabel={t({ en: "Clear", ro: "Șterge", ru: "Очистить" })} />
+      </div>
+
+      <div className="ws-actions">
+        <button type="button" onClick={() => downloadStudioDoc("proces-verbal-" + (job.ref || "voltmira"))} className="btn ghost sm">
+          <FileText size={15} aria-hidden="true" /> {t({ en: "Handover certificate: print or PDF", ro: "Proces-verbal: printează sau PDF", ru: "Акт приёмки: печать или PDF" })}
+        </button>
+      </div>
 
       <DocReveal lang={lang}>
         <div className="pv-doc">
@@ -329,6 +297,6 @@ export default function InstallationStep({ job, derived, lang }) {
         .pv-doc .doc-list{margin:2px 0 6px;padding-left:18px;font-size:11.5px;color:#333;line-height:1.6}
         .pv-doc .doc-list li{margin:0 0 2px}
       ` }} />
-    </div>
+    </>
   );
 }

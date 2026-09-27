@@ -1,14 +1,14 @@
 "use client";
-// SignaturePad.jsx — a real freehand canvas signature, pointer-events driven
-// (mouse, touch and pen all fire the same pointer* events), saved as a PNG
-// data URL the same way photos.js already saves a captured photo. Uncontrolled
-// by design: it takes `initialValue` (drawn once, on mount) rather than a
-// live-controlled `value`, since a parent re-render must never repaint over
-// an in-progress stroke.
+// SignaturePad.jsx — a freehand canvas signature, pointer-events driven (mouse,
+// touch and pen fire the same events), saved as a PNG data URL the way
+// photos.js saves a photo. Uncontrolled by design: it takes `initialValue`
+// (drawn once, on mount) rather than a live `value`, so a parent re-render
+// can never repaint over a stroke in progress. The pad stays white in dark
+// mode, like paper: the ink is dark and the saved image must print.
 import { useEffect, useRef, useState } from "react";
 import { Eraser } from "lucide-react";
 
-export default function SignaturePad({ initialValue, onChange, height = 140, placeholder, clearLabel }) {
+export default function SignaturePad({ initialValue, onChange, height = 150, placeholder, clearLabel }) {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const drawing = useRef(false);
@@ -26,7 +26,7 @@ export default function SignaturePad({ initialValue, onChange, height = 140, pla
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.lineWidth = 2.4;
-    ctx.strokeStyle = "#0F172A";
+    ctx.strokeStyle = "#142A21";
     ctxRef.current = ctx;
     if (initialValue) {
       const img = new Image();
@@ -40,7 +40,6 @@ export default function SignaturePad({ initialValue, onChange, height = 140, pla
     const rect = canvasRef.current.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
-
   function start(e) {
     e.preventDefault();
     drawing.current = true;
@@ -63,31 +62,22 @@ export default function SignaturePad({ initialValue, onChange, height = 140, pla
     drawing.current = false;
     onChange(canvasRef.current.toDataURL("image/png"));
   }
-
   function clear() {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
+    const rect = canvasRef.current.getBoundingClientRect();
     ctxRef.current.clearRect(0, 0, rect.width, rect.height);
     setEmpty(true);
     onChange(null);
   }
 
   return (
-    <div>
-      <div className="relative overflow-hidden rounded-lg border-2 border-dashed border-slate-300 bg-white dark:border-[#3A3A3A] dark:bg-white">
-        <canvas ref={canvasRef} style={{ height, touchAction: "none" }} className="block w-full cursor-crosshair"
+    <div className="ws-sec">
+      <div className="ws-sign">
+        <canvas ref={canvasRef} style={{ height, touchAction: "none" }}
           onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end} />
-        {empty && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm font-medium text-slate-400">
-            {placeholder}
-          </div>
-        )}
+        {empty && <div className="ws-sign-ph">{placeholder}</div>}
       </div>
       {!empty && (
-        <button type="button" onClick={clear}
-          className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-[#8A8A8A] dark:hover:text-[#D4D4D4]">
-          <Eraser className="h-3.5 w-3.5" /> {clearLabel}
-        </button>
+        <button type="button" onClick={clear} className="ws-link"><Eraser size={14} aria-hidden="true" /> {clearLabel}</button>
       )}
     </div>
   );

@@ -1,8 +1,8 @@
 "use client";
 // app/(app)/studio/jobs/[id]/configure/page.jsx — entry point for the
-// Configuration Workspace (split-screen: wizard left, live engine right).
-// The only file in Studio that imports a real .css file (Tailwind, scoped to
-// this route only — see workspace.css's own header comment).
+// Configuration Workspace: the whole job, step by step, with its live numbers
+// beside it. Styled with the app's own design system (dx.css + workspace.css).
+import "../../../../dx.css";
 import "./workspace.css";
 import { Suspense } from "react";
 import { useParams } from "next/navigation";

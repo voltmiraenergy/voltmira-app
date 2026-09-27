@@ -7,7 +7,8 @@
 // Print/PDF depends on is injected for this whole route already), just
 // reached from here instead of /studio/annex.
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, FileText } from "lucide-react";
+import { CheckCircle2, FileText, Send } from "lucide-react";
+import SegmentedControl from "./SegmentedControl.jsx";
 import { tx, protRows, downloadStudioDoc, DocReveal, useToast } from "../../../studio-kit.jsx";
 
 const D = {
@@ -118,54 +119,49 @@ export default function GridConnectionStep({ job, patch, derived, lang }) {
     [docLang === "en" ? "Earthing arrangement" : "Priză de pământ", `TN-S, R ≤ 4 Ω`, "PE 155 / IEC 62305 (LPS if present)"],
   ];
 
+  const filed = !!job.paperworkFiled;
   return (
-    <div className="space-y-6">
+    <>
       {toast}
-      <div className="rounded-lg border border-slate-200 p-4 dark:border-[#2C2C2C]">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-[#B0B0B0]">
-              {t({ en: "Filing target", ro: "Destinatar dosar", ru: "Куда подаётся" })}
-            </label>
-            <select value={filing} onChange={(e) => setFiling(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#2C2C2C] dark:bg-[#242424] dark:text-white">
-              <optgroup label="Moldova">{FILINGS.MD.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}</optgroup>
-              <optgroup label="România">{FILINGS.RO.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}</optgroup>
-            </select>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-[#B0B0B0]">
-              {t({ en: "Document language", ro: "Limba documentului", ru: "Язык документа" })}
-            </label>
-            <div className="inline-flex gap-1 rounded-lg border border-slate-200 p-1 dark:border-[#2C2C2C]">
-              {["ro", "en"].map((l) => (
-                <button key={l} type="button" onClick={() => setDocLang(l)}
-                  className={"rounded-md px-4 py-1.5 text-sm font-semibold uppercase transition-colors " +
-                    (docLang === l ? "ws-fill-brand bg-brand-600 text-white" : "text-slate-600 dark:text-[#C4C4C4]")}>{l}</button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-[#B0B0B0]">
-              {t({ en: "System", ro: "Sistem", ru: "Система" })}
-            </label>
-            <div className="text-sm font-medium text-slate-800 dark:text-white">
-              {eng.dcKw.toFixed(2)} kWp · {eng.modules} {docLang === "en" ? "modules" : "module"} · {phases === 3 ? "3~ 400 V" : "1~ 230 V"}{batt ? ` · ${battKwh} kWh` : ""}
-            </div>
+      <div className={"ws-note " + (filed ? "ok" : "warn")}>
+        {filed ? <CheckCircle2 size={16} aria-hidden="true" /> : <Send size={16} aria-hidden="true" />}
+        <div>
+          <b>{filed ? t({ en: "Filed with the grid operator.", ro: "Depus la operatorul de rețea.", ru: "Подано оператору сети." }) : t({ en: "Not filed yet.", ro: "Nedepus încă.", ru: "Ещё не подано." })}</b>{" "}
+          {filed
+            ? t({ en: "The job moves on to installation.", ro: "Lucrarea trece la montaj.", ru: "Объект переходит к монтажу." })
+            : t({ en: "Print the annex below, send it with the connection request, then mark it as filed.", ro: "Printează anexa de mai jos, trimite-o cu cererea de racordare, apoi marcheaz-o ca depusă.", ru: "Распечатайте приложение ниже, отправьте с заявкой на подключение и отметьте как поданное." })}
+        </div>
+      </div>
+
+      <div className="ws-cols-3">
+        <div>
+          <label className="ws-label" htmlFor="ws-filing">{t({ en: "Send to", ro: "Destinatar", ru: "Куда подаётся" })}</label>
+          <select id="ws-filing" value={filing} onChange={(e) => setFiling(e.target.value)} className="ws-select">
+            <optgroup label="Moldova">{FILINGS.MD.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}</optgroup>
+            <optgroup label="România">{FILINGS.RO.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}</optgroup>
+          </select>
+        </div>
+        <div>
+          <span className="ws-label">{t({ en: "Document language", ro: "Limba documentului", ru: "Язык документа" })}</span>
+          <SegmentedControl value={docLang} onChange={setDocLang} label={t({ en: "Document language", ro: "Limba documentului", ru: "Язык документа" })}
+            options={[{ value: "ro", label: "Română" }, { value: "en", label: "English" }]} />
+        </div>
+        <div>
+          <span className="ws-label">{t({ en: "System on the annex", ro: "Sistemul din anexă", ru: "Система в приложении" })}</span>
+          <div className="ws-value">
+            {eng.dcKw.toFixed(2)} kWp, {eng.modules} {t({ en: "modules", ro: "module", ru: "модулей" })}, {phases === 3 ? "3~ 400 V" : "1~ 230 V"}{batt ? `, ${battKwh} kWh` : ""}
           </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => { const v = !job.paperworkFiled; patch({ paperworkFiled: v }); fire(v ? t({ en: "Marked as filed", ro: "Marcat ca depus", ru: "Отмечено как поданное" }) : t({ en: "Marked as not filed", ro: "Marcat ca nedepus", ru: "Отмечено как не поданное" })); }}
-          className={"inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors " +
-            (job.paperworkFiled ? "ws-fill-brand bg-brand-600 text-white" : "border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-[#3A3A3A] dark:text-[#D4D4D4] dark:hover:bg-[#242424]")}>
-          <CheckCircle2 className="h-4 w-4" />
-          {job.paperworkFiled ? t({ en: "Filed with the DSO", ro: "Depus la operator", ru: "Подано оператору" }) : t({ en: "Mark as filed with the DSO", ro: "Marchează ca depus la operator", ru: "Отметить как поданное" })}
+      <div className="ws-actions">
+        <button type="button" className={"btn sm " + (filed ? "ghost" : "primary")}
+          onClick={() => { const v = !filed; patch({ paperworkFiled: v }); fire(v ? t({ en: "Marked as filed", ro: "Marcat ca depus", ru: "Отмечено как поданное" }) : t({ en: "Marked as not filed", ro: "Marcat ca nedepus", ru: "Отмечено как не поданное" })); }}>
+          <CheckCircle2 size={15} aria-hidden="true" />
+          {filed ? t({ en: "Undo: not filed", ro: "Anulează: nedepus", ru: "Отменить: не подано" }) : t({ en: "Mark as filed", ro: "Marchează ca depus", ru: "Отметить как поданное" })}
         </button>
-        <button type="button" onClick={() => downloadStudioDoc("anexa-tehnica")}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#3A3A3A] dark:text-[#D4D4D4] dark:hover:bg-[#242424]">
-          <FileText className="h-4 w-4" /> {t({ en: "Print / PDF", ro: "Printează / PDF", ru: "Печать / PDF" })}
+        <button type="button" className="btn ghost sm" onClick={() => downloadStudioDoc("anexa-tehnica")}>
+          <FileText size={15} aria-hidden="true" /> {t({ en: "Print or save as PDF", ro: "Printează sau salvează PDF", ru: "Печать или PDF" })}
         </button>
       </div>
 
@@ -230,7 +226,7 @@ export default function GridConnectionStep({ job, patch, derived, lang }) {
           <p className="doc-note">{d("date")}: {new Date().toLocaleDateString(loc)} · {d("gen")}</p>
         </div>
       </DocReveal>
-    </div>
+    </>
   );
 }
 

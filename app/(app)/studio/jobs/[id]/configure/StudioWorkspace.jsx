@@ -1,42 +1,44 @@
 "use client";
-// app/(app)/studio/jobs/[id]/configure/StudioWorkspace.jsx — the container.
-// Split-screen: a live ticker on top, a 4-step wizard on the left (~60%),
-// and a sticky live-engine summary on the right (~40%). Every number here is
-// real — the same job object, catalog and engine the rest of Studio (and the
-// Job Hub) already use, so picking equipment here shows up back on the Job
-// Hub, in the annex's equipment schedule, and in payments immediately.
+// app/(app)/studio/jobs/[id]/configure/StudioWorkspace.jsx — the container:
+// a header, the job's seven steps as one line (read the same way as the
+// dashboard's lead-to-live line: where this job stands, at a glance), the
+// open step, and the live numbers beside it. Every number is real: the same
+// job object, catalog and engine the rest of Studio (and the Job Hub) use, so
+// picking equipment here shows up on the Job Hub, in the annex and in
+// payments immediately.
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, MapPin, Zap, Sun } from "lucide-react";
 import { PREVIEW_BASE } from "../../../features.js";
 import {
-  useLang, tx, useStudioJobs, engineSettings, systemFor, jobCostEur, stringSizing,
+  useLang, tx, NUM, useStudioJobs, engineSettings, systemFor, jobCostEur, stringSizing,
 } from "../../../studio-kit.jsx";
 import { quote, effectiveYield } from "../../../_engine.js";
-import WorkspaceHeader from "./WorkspaceHeader.jsx";
 import LiveEngineSidebar from "./LiveEngineSidebar.jsx";
-import WizardSteps from "./WizardSteps.jsx";
+import WizardSteps, { JobJourney } from "./WizardSteps.jsx";
 
 export default function StudioWorkspace({ jobId }) {
   const lang = useLang();
+  const t = (o) => tx(o, lang);
   const { jobs, updateJob, hydrated } = useStudioJobs();
   const job = jobs.find((j) => j.id === jobId);
   const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
+  // Steps that save straight to storage (checklist ticks, readings) bump this
+  // so the journey line above them updates as they happen.
+  const [rev, setRev] = useState(0);
+  const touch = () => setRev((r) => r + 1);
   // Deep-link from the Job Hub's outstanding-items list ("this job's
-  // paperwork isn't filed" -> jump straight to the Grid Connection step)
-  // instead of landing on Site & Roof and making the installer find it.
+  // paperwork isn't filed" -> straight to Grid Connection).
   useEffect(() => {
     const n = +searchParams.get("step");
     if (Number.isInteger(n) && n >= 0 && n <= 6) setStep(n);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Same reasoning as the Job Hub page: the only things that change this
-  // job's engine inputs happen through updateJob on THIS page, so memoizing
-  // on [job] alone is correct (and stops re-running simulate() on every
-  // unrelated render).
+  // Only updateJob on THIS page changes the engine inputs, so [job] is the
+  // right dependency (and keeps simulate() off unrelated renders).
   const derived = useMemo(() => {
     if (!job) return null;
     const sys = systemFor(job);
@@ -63,29 +65,41 @@ export default function StudioWorkspace({ jobId }) {
 
   if (!job) {
     return (
-      <div className="max-w-lg mx-auto mt-10 rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-[#2C2C2C] dark:bg-[#1E1E1E]">
-        <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-accent-500" />
-        <p className="mb-4 text-sm text-slate-600 dark:text-[#C4C4C4]">
-          {tx({ en: "Job not found.", ro: "Lucrarea nu a fost găsită.", ru: "Объект не найден." }, lang)}
-        </p>
-        <Link href={PREVIEW_BASE} className="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
-          {tx({ en: "Back to Studio", ro: "Înapoi la Studio", ru: "Назад в Studio" }, lang)}
-        </Link>
+      <div className="dx ws">
+        <div className="ws-card" style={{ maxWidth: 460, margin: "40px auto", textAlign: "center" }}>
+          <AlertTriangle size={26} style={{ color: "var(--amber-ink)", margin: "0 auto 10px", display: "block" }} />
+          <p style={{ color: "var(--muted)", marginBottom: 16 }}>{t({ en: "Job not found.", ro: "Lucrarea nu a fost găsită.", ru: "Объект не найден." })}</p>
+          <Link href={PREVIEW_BASE} className="btn primary sm">{t({ en: "Back to Studio", ro: "Înapoi la Studio", ru: "Назад в Studio" })}</Link>
+        </div>
       </div>
     );
   }
 
+  const place = String(job.address || "").split(",").slice(0, 2).join(",").trim();
   return (
-    <div className="bg-slate-50 dark:bg-[#121212] -mx-1 rounded-2xl">
-      <WorkspaceHeader job={job} derived={derived} lang={lang} />
-      <div className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-5 p-4">
-        <WizardSteps
-          job={job} patch={patch} derived={derived} lang={lang}
-          step={step} setStep={setStep}
-        />
-        <div className="lg:sticky lg:top-4 lg:self-start">
-          <LiveEngineSidebar job={job} derived={derived} lang={lang} />
-        </div>
+    <div className="dx ws">
+      <div>
+        <Link href={`${PREVIEW_BASE}/jobs/${job.id}`} className="pv-back">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+          {t({ en: "Job overview", ro: "Rezumatul lucrării", ru: "Обзор объекта" })}
+        </Link>
+        <header className="ws-head">
+          <div className="ws-head-tx">
+            <h1>{job.name || "—"}</h1>
+            <div className="ws-head-sub">
+              {place && <span><MapPin size={14} aria-hidden="true" />{place}</span>}
+              <span><Zap size={14} aria-hidden="true" /><b>{(+job.kw || 0).toFixed(1)} kWp</b>{(+job.batteryKwh || 0) > 0 ? ` + ${job.batteryKwh} kWh` : ""}</span>
+              <span><Sun size={14} aria-hidden="true" /><b>{NUM(derived?.annualKwh || 0)} kWh</b>{t({ en: "a year", ro: "pe an", ru: "в год" })}</span>
+            </div>
+          </div>
+        </header>
+      </div>
+
+      <JobJourney job={job} derived={derived} lang={lang} step={step} setStep={setStep} rev={rev} />
+
+      <div className="ws-grid">
+        <WizardSteps job={job} patch={patch} derived={derived} lang={lang} step={step} setStep={setStep} touch={touch} />
+        <LiveEngineSidebar job={job} derived={derived} lang={lang} />
       </div>
     </div>
   );

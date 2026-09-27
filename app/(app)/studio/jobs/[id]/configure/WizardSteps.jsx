@@ -1,13 +1,16 @@
 "use client";
-// WizardSteps.jsx — the left panel: 4 tabs (Site & Roof, Equipment,
-// Financials, Documents), each writing straight to the real job via `patch`
-// (no separate save step — matches how every other Studio surface behaves).
+// WizardSteps.jsx — the job's seven steps. JobJourney draws them as one line
+// (node, label, the step's own figure, a short status), read the same way as
+// the dashboard's lead-to-live line; clicking a stage opens it below. Steps
+// can be visited in any order: this is a job's workspace, not a checkout.
+// Each step writes straight to the real job via `patch`, no separate save.
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import {
-  MapPin, Zap, Euro as EuroIcon, FileText, CheckCircle2,
-  ChevronRight, Plug, HardHat, Activity,
+  MapPin, Zap, Euro as EuroIcon, FileText, Check, ChevronRight, Plug, HardHat, Activity, FileCheck2, ClipboardCheck, LineChart,
 } from "lucide-react";
-import { tx, jobStageContext, isStepDone } from "../../../studio-kit.jsx";
+import { tx, jobStageContext, isStepDone, readJSON, installKey, actualsKey, systemFor } from "../../../studio-kit.jsx";
+import { p50Row } from "../../../fleet-data.js";
 import SiteRoofStep from "./SiteRoofStep.jsx";
 import EquipmentStep from "./EquipmentStep.jsx";
 import FinancialsStep from "./FinancialsStep.jsx";
@@ -15,136 +18,192 @@ import GridConnectionStep from "./GridConnectionStep.jsx";
 import InstallationStep from "./InstallationStep.jsx";
 import MonitoringStep from "./MonitoringStep.jsx";
 
-const TABS = [
-  { key: 0, icon: MapPin, label: { en: "Site & Roof", ro: "Amplasament", ru: "Участок и крыша" } },
-  { key: 1, icon: Zap, label: { en: "Equipment", ro: "Echipament", ru: "Оборудование" } },
-  { key: 2, icon: EuroIcon, label: { en: "Financials", ro: "Financiar", ru: "Финансы" } },
-  { key: 3, icon: Plug, label: { en: "Grid Connection", ro: "Racordare", ru: "Подключение" } },
-  { key: 4, icon: HardHat, label: { en: "Installation", ro: "Montaj", ru: "Монтаж" } },
-  { key: 5, icon: Activity, label: { en: "Monitoring", ro: "Monitorizare", ru: "Мониторинг" } },
-  { key: 6, icon: FileText, label: { en: "Documents", ro: "Documente", ru: "Документы" } },
+export const STEPS = [
+  { key: 0, icon: MapPin, label: { en: "Site & roof", ro: "Amplasament", ru: "Участок и крыша" },
+    desc: { en: "Where the system goes and how the roof faces the sun. Pitch, orientation and shading set this job's yield.", ro: "Unde se montează sistemul și cum e orientat acoperișul. Înclinarea, orientarea și umbrirea stabilesc producția lucrării.", ru: "Где стоит система и как крыша смотрит на солнце. Уклон, ориентация и затенение задают выработку объекта." } },
+  { key: 1, icon: Zap, label: { en: "Equipment", ro: "Echipament", ru: "Оборудование" },
+    desc: { en: "Panels, inverter and battery from your supplier catalog. Tick two or more in a list to compare them side by side.", ro: "Panouri, invertor și baterie din catalogul furnizorilor. Bifează două sau mai multe dintr-o listă ca să le compari.", ru: "Панели, инвертор и батарея из каталога поставщиков. Отметьте два или больше в списке, чтобы сравнить их." } },
+  { key: 2, icon: EuroIcon, label: { en: "Financials", ro: "Financiar", ru: "Финансы" },
+    desc: { en: "How the client pays, and what the system does for their cash over 25 years.", ro: "Cum plătește clientul și ce face sistemul pentru banii lui în 25 de ani.", ru: "Как платит клиент и что система даёт его деньгам за 25 лет." } },
+  { key: 3, icon: Plug, label: { en: "Grid connection", ro: "Racordare", ru: "Подключение" },
+    desc: { en: "The technical annex for the grid operator, built from this job's equipment, ready to print and file.", ro: "Anexa tehnică pentru operatorul de rețea, construită din echipamentul lucrării, gata de printat și depus.", ru: "Техническое приложение для оператора сети из оборудования объекта, готово к печати и подаче." } },
+  { key: 4, icon: HardHat, label: { en: "Installation", ro: "Montaj", ru: "Монтаж" },
+    desc: { en: "Put the job in the week, check materials, run the site checklist and get the handover signed.", ro: "Programează lucrarea, verifică materialele, parcurge lista de pe teren și obține semnătura la predare.", ru: "Поставьте объект в неделю, проверьте материалы, пройдите чек-лист и получите подпись при сдаче." } },
+  { key: 5, icon: Activity, label: { en: "Monitoring", ro: "Monitorizare", ru: "Мониторинг" },
+    desc: { en: "Monthly production against what the quote promised, warranties and service tickets.", ro: "Producția lunară față de ce a promis oferta, garanții și tichete de service.", ru: "Помесячная выработка против обещанного в расчёте, гарантии и сервисные заявки." } },
+  { key: 6, icon: FileText, label: { en: "Documents", ro: "Documente", ru: "Документы" },
+    desc: { en: "What's ready for this job and what's still missing before it's complete.", ro: "Ce e gata pentru această lucrare și ce mai lipsește până la final.", ru: "Что готово по объекту и чего ещё не хватает до завершения." } },
 ];
 
-// A real horizontal stepper — numbered/iconed circles on a connecting line,
-// not squished text links — even though the steps can still be visited in
-// any order (this is a configuration workspace, not a strictly linear
-// checkout flow), so it communicates "7 areas of this job" rather than
-// implying you must finish one before the next unlocks.
-export default function WizardSteps({ job, patch, derived, lang, step, setStep }) {
-  // Real per-tab completion — same localStorage-backed signals the Job Hub's
-  // pipeline stage already reads (jobStageContext/isStepDone), just cheap
-  // enough to call once per render (a handful of readJSON calls, no engine
-  // math) rather than memoized: switching tabs already re-renders this via
-  // setStep, which is exactly when a just-finished tab's circle should flip.
+/** The figure and status each stage shows on the line, all from the job's own data. */
+function stageFacts(job, derived, lang) {
+  const t = (o) => tx(o, lang);
   const ctx = jobStageContext(job.id);
+  const sys = derived?.sys || systemFor(job);
+  const fin = job.financing;
+  const install = readJSON(installKey(job.id), {}) || {};
+  const checks = Object.values(install.steps || {}).filter(Boolean).length;
+  const actuals = readJSON(actualsKey(job.id), null);
+  let ytd = null;
+  if (Array.isArray(actuals)) {
+    const p50 = p50Row(job);
+    let a = 0, p = 0;
+    actuals.forEach((v, i) => { const n = Number(v); if (v !== "" && v != null && Number.isFinite(n)) { a += n; p += p50[i] || 0; } });
+    if (p > 0) ytd = Math.round((a / p) * 100);
+  }
+  const docsReady = [job.roofFactor != null, !!job.panelId && !!job.inverterId, !!fin, !!job.paperworkFiled].filter(Boolean).length;
+  const payback = derived?.results?.e?.payback;
+  const yrs = t({ en: "yrs", ro: "ani", ru: "лет" });
+  return [
+    job.roofFactor != null
+      ? { v: `${Math.round(job.roofFactor * 100)}%`, sub: t({ en: "of the ideal yield", ro: "din producția ideală", ru: "от идеальной выработки" }) }
+      : { v: "—", sub: t({ en: "Survey the roof", ro: "Măsoară acoperișul", ru: "Осмотрите крышу" }) },
+    { v: `${(+job.kw || 0).toFixed(1)} kWp`, sub: job.inverterId ? `${sys.panel.brand}, ${sys.inverter.brand}` : t({ en: "Pick an inverter", ro: "Alege un invertor", ru: "Выберите инвертор" }) },
+    { v: payback == null ? "—" : `${payback.toFixed(1)} ${yrs}`, sub: !fin ? t({ en: "Choose how they pay", ro: "Alege cum plătește", ru: "Выберите способ оплаты" })
+      : fin.type === "credit" ? t({ en: `Green credit, ${fin.months} mo`, ro: `Credit verde, ${fin.months} luni`, ru: `Зелёный кредит, ${fin.months} мес.` })
+      : t({ en: "Paid in cash", ro: "Plată cash", ru: "Оплата наличными" }) },
+    job.paperworkFiled
+      ? { v: t({ en: "Filed", ro: "Depus", ru: "Подано" }), sub: t({ en: "with the grid operator", ro: "la operatorul de rețea", ru: "оператору сети" }) }
+      : { v: t({ en: "To file", ro: "De depus", ru: "Подать" }), sub: t({ en: "The annex is ready", ro: "Anexa e gata", ru: "Приложение готово" }) },
+    { v: `${checks}/5`, sub: ctx.signed ? t({ en: "Signed on site", ro: "Semnat pe teren", ru: "Подписано на объекте" }) : t({ en: "site checks done", ro: "verificări făcute", ru: "проверок сделано" }) },
+    ytd != null
+      ? { v: `${ytd}%`, sub: t({ en: "of P50 this year", ro: "din P50 anul acesta", ru: "от P50 за год" }) }
+      : { v: "—", sub: t({ en: "No readings yet", ro: "Fără citiri încă", ru: "Показаний пока нет" }) },
+    { v: `${docsReady}/4`, sub: t({ en: "ready to hand over", ro: "gata de predat", ru: "готово к передаче" }) },
+  ];
+}
+
+// `rev` is only a re-render trigger: stage facts read storage that the
+// Installation and Monitoring steps write without changing the job object.
+// eslint-disable-next-line no-unused-vars
+export function JobJourney({ job, derived, lang, step, setStep, rev }) {
+  const t = (o) => tx(o, lang);
+  const ctx = jobStageContext(job.id);
+  const facts = stageFacts(job, derived, lang);
+  const doneN = STEPS.filter((s) => isStepDone(s.key, job, ctx)).length;
+  // On a narrow screen the line scrolls sideways: keep the open step in view.
+  const lineRef = useRef(null);
+  useEffect(() => {
+    const line = lineRef.current, on = line?.querySelector(".ws-stage.on");
+    if (line && on && line.scrollWidth > line.clientWidth) line.scrollTo({ left: Math.max(0, on.offsetLeft - 16), behavior: "smooth" });
+  }, [step]);
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#2C2C2C] dark:bg-[#1E1E1E]">
-      <div className="flex items-start overflow-x-auto px-4 pb-4 pt-5 dark:border-[#2C2C2C]">
-        {TABS.map((tab, i) => {
-          const Icon = tab.icon;
-          const on = step === tab.key;
-          const done = !on && isStepDone(tab.key, job, ctx);
+    <section className="ws-journey" aria-labelledby="ws-journey-h">
+      <div className="ws-journey-head">
+        <h2 id="ws-journey-h">{t({ en: "The job, step by step", ro: "Lucrarea, pas cu pas", ru: "Объект, шаг за шагом" })}</h2>
+        <p>{t({ en: `${doneN} of 6 steps done. Everything saves as you work; open any step, in any order.`, ro: `${doneN} din 6 pași gata. Totul se salvează pe loc; deschide orice pas, în orice ordine.`, ru: `Готово шагов: ${doneN} из 6. Всё сохраняется сразу; открывайте шаги в любом порядке.` })}</p>
+      </div>
+      <ol className="ws-line" ref={lineRef}>
+        {STEPS.map((s, i) => {
+          const on = step === s.key;
+          const done = isStepDone(s.key, job, ctx);
+          const f = facts[i];
           return (
-            <div key={tab.key} className="flex flex-1 items-center">
-              <button type="button" onClick={() => setStep(tab.key)} className="group flex flex-none flex-col items-center gap-1.5">
-                <span className={"flex h-9 w-9 flex-none items-center justify-center rounded-full border-2 transition-all " +
-                  (on ? "border-brand-600 bg-brand-600 text-white shadow-[0_0_0_4px_var(--color-brand-100)] dark:shadow-[0_0_0_4px_rgba(79,181,132,.22)]"
-                    : done ? "border-brand-500 bg-brand-500 text-white"
-                    : "border-slate-200 bg-white text-slate-400 group-hover:border-slate-300 group-hover:text-slate-600 dark:border-[#2C2C2C] dark:bg-[#242424] dark:text-[#8A8A8A]")}>
-                  {done ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
-                </span>
-                <span className={"whitespace-nowrap text-[11px] font-semibold transition-colors " +
-                  (on ? "text-brand-700 underline decoration-2 underline-offset-4 dark:text-brand-400"
-                    : done ? "text-brand-600 dark:text-brand-400"
-                    : "text-slate-400 group-hover:text-slate-600 dark:text-[#8A8A8A] dark:group-hover:text-[#C4C4C4]")}>
-                  {tab.label[lang] || tab.label.en}
-                </span>
+            <li key={s.key} className={"ws-stage" + (on ? " on" : "") + (done ? " done" : " todo")}>
+              <span className="ws-node" aria-hidden="true">{done && !on ? <Check size={9} strokeWidth={4} /> : null}</span>
+              {i < STEPS.length - 1 && <span className="ws-join" aria-hidden="true" />}
+              <button type="button" className="ws-stage-in" onClick={() => setStep(s.key)} aria-current={on ? "step" : undefined}>
+                <span className="ws-stage-lbl">{s.label[lang] || s.label.en}</span>
+                <b className="ws-stage-v">{f.v}</b>
+                <span className="ws-stage-sub">{f.sub}</span>
               </button>
-              {i < TABS.length - 1 && <span className="mx-1.5 h-0.5 min-w-[14px] flex-1 rounded-full bg-slate-100 dark:bg-[#242424]" style={{ marginBottom: 18 }} />}
-            </div>
+            </li>
           );
         })}
-      </div>
-      {/* key={step} forces a remount on tab switch, which is what triggers
-          the ws-step-enter fade/slide defined in workspace.css — a real CSS
-          transition, not a fake network-loading delay. */}
-      <div key={step} className="ws-step-enter border-t border-slate-100 p-5 dark:border-[#242424]">
+      </ol>
+    </section>
+  );
+}
+
+export default function WizardSteps({ job, patch, derived, lang, step, setStep, touch }) {
+  const s = STEPS[step] || STEPS[0];
+  const Icon = s.icon;
+  return (
+    <section className="dx-card ws-step" aria-labelledby="ws-step-h">
+      <header className="ws-step-head">
+        <span className="ws-step-ic" aria-hidden="true"><Icon size={18} /></span>
+        <div>
+          <h2 id="ws-step-h">{s.label[lang] || s.label.en}</h2>
+          <p>{s.desc[lang] || s.desc.en}</p>
+        </div>
+        <span className="ws-step-no">{tx({ en: `Step ${step + 1} of 7`, ro: `Pasul ${step + 1} din 7`, ru: `Шаг ${step + 1} из 7` }, lang)}</span>
+      </header>
+      {/* key={step}: a fresh mount per step, which also replays the short fade-in */}
+      <div key={step} className="ws-step-body">
         {step === 0 && <SiteRoofStep job={job} patch={patch} lang={lang} />}
         {step === 1 && <EquipmentStep job={job} patch={patch} derived={derived} lang={lang} />}
         {step === 2 && <FinancialsStep job={job} patch={patch} derived={derived} lang={lang} />}
         {step === 3 && <GridConnectionStep job={job} patch={patch} derived={derived} lang={lang} />}
-        {step === 4 && <InstallationStep job={job} derived={derived} lang={lang} />}
-        {step === 5 && <MonitoringStep job={job} lang={lang} />}
-        {step === 6 && <DocumentsStep job={job} derived={derived} lang={lang} setStep={setStep} />}
+        {step === 4 && <InstallationStep job={job} derived={derived} lang={lang} touch={touch} />}
+        {step === 5 && <MonitoringStep job={job} lang={lang} touch={touch} />}
+        {step === 6 && <DocumentsStep job={job} lang={lang} setStep={setStep} />}
       </div>
-    </div>
+    </section>
   );
 }
 
 /* --------------------------------------------------------------- Documents */
 function ChecklistRow({ done, label, onClick }) {
   return (
-    <button type="button" onClick={onClick}
-      className="flex w-full items-center gap-3 border-b border-slate-100 py-3 text-left last:border-b-0 dark:border-[#242424]">
-      <span className={"flex h-5 w-5 flex-none items-center justify-center rounded-full " +
-        (done ? "bg-brand-500 text-white" : "border-2 border-slate-300 dark:border-[#3A3A3A]")}>
-        {done && <CheckCircle2 className="h-3.5 w-3.5" />}
-      </span>
-      <span className={"flex-1 text-sm " + (done ? "text-slate-400 line-through dark:text-[#8A8A8A]" : "text-slate-800 dark:text-white")}>{label}</span>
-      <ChevronRight className="h-4 w-4 flex-none text-slate-400" />
+    <button type="button" onClick={onClick} className={"ws-check" + (done ? " done" : "")}>
+      <span className="box" aria-hidden="true">{done && <Check size={13} strokeWidth={3} />}</span>
+      <span className="lbl">{label}</span>
+      <ChevronRight size={16} className="go" aria-hidden="true" />
     </button>
   );
 }
 
-function DocumentsStep({ job, derived, lang, setStep }) {
+function DocumentsStep({ job, lang, setStep }) {
   const t = (o) => tx(o, lang);
-  const surveyed = job.roofFactor != null;
-  const equipped = !!job.panelId && !!job.inverterId;
-  const financed = !!job.financing;
-  const filed = !!job.paperworkFiled;
-
+  const items = [
+    [job.roofFactor != null, 0, { en: "Site surveyed: roof pitch, orientation and shading", ro: "Vizită făcută: înclinare, orientare și umbrire", ru: "Осмотр проведён: уклон, ориентация и затенение" }],
+    [!!job.panelId && !!job.inverterId, 1, { en: "Panels and inverter chosen", ro: "Panouri și invertor alese", ru: "Панели и инвертор выбраны" }],
+    [!!job.financing, 2, { en: "Payment method set", ro: "Metoda de plată stabilită", ru: "Способ оплаты задан" }],
+    [!!job.paperworkFiled, 3, { en: "Grid-connection file sent to the operator", ro: "Dosarul de racordare trimis operatorului", ru: "Заявка на подключение отправлена оператору" }],
+  ];
+  const done = items.filter(([d]) => d).length;
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="mb-1 text-sm font-semibold text-slate-800 dark:text-white">{t({ en: "Readiness checklist", ro: "Listă de verificare", ru: "Чек-лист готовности" })}</h3>
+    <>
+      <div className="ws-sec">
+        <div className="ws-sec-h">{t({ en: "Ready to complete", ro: "Gata de finalizare", ru: "Готовность" })}<span className="ws-aside">{done}/4</span></div>
+        <div className="ws-progress" aria-hidden="true"><i style={{ width: (done / 4) * 100 + "%" }} /></div>
+        <div className="ws-checks">
+          {items.map(([d, to, label]) => <ChecklistRow key={to} done={d} onClick={() => setStep(to)} label={t(label)} />)}
+        </div>
+      </div>
+
+      <div className="ws-sec">
+        <div className="ws-sec-h">{t({ en: "Documents this job produces", ro: "Documentele acestei lucrări", ru: "Документы этого объекта" })}</div>
+        <div className="ws-docs">
+          <button type="button" onClick={() => setStep(3)} className="ws-doc">
+            <FileCheck2 size={20} aria-hidden="true" />
+            <b>{t({ en: "Technical annex", ro: "Anexă tehnică", ru: "Техническое приложение" })}</b>
+            <small>{t({ en: "Single-line diagram and equipment schedule, for the grid operator", ro: "Schemă monofilară și borderou de echipamente, pentru operatorul de rețea", ru: "Однолинейная схема и спецификация, для оператора сети" })}</small>
+          </button>
+          <button type="button" onClick={() => setStep(4)} className="ws-doc">
+            <ClipboardCheck size={20} aria-hidden="true" />
+            <b>{t({ en: "Handover certificate", ro: "Proces-verbal de predare", ru: "Акт приёмки" })}</b>
+            <small>{t({ en: "Commissioning checks and the client's signature", ro: "Verificări la punerea în funcțiune și semnătura clientului", ru: "Проверки при вводе и подпись клиента" })}</small>
+          </button>
+          <button type="button" onClick={() => setStep(5)} className="ws-doc">
+            <LineChart size={20} aria-hidden="true" />
+            <b>{t({ en: "Performance report", ro: "Raport de performanță", ru: "Отчёт о выработке" })}</b>
+            <small>{t({ en: "Actual production against P50, and warranties", ro: "Producția reală față de P50 și garanțiile", ru: "Фактическая выработка против P50 и гарантии" })}</small>
+          </button>
+        </div>
+      </div>
+
+      <div className="ws-note">
+        <FileText size={16} aria-hidden="true" />
         <div>
-          <ChecklistRow done={surveyed} onClick={() => setStep(0)} label={t({ en: "Site surveyed (roof pitch, azimuth, shading)", ro: "Vizită efectuată (înclinare, orientare, umbrire)", ru: "Осмотр проведён (уклон, ориентация, затенение)" })} />
-          <ChecklistRow done={equipped} onClick={() => setStep(1)} label={t({ en: "Panels and inverter selected", ro: "Panouri și invertor selectate", ru: "Панели и инвертор выбраны" })} />
-          <ChecklistRow done={financed} onClick={() => setStep(2)} label={t({ en: "Financing option set", ro: "Opțiune de finanțare setată", ru: "Способ финансирования задан" })} />
-          <ChecklistRow done={filed} onClick={() => setStep(3)} label={t({ en: "Grid-connection paperwork filed", ro: "Dosar de racordare depus", ru: "Заявка на подключение подана" })} />
-        </div>
-      </div>
-
-      <div>
-        <h3 className="mb-2 text-sm font-semibold text-slate-800 dark:text-white">{t({ en: "Documents produced by this job", ro: "Documente generate de această lucrare", ru: "Документы этого объекта" })}</h3>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <button type="button" onClick={() => setStep(3)} className="rounded-lg border border-slate-200 p-3 text-left transition-colors hover:border-brand-400 dark:border-[#2C2C2C]">
-            <div className="text-sm font-semibold text-slate-800 dark:text-white">{t({ en: "Technical annex", ro: "Anexă tehnică", ru: "Техническое приложение" })}</div>
-            <div className="text-xs text-slate-500 dark:text-[#B0B0B0]">{t({ en: "Single-line diagram, equipment schedule", ro: "Schemă monofilară, borderou echipamente", ru: "Однолинейная схема, спецификация" })}</div>
-          </button>
-          <button type="button" onClick={() => setStep(4)} className="rounded-lg border border-slate-200 p-3 text-left transition-colors hover:border-brand-400 dark:border-[#2C2C2C]">
-            <div className="text-sm font-semibold text-slate-800 dark:text-white">{t({ en: "Handover certificate", ro: "Proces-verbal de predare", ru: "Акт приёмки" })}</div>
-            <div className="text-xs text-slate-500 dark:text-[#B0B0B0]">{t({ en: "Commissioning checks, signature", ro: "Verificări la PIF, semnătură", ru: "Проверки, подпись" })}</div>
-          </button>
-          <button type="button" onClick={() => setStep(5)} className="rounded-lg border border-slate-200 p-3 text-left transition-colors hover:border-brand-400 dark:border-[#2C2C2C]">
-            <div className="text-sm font-semibold text-slate-800 dark:text-white">{t({ en: "Performance report", ro: "Raport de performanță", ru: "Отчёт о производительности" })}</div>
-            <div className="text-xs text-slate-500 dark:text-[#B0B0B0]">{t({ en: "Actual vs P50, warranties", ro: "Real vs P50, garanții", ru: "Факт vs P50, гарантии" })}</div>
-          </button>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-[#2C2C2C] dark:bg-[#242424]/50">
-        <p className="mb-3 text-xs leading-relaxed text-slate-600 dark:text-[#B0B0B0]">
           {t({
-            en: "Studio is a preview — it doesn't generate a client-facing proposal itself. The documents above are ready to attach to a filing or hand to the client; the real, sendable proposal is built in Projects.",
-            ro: "Studio este o previzualizare — nu generează el însuși o ofertă pentru client. Documentele de mai sus sunt gata de atașat la un dosar sau predate clientului; oferta reală, trimisă clientului, se construiește în Oferte.",
-            ru: "Studio — это превью, оно само не создаёт предложение для клиента. Документы выше готовы для подачи или передачи клиенту; настоящее предложение собирается в разделе «Проекты».",
-          })}
-        </p>
-        <Link href="/projects" className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-white dark:border-[#3A3A3A] dark:text-[#D4D4D4] dark:hover:bg-[#242424]">
-          {t({ en: "Build the real proposal", ro: "Construiește oferta reală", ru: "Собрать реальное предложение" })}
-        </Link>
+            en: "The proposal the client signs is built in Quotes, from the same numbers you set here.",
+            ro: "Oferta pe care o semnează clientul se construiește în Oferte, din aceleași cifre setate aici.",
+            ru: "Предложение, которое подписывает клиент, собирается в разделе «Предложения» из тех же цифр.",
+          })}{" "}
+          <Link href="/projects" style={{ color: "var(--green)", fontWeight: 650 }}>{t({ en: "Open Quotes", ro: "Deschide Oferte", ru: "Открыть предложения" })}</Link>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
