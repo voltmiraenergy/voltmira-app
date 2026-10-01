@@ -1,0 +1,169 @@
+/* app/(app)/portfolios/portfolio.css — the portfolio pages. Selectors start with
+   .app for the reason dx.css gives. Chart colours are the validated pair:
+   light #0F8A5F / #B46A00, dark #2BA170 / #C4851A (data-viz checks, 2 series). */
+
+.app .pf { --pf-a: #0F8A5F; --pf-b: #B46A00; --pf-good: var(--green); --pf-warn: #8A5A0F; --pf-bad: var(--red); }
+html[data-theme="dark"] .app .pf { --pf-a: #2BA170; --pf-b: #C4851A; --pf-warn: #E3A94A; }
+
+.app .pf-back { font-size: 13px; font-weight: 600; color: var(--green); text-decoration: none; align-self: flex-start; }
+.app .pf-back:hover { text-decoration: underline; text-underline-offset: 3px; }
+.app .pf-warn, .app .pf-note { margin: 0; font-size: 13.5px; line-height: 1.5; }
+.app .pf-warn { color: var(--pf-warn); font-weight: 600; }
+.app .pf-note { padding: 10px 14px; border-radius: 11px; background: var(--amber-tint); color: var(--pf-warn); }
+.app .pf-hint { display: block; font-size: 12px; color: var(--muted); line-height: 1.45; margin-top: 4px; max-width: 70ch; }
+.app .pf-dim { color: var(--muted); }
+.app .pf-lbl { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+
+/* ---- list */
+.app .pf-new-form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+.app .pf-new-form .field { margin: 0; }
+.app .pf-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.app .pf-item { display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: inherit; transition: border-color .15s, transform .12s; }
+.app .pf-item:hover { border-color: var(--green); transform: translateY(-1px); }
+.app .pf-item b { font-family: var(--dx-d); font-size: 16px; letter-spacing: -.01em; }
+.app .pf-item span { font-size: 13px; color: var(--muted); }
+.app .pf-item small { font-size: 12px; color: var(--muted); }
+
+/* ---- header */
+.app .pf-head { display: flex; flex-direction: column; gap: 6px; }
+.app .pf-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.app .pf-name { flex: 1 1 280px; min-width: 0; font-family: var(--dx-d); font-size: 28px; font-weight: 700; letter-spacing: -.03em; color: var(--ink);
+  background: transparent; border: 1px solid transparent; border-radius: 10px; padding: 2px 8px; margin-left: -8px; }
+.app .pf-name:hover { border-color: var(--line); }
+.app .pf-name:focus-visible { outline: 2px solid var(--green); outline-offset: 1px; background: var(--paper-2); }
+.app .pf-badge { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--green-tint); color: var(--green); }
+.app .pf-saved { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.app .pf-saved.s-error { color: var(--pf-bad); font-weight: 650; }
+.app .pf-sub { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* ---- key figures */
+/* six tiles: 6 across, 3 x 2, or 2 x 3, never 5 + 1 */
+.app .pf-kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1240px) { .app .pf-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .app .pf-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.app .pf-kpi { background: var(--paper-2); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.app .pf-kpi span { font-size: 12px; font-weight: 600; color: var(--muted); }
+.app .pf-kpi b { font-family: var(--dx-d); font-size: 24px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.app .pf-kpi small { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.app .pf-kpi.t-warn b { color: var(--pf-warn); }
+.app .pf-kpi.t-bad b { color: var(--pf-bad); }
+
+/* ---- tables */
+.app .pf-scroll { overflow-x: auto; }
+.app .pf-t { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.app .pf-t th { text-align: left; font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.app .pf-t td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.app .pf-t .r { text-align: right; white-space: nowrap; }
+.app .pf-t td small { display: block; font-size: 12px; color: var(--muted); margin-top: 1px; }
+.app .pf-t tfoot td { border-bottom: 0; border-top: 1px solid var(--line); font-weight: 700; }
+.app .pf-t tr.on td { background: var(--green-tint); }
+.app .pf-t td.t-warn { color: var(--pf-warn); font-weight: 700; }
+.app .pf-t td.t-bad { color: var(--pf-bad); font-weight: 700; }
+.app .pf-edit td { background: var(--paper); }
+.app .pf-delta { min-width: 230px; }
+.app .pf-dwrap { display: inline-flex; align-items: center; justify-content: flex-end; gap: 10px; width: 100%; }
+.app .pf-dtrack { flex: 0 0 110px; height: 6px; display: flex; justify-content: flex-end; }
+.app .pf-dbar { display: block; height: 6px; border-radius: 3px; background: var(--pf-b); opacity: .55; }
+.app .pf-delta b { font-weight: 600; min-width: 92px; text-align: right; }
+
+.app .pf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px 16px; align-items: start; margin-top: 12px; }
+.app .pf-grid .field { margin: 0; }
+.app .pf-wide { max-width: 420px; }
+.app .pf-rm { align-self: end; justify-self: start; }
+.app .pf-add { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; max-width: 420px; }
+
+.app .pf-areas { margin-top: 18px; display: flex; flex-direction: column; gap: 6px; }
+.app .pf-areas h3 { font-size: 13px; margin-bottom: 4px; }
+.app .pf-bar { display: grid; grid-template-columns: minmax(120px, 220px) 1fr 44px; align-items: center; gap: 10px; font-size: 13px; }
+.app .pf-bar i { display: block; height: 8px; border-radius: 4px; background: var(--pf-a); }
+.app .pf-bar b { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---- financing presets and the base case */
+.app .pf-preset { margin: 4px 0 4px; padding: 11px 14px; border-radius: 11px; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 4px; background: var(--paper); border: 1px solid var(--line); }
+.app .pf-preset.published { background: var(--green-tint); border-color: color-mix(in srgb, var(--green) 30%, var(--line)); }
+.app .pf-preset b { font-size: 12.5px; }
+.app .pf-preset a { color: var(--green); font-weight: 600; text-decoration: none; }
+.app .pf-preset a:hover { text-decoration: underline; }
+.app .pf-ppa { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.app .pf-check { margin: 0 0 4px; }
+
+/* ---- risk matrix */
+.app .pf-risk td { vertical-align: middle; }
+.app .pf-rule { color: var(--muted); font-size: 12.5px; line-height: 1.45; max-width: 60ch; }
+.app .pf-lv { display: inline-block; min-width: 76px; text-align: center; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 700; }
+.app .pf-lv.lv-low { background: var(--green-tint); color: var(--green); }
+.app .pf-lv.lv-medium { background: var(--amber-tint); color: var(--pf-warn); }
+.app .pf-lv.lv-high { background: var(--red-tint); color: var(--pf-bad); }
+.app .pf-lv.lv-unknown { background: var(--paper); color: var(--muted); border: 1px solid var(--line); }
+
+/* ---- document register */
+.app .pf-docs { table-layout: fixed; min-width: 760px; }
+.app .pf-docs th { white-space: normal; vertical-align: bottom; text-transform: none; letter-spacing: 0; font-size: 12px; line-height: 1.3; }
+.app .pf-docs th:first-child { width: 18%; }
+.app .pf-doc { padding: 6px 8px; font-size: 13px; width: 100%; min-width: 0; }
+.app .pf-doc.ds-done { border-color: color-mix(in srgb, var(--green) 55%, var(--line)); }
+.app .pf-doc.ds-draft { border-color: color-mix(in srgb, var(--amber) 60%, var(--line)); }
+
+/* ---- E&S */
+.app .pf-es { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.app .pf-es li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.app .pf-es-q { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; line-height: 1.5; }
+.app .pf-es-q small { font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: .03em; }
+.app .pf-es-note { font-size: 13px; padding: 7px 10px; }
+.app .pf-seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--paper); border: 1px solid var(--line); flex-wrap: wrap; }
+.app .pf-seg button { padding: 6px 12px; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.app .pf-seg button:hover { color: var(--ink); }
+.app .pf-seg button.on { background: var(--paper-2); color: var(--ink); box-shadow: 0 1px 3px rgba(20, 42, 33, .12); }
+.app .pf-seg button.on.s-no { color: var(--pf-bad); }
+.app .pf-seg button.on.s-yes { color: var(--green); }
+.app .pf-sh { margin-top: 20px; font-size: 14px; }
+.app .pf-co2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 14px; }
+.app .pf-co2 div { background: var(--paper); border: 1px solid var(--line); border-radius: 11px; padding: 10px 14px; display: flex; flex-direction: column; }
+.app .pf-co2 span { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.app .pf-co2 b { font-family: var(--dx-d); font-size: 20px; font-variant-numeric: tabular-nums; }
+.app .pf-co2 small { font-size: 11.5px; color: var(--muted); }
+
+/* ---- exports */
+.app .pf-export { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.app .pf-export .field { margin: 0; min-width: 170px; }
+.app .pf-export .btn { text-decoration: none; }
+.app .pf-export .btn.off { opacity: .5; pointer-events: none; }
+.app .pf-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+
+/* ---- cash-flow chart (components/CashflowChart.jsx) */
+.app .pf-chart { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.app .pf-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--ink); }
+.app .pf-legend span, .app .pf-tip span { display: inline-flex; align-items: center; gap: 7px; }
+.app .pf-k { display: inline-block; flex: none; }
+.app .pf-k-a { width: 10px; height: 10px; border-radius: 3px; background: var(--pf-a); }
+.app .pf-k-b { width: 14px; height: 2px; background: var(--pf-b); border-radius: 1px; }
+.app .pf-plot { position: relative; }
+.app .pf-plot svg { width: 100%; height: auto; display: block; overflow: visible; }
+.app .pf-chart .pf-gl { stroke: var(--line); stroke-width: 1; }
+.app .pf-chart .pf-zero { stroke: color-mix(in srgb, var(--ink) 35%, var(--line)); stroke-width: 1; }
+.app .pf-axis { fill: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.app .pf-col { fill: var(--pf-a); transition: opacity .12s; }
+.app .pf-col.on { opacity: .8; }
+.app .pf-line { stroke: var(--pf-b); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.app .pf-hit { fill: transparent; outline: none; }
+.app .pf-hit:hover, .app .pf-hit:focus-visible { fill: color-mix(in srgb, var(--ink) 5%, transparent); }
+.app .pf-tip { position: absolute; top: 0; transform: translateX(-50%); pointer-events: none; z-index: 2; background: var(--paper-2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 8px 12px; font-size: 12.5px; display: flex; flex-direction: column; gap: 3px; box-shadow: 0 6px 20px rgba(20, 42, 33, .16); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.app .pf-tip b { font-size: 12px; }
+.app .pf-tip-d { color: var(--muted); }
+.app .pf-table summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--muted); width: fit-content; }
+.app .pf-table table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.app .pf-table th, .app .pf-table td { text-align: right; padding: 4px 10px; border-bottom: 1px solid var(--line); }
+.app .pf-table th:first-child, .app .pf-table td:first-child { text-align: left; }
+.app .pf-table .pf-scroll { max-height: 260px; overflow: auto; }
+
+@media (max-width: 760px) {
+  .app .pf-new-form { grid-template-columns: 1fr; }
+  .app .pf-name { font-size: 22px; }
+  .app .pf-bar { grid-template-columns: 1fr 44px; }
+  .app .pf-bar i { grid-column: 1 / -1; grid-row: 2; }
+  .app .pf-es li { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app .pf-item, .app .pf-col { transition: none; }
+}
