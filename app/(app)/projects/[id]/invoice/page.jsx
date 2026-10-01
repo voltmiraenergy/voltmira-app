@@ -16,21 +16,26 @@ import { quote } from "@voltmira/engine";
 import { companyEngine } from "../../../../../lib/engineSettings.js";
 import { getRate } from "../../../../../lib/fx.js";
 import { rowToQuoteInput } from "../../../../../lib/quoteInput.js";
+import { vatBreakdown } from "../../../../../lib/invoiceMath.js";
+import { sendCrmWebhook } from "../../../../../lib/crmWebhook.js";
 import { t, normLang } from "../../../../../lib/i18n.js";
 import { fmtDate } from "../../../../../lib/tz.js";
 import PrintNow from "./PrintNow.jsx";
+import BackLink from "../../../../../components/BackLink.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Invoice — VoltMira" };
+export const metadata = { title: "Invoice | VoltMira" };
 
-export default async function InvoicePage({ params, searchParams }) {
-  const sb = supabaseServer();
+export default async function InvoicePage(props) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+  const sb = await supabaseServer();
   const co = await currentCompany();
   const { data: p } = await sb.from("projects").select("*").eq("id", params.id).maybeSingle();
   if (!p || !co) notFound();
 
   const lang = normLang(co.lang);
-  const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB";
+  const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB";
   const cur = co.currency || "EUR";
   // CONVERT, don't just relabel. The engine works entirely in EUR ("All money in
   // EUR. Display conversion happens in the UI layer only." — engine.js) and
@@ -53,10 +58,9 @@ export default async function InvoicePage({ params, searchParams }) {
   // printing "VAT (0%)" on a document a client keeps asserts a zero rating that
   // is very likely false for a RO/MD installer. So below we show a single Total
   // instead of inventing a breakdown — and nudge, on screen only, to set it.
-  const rate = Math.max(0, Number(co.vat_rate) || 0);
-  const showVat = rate > 0;
-  const net = showVat ? gross / (1 + rate / 100) : gross;
-  const vat = gross - net;
+  // Shared with the fiscal CSV export (app/api/export-invoices/route.js) so
+  // the two can never disagree on a client's actual invoiced amount.
+  const { net, vat, rate, showVat } = vatBreakdown(gross, co.vat_rate);
 
   // Optional deposit: ?deposit=30 → a 30% deposit line + balance.
   const depPct = Math.min(100, Math.max(0, Number(searchParams?.deposit) || 0));
@@ -73,12 +77,32 @@ export default async function InvoicePage({ params, searchParams }) {
   // link can't burn a number. Falls back to the old id-derived string when the
   // migration hasn't been run yet, so nothing breaks in the meantime.
   let invNo = p.invoice_no || null;
-  if (!invNo && headers().get("next-router-prefetch") !== "1") {
+  if (!invNo && (await headers()).get("next-router-prefetch") !== "1") {
     const { data: seq } = await sb.rpc("next_invoice_no", { p_company: co.id });
     if (seq) {
       const candidate = `${prefix}-${today.getFullYear()}-${String(seq).padStart(4, "0")}`;
-      const { error } = await sb.from("projects").update({ invoice_no: candidate }).eq("id", p.id);
-      if (!error) invNo = candidate;   // couldn't persist ⇒ don't show a number we'd forget
+      // invoiced_at: the real moment this number was drawn, for the fiscal
+      // CSV export (add-invoice-date.sql) — degrade to invoice_no alone
+      // before that migration has run.
+      let { error } = await sb.from("projects").update({ invoice_no: candidate, invoiced_at: today.toISOString() }).eq("id", p.id);
+      if (error && /invoiced_at/i.test(error.message || "")) {
+        ({ error } = await sb.from("projects").update({ invoice_no: candidate }).eq("id", p.id));
+      }
+      if (!error) {
+        invNo = candidate;   // couldn't persist ⇒ don't show a number we'd forget
+        // CRM/accounting webhook: fires exactly once, the moment a NEW number
+        // is drawn (this whole block only runs when invNo was null coming in)
+        // — reopening/reprinting the same invoice never re-fires it. This is
+        // also the honest path to 1C/accounting software: VoltMira has no
+        // live 1C instance to build or verify a direct API integration
+        // against, so this generic webhook (lib/crmWebhook.js) is what an
+        // installer's own Make/Zapier/n8n scenario reads from to push a real
+        // fiscal event across, same reasoning as export-invoices/route.js.
+        await sendCrmWebhook(co.id, "invoice.created", {
+          project_id: p.id, invoice_no: candidate, client_name: p.client_name || p.title,
+          net, vat, gross, currency: cur, deposit_pct: depPct || undefined,
+        });
+      }
     }
   }
   if (!invNo) invNo = `${prefix}-${today.getFullYear()}-${String(params.id).replace(/-/g, "").slice(0, 6).toUpperCase()}`;
@@ -108,11 +132,35 @@ export default async function InvoicePage({ params, searchParams }) {
           body { background: #fff !important; }
         }
         .inv-actions { max-width: 820px; margin: 12px auto 0; padding: 0 40px; display: flex; gap: 10px; }
+        .inv-back-row { max-width: 820px; margin: 0 auto; padding: 16px 40px 0; }
+        @media screen and (max-width: 640px) {
+          .inv-page { padding: 22px 16px !important; }
+          .inv-head { flex-direction: column; gap: 14px !important; margin-bottom: 24px !important; }
+          .inv-head-r { text-align: left !important; }
+          .inv-head-r h1 { font-size: 24px !important; }
+          .inv-qty { width: 44px !important; }
+          .inv-amt { width: auto !important; }
+          .inv-page th:not(:first-child), .inv-page td:not(:first-child) { padding-left: 12px !important; }
+          .inv-totals { width: 100% !important; }
+          .inv-back-row, .inv-actions { padding-left: 16px; padding-right: 16px; }
+          .inv-actions { flex-wrap: wrap; }
+        }
       `}</style>
 
-      <div style={S.page}>
+      {/* Reached only via a link from the project editor, with no route of its
+          own reachable from the sidebar/bottom-tab bar — in the standalone
+          Home Screen app there's no Safari swipe-back to fall back on, so
+          without this the page was a dead end. */}
+      <div className="inv-back-row no-print">
+        <BackLink href={`/projects/${params.id}`}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
+          {t("back_quote", lang)}
+        </BackLink>
+      </div>
+
+      <div className="inv-page" style={S.page}>
         {/* header */}
-        <div style={{ ...S.row, alignItems: "flex-start", marginBottom: 34 }}>
+        <div className="inv-head" style={{ ...S.row, alignItems: "flex-start", marginBottom: 34 }}>
           <div>
             {/* With a logo: logo on top, company name under it. WITHOUT a logo the
                 name stands in for the logo — print it once, larger, not twice
@@ -130,7 +178,7 @@ export default async function InvoicePage({ params, searchParams }) {
               {co.legal_address || ""}
             </div>
           </div>
-          <div style={{ textAlign: "right" }}>
+          <div className="inv-head-r" style={{ textAlign: "right" }}>
             <h1 style={S.h1}>{t("inv_title", lang)}</h1>
             <div style={{ ...S.muted, marginTop: 8 }}>
               {t("inv_no", lang)}: <b style={{ color: "#142A21" }}>{invNo}</b><br />
@@ -150,8 +198,8 @@ export default async function InvoicePage({ params, searchParams }) {
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 22 }}>
           <thead><tr>
             <th style={S.th}>{t("inv_desc", lang)}</th>
-            <th style={{ ...S.th, textAlign: "right", width: 90 }}>{t("inv_qty", lang)}</th>
-            <th style={{ ...S.th, textAlign: "right", width: 150 }}>{t("inv_amount", lang)}</th>
+            <th className="inv-qty" style={{ ...S.th, textAlign: "right", width: 90 }}>{t("inv_qty", lang)}</th>
+            <th className="inv-amt" style={{ ...S.th, textAlign: "right", width: 150 }}>{t("inv_amount", lang)}</th>
           </tr></thead>
           <tbody>
             <tr>
@@ -164,7 +212,7 @@ export default async function InvoicePage({ params, searchParams }) {
 
         {/* totals */}
         <div style={{ ...S.row, justifyContent: "flex-end" }}>
-          <div style={{ width: 300 }}>
+          <div className="inv-totals" style={{ width: 300 }}>
             {showVat && (
               <>
                 <div style={S.tot}><span style={S.muted}>{t("inv_subtotal", lang)}</span><span>{money(net)}</span></div>
@@ -226,7 +274,7 @@ export default async function InvoicePage({ params, searchParams }) {
 
       {/* The PDF route drives printing via CDP and passes pdf=1; window.print()
             inside headless Chromium blocks rather than returning. */}
-        {searchParams?.pdf !== "1" && <PrintNow />}
+      {searchParams?.pdf !== "1" && <PrintNow />}
     </div>
   );
 }

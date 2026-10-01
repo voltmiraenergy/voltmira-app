@@ -1,0 +1,75 @@
+/* app/(app)/traction/traction.css — the platform traction page: headline
+ * strip, weekly small multiples, speed and all-time figures, workspace table.
+ * Shared header, cards and buttons come from app/(app)/dx.css; same `.app`
+ * prefix rule as there.
+ */
+
+.app .tr-strip {
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow);
+}
+.app .tr-strip > div { background: var(--paper-2); padding: 14px 16px 13px; display: flex; flex-direction: column; min-width: 0; }
+.app .tr-strip dt, .app .tr-kv dt { font-size: 11px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.app .tr-strip dd, .app .tr-kv dd {
+  font-family: var(--dx-d); font-size: 24px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2;
+  font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 5px; overflow-wrap: anywhere;
+}
+.app .tr-strip dd small { font-family: var(--font-b); font-size: 14px; font-weight: 600; color: var(--muted); margin-left: 5px; letter-spacing: 0; }
+.app .tr-strip dd.tr-sub, .app .tr-kv dd.tr-sub {
+  font-family: var(--font-b); font-size: 12px; font-weight: 500; letter-spacing: 0; color: var(--muted); margin-top: 2px; line-height: 1.35;
+}
+.app .tr-strip dd:first-of-type { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 8px; }
+.app .tr-strip dd small { margin-left: -3px; }
+.app .tr-delta {
+  font-family: var(--font-b); font-size: 11.5px; font-weight: 650; letter-spacing: 0; font-variant-numeric: tabular-nums;
+  padding: 1px 7px; border-radius: 99px; background: var(--paper); border: 1px solid var(--line); color: var(--muted);
+  align-self: center; white-space: nowrap;
+}
+.app .tr-delta.up { color: var(--green); background: var(--green-tint); border-color: transparent; }
+.app .tr-delta.down { color: var(--red); background: var(--red-tint); border-color: transparent; }
+
+.app .tr-charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 26px; }
+.app .tr-chart { margin: 0; min-width: 0; }
+.app .tr-chart figcaption { display: flex; flex-direction: column; gap: 1px; margin-bottom: 8px; }
+.app .tr-chart figcaption span { font-size: 12px; font-weight: 650; color: var(--muted); }
+.app .tr-chart figcaption b { font-family: var(--dx-d); font-size: 20px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.app .tr-chart figcaption small { font-size: 11.5px; color: var(--muted); }
+.app .tr-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.app .tr-bar { fill: var(--green); }
+.app .tr-bar.now { fill: color-mix(in srgb, var(--green) 38%, var(--paper-2)); }
+.app .tr-axis { stroke: var(--line); stroke-width: 1; }
+.app .tr-tick { font-size: 9.5px; fill: var(--muted); font-family: var(--font-b); font-variant-numeric: tabular-nums; }
+
+.app .tr-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 18px; align-items: start; }
+.app .tr-kv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; }
+.app .tr-kv > div { min-width: 0; }
+.app .tr-kv dd { font-size: 21px; }
+
+.app .tr-tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.app .tr-tbl { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 860px; }
+.app .tr-tbl th {
+  font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+  text-align: left; padding: 0 10px 9px; border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+.app .tr-tbl td { padding: 10px; border-bottom: 1px solid var(--line); color: var(--ink-soft); white-space: nowrap; }
+.app .tr-tbl tr:last-child td { border-bottom: 0; }
+.app .tr-tbl .n { text-align: right; font-variant-numeric: tabular-nums; }
+.app .tr-name { font-weight: 650; color: var(--ink) !important; max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
+.app .tr-plan {
+  display: inline-block; font-size: 11px; font-weight: 650; text-transform: capitalize; padding: 1px 8px; border-radius: 99px;
+  background: var(--paper); border: 1px solid var(--line); color: var(--muted);
+}
+.app .tr-plan.paid { background: var(--green-tint); border-color: transparent; color: var(--green); }
+.app .tr-foot { margin-top: -6px; }
+
+@media (max-width: 1280px) {
+  .app .tr-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .app .tr-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app .tr-two { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .app .tr-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app .tr-charts, .app .tr-kv { grid-template-columns: minmax(0, 1fr); }
+}

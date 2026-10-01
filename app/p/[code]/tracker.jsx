@@ -113,7 +113,7 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
 
       {accepted && (
         <div style={{ fontSize: 12.5, color: "#1E6B4E", fontWeight: 600, textAlign: "center" }}>
-          ✓ {signedName ? `${t("sig_signed_by", lang)} ${signedName}${signedDate ? " · " + signedDate : ""}` : t("sig_done", lang)}
+          {signedName ? `${t("sig_signed_by", lang)} ${signedName}${signedDate ? ", " + signedDate : ""}` : t("sig_done", lang)}
         </div>
       )}
 

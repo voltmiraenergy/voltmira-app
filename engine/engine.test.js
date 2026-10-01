@@ -9,7 +9,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   simulate, quote, effectiveConsumption,
-  defaultEngineSettings, formatMoney, FX,
+  defaultEngineSettings, formatMoney, FX, amortizedMonthlyPayment,
 } from "./engine.js";
 
 const E = defaultEngineSettings();
@@ -91,6 +91,46 @@ test("markets: RO 1:1 credit is capped at what the household imports", () => {
   // val = 3300*.21 + 1700*.21 + 11500*.036 = 693+357+414 = 1464
   // opex = 15750*.005 = 78.75 → year1 = 1385.25
   assert.ok(Math.abs(r.year1 - 1385.25) < 0.05, `year1=${r.year1}`);
+});
+
+test("MD differentiated tariff: self-consumption values at the day rate, not the flat price", () => {
+  const flat = simulate({ ...BASE, market: "MD", price: 0.18 }, E, "expc");
+  const diff = simulate({ ...BASE, market: "MD", price: 0.18, tariffMode: "differentiated" }, E, "expc");
+  const dayRateEur = E.mdDayRateMdl / FX.MDL; // 3.75/19.8 ≈ 0.189394, above the 0.18 flat price here
+  assert.ok(dayRateEur > 0.18);
+  assert.ok(diff.year1 > flat.year1, `diff ${diff.year1} should exceed flat ${flat.year1}`);
+  // Hand check: solar0=6600, selfK=2750, expK=3850 (same as the feedOverride block below)
+  const expectedYear1 = (2750 * dayRateEur + 3850 * 0.127) - 6300 * 0.005;
+  assert.ok(Math.abs(diff.year1 - expectedYear1) < 0.01, `year1=${diff.year1} expected=${expectedYear1}`);
+});
+
+test("MD differentiated tariff is a no-op outside MD (RO's 1:1 credit isn't in scope)", () => {
+  const flatRo = simulate({ ...BASE, market: "RO" }, E, "expc").year1;
+  const diffRo = simulate({ ...BASE, market: "RO", tariffMode: "differentiated" }, E, "expc").year1;
+  assert.equal(flatRo, diffRo);
+});
+
+/* ------------------------------------------------------------------ *
+ * feedOverride — pricing exports at a contracted rate.
+ * MD, 6 kW, cons 5000, expc:
+ *   solar0 = 6 * 1100 = 6600; selfRatio = (5000/6600)*.55 = 0.4166666…
+ *   selfK  = 2750; expK = 3850; opex = 6300 * .005 = 31.5
+ * ------------------------------------------------------------------ */
+test("feedOverride prices exports at a contracted rate, not the market default", () => {
+  // default MD feed .127 → 2750*.21 + 3850*.127 − 31.5 = 577.5 + 488.95 − 31.5
+  const def = simulate({ ...BASE, market: "MD" }, E, "expc");
+  assert.ok(Math.abs(def.year1 - 1034.95) < 0.05, `default=${def.year1}`);
+  // override .05      → 2750*.21 + 3850*.05  − 31.5 = 577.5 + 192.50 − 31.5
+  const low = simulate({ ...BASE, market: "MD", feedOverride: 0.05 }, E, "expc");
+  assert.ok(Math.abs(low.year1 - 738.50) < 0.05, `override=${low.year1}`);
+});
+
+test("feedOverride ignores junk and falls back to the market feed", () => {
+  const base = simulate({ ...BASE, market: "MD" }, E, "expc").year1;
+  for (const junk of [0, -0.1, null, undefined, "", NaN, "abc", {}]) {
+    const r = simulate({ ...BASE, market: "MD", feedOverride: junk }, E, "expc").year1;
+    assert.equal(r, base, `feedOverride=${String(junk)} changed year1`);
+  }
 });
 
 /* ------------------------------------------------------------------ *
@@ -323,4 +363,105 @@ test("costOverride + battery: the BOM only covers the battery if it prices one",
   // No battery at all: the flag is irrelevant.
   assert.equal(simulate({ ...BASE, costOverride: 9999 }, E, "expc").cost,
                simulate({ ...BASE, costOverride: 9999, bomHasBattery: true }, E, "expc").cost);
+});
+
+/* ------------------------------------------------------------------ *
+ * amortizedMonthlyPayment — the standard formula, checked against a
+ * well-known textbook example ($10,000 at 6% APR over 5 years = $193.33/mo),
+ * not against the function's own output.
+ * ------------------------------------------------------------------ */
+test("amortizedMonthlyPayment matches the standard textbook example", () => {
+  const m = amortizedMonthlyPayment(10000, 6, 5);
+  assert.ok(Math.abs(m - 193.33) < 0.05, `expected ~193.33, got ${m}`);
+});
+
+test("amortizedMonthlyPayment at 0% is a plain division, not a div-by-zero", () => {
+  assert.equal(amortizedMonthlyPayment(1200, 0, 1), 100);
+});
+
+test("amortizedMonthlyPayment returns 0 for a non-positive principal or term", () => {
+  assert.equal(amortizedMonthlyPayment(0, 9, 10), 0);
+  assert.equal(amortizedMonthlyPayment(-500, 9, 10), 0);
+  assert.equal(amortizedMonthlyPayment(10000, 9, 0), 0);
+  assert.equal(amortizedMonthlyPayment(10000, 9, -3), 0);
+});
+
+test("amortizedMonthlyPayment rises with a higher rate or a shorter term", () => {
+  const base = amortizedMonthlyPayment(10000, 9, 10);
+  assert.ok(amortizedMonthlyPayment(10000, 15, 10) > base, "a higher rate must cost more per month");
+  assert.ok(amortizedMonthlyPayment(10000, 9, 5) > base, "a shorter term must cost more per month");
+});
+
+test("amortizedMonthlyPayment never returns NaN or a negative figure for junk input", () => {
+  for (const bad of [NaN, undefined, null, "x", -1]) {
+    const m = amortizedMonthlyPayment(10000, bad, 10);
+    assert.ok(Number.isFinite(m) && m >= 0, `rate=${bad} produced ${m}`);
+  }
+});
+
+/* ---------------- Ukraine: green tariff with monthly netting ---------------- */
+// A flat year so the arithmetic stays checkable by hand: 5 kW × 1,200 kWh/kWp
+// = 6,000 kWh, 500 a month; consumption 3,600 kWh, 300 a month; no O&M.
+// Tariffs: retail €0.08, green tariff 6 UAH at 50 UAH/EUR = €0.12,
+// after 2030 2.5 UAH = €0.05.
+const UA_E = { ...defaultEngineSettings(), opexPct: 0, uaFitUah: 6, uaFeedAfterUah: 2.5, fx: { UAH: 50 } };
+const UA = {
+  kw: 5, price: 0.08, cons: 3600, batt: false, useMonthly: false, afmSubsidy: false,
+  market: "UA", yieldOverride: 1200, monthlyYieldShape: Array(12).fill(1 / 12),
+};
+
+test("UA: each month's production first cancels consumption, the rest earns the green tariff", () => {
+  // Every month: 300 kWh offset at retail (€24) + 200 kWh surplus at €0.12 (€24)
+  // = €48; × 12 = €576. Year 1 has no degradation or inflation yet.
+  const r = simulate({ ...UA, startYear: 2026 }, UA_E, "expc");
+  assert.ok(Math.abs(r.year1 - 576) < 1e-6, `year1 ${r.year1}`);
+});
+
+test("UA: a battery adds no saving while the green tariff runs", () => {
+  // Netting is monthly, so moving a kWh from noon to evening changes nothing.
+  const a = simulate({ ...UA, startYear: 2026 }, UA_E, "expc");
+  const b = simulate({ ...UA, startYear: 2026, batt: true, battKwh: 10 }, UA_E, "expc");
+  assert.ok(Math.abs(a.year1 - b.year1) < 1e-6);
+  assert.ok(b.cost > a.cost, "the battery still costs money");
+});
+
+test("UA: after 2030 the surplus is valued at the market price, not the green tariff", () => {
+  // Starting in 2031: no green-tariff share. Self-consumption follows the
+  // engine's own propensity model, so check against the two bounds instead:
+  // below the green-tariff year, above a year where everything sells at €0.05.
+  const fit = simulate({ ...UA, startYear: 2026 }, UA_E, "expc").year1;
+  const after = simulate({ ...UA, startYear: 2031 }, UA_E, "expc").year1;
+  assert.ok(after < fit, `after ${after} vs fit ${fit}`);
+  assert.ok(after > 6000 * 0.05, "self-consumed kWh are still worth retail");
+});
+
+test("UA: a year that straddles 1 January 2030 is split by the share inside the tariff", () => {
+  // Start mid-2029: year 1 is half green tariff, half after.
+  const full = simulate({ ...UA, startYear: 2026 }, UA_E, "expc").year1;
+  const none = simulate({ ...UA, startYear: 2031 }, UA_E, "expc").year1;
+  const half = simulate({ ...UA, startYear: 2029.5 }, UA_E, "expc").year1;
+  assert.ok(Math.abs(half - (full + none) / 2) < 1e-6, `half ${half}`);
+});
+
+test("UA: above 30 kW there is no green tariff, even before 2030", () => {
+  // A 40 kW plant built in 2026 is valued exactly like a plant built after the
+  // tariff ended: per kW, the same as a small system starting in 2031.
+  const big = { ...UA, kw: 40, cons: 3600 * 8 };
+  const early = simulate({ ...big, startYear: 2026 }, UA_E, "expc").year1;
+  const late = simulate({ ...big, startYear: 2031 }, UA_E, "expc").year1;
+  assert.ok(Math.abs(early - late) < 1e-6, `early ${early} late ${late}`);
+  // and 30 kW exactly still earns it
+  const edge = { ...UA, kw: 30, cons: 3600 * 6 };
+  assert.ok(simulate({ ...edge, startYear: 2026 }, UA_E, "expc").year1 > simulate({ ...edge, startYear: 2031 }, UA_E, "expc").year1);
+});
+
+test("UA: the tariffs convert at the frozen NBU rate", () => {
+  // Same UAH tariffs at 60 UAH/EUR are worth less in EUR: surplus €0.10.
+  // Month: €24 + 200 × €0.10 = €44; × 12 = €528.
+  const r = simulate({ ...UA, startYear: 2026 }, { ...UA_E, fx: { UAH: 60 } }, "expc");
+  assert.ok(Math.abs(r.year1 - 528) < 1e-6, `year1 ${r.year1}`);
+});
+
+test("UA: formatMoney shows hryvnia", () => {
+  assert.equal(formatMoney(100, "UAH").replace(/\s/g, " "), "5 100 грн");
 });

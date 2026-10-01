@@ -17,8 +17,7 @@
 
 ## Before launch (do these)
 - [ ] Enable Supabase Auth: leaked-password protection + minimum length 8
-- [ ] Turn on 2FA for your own Supabase/Vercel/Stripe accounts
-- [ ] Set Vercel firewall: block non-EU traffic to /api/stripe/webhook except Stripe IPs (optional)
+- [ ] Turn on 2FA for your own Supabase/Vercel/Paddle accounts
 - [ ] `npm audit` in CI; Dependabot on
 - [ ] Sentry with PII scrubbing enabled
 - [ ] Test restore from a Supabase backup (an untested backup is not a backup)

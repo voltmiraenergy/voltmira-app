@@ -13,9 +13,11 @@ import { escapeHtml } from "../../../../lib/safe.js";
 import { logActivity } from "../../../../lib/activity.js";
 import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
 import { sendEmail, proposalOpenedEmail, emailConfigured } from "../../../../lib/email.js";
+import { sendCrmWebhook } from "../../../../lib/crmWebhook.js";
 import { quote } from "@voltmira/engine";
 import { snapshotEngine } from "../../../../lib/engineSettings.js";
 import { bomHasBattery } from "../../../../lib/quoteInput.js";
+import { loadOffers, offerFigures, acceptOffers } from "../../../../lib/proposalOffers.js";
 
 /** One email per proposal per this window, no matter how many opens. */
 const NOTIFY_THROTTLE_MS = 4 * 60 * 60 * 1000;
@@ -60,7 +62,8 @@ async function notifyProposalOpened(db, prop) {
   }
 }
 
-export async function GET(req, { params }) {
+export async function GET(req, props) {
+  const params = await props.params;
   const ip = clientIp(req);
   if (await isRateLimited(`prop:get:${ip}`, 60, 60_000))
     return NextResponse.json({ error: "rate" }, { status: 429 });
@@ -73,9 +76,16 @@ export async function GET(req, { params }) {
     .eq("code", params.code).single();
   if (!prop) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  const { data: co } = await db.from("companies")
-    .select("name, short_name, logo_url, engine, currency, lang, plan")
+  // Graceful before add-install-warranty.sql runs: retry without the column
+  // rather than 500ing every client-facing proposal link on a missing column.
+  let { data: co, error: coErr } = await db.from("companies")
+    .select("name, short_name, logo_url, engine, currency, lang, plan, install_warranty_years")
     .eq("id", prop.company_id).single();
+  if (coErr && /install_warranty_years/i.test(coErr.message || "")) {
+    ({ data: co } = await db.from("companies")
+      .select("name, short_name, logo_url, engine, currency, lang, plan")
+      .eq("id", prop.company_id).single());
+  }
 
   // Social proof, computed rather than typed: the installer's real count of won
   // projects. A hand-entered "trusted by N homeowners" is an unverifiable claim;
@@ -129,11 +139,14 @@ export async function GET(req, { params }) {
     // from their authenticated pipeline.
     signedName: prop.signer_name || null,
     signedAt: prop.accepted_at || null,
-    sentAt: prop.created_at,   // when the link was created — drives "valid until"
+    sentAt: prop.created_at,   // when the link was created, drives "valid until"
     // lang drives the client-facing proposal copy — the client reads it in the
     // installer's chosen language, not always English.
-    company: { name: co?.name, shortName: co?.short_name, logoUrl: co?.logo_url, currency: co?.currency, lang: co?.lang, plan: co?.plan || "free", wonCount: wonCount || 0 },
+    company: { name: co?.name, shortName: co?.short_name, logoUrl: co?.logo_url, currency: co?.currency, lang: co?.lang, plan: co?.plan || "free", wonCount: wonCount || 0, installWarrantyYears: co?.install_warranty_years || null },
     preparedBy,
+    // the exchange rates frozen with the proposal, so a client in Moldova reads
+    // the same lei figure on every visit (lib/money.js)
+    fx: E?.fx || null,
     inputs: {
       title: prop.snapshot.title, client: prop.snapshot.client, address: prop.snapshot.address,
       kw: prop.snapshot.kw, batt: prop.snapshot.batt, battKwh: prop.snapshot.battKwh ?? 10,
@@ -154,6 +167,10 @@ export async function GET(req, { params }) {
       // Derived from the frozen BOM's own line kinds, so the client-side audit
       // panel prices the battery exactly the way the server did.
       bomHasBattery: bomHasBattery(prop.snapshot.bom),
+      // Ukraine: when the system starts (the green tariff ends with 2029) and
+      // the outage and loan plan the installer chose (lib/uaMarket.js).
+      startYear: Number(prop.snapshot.startYear) || undefined,
+      uaPlan: prop.snapshot.uaPlan || undefined,
     },
     quote: {
       cost: q.e.cost, prod0: q.e.prod0, year1: q.e.year1, self: q.e.self,
@@ -164,17 +181,44 @@ export async function GET(req, { params }) {
         opti: { payback: q.o.payback, roi: q.o.roi, rows: q.o.rows },
       },
       horizon: q.e.horizon,
-      assumptions: E, // full transparency — the honesty engine, server-verified
+      assumptions: E, // full transparency, the honesty engine, server-verified
       // the yield actually used (PVGIS override when the roof was looked up)
       yieldPerKwp: prop.snapshot.yieldOverride || E.baseYield,
       afmSubsidy: !!prop.snapshot.afmSubsidy,
     },
     options,
-    bom: Array.isArray(prop.snapshot.bom) ? prop.snapshot.bom : [],
+    // What the proposal assistant agreed and is still open (lib/proposalOffers.js):
+    // the price with the discount applied, and the option the client chose.
+    ...(await (async () => {
+      const st = await loadOffers(db, prop.code, Date.now(), { signed: !!prop.accepted_at });
+      const d = st.discount ? offerFigures({ grossEur: q.e.grossCost, costEur: q.e.cost }, st.discount) : null;
+      return {
+        offer: d ? { pct: d.pct, priceEur: d.costEur, discountEur: d.discountEur, since: st.discount.created_at } : null,
+        chosenOption: st.option ? st.option.option_no : null,
+      };
+    })()),
+    // Never the installer's purchase cost or margin — this is a public,
+    // capability-URL endpoint (the code IS the auth), and unit_price/
+    // cost_price were never meant to reach it. Nothing client-facing has
+    // ever rendered them (PrintSheet.jsx/page.jsx only read kind/brand/
+    // model/spec/qty), so this was a latent leak in the raw JSON response
+    // rather than something anything legitimate depended on.
+    bom: (Array.isArray(prop.snapshot.bom) ? prop.snapshot.bom : [])
+      .map(({ unit_price, cost_price, ...safe }) => safe),
+    // Real, drawn roof area/orientation (Site Designer), frozen at "Generate
+    // offer" time same as everything else here — undefined on any proposal
+    // made before that plane existed, or with no single unambiguous plane.
+    roofAreaM2: prop.snapshot.roofAreaM2 || undefined,
+    roofOrientation: prop.snapshot.roofOrientation || undefined,
+    // The real drawn geometry itself (outline + obstacles + fitted panel
+    // rectangles, already projected to local meters) — undefined on any
+    // proposal made before this existed or where nothing was ever drawn.
+    roofPlanes: Array.isArray(prop.snapshot.roofPlanes) ? prop.snapshot.roofPlanes : undefined,
   });
 }
 
-export async function POST(req, { params }) {
+export async function POST(req, props) {
+  const params = await props.params;
   const ip = clientIp(req);
   if (await isRateLimited(`prop:post:${ip}`, 120, 60_000))
     return NextResponse.json({ error: "rate" }, { status: 429 });
@@ -221,11 +265,19 @@ export async function POST(req, { params }) {
     const title = escapeHtml(rawTitle);
     let text, actKind = "open", key;
     if (n <= 1) { text = `<b>${who}</b> opened “${title}”`; key = "act_opened"; }
-    else if (n >= 3) { text = `<b>${who}</b> opened “${title}” again — ${n}× total. Worth a call now.`; actKind = "lead"; key = "act_opened_hot"; }
+    else if (n >= 3) { text = `<b>${who}</b> opened “${title}” again, ${n}× total. Worth a call now.`; actKind = "lead"; key = "act_opened_hot"; }
     else { text = `<b>${who}</b> opened “${title}” again (${n}×)`; key = "act_opened_again"; }
     await logActivity(db, { companyId: prop.company_id, kind: actKind, key, params: { b: rawWho, title: rawTitle, n }, text, link: `/projects/${prop.project_id}` });
     // Retention feature: tell the installer while the client is still reading.
     await notifyProposalOpened(db, prop);
+    // CRM webhook: fire ONLY on the very first open (n<=1), not every reload —
+    // a proposal a client reopens five times must not post five identical
+    // "opened" events to their Bitrix24/amoCRM/Zapier hook (lib/crmWebhook.js).
+    if (n <= 1) {
+      await sendCrmWebhook(prop.company_id, "proposal.opened", {
+        project_id: prop.project_id, code: prop.code, client_name: rawWho, title: rawTitle,
+      });
+    }
   }
   if (kind === "heartbeat" && seconds > 0) {
     await db.rpc("bump_proposal_stat", { p_code: prop.code, p_field: "seconds", p_by: seconds });
@@ -259,10 +311,16 @@ export async function POST(req, { params }) {
     // than "…proposal crppgt6x".
     const { data: proj } = await db.from("projects").select("title, client_name").eq("id", prop.project_id).maybeSingle();
     const who = proj?.client_name || proj?.title || prop.code;
+    // Whatever the proposal assistant agreed (a discount, an attached option)
+    // becomes part of what was signed.
+    const agreed = await acceptOffers(db, prop.code);
+    const pct = Number(agreed.discount?.pct) || 0;
     await logActivity(db, {
-      companyId: prop.company_id, kind: "won", key: "act_proposal_accepted",
-      params: { b: who },
-      text: `<b>${escapeHtml(who)}</b> accepted your proposal`,
+      companyId: prop.company_id, kind: "won", key: pct ? "act_accepted_offer" : "act_proposal_accepted",
+      params: { b: who, ...(pct ? { n: pct } : {}) },
+      text: pct
+        ? `<b>${escapeHtml(who)}</b> accepted your proposal with the ${pct}% discount the assistant offered`
+        : `<b>${escapeHtml(who)}</b> accepted your proposal`,
       link: `/projects/${prop.project_id}`,
     });
   }

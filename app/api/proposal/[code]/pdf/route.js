@@ -23,7 +23,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-export async function GET(req, { params }) {
+export async function GET(req, props) {
+  const params = await props.params;
   // Generating a PDF costs a browser launch; cap it well below abuse level but
   // far above what a real installer exporting quotes would ever hit.
   if (await isRateLimited(`pdf:${clientIp(req)}`, 20, 60 * 60 * 1000)) {

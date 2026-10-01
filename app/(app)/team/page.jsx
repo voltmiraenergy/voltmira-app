@@ -1,6 +1,8 @@
 // app/(app)/team/page.jsx — Team plan attribute: member list + seats + invites.
 // RLS lets any member read teammates; invite/remove happen via /api/team
 // (owner-gated server-side — the UI hiding is convenience, not security).
+import "../dx.css";
+import "./team.css";
 import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
 import { t, normLang } from "../../../lib/i18n.js";
@@ -8,13 +10,15 @@ import { seatCap as planSeatCap, seatsOpen as planSeatsOpen } from "../../../lib
 import { quote } from "@voltmira/engine";
 import { companyEngine } from "../../../lib/engineSettings.js";
 import { rowToQuoteInput } from "../../../lib/quoteInput.js";
+import { canViewTeamPerformance } from "../../../lib/rbac.js";
 import TeamActions from "./TeamActions.jsx";
+import { moneyFormatter } from "../../../lib/money.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Team — VoltMira" };
+export const metadata = { title: "Team | VoltMira" };
 
 export default async function Team() {
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
   const [co, { data: { user } }] = await Promise.all([currentCompany(), sb.auth.getUser()]);
   const lang = normLang(co?.lang);
   // Members + project owner counts via the service role, scoped to the caller's
@@ -72,16 +76,44 @@ export default async function Team() {
   const staff = Math.max(0, memberCount - (members || []).filter(m => m.role === "owner").length);
   const inPlay = (projs || []).filter(p => p.status !== "won" && p.status !== "lost").length;
 
+  // RBAC (lib/rbac.js, off by default): once an owner turns this on, a
+  // non-manager/non-owner only ever sees their OWN row's numbers — never a
+  // teammate's pipeline or win rate. Filtered here, server-side, before
+  // anything reaches the client, rather than hidden with CSS on a page that
+  // already has the real numbers in its props.
+  const me = (members || []).find((m) => m.id === user?.id) || null;
+  const restrictedView = !canViewTeamPerformance(me, co?.rbac_enabled);
+  const visibleStats = restrictedView
+    ? (user?.id && stats[user.id] ? { [user.id]: stats[user.id] } : {})
+    : stats;
+  const visibleCounts = restrictedView
+    ? (user?.id ? { [user.id]: counts[user.id] || 0 } : {})
+    : counts;
+
   // Team-wide money, so the header answers "is this team actually producing?"
-  const teamWonEur = Object.values(stats).reduce((s, x) => s + (x.wonEur || 0), 0);
-  const fmt = (n) => "€" + Math.round(n || 0).toLocaleString("en-IE");
+  // (blank for a restricted viewer — see visibleStats above; the header tile
+  // itself is hidden in that case, not shown with someone else's total).
+  const teamWonEur = Object.values(visibleStats).reduce((s, x) => s + (x.wonEur || 0), 0);
+  const fmt = moneyFormatter({ currency: co?.currency, lang, fx: E?.fx });
+
+  // Who leads on won value, named only when this viewer may see teammates'
+  // numbers and someone has actually closed something.
+  const leader = restrictedView ? null : Object.entries(visibleStats)
+    .filter(([, x]) => x.wonEur > 0)
+    .sort((a, b) => b[1].wonEur - a[1].wonEur)[0] || null;
+  const leaderName = leader ? ((members || []).find((m) => m.id === leader[0])?.name || "").trim().split(/\s+/)[0] : "";
 
   return (
-    <div style={{ maxWidth: 980, margin: "0 auto" }}>
-      <div className="page-head">
-        <h1>{t("team_title", lang)}</h1>
-        <span className="sub">{t("team_sub", lang, { co: co?.name || "" })}</span>
-      </div>
+    <div className="dx tmx">
+      <header className="dx-head">
+        <div className="dx-hello">
+          <h1>{t("team_title", lang)}</h1>
+          <p className="dx-summary">
+            {t("team_sub", lang, { co: co?.name || "" })}
+            {leader && leaderName ? " " + t("team_leader", lang, { name: leaderName, v: fmt(leader[1].wonEur) }) : ""}
+          </p>
+        </div>
+      </header>
 
       {/* One measured strip instead of three floating tiles — seats read as
           discrete pips (you can count what's left at a glance), and the money
@@ -97,7 +129,7 @@ export default async function Team() {
                   <span key={i} className={"pip" + (i < memberCount ? " on" : "")} />
                 ))}
               </div>
-              <div className="th-sub">{t("team_seats_open", lang, { n: seatsOpen })}</div>
+              <div className="th-sub">{t(seatsOpen === 1 ? "team_seats_open_1" : "team_seats_open", lang, { n: seatsOpen })}</div>
             </>
           ) : (
             <>
@@ -120,16 +152,15 @@ export default async function Team() {
         </div>
 
         <div className="th-item">
-          <div className="th-lbl">{t("tm_st_wonval", lang)}</div>
+          <div className="th-lbl">{restrictedView ? t("tm_st_wonval_own", lang) : t("tm_st_wonval", lang)}</div>
           <div className="th-val th-money">{fmt(teamWonEur)}</div>
-          <div className="th-sub">{t("team_won_sub", lang)}</div>
+          <div className="th-sub">{restrictedView ? "" : t("team_won_sub", lang)}</div>
         </div>
       </section>
 
-      <TeamActions lang={lang} meId={user?.id}
-        me={(members || []).find(m => m.id === user?.id) || null}
-        members={members || []} counts={counts} pending={pending} stats={stats}
-        currency={co?.currency || "EUR"} />
+      <TeamActions lang={lang} meId={user?.id} me={me} restrictedView={restrictedView}
+        members={members || []} counts={visibleCounts} pending={pending} stats={visibleStats}
+        currency={co?.currency || "EUR"} seatCap={seatCap} rbacEnabled={!!co?.rbac_enabled} />
     </div>
   );
 }

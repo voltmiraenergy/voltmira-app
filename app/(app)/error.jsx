@@ -15,11 +15,11 @@ import { t } from "../../lib/i18n.js";
 function detectLang() {
   try {
     const s = localStorage.getItem("voltmira_lang");
-    if (s === "en" || s === "ro" || s === "ru") return s;
+    if (s === "en" || s === "ro" || s === "ru" || s === "uk") return s;
   } catch { /* ignore */ }
   try {
     const n = (navigator.language || "en").slice(0, 2).toLowerCase();
-    if (n === "ro" || n === "ru") return n;
+    if (n === "ro" || n === "ru" || n === "uk") return n;
   } catch { /* ignore */ }
   return "en";
 }

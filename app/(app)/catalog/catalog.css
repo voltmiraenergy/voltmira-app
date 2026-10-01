@@ -1,0 +1,95 @@
+/* app/(app)/catalog/catalog.css — the Catalog page: the stock-health strip,
+ * the type / search / reorder toolbar, and a polish pass over the product
+ * cards (whose base styles live in CatalogManager's own <style>). Shared
+ * header and buttons come from app/(app)/dx.css; same `.app` prefix rule.
+ */
+
+/* ---------------------------------------------------------------- stock-health strip */
+.app .cx-strip {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow);
+}
+.app .cx-strip > div { background: var(--paper-2); padding: 14px 16px 13px; display: flex; flex-direction: column; min-width: 0; position: relative; }
+.app .cx-strip > div.warn::before, .app .cx-strip > div.bad::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; }
+.app .cx-strip > div.warn::before { background: var(--amber); }
+.app .cx-strip > div.bad::before { background: var(--red); }
+.app .cx-strip dt { font-size: 11px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.app .cx-strip dd {
+  font-family: var(--dx-d); font-size: 24px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2;
+  font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 5px;
+}
+.app .cx-strip .warn dd:not(.cx-sub) { color: var(--amber-ink); }
+.app .cx-strip .bad dd:not(.cx-sub) { color: var(--red); }
+.app .cx-strip dd.cx-sub {
+  font-family: var(--font-b); font-size: 12px; font-weight: 500; letter-spacing: 0; color: var(--muted); margin-top: 2px;
+  line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---------------------------------------------------------------- toolbar */
+.app .cx-bar { display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; }
+.app .cx-bar .dx-tabs { margin-bottom: 0; max-width: 100%; }
+.app .cx-find { flex: 1 1 220px; max-width: 320px; }
+.app .cx-reorder {
+  display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; border-radius: 99px;
+  border: 1px solid var(--line) !important; background: var(--paper-2) !important; color: var(--ink) !important;
+  font-size: 12.5px; font-weight: 600; white-space: nowrap; transition: border-color .16s, background .16s;
+}
+.app .cx-reorder svg { color: var(--amber-ink); }
+.app .cx-reorder span { font-size: 11px; font-weight: 700; color: var(--amber-ink); background: var(--amber-tint); padding: 1px 7px; border-radius: 99px; }
+.app .cx-reorder:hover { border-color: var(--amber) !important; }
+.app .cx-reorder.on { background: var(--amber-tint) !important; border-color: var(--amber) !important; color: var(--amber-ink) !important; }
+.app .cx-reorder.on span { background: var(--paper-2); }
+
+/* ---------------------------------------------------------------- groups + cards */
+.app .cx-groups { display: flex; flex-direction: column; gap: 24px; }
+.app .cx .cat-group-h {
+  font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; gap: 9px;
+}
+.app .cx .cat-group-h svg { width: 22px; height: 22px; color: var(--green); }
+.app .cx .cat-group-h .n {
+  font-size: 11px; font-weight: 700; letter-spacing: 0; opacity: 1; color: var(--muted);
+  background: var(--paper-2); border: 1px solid var(--line); padding: 1px 8px; border-radius: 99px;
+}
+.app .cx .cat-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.app .cx .cat-card { border-radius: 16px; box-shadow: var(--shadow); }
+.app .cx .cat-card:hover { border-color: var(--green); box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+/* Product shots are cut out on white, so show the whole product on white
+   instead of cropping it to fill the tile. */
+.app .cx .cat-thumb { object-fit: contain; padding: 14px; background: #fff; border-bottom: 1px solid var(--line); }
+.app .cx .cat-thumb.cat-thumb-ph { padding: 0; background: linear-gradient(135deg, var(--paper), var(--green-tint)); }
+.app .cx .cat-card.is-out .cat-thumb { opacity: .55; filter: grayscale(.6); }
+.app .cx .cat-body { padding: 13px 14px 14px; gap: 4px; }
+.app .cx .cat-brand { font-size: 11px; letter-spacing: .07em; }
+.app .cx .cat-name { font-family: var(--dx-d); font-size: 15px; letter-spacing: -.01em; }
+.app .cx .cat-price { font-family: var(--dx-d); font-size: 18px; font-weight: 700; }
+.app .cx .cat-acts { opacity: .45; transition: opacity .16s; }
+.app .cx .cat-card:hover .cat-acts, .app .cx .cat-card:focus-within .cat-acts { opacity: 1; }
+.app .cx .cat-iconbtn:hover { color: var(--green); border-color: var(--green); }
+.app .cx .cat-iconbtn[aria-label]:last-child:hover { color: var(--red); border-color: var(--red); background: var(--red-tint); }
+.app .cx .cat-stock.ok { color: var(--green); background: var(--green-tint); }
+.app .cx .cat-stock.low { color: var(--amber-ink); background: var(--amber-tint); }
+.app .cx .cat-stock.out { color: var(--red); background: var(--red-tint); }
+.app .cx .cat-starter { background: var(--paper-2); }
+
+/* ---------------------------------------------------------------- responsive */
+@media (max-width: 1080px) {
+  .app .cx-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 768px) {
+  .app .cx-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app .cx-strip > div:first-child { grid-column: 1 / -1; }
+  .app .cx-find { max-width: none; flex-basis: 100%; }
+  .app .cx .cat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .app .cx .dx-head-tools { flex-wrap: wrap; }
+  .app .cx .dx-head-tools > * { flex: 1 1 auto; justify-content: center; }
+}
+@media (max-width: 420px) {
+  .app .cx .cat-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (pointer: coarse) {
+  .app .cx .cat-acts { opacity: 1; }
+}
+
+/* Ukraine: the import duty and VAT note above the catalog */
+.app .cx .cx-duty { margin: 0 0 14px; padding: 10px 13px; border-radius: 10px; background: var(--green-tint); color: var(--ink);
+  font-size: 12.5px; line-height: 1.5; max-width: 90ch; }
