@@ -10,9 +10,9 @@ import { PANELS, INVERTERS } from "../../../lib/supplierCatalog.js";
 import { t } from "../../../lib/i18n.js";
 
 function specLine(p) {
-  if (p.kind === "panel") return `${p.watt} Wp · Voc ${p.voc} V · ${p.eff}%`;
-  if (p.kind === "inverter") return `${p.kw} kW · ${p.type} · ${p.phases === 3 ? "3~" : "1~"} · ${p.mppt} MPPT`;
-  if (p.kind === "battery") return `${p.kwh} kWh · ${p.chem} · ${p.cycles.toLocaleString("en-IE")} cicluri`;
+  if (p.kind === "panel") return `${p.watt} Wp, Voc ${p.voc} V, ${p.eff}%`;
+  if (p.kind === "inverter") return `${p.kw} kW, ${p.type}, ${p.phases === 3 ? "3~" : "1~"}, ${p.mppt} MPPT`;
+  if (p.kind === "battery") return `${p.kwh} kWh, ${p.chem}, ${p.cycles.toLocaleString("en-IE")} cicluri`;
   return p.type;
 }
 

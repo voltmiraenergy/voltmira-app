@@ -12,10 +12,12 @@
   background: color-mix(in srgb, var(--app-bg) 88%, transparent);
   backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px); }
 .lg-head-in { height: 66px; display: flex; align-items: center; gap: 12px; }
-.lg-logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none;
-  font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
-.lg-logo b { color: var(--app-text); font-weight: 800; }
-.lg-logo i { color: var(--app-ok); font-style: normal; }
+/* The homepage logo, never recoloured (lib/Logo.jsx); on a paper plate in dark mode. */
+.lg-logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; margin-left: -5px;
+  padding: 4px 14px 4px 5px; border-radius: 12px; background: var(--logo-plate, transparent);
+  font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -.02em; line-height: 1; }
+.lg-logo b { color: #142A21; font-weight: 800; }
+.lg-logo i { color: #1E6B4E; font-style: normal; }
 .lg-back { margin-left: auto; color: var(--app-muted); text-decoration: none; font-size: 14.5px; font-weight: 600; }
 .lg-back:hover { color: var(--app-text); }
 

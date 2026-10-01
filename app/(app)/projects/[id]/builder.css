@@ -29,11 +29,10 @@ html[data-theme="dark"] .app .qb { --amber-ink: #EBA542; --dx-on-green: #07130D;
 .app .qb .qb-title { width: 100%; border-radius: 10px; }
 .app .qb-title-row .chip { flex: none; }
 .app .qb-saved { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
-.app .qb-saved i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
-.app .qb-saved.s-saving i { background: var(--amber); animation: qb-blink 1s ease-in-out infinite; }
 .app .qb-saved.s-error { color: var(--red); font-weight: 650; }
-.app .qb-saved.s-error i { background: var(--red); }
-@keyframes qb-blink { 50% { opacity: .3; } }
+/* no signal: the edit is kept on the device (lib/offline.js) */
+.app .qb-saved.s-db { color: var(--red); font-weight: 650; white-space: normal; }
+.app .qb-saved.s-device { color: var(--amber-deep, #8A5A0F); font-weight: 650; }
 .app .qb-sub { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; font-size: 14px; color: var(--muted); margin-top: 4px; min-height: 22px; }
 .app .qb-valid {
   font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 99px;

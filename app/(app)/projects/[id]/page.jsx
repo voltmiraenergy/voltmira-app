@@ -9,10 +9,11 @@ import { canViewAllProjects, canEditTechnical } from "../../../../lib/rbac.js";
 import Editor from "./editor.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Quote · VoltMira" };
+export const metadata = { title: "Quote | VoltMira" };
 
-export default async function ProjectPage({ params }) {
-  const sb = supabaseServer();
+export default async function ProjectPage(props) {
+  const params = await props.params;
+  const sb = await supabaseServer();
   // The project fetch is RLS-scoped to the caller's company (projects_all uses
   // the security-definer my_company_id(), no recursion).
   const [{ data: p }, { data: co }, { data: prop }, { data: catalog }, { data: signedProp }, { data: wl }] = await Promise.all([
@@ -83,7 +84,7 @@ export default async function ProjectPage({ params }) {
 
   return <Editor initial={p} engineSettings={E} team={team || []} catalog={catalog || []}
     canEditTechnical={canEditTech}
-    prosumerLimitKw={Number(co?.prosumer_limit_kw ?? 10.8)} lang={normLang(co?.lang)}
+    prosumerLimitKw={Number(co?.prosumer_limit_kw ?? 10.8)} lang={normLang(co?.lang)} currency={co?.currency || "EUR"}
     proposalSentAt={prop?.created_at || null} companyName={co?.name || "VoltMira"} companyLogo={co?.logo_url || ""}
     companyLegal={{ legal_name: co?.legal_name || "", reg_no: co?.reg_no || "", legal_address: co?.legal_address || "", iban: co?.iban || "", install_warranty_years: co?.install_warranty_years || null,
       contract_template_override: wl?.contract_template_override || "", commissioning_template_override: wl?.commissioning_template_override || "" }}

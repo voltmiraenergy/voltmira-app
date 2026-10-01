@@ -12,7 +12,7 @@ import { useMemo, useState } from "react";
 import { designCheck } from "../lib/designCheck.js";
 import { inverterOptions } from "../lib/inverterOptions.js";
 
-const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
+const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
 
 /**
  * @param {Array}  bom        current bill of materials (reads the panel line
@@ -35,7 +35,7 @@ export default function DesignSuggestions({ lang, bom, kw, battKwh, phases, mark
     return (
       <section className={className + " ds-closed"}>
         <button type="button" className="btn ghost sm ds-trigger qb-expand" onClick={() => setOpen(true)}>
-          {t3(lang, "Sugestii de proiectare: compară invertoare", "Design suggestions: compare inverters", "Варианты дизайна: сравнить инверторы")}
+          {t3(lang, "Sugestii de proiectare: compară invertoare", "Design suggestions: compare inverters", "Варианты дизайна: сравнить инверторы", "Варіанти дизайну: порівняти інвертори")}
         </button>
       </section>
     );
@@ -44,31 +44,31 @@ export default function DesignSuggestions({ lang, bom, kw, battKwh, phases, mark
   return (
     <section className={className + " ds-panel"}>
       <div className="ds-head">
-        <h3 style={{ margin: 0 }}>{t3(lang, "Sugestii de proiectare", "Design suggestions", "Варианты дизайна")}</h3>
+        <h3 style={{ margin: 0 }}>{t3(lang, "Sugestii de proiectare", "Design suggestions", "Варианты дизайна", "Варіанти дизайну")}</h3>
         <button type="button" className="btn ghost sm" onClick={() => setOpen(false)}>
-          {t3(lang, "închide", "close", "закрыть")}
+          {t3(lang, "închide", "close", "закрыть", "закрити")}
         </button>
       </div>
       <p className="ds-lead">
         {t3(lang,
           `Fiecare combinație de invertoare care poate deservi acest array de ${d.dcKw.toFixed(1)} kWp, nu doar cea aleasă acum. „Captură energetică” arată cât din producție NU se pierde prin limitare, nu o estimare de profitabilitate.`,
           `Every inverter combination that can serve this ${d.dcKw.toFixed(1)} kWp array, not just the one currently picked. "Energy capture" is how much of the output ISN'T lost to clipping, not a profitability estimate.`,
-          `Все комбинации инверторов для этого массива ${d.dcKw.toFixed(1)} кВт·п. «Захват энергии»: доля выработки, не потерянная на ограничении, а не оценка доходности.`)}
+          `Все комбинации инверторов для этого массива ${d.dcKw.toFixed(1)} кВт·п. «Захват энергии»: доля выработки, не потерянная на ограничении, а не оценка доходности.`, `Усі комбінації інверторів, які підходять для цього масиву ${d.dcKw.toFixed(1)} кВтп, а не лише вибрана зараз. «Захоплення енергії» це частка генерації, яка НЕ втрачається на обмеженні, а не оцінка прибутковості.`)}
       </p>
 
       {rows.length === 0 ? (
         <div className="ds-empty">
-          {t3(lang, "Niciun invertor din baza de date se potrivește acestei puteri/faze.", "No inverter in the database fits this size/phase.", "В базе нет подходящего инвертора для этой мощности/фазы.")}
+          {t3(lang, "Niciun invertor din baza de date se potrivește acestei puteri/faze.", "No inverter in the database fits this size/phase.", "В базе нет подходящего инвертора для этой мощности/фазы.", "У базі немає інвертора, що підходить для цієї потужності/фази.")}
         </div>
       ) : (
         <div className="ds-scroll">
           <table className="ds-table"><tbody>
             <tr>
-              <th>{t3(lang, "Invertor", "Inverter", "Инвертор")}</th>
-              <th>{t3(lang, "Buc.", "Units", "Шт.")}</th>
-              <th>{t3(lang, "Raport putere", "Power ratio", "Коэфф. мощности")}</th>
-              <th>{t3(lang, "Captură energetică", "Energy capture", "Захват энергии")}</th>
-              <th>{t3(lang, "Putere AC", "AC power", "Мощность AC")}</th>
+              <th>{t3(lang, "Invertor", "Inverter", "Инвертор", "Інвертор")}</th>
+              <th>{t3(lang, "Buc.", "Units", "Шт.", "Шт.")}</th>
+              <th>{t3(lang, "Raport putere", "Power ratio", "Коэфф. мощности", "Коеф. потужності")}</th>
+              <th>{t3(lang, "Captură energetică", "Energy capture", "Захват энергии", "Захоплення енергії")}</th>
+              <th>{t3(lang, "Putere AC", "AC power", "Мощность AC", "Потужність AC")}</th>
               <th aria-hidden="true"></th>
             </tr>
             {rows.map((r, i) => (
@@ -86,7 +86,7 @@ export default function DesignSuggestions({ lang, bom, kw, battKwh, phases, mark
                 <td>{r.acKw.toFixed(2)} kW</td>
                 <td>
                   <button type="button" className="btn primary sm" onClick={() => { onApply(r); setOpen(false); }}>
-                    {t3(lang, "Aplică", "Apply", "Применить")}
+                    {t3(lang, "Aplică", "Apply", "Применить", "Застосувати")}
                   </button>
                 </td>
               </tr>

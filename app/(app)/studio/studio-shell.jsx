@@ -23,7 +23,7 @@ export default function StudioShell({ lang, children }) {
     return (
       <div className="pv-wrap" aria-busy="true">
         <style dangerouslySetInnerHTML={{ __html: PREVIEW_CSS }} />
-        <p className="pv-loading">{tx({ en: "Loading your Studio…", ro: "Se încarcă Studio…", ru: "Загрузка Studio…" }, lang)}</p>
+        <p className="pv-loading">{tx({ en: "Loading your Studio…", ro: "Se încarcă Studio…", ru: "Загрузка Studio…", uk: "Завантаження Studio…" }, lang)}</p>
       </div>
     );
   }
@@ -39,6 +39,7 @@ export default function StudioShell({ lang, children }) {
               en: "Studio: client-ready tools",
               ro: "Studio: instrumente pentru client",
               ru: "Studio: инструменты для клиента",
+              uk: "Studio: інструменти для клієнта",
             }, lang)}</span>
           </div>
         )}

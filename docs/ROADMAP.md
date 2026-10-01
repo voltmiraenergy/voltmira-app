@@ -1,22 +1,39 @@
-# Roadmap (post-scaffold)
+# Roadmap
 
-## Now → first revenue (weeks 1–6)
-1. Port prototype editor UI into web/app/(app)/projects/ (engine unchanged)
-2. Proposal-opened email notifications (Supabase webhook + Resend) — retention #1
-3. Server PDF via DocRaptor, gated to Pro
-4. Onboarding flow per ONBOARDING.md
-5. 5 pilot installers at €25/mo founder price, weekly calls
+Launch market: Moldova. Romania follows once Moldova is proven.
 
-## Next (months 2–4)
-- WhatsApp share button on proposals (RO/MD clients live in WhatsApp)
-- Product catalog: installer's own panels/inverters + margins feed cost model
-- E-signature on Accept (name + checkbox + IP/timestamp is legally adequate
-  for quotes in RO; add DocuSign later for contracts)
-- Team seats UI + role permissions (schema already supports it)
-- RO bill OCR (Premier Energy MD, Electrica RO templates) — the regional moat
+## Built
 
-## Later (months 4–8)
-- Tariff auto-update service per market with "last verified" stamps
-- White-label domains (proposals on installer's own domain) — €250/mo tier
-- Public API + Zapier
-- Mobile PWA install prompt for Sales Mode
+- Quote editor on the engine: PVGIS hourly yield, string design, roof layout on
+  satellite imagery, batteries (backup and peak shaving), bill of materials
+  from the installer's own catalog, Moldovan net billing, prices in lei.
+- Live client proposal: opens tracked, options side by side, Q&A assistant,
+  e-signature, PDF, follow-ups on day 3, 7 and 14 (daily cron).
+- Sharing on Viber, WhatsApp, Telegram, e-mail, or as an image.
+- Leads with channel attribution, embeddable form and AI chat, a Telegram lead
+  assistant, site visits with calendar export and a client confirmation.
+- Paperwork: Premier Energy / RED Nord grid application, contract,
+  commissioning act, invoices.
+- Studio: the job from survey to handover, payments, monitoring through the
+  inverter portals, fleet health with a weather check.
+- Team roles and permissions, CRM webhook, CSV import and export, traction
+  numbers for the founders (/traction).
+
+## Next: take a cut of every installation (3 to 9 months)
+
+1. Green financing in the proposal: pre-qualify the homeowner and send the
+   application to partner banks (MAIB, Moldindconbank, OTP).
+2. Procurement: order the whole bill of materials from a distributor in one
+   click, with live prices and stock.
+3. Paperwork agent: fill, check and chase the grid-connection file.
+4. Legally valid signatures and invoices: MSign / MPass, SFS e-Factura.
+5. Client payments by milestone (MAIB e-commerce, Paynet).
+6. Accounting export for 1C.
+
+## Later: own the installed base (9 to 24 months)
+
+- Maintenance agent: diagnose, open a ticket, send the crew, tell the client.
+- Homeowner app with savings, alerts and "invite a neighbour".
+- Aggregating the batteries VoltMira monitors into a virtual power plant.
+- Production guarantee with an insurer, priced on calibrated yield data.
+- Ukrainian as a fourth language; Romania, then Ukraine.

@@ -12,7 +12,7 @@ import { relTime } from "../../../lib/relTime.js";
 import { fmtDate } from "../../../lib/tz.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Traction · VoltMira", robots: { index: false } };
+export const metadata = { title: "Traction | VoltMira", robots: { index: false } };
 
 const EUR = (n) => "€" + Math.round(n || 0).toLocaleString("en-IE");
 const KWP = (n) => (n || 0).toLocaleString("en-IE", { maximumFractionDigits: n >= 100 ? 0 : 1 }) + " kWp";
@@ -53,7 +53,7 @@ function WeekBars({ title, series, pick, fmt }) {
       <figcaption>
         <span>{title}</span>
         <b>{fmt(prev ?? 0)}</b>
-        <small>last full week · this week so far {fmt(last ?? 0)}</small>
+        <small>last full week, this week so far {fmt(last ?? 0)}</small>
       </figcaption>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}, weekly, ${series[0]?.week} to ${series.at(-1)?.week}`}>
         <line x1="0" x2={W} y1={H - bottom} y2={H - bottom} className="tr-axis" />
@@ -88,7 +88,7 @@ export default async function TractionPage() {
           <h1>Traction</h1>
           <p className="dx-summary">
             {INT(T.workspaces)} real workspaces, {INT(T.paying)} with a billing subscription.
-            {" "}{INT(T.excluded)} left out: demo, empty, and your team's own workspaces. Sample pipelines don't count either.
+            {" "}{INT(T.excluded)} left out: demo, empty, and your team&rsquo;s own workspaces. Sample pipelines don&rsquo;t count either.
           </p>
         </div>
         <div className="dx-head-tools">
@@ -111,7 +111,7 @@ export default async function TractionPage() {
         </div>
         <div>
           <dt>Active workspaces</dt><dd>{INT(r.last30.active)}<small>/ {INT(T.workspaces)}</small><Delta now={r.last30.active} prev={r.prev30.active} /></dd>
-          <dd className="tr-sub">last 30 days · {INT(lastWeek?.activeWorkspaces)} last full week</dd>
+          <dd className="tr-sub">last 30 days, {INT(lastWeek?.activeWorkspaces)} last full week</dd>
         </div>
         <div>
           <dt>New workspaces</dt><dd>{INT(r.last30.fresh)}<Delta now={r.last30.fresh} prev={r.prev30.fresh} /></dd>
@@ -146,8 +146,8 @@ export default async function TractionPage() {
         <section className="dx-card" aria-labelledby="tr-all-h">
           <header className="dx-card-head"><div><h2 id="tr-all-h">All time</h2></div></header>
           <dl className="tr-kv">
-            <div><dt>Quotes sent</dt><dd>{INT(T.sent)}</dd><dd className="tr-sub">{KWP(T.kwpQuoted)} · {EUR(T.eurQuoted)}</dd></div>
-            <div><dt>Won</dt><dd>{INT(T.won)}</dd><dd className="tr-sub">{KWP(T.kwpWon)} · {EUR(T.eurWon)}</dd></div>
+            <div><dt>Quotes sent</dt><dd>{INT(T.sent)}</dd><dd className="tr-sub">{KWP(T.kwpQuoted)}, {EUR(T.eurQuoted)}</dd></div>
+            <div><dt>Won</dt><dd>{INT(T.won)}</dd><dd className="tr-sub">{KWP(T.kwpWon)}, {EUR(T.eurWon)}</dd></div>
             <div><dt>Proposals opened by the client</dt><dd>{PCT(T.openRate)}</dd><dd className="tr-sub">{INT(T.signed)} signed online</dd></div>
             <div><dt>Leads captured</dt><dd>{INT(T.leads)}</dd><dd className="tr-sub">widget, proposal and manual</dd></div>
           </dl>
@@ -174,7 +174,7 @@ export default async function TractionPage() {
                 {r.workspaces.slice(0, 200).map((w) => (
                   <tr key={w.id}>
                     <td className="tr-name" title={`Workspace id: ${w.id}`}>{w.name || "Unnamed"}</td>
-                    <td><span className={"tr-plan " + (w.subscribed ? "paid" : "")} title={w.subscribed ? "Billing subscription" : "No billing subscription"}>{w.plan}{w.subscribed ? " · billed" : ""}</span></td>
+                    <td><span className={"tr-plan " + (w.subscribed ? "paid" : "")} title={w.subscribed ? "Billing subscription" : "No billing subscription"}>{w.plan}{w.subscribed ? ", billed" : ""}</span></td>
                     <td>{fmtDate(w.createdAt, "en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
                     <td>{w.lastActive ? relTime(w.lastActive, "en-GB") : "—"}</td>
                     <td className="n">{w.members}</td><td className="n">{w.quotes}</td><td className="n">{w.sent}</td><td className="n">{w.won}</td>

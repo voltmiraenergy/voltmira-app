@@ -24,7 +24,7 @@ export default function GlobalError({ error, reset }) {
         <div>
           <h1 style={{ fontSize: 22, margin: "0 0 8px" }}>Something went wrong.</h1>
           <p style={{ color: "#8FA398", margin: "0 0 20px", maxWidth: 420 }}>
-            The error's been reported automatically. Try again, or reload the page.
+            The error&rsquo;s been reported automatically. Try again, or reload the page.
           </p>
           <button onClick={() => reset()} style={{
             padding: "10px 20px", borderRadius: 8, border: "none", cursor: "pointer",

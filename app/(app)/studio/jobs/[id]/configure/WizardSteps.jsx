@@ -19,20 +19,20 @@ import InstallationStep from "./InstallationStep.jsx";
 import MonitoringStep from "./MonitoringStep.jsx";
 
 export const STEPS = [
-  { key: 0, icon: MapPin, label: { en: "Site & roof", ro: "Amplasament", ru: "Участок и крыша" },
-    desc: { en: "Where the system goes and how the roof faces the sun. Pitch, orientation and shading set this job's yield.", ro: "Unde se montează sistemul și cum e orientat acoperișul. Înclinarea, orientarea și umbrirea stabilesc producția lucrării.", ru: "Где стоит система и как крыша смотрит на солнце. Уклон, ориентация и затенение задают выработку объекта." } },
-  { key: 1, icon: Zap, label: { en: "Equipment", ro: "Echipament", ru: "Оборудование" },
-    desc: { en: "Panels, inverter and battery from your supplier catalog. Tick two or more in a list to compare them side by side.", ro: "Panouri, invertor și baterie din catalogul furnizorilor. Bifează două sau mai multe dintr-o listă ca să le compari.", ru: "Панели, инвертор и батарея из каталога поставщиков. Отметьте два или больше в списке, чтобы сравнить их." } },
-  { key: 2, icon: EuroIcon, label: { en: "Financials", ro: "Financiar", ru: "Финансы" },
-    desc: { en: "How the client pays, and what the system does for their cash over 25 years.", ro: "Cum plătește clientul și ce face sistemul pentru banii lui în 25 de ani.", ru: "Как платит клиент и что система даёт его деньгам за 25 лет." } },
-  { key: 3, icon: Plug, label: { en: "Grid connection", ro: "Racordare", ru: "Подключение" },
-    desc: { en: "The technical annex for the grid operator, built from this job's equipment, ready to print and file.", ro: "Anexa tehnică pentru operatorul de rețea, construită din echipamentul lucrării, gata de printat și depus.", ru: "Техническое приложение для оператора сети из оборудования объекта, готово к печати и подаче." } },
-  { key: 4, icon: HardHat, label: { en: "Installation", ro: "Montaj", ru: "Монтаж" },
-    desc: { en: "Put the job in the week, check materials, run the site checklist and get the handover signed.", ro: "Programează lucrarea, verifică materialele, parcurge lista de pe teren și obține semnătura la predare.", ru: "Поставьте объект в неделю, проверьте материалы, пройдите чек-лист и получите подпись при сдаче." } },
-  { key: 5, icon: Activity, label: { en: "Monitoring", ro: "Monitorizare", ru: "Мониторинг" },
-    desc: { en: "Monthly production against what the quote promised, warranties and service tickets.", ro: "Producția lunară față de ce a promis oferta, garanții și tichete de service.", ru: "Помесячная выработка против обещанного в расчёте, гарантии и сервисные заявки." } },
-  { key: 6, icon: FileText, label: { en: "Documents", ro: "Documente", ru: "Документы" },
-    desc: { en: "What's ready for this job and what's still missing before it's complete.", ro: "Ce e gata pentru această lucrare și ce mai lipsește până la final.", ru: "Что готово по объекту и чего ещё не хватает до завершения." } },
+  { key: 0, icon: MapPin, label: { en: "Site & roof", ro: "Amplasament", ru: "Участок и крыша", uk: "Ділянка й дах" },
+    desc: { en: "Where the system goes and how the roof faces the sun. Pitch, orientation and shading set this job's yield.", ro: "Unde se montează sistemul și cum e orientat acoperișul. Înclinarea, orientarea și umbrirea stabilesc producția lucrării.", ru: "Где стоит система и как крыша смотрит на солнце. Уклон, ориентация и затенение задают выработку объекта.", uk: "Де стоїть система і як дах дивиться на сонце. Нахил, орієнтація та затінення визначають генерацію об’єкта." } },
+  { key: 1, icon: Zap, label: { en: "Equipment", ro: "Echipament", ru: "Оборудование", uk: "Обладнання" },
+    desc: { en: "Panels, inverter and battery from your supplier catalog. Tick two or more in a list to compare them side by side.", ro: "Panouri, invertor și baterie din catalogul furnizorilor. Bifează două sau mai multe dintr-o listă ca să le compari.", ru: "Панели, инвертор и батарея из каталога поставщиков. Отметьте два или больше в списке, чтобы сравнить их.", uk: "Панелі, інвертор і батарея з каталогу постачальників. Позначте два або більше у списку, щоб порівняти їх." } },
+  { key: 2, icon: EuroIcon, label: { en: "Financials", ro: "Financiar", ru: "Финансы", uk: "Фінанси" },
+    desc: { en: "How the client pays, and what the system does for their cash over 25 years.", ro: "Cum plătește clientul și ce face sistemul pentru banii lui în 25 de ani.", ru: "Как платит клиент и что система даёт его деньгам за 25 лет.", uk: "Як платить клієнт і що система дає його грошам за 25 років." } },
+  { key: 3, icon: Plug, label: { en: "Grid connection", ro: "Racordare", ru: "Подключение", uk: "Приєднання" },
+    desc: { en: "The technical annex for the grid operator, built from this job's equipment, ready to print and file.", ro: "Anexa tehnică pentru operatorul de rețea, construită din echipamentul lucrării, gata de printat și depus.", ru: "Техническое приложение для оператора сети из оборудования объекта, готово к печати и подаче.", uk: "Технічний додаток для оператора мережі з обладнання об’єкта, готовий до друку й подання." } },
+  { key: 4, icon: HardHat, label: { en: "Installation", ro: "Montaj", ru: "Монтаж", uk: "Монтаж" },
+    desc: { en: "Put the job in the week, check materials, run the site checklist and get the handover signed.", ro: "Programează lucrarea, verifică materialele, parcurge lista de pe teren și obține semnătura la predare.", ru: "Поставьте объект в неделю, проверьте материалы, пройдите чек-лист и получите подпись при сдаче.", uk: "Поставте об’єкт у тиждень, перевірте матеріали, пройдіть чек-лист і отримайте підпис під час здачі." } },
+  { key: 5, icon: Activity, label: { en: "Monitoring", ro: "Monitorizare", ru: "Мониторинг", uk: "Моніторинг" },
+    desc: { en: "Monthly production against what the quote promised, warranties and service tickets.", ro: "Producția lunară față de ce a promis oferta, garanții și tichete de service.", ru: "Помесячная выработка против обещанного в расчёте, гарантии и сервисные заявки.", uk: "Помісячна генерація проти обіцяного в розрахунку, гарантії та сервісні заявки." } },
+  { key: 6, icon: FileText, label: { en: "Documents", ro: "Documente", ru: "Документы", uk: "Документи" },
+    desc: { en: "What's ready for this job and what's still missing before it's complete.", ro: "Ce e gata pentru această lucrare și ce mai lipsește până la final.", ru: "Что готово по объекту и чего ещё не хватает до завершения.", uk: "Що готово по об’єкту і чого ще бракує до завершення." } },
 ];
 
 /** The figure and status each stage shows on the line, all from the job's own data. */
@@ -53,23 +53,23 @@ function stageFacts(job, derived, lang) {
   }
   const docsReady = [job.roofFactor != null, !!job.panelId && !!job.inverterId, !!fin, !!job.paperworkFiled].filter(Boolean).length;
   const payback = derived?.results?.e?.payback;
-  const yrs = t({ en: "yrs", ro: "ani", ru: "лет" });
+  const yrs = t({ en: "yrs", ro: "ani", ru: "лет", uk: "р." });
   return [
     job.roofFactor != null
-      ? { v: `${Math.round(job.roofFactor * 100)}%`, sub: t({ en: "of the ideal yield", ro: "din producția ideală", ru: "от идеальной выработки" }) }
-      : { v: "—", sub: t({ en: "Survey the roof", ro: "Măsoară acoperișul", ru: "Осмотрите крышу" }) },
-    { v: `${(+job.kw || 0).toFixed(1)} kWp`, sub: job.inverterId ? `${sys.panel.brand}, ${sys.inverter.brand}` : t({ en: "Pick an inverter", ro: "Alege un invertor", ru: "Выберите инвертор" }) },
-    { v: payback == null ? "—" : `${payback.toFixed(1)} ${yrs}`, sub: !fin ? t({ en: "Choose how they pay", ro: "Alege cum plătește", ru: "Выберите способ оплаты" })
-      : fin.type === "credit" ? t({ en: `Green credit, ${fin.months} mo`, ro: `Credit verde, ${fin.months} luni`, ru: `Зелёный кредит, ${fin.months} мес.` })
-      : t({ en: "Paid in cash", ro: "Plată cash", ru: "Оплата наличными" }) },
+      ? { v: `${Math.round(job.roofFactor * 100)}%`, sub: t({ en: "of the ideal yield", ro: "din producția ideală", ru: "от идеальной выработки", uk: "від ідеальної генерації" }) }
+      : { v: "—", sub: t({ en: "Survey the roof", ro: "Măsoară acoperișul", ru: "Осмотрите крышу", uk: "Огляньте дах" }) },
+    { v: `${(+job.kw || 0).toFixed(1)} kWp`, sub: job.inverterId ? `${sys.panel.brand}, ${sys.inverter.brand}` : t({ en: "Pick an inverter", ro: "Alege un invertor", ru: "Выберите инвертор", uk: "Виберіть інвертор" }) },
+    { v: payback == null ? "—" : `${payback.toFixed(1)} ${yrs}`, sub: !fin ? t({ en: "Choose how they pay", ro: "Alege cum plătește", ru: "Выберите способ оплаты", uk: "Виберіть спосіб оплати" })
+      : fin.type === "credit" ? t({ en: `Green credit, ${fin.months} mo`, ro: `Credit verde, ${fin.months} luni`, ru: `Зелёный кредит, ${fin.months} мес.`, uk: `Зелений кредит, ${fin.months} міс.` })
+      : t({ en: "Paid in cash", ro: "Plată cash", ru: "Оплата наличными", uk: "Оплата готівкою" }) },
     job.paperworkFiled
-      ? { v: t({ en: "Filed", ro: "Depus", ru: "Подано" }), sub: t({ en: "with the grid operator", ro: "la operatorul de rețea", ru: "оператору сети" }) }
-      : { v: t({ en: "To file", ro: "De depus", ru: "Подать" }), sub: t({ en: "The annex is ready", ro: "Anexa e gata", ru: "Приложение готово" }) },
-    { v: `${checks}/5`, sub: ctx.signed ? t({ en: "Signed on site", ro: "Semnat pe teren", ru: "Подписано на объекте" }) : t({ en: "site checks done", ro: "verificări făcute", ru: "проверок сделано" }) },
+      ? { v: t({ en: "Filed", ro: "Depus", ru: "Подано", uk: "Подано" }), sub: t({ en: "with the grid operator", ro: "la operatorul de rețea", ru: "оператору сети", uk: "оператору мережі" }) }
+      : { v: t({ en: "To file", ro: "De depus", ru: "Подать", uk: "Подати" }), sub: t({ en: "The annex is ready", ro: "Anexa e gata", ru: "Приложение готово", uk: "Додаток готовий" }) },
+    { v: `${checks}/5`, sub: ctx.signed ? t({ en: "Signed on site", ro: "Semnat pe teren", ru: "Подписано на объекте", uk: "Підписано на об’єкті" }) : t({ en: "site checks done", ro: "verificări făcute", ru: "проверок сделано", uk: "перевірок виконано" }) },
     ytd != null
-      ? { v: `${ytd}%`, sub: t({ en: "of P50 this year", ro: "din P50 anul acesta", ru: "от P50 за год" }) }
-      : { v: "—", sub: t({ en: "No readings yet", ro: "Fără citiri încă", ru: "Показаний пока нет" }) },
-    { v: `${docsReady}/4`, sub: t({ en: "ready to hand over", ro: "gata de predat", ru: "готово к передаче" }) },
+      ? { v: `${ytd}%`, sub: t({ en: "of P50 this year", ro: "din P50 anul acesta", ru: "от P50 за год", uk: "від P50 за рік" }) }
+      : { v: "—", sub: t({ en: "No readings yet", ro: "Fără citiri încă", ru: "Показаний пока нет", uk: "Показників поки немає" }) },
+    { v: `${docsReady}/4`, sub: t({ en: "ready to hand over", ro: "gata de predat", ru: "готово к передаче", uk: "готово до передачі" }) },
   ];
 }
 
@@ -90,8 +90,8 @@ export function JobJourney({ job, derived, lang, step, setStep, rev }) {
   return (
     <section className="ws-journey" aria-labelledby="ws-journey-h">
       <div className="ws-journey-head">
-        <h2 id="ws-journey-h">{t({ en: "The job, step by step", ro: "Lucrarea, pas cu pas", ru: "Объект, шаг за шагом" })}</h2>
-        <p>{t({ en: `${doneN} of 6 steps done. Everything saves as you work; open any step, in any order.`, ro: `${doneN} din 6 pași gata. Totul se salvează pe loc; deschide orice pas, în orice ordine.`, ru: `Готово шагов: ${doneN} из 6. Всё сохраняется сразу; открывайте шаги в любом порядке.` })}</p>
+        <h2 id="ws-journey-h">{t({ en: "The job, step by step", ro: "Lucrarea, pas cu pas", ru: "Объект, шаг за шагом", uk: "Об’єкт, крок за кроком" })}</h2>
+        <p>{t({ en: `${doneN} of 6 steps done. Everything saves as you work; open any step, in any order.`, ro: `${doneN} din 6 pași gata. Totul se salvează pe loc; deschide orice pas, în orice ordine.`, ru: `Готово шагов: ${doneN} из 6. Всё сохраняется сразу; открывайте шаги в любом порядке.`, uk: `Виконано кроків: ${doneN} з 6. Усе зберігається одразу; відкривайте кроки в будь-якому порядку.` })}</p>
       </div>
       <ol className="ws-line" ref={lineRef}>
         {STEPS.map((s, i) => {
@@ -126,7 +126,7 @@ export default function WizardSteps({ job, patch, derived, lang, step, setStep, 
           <h2 id="ws-step-h">{s.label[lang] || s.label.en}</h2>
           <p>{s.desc[lang] || s.desc.en}</p>
         </div>
-        <span className="ws-step-no">{tx({ en: `Step ${step + 1} of 7`, ro: `Pasul ${step + 1} din 7`, ru: `Шаг ${step + 1} из 7` }, lang)}</span>
+        <span className="ws-step-no">{tx({ en: `Step ${step + 1} of 7`, ro: `Pasul ${step + 1} din 7`, ru: `Шаг ${step + 1} из 7`, uk: `Крок ${step + 1} з 7` }, lang)}</span>
       </header>
       {/* key={step}: a fresh mount per step, which also replays the short fade-in */}
       <div key={step} className="ws-step-body">
@@ -156,16 +156,16 @@ function ChecklistRow({ done, label, onClick }) {
 function DocumentsStep({ job, lang, setStep }) {
   const t = (o) => tx(o, lang);
   const items = [
-    [job.roofFactor != null, 0, { en: "Site surveyed: roof pitch, orientation and shading", ro: "Vizită făcută: înclinare, orientare și umbrire", ru: "Осмотр проведён: уклон, ориентация и затенение" }],
-    [!!job.panelId && !!job.inverterId, 1, { en: "Panels and inverter chosen", ro: "Panouri și invertor alese", ru: "Панели и инвертор выбраны" }],
-    [!!job.financing, 2, { en: "Payment method set", ro: "Metoda de plată stabilită", ru: "Способ оплаты задан" }],
-    [!!job.paperworkFiled, 3, { en: "Grid-connection file sent to the operator", ro: "Dosarul de racordare trimis operatorului", ru: "Заявка на подключение отправлена оператору" }],
+    [job.roofFactor != null, 0, { en: "Site surveyed: roof pitch, orientation and shading", ro: "Vizită făcută: înclinare, orientare și umbrire", ru: "Осмотр проведён: уклон, ориентация и затенение", uk: "Огляд проведено: нахил, орієнтація та затінення" }],
+    [!!job.panelId && !!job.inverterId, 1, { en: "Panels and inverter chosen", ro: "Panouri și invertor alese", ru: "Панели и инвертор выбраны", uk: "Панелі та інвертор вибрано" }],
+    [!!job.financing, 2, { en: "Payment method set", ro: "Metoda de plată stabilită", ru: "Способ оплаты задан", uk: "Спосіб оплати задано" }],
+    [!!job.paperworkFiled, 3, { en: "Grid-connection file sent to the operator", ro: "Dosarul de racordare trimis operatorului", ru: "Заявка на подключение отправлена оператору", uk: "Заяву на приєднання надіслано оператору" }],
   ];
   const done = items.filter(([d]) => d).length;
   return (
     <>
       <div className="ws-sec">
-        <div className="ws-sec-h">{t({ en: "Ready to complete", ro: "Gata de finalizare", ru: "Готовность" })}<span className="ws-aside">{done}/4</span></div>
+        <div className="ws-sec-h">{t({ en: "Ready to complete", ro: "Gata de finalizare", ru: "Готовность", uk: "Готовність" })}<span className="ws-aside">{done}/4</span></div>
         <div className="ws-progress" aria-hidden="true"><i style={{ width: (done / 4) * 100 + "%" }} /></div>
         <div className="ws-checks">
           {items.map(([d, to, label]) => <ChecklistRow key={to} done={d} onClick={() => setStep(to)} label={t(label)} />)}
@@ -173,22 +173,22 @@ function DocumentsStep({ job, lang, setStep }) {
       </div>
 
       <div className="ws-sec">
-        <div className="ws-sec-h">{t({ en: "Documents this job produces", ro: "Documentele acestei lucrări", ru: "Документы этого объекта" })}</div>
+        <div className="ws-sec-h">{t({ en: "Documents this job produces", ro: "Documentele acestei lucrări", ru: "Документы этого объекта", uk: "Документи цього об’єкта" })}</div>
         <div className="ws-docs">
           <button type="button" onClick={() => setStep(3)} className="ws-doc">
             <FileCheck2 size={20} aria-hidden="true" />
-            <b>{t({ en: "Technical annex", ro: "Anexă tehnică", ru: "Техническое приложение" })}</b>
-            <small>{t({ en: "Single-line diagram and equipment schedule, for the grid operator", ro: "Schemă monofilară și borderou de echipamente, pentru operatorul de rețea", ru: "Однолинейная схема и спецификация, для оператора сети" })}</small>
+            <b>{t({ en: "Technical annex", ro: "Anexă tehnică", ru: "Техническое приложение", uk: "Технічний додаток" })}</b>
+            <small>{t({ en: "Single-line diagram and equipment schedule, for the grid operator", ro: "Schemă monofilară și borderou de echipamente, pentru operatorul de rețea", ru: "Однолинейная схема и спецификация, для оператора сети", uk: "Однолінійна схема та специфікація, для оператора мережі" })}</small>
           </button>
           <button type="button" onClick={() => setStep(4)} className="ws-doc">
             <ClipboardCheck size={20} aria-hidden="true" />
-            <b>{t({ en: "Handover certificate", ro: "Proces-verbal de predare", ru: "Акт приёмки" })}</b>
-            <small>{t({ en: "Commissioning checks and the client's signature", ro: "Verificări la punerea în funcțiune și semnătura clientului", ru: "Проверки при вводе и подпись клиента" })}</small>
+            <b>{t({ en: "Handover certificate", ro: "Proces-verbal de predare", ru: "Акт приёмки", uk: "Акт приймання" })}</b>
+            <small>{t({ en: "Commissioning checks and the client's signature", ro: "Verificări la punerea în funcțiune și semnătura clientului", ru: "Проверки при вводе и подпись клиента", uk: "Перевірки під час введення та підпис клієнта" })}</small>
           </button>
           <button type="button" onClick={() => setStep(5)} className="ws-doc">
             <LineChart size={20} aria-hidden="true" />
-            <b>{t({ en: "Performance report", ro: "Raport de performanță", ru: "Отчёт о выработке" })}</b>
-            <small>{t({ en: "Actual production against P50, and warranties", ro: "Producția reală față de P50 și garanțiile", ru: "Фактическая выработка против P50 и гарантии" })}</small>
+            <b>{t({ en: "Performance report", ro: "Raport de performanță", ru: "Отчёт о выработке", uk: "Звіт про генерацію" })}</b>
+            <small>{t({ en: "Actual production against P50, and warranties", ro: "Producția reală față de P50 și garanțiile", ru: "Фактическая выработка против P50 и гарантии", uk: "Фактична генерація проти P50 і гарантії" })}</small>
           </button>
         </div>
       </div>
@@ -200,8 +200,9 @@ function DocumentsStep({ job, lang, setStep }) {
             en: "The proposal the client signs is built in Quotes, from the same numbers you set here.",
             ro: "Oferta pe care o semnează clientul se construiește în Oferte, din aceleași cifre setate aici.",
             ru: "Предложение, которое подписывает клиент, собирается в разделе «Предложения» из тех же цифр.",
+            uk: "Пропозиція, яку підписує клієнт, збирається в розділі «Розрахунки» з тих самих цифр.",
           })}{" "}
-          <Link href="/projects" style={{ color: "var(--green)", fontWeight: 650 }}>{t({ en: "Open Quotes", ro: "Deschide Oferte", ru: "Открыть предложения" })}</Link>
+          <Link href="/projects" style={{ color: "var(--green)", fontWeight: 650 }}>{t({ en: "Open Quotes", ro: "Deschide Oferte", ru: "Открыть предложения", uk: "Відкрити розрахунки" })}</Link>
         </div>
       </div>
     </>

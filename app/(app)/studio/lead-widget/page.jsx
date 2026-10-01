@@ -13,29 +13,31 @@ import { quote, FX, OPTIMAL_YIELD } from "../_engine.js";
 import AddressField from "../address-field.jsx";
 
 const TX = {
-  title: { en: "Public calculator widget", ro: "Widget calculator public", ru: "Публичный калькулятор" },
+  title: { en: "Public calculator widget", ro: "Widget calculator public", ru: "Публичный калькулятор", uk: "Публічний калькулятор" },
   sub: {
-    en: "The homeowner calculator you embed on your own site, in Romanian or Russian. Every estimate becomes a lead in your VoltMira pipeline.",
-    ro: "Calculatorul pentru proprietari pe care îl pui pe site-ul tău, în română sau rusă. Fiecare estimare devine un lead în fluxul tău VoltMira.",
-    ru: "Калькулятор для домовладельцев, который вы встраиваете на свой сайт, на румынском или русском. Каждая оценка становится лидом в вашей воронке VoltMira.",
+    en: "The homeowner calculator you embed on your own site, in Romanian, Ukrainian or Russian. Every estimate becomes a lead in your VoltMira pipeline.",
+    ro: "Calculatorul pentru proprietari pe care îl pui pe site-ul tău, în română, ucraineană sau rusă. Fiecare estimare devine un lead în fluxul tău VoltMira.",
+    ru: "Калькулятор для домовладельцев, который вы встраиваете на свой сайт, на румынском, украинском или русском. Каждая оценка становится лидом в вашей воронке VoltMira.",
+    uk: "Калькулятор для власників будинків, який ви вбудовуєте на свій сайт, румунською, українською або російською. Кожна оцінка стає лідом у вашій воронці VoltMira.",
   },
   note: {
     en: "The panel on the left is the embedded widget as a visitor sees it. Try it: the range and price come from the engine, and a submitted request lands in your Leads.",
     ro: "Panoul din stânga este widgetul încorporat, așa cum îl vede un vizitator. Încearcă-l: intervalul și prețul vin din motor, iar o cerere trimisă ajunge în Contacte.",
     ru: "Слева встроенный виджет, каким его видит посетитель. Попробуйте: диапазон и цена из движка, а отправленная заявка попадает в «Заявки».",
+    uk: "Ліворуч вбудований віджет таким, яким його бачить відвідувач. Спробуйте: діапазон і ціна з рушія розрахунків, а надіслана заявка потрапляє в «Заявки».",
   },
-  leads: { en: "Leads in VoltMira", ro: "Lead-uri în VoltMira", ru: "Лиды в VoltMira" },
-  embed: { en: "Embed code", ro: "Cod de încorporare", ru: "Код для вставки" },
-  stats30: { en: "Last 30 days", ro: "Ultimele 30 de zile", ru: "Последние 30 дней" },
-  impressions: { en: "impressions", ro: "afișări", ru: "показы" },
-  estimates: { en: "estimates", ro: "estimări", ru: "оценки" },
-  leadsN: { en: "leads", ro: "lead-uri", ru: "лиды" },
-  rate: { en: "estimate → lead", ro: "estimare → lead", ru: "оценка → лид" },
-  source: { en: "widget · own site", ro: "widget · site propriu", ru: "виджет · свой сайт" },
-  justNow: { en: "just now", ro: "acum", ru: "только что" },
+  leads: { en: "Leads in VoltMira", ro: "Lead-uri în VoltMira", ru: "Лиды в VoltMira", uk: "Ліди у VoltMira" },
+  embed: { en: "Embed code", ro: "Cod de încorporare", ru: "Код для вставки", uk: "Код для вставлення" },
+  stats30: { en: "Last 30 days", ro: "Ultimele 30 de zile", ru: "Последние 30 дней", uk: "Останні 30 днів" },
+  impressions: { en: "impressions", ro: "afișări", ru: "показы", uk: "покази" },
+  estimates: { en: "estimates", ro: "estimări", ru: "оценки", uk: "оцінки" },
+  leadsN: { en: "leads", ro: "lead-uri", ru: "лиды", uk: "ліди" },
+  rate: { en: "estimate → lead", ro: "estimare → lead", ru: "оценка → лид", uk: "оцінка → лід" },
+  source: { en: "widget, own site", ro: "widget, site propriu", ru: "виджет, свой сайт", uk: "віджет, власний сайт" },
+  justNow: { en: "just now", ro: "acum", ru: "только что", uk: "щойно" },
 };
 
-// Widget-facing copy is Romanian / Russian only — it's shown to MD homeowners.
+// Widget-facing copy in the languages homeowners read: Romanian, Ukrainian, Russian.
 const W = {
   ro: {
     brand: "Calculator solar", headline: "Cât economisești cu panouri solare?",
@@ -57,15 +59,25 @@ const W = {
     sent: "Заявка отправлена. Скоро свяжемся.",
     disc: "Ориентировочный расчёт по введённым данным. Итоговое предложение будет после технического визита.",
   },
+  uk: {
+    brand: "Сонячний калькулятор", headline: "Скільки ви заощадите із сонячними панелями?",
+    addr: "Населений пункт або адреса", bill: "Рахунок за електроенергію на місяць (MDL)", roof: "Дах",
+    pitched: "Скатний", flat: "Плаский", calc: "Розрахувати",
+    sys: "Рекомендована система", prod: "Очікувана генерація за рік", price: "Вартість системи, під ключ",
+    payback: "Окупність", save25: "Економія за 25 років", years: "р.",
+    cta: "Запросити детальну пропозицію", name: "Ім’я", phone: "Телефон", send: "Надіслати заявку",
+    sent: "Заявку надіслано. Незабаром зв’яжемося.",
+    disc: "Орієнтовний розрахунок за введеними даними. Остаточна пропозиція буде після технічного огляду.",
+  },
 };
 
 // The top lead is Familia Rusu — the same client you then follow through the
 // survey, quote, connection, payments and monitoring surfaces.
 const SEED_LEADS = [
-  { name: "Familia Rusu", loc: "Ialoveni", kw: 6.5, ago: { ro: "acum 2 ore", en: "2 h ago", ru: "2 ч назад" } },
-  { name: "Ana Cebotari", loc: "Chișinău, Râșcani", kw: 5.5, ago: { ro: "acum 5 ore", en: "5 h ago", ru: "5 ч назад" } },
-  { name: "Igor Pîslaru", loc: "Bălți", kw: 6.5, ago: { ro: "ieri", en: "yesterday", ru: "вчера" } },
-  { name: "Sergiu Moraru", loc: "Strășeni", kw: 10, ago: { ro: "ieri", en: "yesterday", ru: "вчера" } },
+  { name: "Familia Rusu", loc: "Ialoveni", kw: 6.5, ago: { ro: "acum 2 ore", en: "2 h ago", ru: "2 ч назад", uk: "2 год тому" } },
+  { name: "Ana Cebotari", loc: "Chișinău, Râșcani", kw: 5.5, ago: { ro: "acum 5 ore", en: "5 h ago", ru: "5 ч назад", uk: "5 год тому" } },
+  { name: "Igor Pîslaru", loc: "Bălți", kw: 6.5, ago: { ro: "ieri", en: "yesterday", ru: "вчера", uk: "учора" } },
+  { name: "Sergiu Moraru", loc: "Strășeni", kw: 10, ago: { ro: "ieri", en: "yesterday", ru: "вчера", uk: "учора" } },
 ];
 
 const MDL = (eur) => NUM(Math.round(eur * FX.MDL)) + " MDL";
@@ -73,10 +85,11 @@ const MDL = (eur) => NUM(Math.round(eur * FX.MDL)) + " MDL";
 export default function LeadWidgetPreview() {
   const lang = useLang();
   const T = (o) => tx(o, lang);
-  useEffect(() => { document.title = "Public calculator widget · VoltMira"; }, []);
+  useEffect(() => { document.title = "Public calculator widget | VoltMira"; }, []);
 
-  const [wl, setWl] = useState(lang === "ru" ? "ru" : "ro");
-  useEffect(() => { setWl(lang === "ru" ? "ru" : "ro"); }, [lang]);
+  const pickWl = (l) => (l === "ru" || l === "uk" ? l : "ro");
+  const [wl, setWl] = useState(pickWl(lang));
+  useEffect(() => { setWl(pickWl(lang)); }, [lang]);
   const w = W[wl];
 
   const [addr, setAddr] = useState("Chișinău");
@@ -136,6 +149,7 @@ export default function LeadWidgetPreview() {
             </span>
             <div className="pv-seg lw-lang">
               <button className={wl === "ro" ? "on" : ""} onClick={() => setWl("ro")}>RO</button>
+              <button className={wl === "uk" ? "on" : ""} onClick={() => setWl("uk")}>UK</button>
               <button className={wl === "ru" ? "on" : ""} onClick={() => setWl("ru")}>RU</button>
             </div>
           </div>
@@ -189,7 +203,7 @@ export default function LeadWidgetPreview() {
               {leads.map((l, i) => (
                 <li key={i} className={l.fresh ? "fresh" : ""}>
                   <div className="lw-lead-t"><b>{l.name}</b><span>{tx(l.ago, lang)}</span></div>
-                  <div className="lw-lead-m">{l.loc} · {(+l.kw).toFixed(1)} kW · {T(TX.source)}</div>
+                  <div className="lw-lead-m">{l.loc}, {(+l.kw).toFixed(1)} kW, {T(TX.source)}</div>
                 </li>
               ))}
             </ul>
@@ -204,8 +218,8 @@ export default function LeadWidgetPreview() {
             <div style={{ marginTop: 10 }}>
               <CopyButton
                 text={`<script src="https://widget.voltmira.md/v1.js" data-installer="solartech" data-lang="ro" async></script>\n<div id="voltmira-calc"></div>`}
-                label={tx({ en: "Copy snippet", ro: "Copiază codul", ru: "Скопировать код" }, lang)}
-                done={tx({ en: "Copied ✓", ro: "Copiat ✓", ru: "Скопировано ✓" }, lang)} />
+                label={tx({ en: "Copy snippet", ro: "Copiază codul", ru: "Скопировать код", uk: "Скопіювати код" }, lang)}
+                done={tx({ en: "Copied", ro: "Copiat", ru: "Скопировано", uk: "Скопійовано" }, lang)} />
             </div>
           </div>
 

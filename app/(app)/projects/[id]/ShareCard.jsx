@@ -1,11 +1,12 @@
 "use client";
-// app/(app)/projects/[id]/ShareCard.jsx — "Share image on WhatsApp".
+// app/(app)/projects/[id]/ShareCard.jsx — "Send as an image".
 // Draws a branded, forwardable image of the quote to a canvas, then shares the
-// PNG via the Web Share API (phones) or downloads it and opens WhatsApp with the
-// tracked link (desktop). Pure canvas — no external libraries (CSP-safe). A data:
+// PNG with the tracked link through the phone's share sheet (Viber, WhatsApp,
+// Telegram...), or on a computer saves it for the installer to attach. Pure canvas — no external libraries (CSP-safe). A data:
 // URL logo draws without tainting the canvas; an external URL logo is skipped so
 // toBlob() never fails.
 import { useState } from "react";
+import { Image as ImageIcon } from "lucide-react";
 import { t } from "../../../../lib/i18n.js";
 
 function rr(x, X, Y, W, H, r) {
@@ -17,6 +18,7 @@ function rr(x, X, Y, W, H, r) {
 
 export default function ShareCard({ companyName, companyLogo, client, systemLabel, bands, savings, waText, lang }) {
   const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const loadLogo = () => new Promise((res) => {
     if (!companyLogo || !/^data:image\//i.test(companyLogo)) return res(null);
@@ -49,7 +51,7 @@ export default function ShareCard({ companyName, companyLogo, client, systemLabe
 
     // client + system
     x.fillStyle = "#142A21"; x.font = "700 52px Inter, system-ui, sans-serif";
-    x.fillText(client || "—", 64, 356);
+    x.fillText(client || "", 64, 356);
     x.fillStyle = "#66756C"; x.font = "400 34px Inter, system-ui, sans-serif";
     x.fillText(systemLabel, 64, 410);
 
@@ -93,16 +95,16 @@ export default function ShareCard({ companyName, companyLogo, client, systemLabe
       } else {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob); a.download = "voltmira-quote.png"; a.click();
-        window.open("https://wa.me/?text=" + encodeURIComponent(waText), "_blank", "noopener");
+        setSaved(true); setTimeout(() => setSaved(false), 4000);
       }
     } catch { /* share cancelled or unavailable */ }
     finally { setBusy(false); }
   }
 
   return (
-    <button type="button" className="btn wapp" style={{ width: "100%", marginBottom: 10 }} disabled={busy} onClick={share}>
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.38a9.9 9.9 0 0 0 4.73 1.2h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.64-1.03-5.13-2.9-7A9.82 9.82 0 0 0 12.04 2Zm0 18.15h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.1.81.83-3.02-.2-.31a8.22 8.22 0 0 1-1.26-4.4c0-4.54 3.7-8.23 8.24-8.23 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.69 8.24-8.22 8.24Z" /></svg>
-      {busy ? t("card_building", lang) : t("wa_card", lang)}
+    <button type="button" className="btn ghost" style={{ width: "100%", marginBottom: 10, justifyContent: "center" }} disabled={busy} onClick={share}>
+      <ImageIcon size={17} aria-hidden="true" />
+      {busy ? t("card_building", lang) : saved ? t("card_saved", lang) : t("wa_card", lang)}
     </button>
   );
 }

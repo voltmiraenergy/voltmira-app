@@ -10,7 +10,8 @@ export const dynamic = "force-dynamic";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const JOB_ID = /^[A-Za-z0-9_-]{1,80}$/;
 
-export async function PATCH(req, { params }) {
+export async function PATCH(req, props) {
+  const params = await props.params;
   const me = await caller();
   if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!me.canManage) return NextResponse.json({ error: "forbidden" }, { status: 403 });

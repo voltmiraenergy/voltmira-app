@@ -28,7 +28,7 @@ export function OPTIONS() {
 export async function GET(req) {
   const ip = clientIp(req);
   if (await isRateLimited(`estimate:${ip}`, 15, 60_000))
-    return J({ error: "rate", message: "Too many requests — give it a minute." }, 429);
+    return J({ error: "rate", message: "Too many requests, give it a minute." }, 429);
 
   const url = new URL(req.url);
   try {
@@ -40,6 +40,6 @@ export async function GET(req) {
     }));
   } catch (e) {
     if (e instanceof EstimateError) return J({ error: e.code, message: e.message, ...(e.detail ? { detail: e.detail } : {}) }, e.status);
-    return J({ error: "upstream", message: "The sun-data service is busy — try again in a moment." }, 502);
+    return J({ error: "upstream", message: "The sun-data service is busy, try again in a moment." }, 502);
   }
 }

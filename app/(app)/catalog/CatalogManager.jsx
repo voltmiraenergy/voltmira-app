@@ -201,7 +201,7 @@ const CSS = `
 }
 `;
 
-export default function CatalogManager({ initial, lang, committed = {}, reserved = {}, usedIn = {} }) {
+export default function CatalogManager({ initial, lang, market = "MD", committed = {}, reserved = {}, usedIn = {} }) {
   const searchParams = useSearchParams();
   const [items, setItems] = useState(initial);
   // ?browse=1 opens the supplier browser straight away — a one-hop deep link
@@ -281,7 +281,7 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
           <div className="field fmargin">
             <label>{t("cat_field_margin", lang)}</label>
             <output className={"cat-margin" + (marginPct(v) < 0 ? " neg" : "")}>
-              {fmt(Number(v.unit_price) - Number(v.cost_price))} · {marginPct(v).toFixed(0)}%
+              {fmt(Number(v.unit_price) - Number(v.cost_price))}, {marginPct(v).toFixed(0)}%
             </output>
           </div>
         )}
@@ -326,7 +326,7 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
       t("inv_on_hand", lang, { n: stock }),
       won > 0 ? t("inv_won", lang, { n: won }) : null,
       open > 0 ? t("inv_open", lang, { n: open }) : null,
-    ].filter(Boolean).join(" · ");
+    ].filter(Boolean).join(", ");
     return (
       <>
         <span className={`cat-stock ${cls}`}>{label}</span>
@@ -364,6 +364,13 @@ export default function CatalogManager({ initial, lang, committed = {}, reserved
           {!adding && <button type="button" className="dx-new" onClick={() => { setBrowsing(false); setImporting(false); setForm(EMPTY); setAdding(true); }}><Ic d="plus" w={2.4} />{t("cat_add", lang)}</button>}
         </div>
       </header>
+
+      {/* Ukraine: energy equipment comes in without import duty or VAT until
+          1 January 2029 (Customs Code section XXI item 936, Tax Code transitional
+          provisions item 87-1; Laws 4698-IX and 4710-IX, December 2025). The
+          HS code decides it, so the note says what is known to qualify and what
+          is not, and leaves the rest to the customs broker. */}
+      {market === "UA" && <p className="cx-duty">{t("cat_ua_duty", lang)}</p>}
 
       {hasItems && (
         <dl className="cx-strip">

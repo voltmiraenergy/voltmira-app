@@ -59,7 +59,7 @@ function MapPin({ lat, lng, lang, size }) {
         </svg>
       </div>
       <span className="af-map-attr">
-        {lat.toFixed(4)}, {lng.toFixed(4)} · {lang === "en" ? "map data" : lang === "ru" ? "карта" : "date hartă"} © OpenStreetMap contributors
+        {lat.toFixed(4)}, {lng.toFixed(4)}, {lang === "en" ? "map data" : lang === "ru" ? "карта" : lang === "uk" ? "дані мапи" : "date hartă"} © OpenStreetMap contributors
       </span>
     </div>
   );
@@ -164,14 +164,14 @@ export default function AddressField({
   // would run under the address text in any host whose base font is larger
   // than Studio's.
   const badgeText = googleReady ? "Google Maps"
-    : live.state === "error" ? tx3(lang, "mod local", "offline", "офлайн")
+    : live.state === "error" ? tx3(lang, "mod local", "offline", "офлайн", "офлайн")
     : "OpenStreetMap";
 
   return (
     <div className="af-wrap">
       <div className="af-inputrow">
         <input ref={inputRef} className={inputClassName} value={q}
-          placeholder={placeholder || tx3(lang, "Stradă, localitate…", "Street, locality…", "Улица, населённый пункт…")}
+          placeholder={placeholder || tx3(lang, "Stradă, localitate…", "Street, locality…", "Улица, населённый пункт…", "Вулиця, населений пункт…")}
           onChange={(e) => { setQ(e.target.value); setOpen(true); onText?.(e.target.value); }}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)} />
@@ -195,7 +195,7 @@ export default function AddressField({
         </ul>
       )}
       {open && !googleReady && live.state === "ok" && q.trim().length >= 3 && live.results.length === 0 && (
-        <ul className="af-drop"><li className="af-empty">{tx3(lang, "nicio adresă găsită", "no address found", "адрес не найден")}</li></ul>
+        <ul className="af-drop"><li className="af-empty">{tx3(lang, "nicio adresă găsită", "no address found", "адрес не найден", "адресу не знайдено")}</li></ul>
       )}
       {open && !googleReady && live.state === "error" && fallback.length > 0 && (
         <ul className="af-drop">
@@ -206,7 +206,7 @@ export default function AddressField({
               setQ(full); setOpen(false);
             }}>
               <b>str. {p.street}</b>
-              <span>{p.locality} · {p.region}</span>
+              <span>{p.locality}, {p.region}</span>
             </li>
           ))}
         </ul>
@@ -239,4 +239,4 @@ export default function AddressField({
   );
 }
 
-function tx3(lang, ro, en, ru) { return lang === "en" ? en : lang === "ru" ? ru : ro; }
+function tx3(lang, ro, en, ru, uk) { return lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro; }

@@ -18,30 +18,32 @@ import {
 } from "../../../../lib/prosumerPrice.js";
 
 const TX = {
-  title: { en: "P50 / P90 export", ro: "Export P50 / P90", ru: "Экспорт P50 / P90" },
+  title: { en: "P50 / P90 export", ro: "Export P50 / P90", ru: "Экспорт P50 / P90", uk: "Експорт P50 / P90" },
   sub: {
     en: "An Energy Yield Assessment and bankability summary for this client's system: exceedance probabilities, an uncertainty budget, the 25-year schedule and a DSCR view, from the same engine.",
     ro: "O evaluare a producției energetice și un rezumat de bancabilitate pentru sistemul acestui client: probabilități de depășire, buget de incertitudine, graficul pe 25 de ani și o vedere DSCR.",
     ru: "Оценка выработки и сводка банкабельности для системы этого клиента: вероятности превышения, бюджет неопределённости, 25-летний график и DSCR.",
+    uk: "Оцінка генерації та зведення банківської придатності для системи цього клієнта: ймовірності перевищення, бюджет невизначеності, 25-річний графік і DSCR.",
   },
   note: {
     en: "P50 is the engine's expected band. P-values apply a combined uncertainty (σ ≈ 7.1%) to a normal distribution, the same method a lender's technical adviser uses. Everything below is built from the client's system in the bar above.",
     ro: "P50 este banda „așteptat” a motorului. Valorile P aplică o incertitudine combinată (σ ≈ 7,1%) unei distribuții normale, metoda folosită de consultantul tehnic al unei bănci. Tot ce urmează se construiește din sistemul clientului din bara de sus.",
     ru: "P50 означает «ожидаемый» диапазон движка. P-значения применяют суммарную неопределённость (σ ≈ 7,1%) к нормальному распределению. Всё ниже строится из системы клиента в панели выше.",
+    uk: "P50 означає «очікуваний» діапазон рушія розрахунків. P-значення застосовують сумарну невизначеність (σ ≈ 7,1%) до нормального розподілу. Усе нижче будується із системи клієнта на панелі вище.",
   },
-  docLangLabel: { en: "Document language", ro: "Limba documentului", ru: "Язык документа" },
-  gearing: { en: "Debt gearing", ro: "Grad de îndatorare", ru: "Доля долга" },
-  rate: { en: "Debt rate", ro: "Dobândă", ru: "Ставка" },
-  tenor: { en: "Tenor", ro: "Scadență", ru: "Срок" },
-  yrs: { en: "yrs", ro: "ani", ru: "лет" },
-  disc: { en: "Discount rate", ro: "Rată de actualizare", ru: "Ставка дисконт." },
-  pdf: { en: "Export PDF", ro: "Exportă PDF", ru: "Экспорт PDF" },
-  csv: { en: "Export data (CSV)", ro: "Exportă datele (CSV)", ru: "Экспорт данных (CSV)" },
-  m_payback: { en: "Payback (P50)", ro: "Recuperare (P50)", ru: "Окупаемость (P50)" },
-  m_dscr: { en: "Min. DSCR (P90)", ro: "DSCR minim (P90)", ru: "Мин. DSCR (P90)" },
-  m_npv: { en: "NPV", ro: "VAN", ru: "NPV" },
-  m_irr: { en: "IRR", ro: "RIR", ru: "IRR" },
-  m_years: { en: "yrs", ro: "ani", ru: "лет" },
+  docLangLabel: { en: "Document language", ro: "Limba documentului", ru: "Язык документа", uk: "Мова документа" },
+  gearing: { en: "Debt gearing", ro: "Grad de îndatorare", ru: "Доля долга", uk: "Частка боргу" },
+  rate: { en: "Debt rate", ro: "Dobândă", ru: "Ставка", uk: "Ставка" },
+  tenor: { en: "Tenor", ro: "Scadență", ru: "Срок", uk: "Строк" },
+  yrs: { en: "yrs", ro: "ani", ru: "лет", uk: "р." },
+  disc: { en: "Discount rate", ro: "Rată de actualizare", ru: "Ставка дисконт.", uk: "Ставка дисконт." },
+  pdf: { en: "Export PDF", ro: "Exportă PDF", ru: "Экспорт PDF", uk: "Експорт PDF" },
+  csv: { en: "Export data (CSV)", ro: "Exportă datele (CSV)", ru: "Экспорт данных (CSV)", uk: "Експорт даних (CSV)" },
+  m_payback: { en: "Payback (P50)", ro: "Recuperare (P50)", ru: "Окупаемость (P50)", uk: "Окупність (P50)" },
+  m_dscr: { en: "Min. DSCR (P90)", ro: "DSCR minim (P90)", ru: "Мин. DSCR (P90)", uk: "Мін. DSCR (P90)" },
+  m_npv: { en: "NPV", ro: "VAN", ru: "NPV", uk: "NPV" },
+  m_irr: { en: "IRR", ro: "RIR", ru: "IRR", uk: "IRR" },
+  m_years: { en: "yrs", ro: "ani", ru: "лет", uk: "р." },
 };
 
 // Internal rate of return by bisection on the P50 cashflow series (cf[0] = −capex).
@@ -95,7 +97,7 @@ export default function BankabilityPreview() {
   const lang = useLang();
   const t = makeT(TX, lang);
   const { client } = useStudioClient();
-  useEffect(() => { document.title = "P50 / P90 export · VoltMira"; }, []);
+  useEffect(() => { document.title = "P50 / P90 export | VoltMira"; }, []);
 
   const [gearing, setGearing] = useState(70);
   const [rate, setRate] = useState(6.5);
@@ -125,8 +127,8 @@ export default function BankabilityPreview() {
     ...(client.market === "MD" ? { feedOverride: buyback.weightedEur } : {}),
   }), [client, buyback.weightedEur]);
   const schemeLabel = project.market === "MD"
-    ? d("Moldova · net billing", "Moldova · facturare netă")
-    : d("Romania · net metering 1:1", "România · contorizare netă 1:1");
+    ? d("Moldova, net billing", "Moldova, facturare netă")
+    : d("Romania, net metering 1:1", "România, contorizare netă 1:1");
 
   // Chemistry-aware storage life: LiFePO₄ at a solar duty-cycle (~330 full
   // cycles/yr) comfortably clears 25 years; a shorter-lived chemistry (NMC)
@@ -312,9 +314,9 @@ export default function BankabilityPreview() {
       {/* the document */}
       <DocReveal lang={lang}>
       <div className="pv-doc">
-        <div className="doc-co">VoltMira · {d("Energy Yield Assessment & Bankability Summary", "Evaluarea producției de energie & rezumat de bancabilitate")} · {new Date().toLocaleDateString(loc)}</div>
+        <div className="doc-co">VoltMira, {d("Energy Yield Assessment & Bankability Summary", "Evaluarea producției de energie & rezumat de bancabilitate")}, {new Date().toLocaleDateString(loc)}</div>
         <h1>{project.name}</h1>
-        <p className="doc-sub">Ref. {project.ref} · {d("prepared for the lender's technical adviser", "pregătit pentru consultantul tehnic al finanțatorului")} · {d("methodology", "metodologie")}: PVGIS-SARAH3 {d("resource", "resursă")} + VoltMira {d("honesty engine", "motor de onestitate")} (P50 = {d("expected band", "banda așteptată")})</p>
+        <p className="doc-sub">Ref. {project.ref}, {d("prepared for the lender's technical adviser", "pregătit pentru consultantul tehnic al finanțatorului")}, {d("methodology", "metodologie")}: PVGIS-SARAH3 {d("resource", "resursă")} + VoltMira {d("honesty engine", "motor de onestitate")} (P50 = {d("expected band", "banda așteptată")})</p>
 
         <h2>{d("Project summary", "Rezumatul proiectului")}</h2>
         <div className="doc-grid">
@@ -405,8 +407,8 @@ export default function BankabilityPreview() {
 
         <h2>{d("Lender view: debt service coverage", "Perspectiva finanțatorului: acoperirea serviciului datoriei")}</h2>
         <div className="doc-grid">
-          <div className="doc-kv"><span>{d("Gearing / debt amount", "Grad de îndatorare / sumă credit")}</span><b>{gearing}% · {EUR(model.debt)}</b></div>
-          <div className="doc-kv"><span>{d("Rate / tenor", "Dobândă / scadență")}</span><b>{rate.toFixed(2)}% · {tenor} {d("yrs", "ani")}</b></div>
+          <div className="doc-kv"><span>{d("Gearing / debt amount", "Grad de îndatorare / sumă credit")}</span><b>{gearing}%, {EUR(model.debt)}</b></div>
+          <div className="doc-kv"><span>{d("Rate / tenor", "Dobândă / scadență")}</span><b>{rate.toFixed(2)}%, {tenor} {d("yrs", "ani")}</b></div>
           <div className="doc-kv"><span>{d("Annual debt service", "Serviciul anual al datoriei")}</span><b>{EUR(model.annuity)}</b></div>
           <div className="doc-kv"><span>{d("Payback: P50 / P90", "Amortizare: P50 / P90")}</span><b>{model.paybackP50 == null ? "25+" : model.paybackP50.toFixed(1)} / {model.paybackP90 == null ? "25+" : model.paybackP90.toFixed(1)} {d("yrs", "ani")}</b></div>
           <div className="doc-kv"><span>{d("DSCR year 1: P50 / P90", "DSCR anul 1: P50 / P90")}</span><b>{model.dscrY1P50.toFixed(2)}x / {model.dscrY1P90.toFixed(2)}x</b></div>
@@ -474,7 +476,7 @@ export default function BankabilityPreview() {
           </p>
         )}
         <div className="doc-sign">
-          <div>{d("Prepared by: VoltMira (automated)", "Întocmit de: VoltMira (automat)")} · {new Date().toLocaleDateString(loc)}</div>
+          <div>{d("Prepared by: VoltMira (automated)", "Întocmit de: VoltMira (automat)")}, {new Date().toLocaleDateString(loc)}</div>
           <div>{d("Reviewed by: [independent engineer]", "Verificat de: [inginer independent]")}</div>
         </div>
       </div>

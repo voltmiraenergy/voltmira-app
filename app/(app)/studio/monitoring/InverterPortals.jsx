@@ -13,159 +13,177 @@ import { tx } from "../studio-kit.jsx";
 const PROVIDER_INFO = {
   fusionsolar: {
     name: "Huawei FusionSolar",
-    sub: { en: "SUN2000 inverters", ro: "Invertoare SUN2000", ru: "Инверторы SUN2000" },
+    sub: { en: "SUN2000 inverters", ro: "Invertoare SUN2000", ru: "Инверторы SUN2000", uk: "Інвертори SUN2000" },
     help: {
       en: "Use a Northbound API account, not your everyday login. The company admin creates one in FusionSolar under Northbound management. The domain is the one in your FusionSolar address bar.",
       ro: "Folosește un cont Northbound API, nu contul obișnuit. Administratorul companiei îl creează în FusionSolar, la Northbound management. Domeniul este cel din bara de adrese FusionSolar.",
       ru: "Нужна учётная запись Northbound API, а не обычный вход. Администратор компании создаёт её в FusionSolar в разделе Northbound management. Домен тот, что в адресной строке FusionSolar.",
+      uk: "Потрібен обліковий запис Northbound API, а не звичайний вхід. Адміністратор компанії створює його у FusionSolar у розділі Northbound management. Домен той, що в адресному рядку FusionSolar.",
     },
   },
   solarman: {
     name: "Deye / Solarman",
-    sub: { en: "Deye and other Solarman loggers", ro: "Deye și alte loggere Solarman", ru: "Deye и другие логгеры Solarman" },
+    sub: { en: "Deye and other Solarman loggers", ro: "Deye și alte loggere Solarman", ru: "Deye и другие логгеры Solarman", uk: "Deye та інші логери Solarman" },
     help: {
       en: "App ID and App Secret come with Solarman's OpenAPI access, which Solarman grants on request. Login and password are those of your Solarman Business account.",
       ro: "App ID și App Secret vin odată cu accesul Solarman OpenAPI, acordat de Solarman la cerere. Login-ul și parola sunt cele ale contului Solarman Business.",
       ru: "App ID и App Secret выдаются вместе с доступом к Solarman OpenAPI, который Solarman предоставляет по запросу. Логин и пароль от вашего аккаунта Solarman Business.",
+      uk: "App ID і App Secret видаються разом із доступом до Solarman OpenAPI, який Solarman надає на запит. Логін і пароль від вашого облікового запису Solarman Business.",
     },
   },
   growatt: {
     name: "Growatt",
-    sub: { en: "Growatt OpenAPI", ro: "Growatt OpenAPI", ru: "Growatt OpenAPI" },
+    sub: { en: "Growatt OpenAPI", ro: "Growatt OpenAPI", ru: "Growatt OpenAPI", uk: "Growatt OpenAPI" },
     help: {
       en: "The OpenAPI token Growatt issues for your installer account.",
       ro: "Token-ul OpenAPI emis de Growatt pentru contul tău de instalator.",
       ru: "Токен OpenAPI, который Growatt выдаёт для вашего аккаунта установщика.",
+      uk: "Токен OpenAPI, який Growatt видає для вашого облікового запису монтажника.",
     },
   },
 };
 
 const FIELD_LABEL = {
-  inv_f_domain: { en: "Portal domain", ro: "Domeniul portalului", ru: "Домен портала" },
-  inv_f_api_user: { en: "API user", ro: "Utilizator API", ru: "Пользователь API" },
-  inv_f_api_password: { en: "API password", ro: "Parolă API", ru: "Пароль API" },
-  inv_f_app_id: { en: "App ID", ro: "App ID", ru: "App ID" },
-  inv_f_app_secret: { en: "App Secret", ro: "App Secret", ru: "App Secret" },
-  inv_f_login: { en: "Email or username", ro: "E-mail sau utilizator", ru: "Email или имя пользователя" },
-  inv_f_password: { en: "Password", ro: "Parolă", ru: "Пароль" },
-  inv_f_token: { en: "API token", ro: "Token API", ru: "API-токен" },
+  inv_f_domain: { en: "Portal domain", ro: "Domeniul portalului", ru: "Домен портала", uk: "Домен порталу" },
+  inv_f_api_user: { en: "API user", ro: "Utilizator API", ru: "Пользователь API", uk: "Користувач API" },
+  inv_f_api_password: { en: "API password", ro: "Parolă API", ru: "Пароль API", uk: "Пароль API" },
+  inv_f_app_id: { en: "App ID", ro: "App ID", ru: "App ID", uk: "App ID" },
+  inv_f_app_secret: { en: "App Secret", ro: "App Secret", ru: "App Secret", uk: "App Secret" },
+  inv_f_login: { en: "Email or username", ro: "E-mail sau utilizator", ru: "Email или имя пользователя", uk: "Email або ім’я користувача" },
+  inv_f_password: { en: "Password", ro: "Parolă", ru: "Пароль", uk: "Пароль" },
+  inv_f_token: { en: "API token", ro: "Token API", ru: "API-токен", uk: "API-токен" },
 };
 
 const T = {
-  title: { en: "Inverter portals", ro: "Portaluri invertoare", ru: "Порталы инверторов" },
+  title: { en: "Inverter portals", ro: "Portaluri invertoare", ru: "Порталы инверторов", uk: "Портали інверторів" },
   sub: {
     en: "Link a station to the job it powers and its finished months fill in every night, with nothing to type.",
     ro: "Leagă o stație de lucrarea pe care o alimentează și lunile încheiate se completează în fiecare noapte, fără nimic de tastat.",
     ru: "Привяжите станцию к объекту, и завершённые месяцы будут заполняться каждую ночь, без ручного ввода.",
+    uk: "Прив’яжіть станцію до об’єкта, і завершені місяці заповнюватимуться щоночі, без ручного введення.",
   },
-  connect: { en: "Connect a portal", ro: "Conectează un portal", ru: "Подключить портал" },
-  manage: { en: "Manage", ro: "Gestionează", ru: "Управление" },
-  hide: { en: "Hide", ro: "Ascunde", ru: "Скрыть" },
+  connect: { en: "Connect a portal", ro: "Conectează un portal", ru: "Подключить портал", uk: "Підключити портал" },
+  manage: { en: "Manage", ro: "Gestionează", ru: "Управление", uk: "Керування" },
+  hide: { en: "Hide", ro: "Ascunde", ru: "Скрыть", uk: "Приховати" },
   summary: {
-    en: "{a} accounts · {s} stations · {l} linked",
-    ro: "{a} conturi · {s} stații · {l} legate",
-    ru: "аккаунтов: {a} · станций: {s} · привязано: {l}",
+    en: "{a} accounts, {s} stations, {l} linked",
+    ro: "{a} conturi, {s} stații, {l} legate",
+    ru: "аккаунтов: {a}, станций: {s}, привязано: {l}",
+    uk: "облікових записів: {a}, станцій: {s}, прив’язано: {l}",
   },
-  synced: { en: "synced {t}", ro: "sincronizat {t}", ru: "синхронизировано {t}" },
+  synced: { en: "synced {t}", ro: "sincronizat {t}", ru: "синхронизировано {t}", uk: "синхронізовано {t}" },
   none: {
     en: "No portal connected yet. Connect the account your inverters report to, then link each station to its job.",
     ro: "Niciun portal conectat încă. Conectează contul în care raportează invertoarele, apoi leagă fiecare stație de lucrarea ei.",
     ru: "Порталы пока не подключены. Подключите аккаунт, куда отчитываются ваши инверторы, и привяжите каждую станцию к её объекту.",
+    uk: "Портали ще не підключено. Підключіть обліковий запис, до якого звітують ваші інвертори, і прив’яжіть кожну станцію до її об’єкта.",
   },
   notMigrated: {
     en: "Portal sync isn't switched on for this workspace yet.",
     ro: "Sincronizarea cu portalurile nu este încă activată pentru acest spațiu de lucru.",
     ru: "Синхронизация с порталами ещё не включена для этого рабочего пространства.",
+    uk: "Синхронізацію з порталами ще не ввімкнено для цього робочого простору.",
   },
   noKey: {
     en: "Connecting portals is off until the server has an encryption key for stored logins.",
     ro: "Conectarea portalurilor este oprită până când serverul are o cheie de criptare pentru datele de autentificare.",
     ru: "Подключение порталов выключено, пока на сервере нет ключа шифрования для сохранённых логинов.",
+    uk: "Підключення порталів вимкнено, доки на сервері немає ключа шифрування для збережених логінів.",
   },
   noManage: {
     en: "Only the workspace owner or a manager can connect portals and link stations.",
     ro: "Doar proprietarul spațiului de lucru sau un manager poate conecta portaluri și lega stații.",
     ru: "Подключать порталы и привязывать станции может только владелец или менеджер.",
+    uk: "Підключати портали й прив’язувати станції може лише власник або менеджер.",
   },
-  loadErr: { en: "Couldn't load your portal accounts.", ro: "Nu am putut încărca conturile de portal.", ru: "Не удалось загрузить аккаунты порталов." },
-  retry: { en: "Try again", ro: "Încearcă din nou", ru: "Повторить" },
-  pickProvider: { en: "Portal", ro: "Portal", ru: "Портал" },
-  label: { en: "Name for this account (optional)", ro: "Nume pentru acest cont (opțional)", ru: "Название аккаунта (необязательно)" },
-  labelPh: { en: "e.g. Main installer account", ro: "ex. Contul principal", ru: "напр. Основной аккаунт" },
-  check: { en: "Check and connect", ro: "Verifică și conectează", ru: "Проверить и подключить" },
-  checking: { en: "Checking with {p}…", ro: "Verific la {p}…", ru: "Проверяем в {p}…" },
-  cancel: { en: "Cancel", ro: "Anulează", ru: "Отмена" },
+  loadErr: { en: "Couldn't load your portal accounts.", ro: "Nu am putut încărca conturile de portal.", ru: "Не удалось загрузить аккаунты порталов.", uk: "Не вдалося завантажити облікові записи порталів." },
+  retry: { en: "Try again", ro: "Încearcă din nou", ru: "Повторить", uk: "Повторити" },
+  pickProvider: { en: "Portal", ro: "Portal", ru: "Портал", uk: "Портал" },
+  label: { en: "Name for this account (optional)", ro: "Nume pentru acest cont (opțional)", ru: "Название аккаунта (необязательно)", uk: "Назва облікового запису (необов’язково)" },
+  labelPh: { en: "e.g. Main installer account", ro: "ex. Contul principal", ru: "напр. Основной аккаунт", uk: "напр. Основний обліковий запис" },
+  check: { en: "Check and connect", ro: "Verifică și conectează", ru: "Проверить и подключить", uk: "Перевірити й підключити" },
+  checking: { en: "Checking with {p}…", ro: "Verific la {p}…", ru: "Проверяем в {p}…", uk: "Перевіряємо в {p}…" },
+  cancel: { en: "Cancel", ro: "Anulează", ru: "Отмена", uk: "Скасувати" },
   stored: {
     en: "The login is checked with the portal first, then stored encrypted. It's never shown again.",
     ro: "Datele sunt verificate mai întâi la portal, apoi stocate criptat. Nu mai sunt afișate niciodată.",
     ru: "Логин сначала проверяется на портале, затем хранится в зашифрованном виде и больше не показывается.",
+    uk: "Логін спершу перевіряється на порталі, потім зберігається в зашифрованому вигляді й більше не показується.",
   },
-  connected: { en: "Connected. {n} stations found.", ro: "Conectat. {n} stații găsite.", ru: "Подключено. Найдено станций: {n}." },
-  st_ok: { en: "Syncing", ro: "Sincronizat", ru: "Синхронизируется" },
-  st_new: { en: "Not synced yet", ro: "Nesincronizat încă", ru: "Ещё не синхронизирован" },
-  st_error: { en: "Sync failed", ro: "Eroare la sincronizare", ru: "Ошибка синхронизации" },
-  never: { en: "never synced", ro: "nesincronizat", ru: "не синхронизирован" },
-  syncNow: { en: "Sync now", ro: "Sincronizează acum", ru: "Синхронизировать" },
-  syncing: { en: "Syncing…", ro: "Sincronizez…", ru: "Синхронизация…" },
-  remove: { en: "Remove", ro: "Elimină", ru: "Удалить" },
-  removeQ: { en: "Remove this account?", ro: "Elimini acest cont?", ru: "Удалить аккаунт?" },
-  removeYes: { en: "Yes, remove", ro: "Da, elimină", ru: "Да, удалить" },
-  removed: { en: "Account removed", ro: "Cont eliminat", ru: "Аккаунт удалён" },
-  syncOk: { en: "Synced. {n} monthly readings updated.", ro: "Sincronizat. {n} citiri lunare actualizate.", ru: "Готово. Обновлено месячных показаний: {n}." },
+  connected: { en: "Connected. {n} stations found.", ro: "Conectat. {n} stații găsite.", ru: "Подключено. Найдено станций: {n}.", uk: "Підключено. Знайдено станцій: {n}." },
+  st_ok: { en: "Syncing", ro: "Sincronizat", ru: "Синхронизируется", uk: "Синхронізується" },
+  st_new: { en: "Not synced yet", ro: "Nesincronizat încă", ru: "Ещё не синхронизирован", uk: "Ще не синхронізовано" },
+  st_error: { en: "Sync failed", ro: "Eroare la sincronizare", ru: "Ошибка синхронизации", uk: "Помилка синхронізації" },
+  never: { en: "never synced", ro: "nesincronizat", ru: "не синхронизирован", uk: "не синхронізовано" },
+  syncNow: { en: "Sync now", ro: "Sincronizează acum", ru: "Синхронизировать", uk: "Синхронізувати" },
+  syncing: { en: "Syncing…", ro: "Sincronizez…", ru: "Синхронизация…", uk: "Синхронізація…" },
+  remove: { en: "Remove", ro: "Elimină", ru: "Удалить", uk: "Видалити" },
+  removeQ: { en: "Remove this account?", ro: "Elimini acest cont?", ru: "Удалить аккаунт?", uk: "Видалити обліковий запис?" },
+  removeYes: { en: "Yes, remove", ro: "Da, elimină", ru: "Да, удалить", uk: "Так, видалити" },
+  removed: { en: "Account removed", ro: "Cont eliminat", ru: "Аккаунт удалён", uk: "Обліковий запис видалено" },
+  syncOk: { en: "Synced. {n} monthly readings updated.", ro: "Sincronizat. {n} citiri lunare actualizate.", ru: "Готово. Обновлено месячных показаний: {n}.", uk: "Готово. Оновлено місячних показників: {n}." },
   syncNoLink: {
     en: "Synced. Link a station to a job to start filling its months.",
     ro: "Sincronizat. Leagă o stație de o lucrare ca să înceapă completarea lunilor.",
     ru: "Готово. Привяжите станцию к объекту, чтобы месяцы начали заполняться.",
+    uk: "Готово. Прив’яжіть станцію до об’єкта, щоб місяці почали заповнюватися.",
   },
-  syncFail: { en: "Sync failed", ro: "Sincronizarea a eșuat", ru: "Синхронизация не удалась" },
-  stations: { en: "Stations", ro: "Stații", ru: "Станции" },
-  showSt: { en: "Show {n} stations", ro: "Arată {n} stații", ru: "Показать станции ({n})" },
-  hideSt: { en: "Hide stations", ro: "Ascunde stațiile", ru: "Скрыть станции" },
-  find: { en: "Find a station", ro: "Caută o stație", ru: "Найти станцию" },
+  syncFail: { en: "Sync failed", ro: "Sincronizarea a eșuat", ru: "Синхронизация не удалась", uk: "Синхронізація не вдалася" },
+  stations: { en: "Stations", ro: "Stații", ru: "Станции", uk: "Станції" },
+  showSt: { en: "Show {n} stations", ro: "Arată {n} stații", ru: "Показать станции ({n})", uk: "Показати станції ({n})" },
+  hideSt: { en: "Hide stations", ro: "Ascunde stațiile", ru: "Скрыть станции", uk: "Приховати станції" },
+  find: { en: "Find a station", ro: "Caută o stație", ru: "Найти станцию", uk: "Знайти станцію" },
   noStations: {
     en: "The portal lists no stations for this account yet.",
     ro: "Portalul nu listează încă nicio stație pentru acest cont.",
     ru: "Портал пока не показывает станций для этого аккаунта.",
+    uk: "Портал поки не показує станцій для цього облікового запису.",
   },
-  c_station: { en: "Station", ro: "Stație", ru: "Станция" },
-  c_last: { en: "Last month", ro: "Ultima lună", ru: "Посл. месяц" },
-  c_job: { en: "Studio job", ro: "Lucrare Studio", ru: "Объект Studio" },
-  c_quote: { en: "Quote", ro: "Ofertă", ru: "Предложение" },
-  notLinked: { en: "Not linked", ro: "Nelegată", ru: "Не привязана" },
-  linked: { en: "Link saved", ro: "Legătură salvată", ru: "Привязка сохранена" },
+  c_station: { en: "Station", ro: "Stație", ru: "Станция", uk: "Станція" },
+  c_last: { en: "Last month", ro: "Ultima lună", ru: "Посл. месяц", uk: "Ост. місяць" },
+  c_job: { en: "Studio job", ro: "Lucrare Studio", ru: "Объект Studio", uk: "Об’єкт Studio" },
+  c_quote: { en: "Quote", ro: "Ofertă", ru: "Предложение", uk: "Розрахунок" },
+  notLinked: { en: "Not linked", ro: "Nelegată", ru: "Не привязана", uk: "Не прив’язана" },
+  linked: { en: "Link saved", ro: "Legătură salvată", ru: "Привязка сохранена", uk: "Прив’язку збережено" },
   linkHelp: {
     en: "Link a station to its Studio job to fill that job's Monitoring months. Link it to a quote too and its readings also feed the dashboard's system health and the yield calibration of your next quotes.",
     ro: "Leagă stația de lucrarea ei din Studio ca să se completeze lunile din Monitorizare. Leag-o și de o ofertă, iar citirile vor alimenta și starea sistemelor din panou și calibrarea producției în ofertele următoare.",
     ru: "Привяжите станцию к объекту Studio, чтобы заполнять месяцы «Мониторинга». Привяжите и к предложению, тогда показания также пойдут в здоровье систем на панели и в калибровку выработки для следующих расчётов.",
+    uk: "Прив’яжіть станцію до об’єкта Studio, щоб заповнювати місяці «Моніторингу». Прив’яжіть і до пропозиції, тоді показники також підуть у стан систем на панелі та в калібрування генерації для наступних розрахунків.",
   },
-  won: { en: "won", ro: "câștigată", ru: "выиграно" },
-  sent: { en: "sent", ro: "trimisă", ru: "отправлено" },
-  e_generic: { en: "Something went wrong. Try again.", ro: "Ceva n-a mers. Încearcă din nou.", ru: "Что-то пошло не так. Попробуйте ещё раз." },
-  e_missing: { en: "Fill in every field.", ro: "Completează toate câmpurile.", ru: "Заполните все поля." },
+  won: { en: "won", ro: "câștigată", ru: "выиграно", uk: "виграно" },
+  sent: { en: "sent", ro: "trimisă", ru: "отправлено", uk: "надіслано" },
+  e_generic: { en: "Something went wrong. Try again.", ro: "Ceva n-a mers. Încearcă din nou.", ru: "Что-то пошло не так. Попробуйте ещё раз.", uk: "Щось пішло не так. Спробуйте ще раз." },
+  e_missing: { en: "Fill in every field.", ro: "Completează toate câmpurile.", ru: "Заполните все поля.", uk: "Заповніть усі поля." },
   e_auth: {
     en: "The portal didn't accept this login. Check each field and try again.",
     ro: "Portalul nu a acceptat aceste date. Verifică fiecare câmp și încearcă din nou.",
     ru: "Портал не принял эти данные. Проверьте каждое поле и попробуйте снова.",
+    uk: "Портал не прийняв ці дані. Перевірте кожне поле й спробуйте знову.",
   },
   e_rate: {
     en: "Too many attempts for now. Try again in an hour.",
     ro: "Prea multe încercări deocamdată. Încearcă din nou peste o oră.",
     ru: "Слишком много попыток. Попробуйте через час.",
+    uk: "Забагато спроб. Спробуйте за годину.",
   },
   e_network: {
     en: "Couldn't reach the portal. Check the domain, or try again in a few minutes.",
     ro: "Portalul nu a putut fi contactat. Verifică domeniul sau încearcă din nou în câteva minute.",
     ru: "Не удалось связаться с порталом. Проверьте домен или повторите через несколько минут.",
+    uk: "Не вдалося зв’язатися з порталом. Перевірте домен або повторіть за кілька хвилин.",
   },
   e_domain: {
     en: "The domain should look like eu5.fusionsolar.huawei.com.",
     ro: "Domeniul trebuie să arate ca eu5.fusionsolar.huawei.com.",
     ru: "Домен должен выглядеть как eu5.fusionsolar.huawei.com.",
+    uk: "Домен має виглядати як eu5.fusionsolar.huawei.com.",
   },
   e_bad: {
     en: "The portal answered in a way VoltMira doesn't recognise.",
     ro: "Portalul a răspuns într-un format pe care VoltMira nu îl recunoaște.",
     ru: "Портал ответил в формате, который VoltMira не распознаёт.",
+    uk: "Портал відповів у форматі, який VoltMira не розпізнає.",
   },
 };
 
@@ -175,39 +193,45 @@ const STORED = {
     en: "The portal no longer accepts this login. Remove the account and connect it again with current details.",
     ro: "Portalul nu mai acceptă aceste date. Elimină contul și conectează-l din nou cu datele actuale.",
     ru: "Портал больше не принимает этот логин. Удалите аккаунт и подключите его снова с актуальными данными.",
+    uk: "Портал більше не приймає цей логін. Видаліть обліковий запис і підключіть його знову з актуальними даними.",
   },
   rate_limited: {
     en: "The portal is limiting requests. The next nightly sync will try again.",
     ro: "Portalul limitează cererile. Următoarea sincronizare de noapte va încerca din nou.",
     ru: "Портал ограничивает запросы. Следующая ночная синхронизация попробует снова.",
+    uk: "Портал обмежує запити. Наступна нічна синхронізація спробує знову.",
   },
   network: {
     en: "Couldn't reach the portal. The next nightly sync will try again.",
     ro: "Portalul nu a putut fi contactat. Următoarea sincronizare de noapte va încerca din nou.",
     ru: "Не удалось связаться с порталом. Следующая ночная синхронизация попробует снова.",
+    uk: "Не вдалося зв’язатися з порталом. Наступна нічна синхронізація спробує знову.",
   },
   bad_response: T.e_bad,
   key_changed: {
     en: "The saved login can't be read any more. Remove the account and connect it again.",
     ro: "Datele salvate nu mai pot fi citite. Elimină contul și conectează-l din nou.",
     ru: "Сохранённый логин больше не читается. Удалите аккаунт и подключите его снова.",
+    uk: "Збережений логін більше не читається. Видаліть обліковий запис і підключіть його знову.",
   },
   studio_not_ready: {
     en: "This job's months couldn't be filled: Studio isn't saving to the workspace yet.",
     ro: "Lunile acestei lucrări nu au putut fi completate: Studio nu salvează încă în spațiul de lucru.",
     ru: "Месяцы этого объекта не заполнены: Studio ещё не сохраняет данные в рабочем пространстве.",
+    uk: "Місяці цього об’єкта не заповнено: Studio ще не зберігає дані в робочому просторі.",
   },
   store_failed: {
     en: "Couldn't store this station's readings. The next sync will try again.",
     ro: "Citirile acestei stații nu au putut fi salvate. Următoarea sincronizare va încerca din nou.",
     ru: "Не удалось сохранить показания станции. Следующая синхронизация попробует снова.",
+    uk: "Не вдалося зберегти показники станції. Наступна синхронізація спробує знову.",
   },
 };
 STORED.secret_missing = STORED.key_changed;
 const storedError = (code, message, lang) => (STORED[code] ? tx(STORED[code], lang) : message);
 
 const fill = (s, vars) => Object.keys(vars).reduce((a, k) => a.split("{" + k + "}").join(vars[k]), s);
-const locale = (lang) => (lang === "ru" ? "ru-RU" : lang === "ro" ? "ro-RO" : "en-IE");
+const locale = (lang) => ({ ru: "ru-RU", uk: "uk-UA", ro: "ro-RO" }[lang] || "en-IE");
 
 function ago(iso, lang) {
   if (!iso) return null;
@@ -405,7 +429,7 @@ function Connection({ c, stations, lang, jobs, projects, canManage, onSync, onRe
           <b>{c.label || PROVIDER_INFO[c.provider]?.name || c.provider}</b>
           <span>
             {[c.label ? PROVIDER_INFO[c.provider]?.name : null, c.account_hint || null,
-              c.last_sync_at ? fill(t(T.synced), { t: ago(c.last_sync_at, lang) }) : t(T.never)].filter(Boolean).join(" · ")}
+              c.last_sync_at ? fill(t(T.synced), { t: ago(c.last_sync_at, lang) }) : t(T.never)].filter(Boolean).join(", ")}
           </span>
         </div>
         <span className={"pv-stage " + status[0]}>{t(status[1])}</span>
@@ -538,7 +562,7 @@ export default function InverterPortals({ lang, jobs, fire, onReadings }) {
               : conns.length ? (
                 <p className="ip-sub">
                   {fill(t(T.summary), { a: conns.length, s: stations.length, l: linkedCount })}
-                  {lastSync && <> · {fill(t(T.synced), { t: ago(lastSync, lang) })}</>}
+                  {lastSync && <>, {fill(t(T.synced), { t: ago(lastSync, lang) })}</>}
                 </p>
               ) : <p className="ip-sub">{t(T.sub)}</p>}
           </div>

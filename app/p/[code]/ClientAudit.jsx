@@ -6,8 +6,15 @@
 import { useMemo, useState } from "react";
 import { quote } from "@voltmira/engine";
 import { t } from "../../../lib/i18n.js";
+import { numFor } from "../../../lib/money.js";
 
-export default function ClientAudit({ inputs, assumptions: E, lang }) {
+// currency/rate: the proposal's own (lib/money.js), so a Moldovan client
+// reads and types the electricity price in lei; the engine keeps EUR.
+export default function ClientAudit({ inputs, assumptions: E, lang, currency = "EUR", rate = 1 }) {
+  const local = currency === "MDL" || currency === "RON";
+  const k = local ? rate : 1;
+  const nf = numFor(lang);
+  const priceText = (eur) => (local ? `${nf(eur * k, 2)} ${lang === "ru" ? "лей" : "lei"}/kWh` : `€${nf(eur, 3)}/kWh`);
   const basePrice = Number(inputs.price) || 0.21;
   const [priceMul, setPriceMul] = useState(1);
   const [inflDelta, setInflDelta] = useState(0);
@@ -30,8 +37,8 @@ export default function ClientAudit({ inputs, assumptions: E, lang }) {
     return quote(p, E2);
   }, [priceMul, inflDelta, inputs, E, basePrice]);
 
-  const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-IE";
-  const yrs = (n) => n === null ? "25+" : n === 0 ? t("pp_immediate", lang) : n.toFixed(1);
+  const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
+  const yrs = (n) => n === null ? "25+" : n === 0 ? t("pp_immediate", lang) : nf(n, 1);
   const touched = priceMul !== 1 || inflDelta !== 0;
 
   const bands = [["pp_pess", q.p, "#C4543B"], ["pp_expc", q.e, "#E89B2D"], ["pp_opti", q.o, "#1E6B4E"]];
@@ -61,17 +68,17 @@ export default function ClientAudit({ inputs, assumptions: E, lang }) {
 
       <div style={{ display: "grid", gap: 18, marginBottom: 18 }}>
         <div>
-          <div style={lbl}><span>{t("audit_price", lang)}</span><output style={val}>€{(basePrice * priceMul).toFixed(3)}/kWh</output></div>
+          <div style={lbl}><span>{t("audit_price", lang)}</span><output style={val}>{priceText(basePrice * priceMul)}</output></div>
           <div style={row}>
             <input type="range" className="ca-slider" min="0.6" max="1.8" step="0.05" value={priceMul} style={priceFill}
               onChange={e => setPriceMul(+e.target.value)} aria-label={t("audit_price", lang)} />
-            <input type="number" step="0.001" min="0" style={numBox} value={(basePrice * priceMul).toFixed(3)}
+            <input type="number" step={local ? "0.01" : "0.001"} min="0" style={numBox} value={(basePrice * priceMul * k).toFixed(local ? 2 : 3)}
               aria-label={t("audit_price", lang)}
-              onChange={e => { const v = +e.target.value; if (!Number.isNaN(v) && basePrice > 0) setPriceMul(v / basePrice); }} />
+              onChange={e => { const v = +e.target.value; if (!Number.isNaN(v) && basePrice > 0) setPriceMul(v / k / basePrice); }} />
           </div>
         </div>
         <div>
-          <div style={lbl}><span>{t("audit_infl", lang)}</span><output style={val}>{(E.bands.expc.infl + inflDelta).toFixed(1)}%/yr</output></div>
+          <div style={lbl}><span>{t("audit_infl", lang)}</span><output style={val}>{t("pp_pct_yr", lang, { v: nf(E.bands.expc.infl + inflDelta, 1) })}</output></div>
           <div style={row}>
             <input type="range" className="ca-slider" min="-3" max="6" step="0.5" value={inflDelta} style={inflFill}
               onChange={e => setInflDelta(+e.target.value)} aria-label={t("audit_infl", lang)} />

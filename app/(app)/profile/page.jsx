@@ -8,10 +8,10 @@ import { normLang } from "../../../lib/i18n.js";
 import ProfileForm from "./ProfileForm.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Profile · VoltMira" };
+export const metadata = { title: "Profile | VoltMira" };
 
 export default async function ProfilePage() {
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) redirect("/login");
   const co = await currentCompany();

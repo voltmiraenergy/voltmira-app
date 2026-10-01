@@ -4,7 +4,7 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 
 // Security headers applied to every response. The CSP is intentionally
 // permissive enough for the inline styles/scripts the marketing homepage uses
-// and the Supabase/PVGIS/Stripe endpoints the app calls, while blocking
+// and the Supabase/PVGIS/Paddle endpoints the app calls, while blocking
 // framing (clickjacking) and enforcing HTTPS.
 // Shared directives. `frame-ancestors` is appended per-context: 'none' everywhere
 // so the app can't be clickjacked, but the /widget lead form is MEANT to be
@@ -64,27 +64,25 @@ const nextConfig = {
   transpilePackages: ["@voltmira/engine"],
   // Don't advertise the framework/version in a response header (fingerprinting).
   poweredByHeader: false,
-  // The homepage route reads app/_landing/landing.html with fs at runtime;
-  // make sure Vercel's file tracer bundles it into the serverless function.
-  experimental: {
-    // Next 14.2 defaults this OFF (it's stable-without-a-flag only from
-    // Next 15 on) — instrumentation.js's register() hook, which is what
-    // actually loads sentry.server.config.js/sentry.edge.config.js, is a
-    // silent no-op without this. Verified directly against the installed
-    // Next 14.2.35's own default config, not assumed.
-    instrumentationHook: true,
-    outputFileTracingIncludes: {
-      "/": ["./app/_landing/**"],
-      // The PDF route shells out to a real Chromium binary that ships brotli-
-      // compressed inside the package's bin/ directory. Nothing imports those
-      // files, so the tracer has no reason to keep them and the function
-      // deployed without them ("The input directory .../bin does not exist").
-      "/api/proposal/[code]/pdf": ["./node_modules/@sparticuz/chromium/bin/**"],
-    },
-    // Leave these two unbundled: webpack relocates the package and then
-    // chromium can no longer find its own binary relative to __dirname.
-    serverComponentsExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
+  // The round "N" button Next.js shows in `next dev` sat on top of the phone
+  // navigation. Errors still open the dev overlay; production never had it.
+  devIndicators: false,
+  // The homepage route reads app/_landing/*.html with fs at runtime; make sure
+  // Vercel's file tracer bundles it into the serverless function.
+  outputFileTracingIncludes: {
+    "/": ["./app/_landing/**"],
+    "/ro": ["./app/_landing/**"],
+    "/ru": ["./app/_landing/**"],
+    "/uk": ["./app/_landing/**"],
+    // The PDF route shells out to a real Chromium binary that ships brotli-
+    // compressed inside the package's bin/ directory. Nothing imports those
+    // files, so the tracer has no reason to keep them and the function
+    // deployed without them ("The input directory .../bin does not exist").
+    "/api/proposal/[code]/pdf": ["./node_modules/@sparticuz/chromium/bin/**"],
   },
+  // Leave these two unbundled: the bundler relocates the package and then
+  // chromium can no longer find its own binary relative to __dirname.
+  serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
   async headers() {
     return [
       // /widget is embeddable — give it the framing-friendly header set.
@@ -113,6 +111,7 @@ const nextConfig = {
       { source: "/studio/:path*", headers: noIndexHeaders },
       { source: "/documents/:path*", headers: noIndexHeaders },
       { source: "/traction/:path*", headers: noIndexHeaders },
+      { source: "/portfolios/:path*", headers: noIndexHeaders },
       { source: "/auth/:path*", headers: noIndexHeaders },
       // /demo used to be a robots.txt Disallow, which Search Console reports as
       // "Blocked by robots.txt" for every page that links to it. It is now

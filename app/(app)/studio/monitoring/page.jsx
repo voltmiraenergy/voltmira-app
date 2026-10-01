@@ -21,7 +21,7 @@ import {
   loadTickets, addTicket,
 } from "../studio-kit.jsx";
 import {
-  fleetRows, localLei, isSample, buildSampleFleet, clearJobStorage,
+  fleetRows, localLei, localUnit, isSample, buildSampleFleet, clearJobStorage, useSunFactors, fetchSunFactors, sampleSitePoints,
 } from "../fleet-data.js";
 import { compareUrgency, fleetRatio, THRESH } from "../../../../lib/fleetHealth.js";
 import { hydrate } from "../studio-sync.js";
@@ -31,85 +31,102 @@ const MONTHS = {
   en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
   ro: ["ian", "feb", "mar", "apr", "mai", "iun", "iul", "aug", "sep", "oct", "nov", "dec"],
   ru: ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"],
+  uk: ["січ", "лют", "бер", "кві", "тра", "чер", "лип", "сер", "вер", "жов", "лис", "гру"],
 };
-// Full names for the client message. Russian months are all masculine, so the
-// nominative reads correctly after «за» (за август, за май).
+// Full names for the client message. Russian and Ukrainian months are all
+// masculine, so the nominative reads correctly after «за» (за август, за серпень).
 const MONTHS_LONG = {
   en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
   ro: ["ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie"],
   ru: ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
+  uk: ["січень", "лютий", "березень", "квітень", "травень", "червень", "липень", "серпень", "вересень", "жовтень", "листопад", "грудень"],
 };
 
 const T = {
-  title: { en: "Fleet monitoring", ro: "Monitorizarea parcului", ru: "Мониторинг систем" },
+  title: { en: "Fleet monitoring", ro: "Monitorizarea parcului", ru: "Мониторинг систем", uk: "Моніторинг систем" },
   sub: {
     en: "Every system you've handed over, measured against the P50 its own quote promised. See what needs a visit and why, what each client saved, and send them a monthly update in a tap.",
     ro: "Fiecare sistem predat, măsurat față de P50-ul promis în propria ofertă. Vezi ce are nevoie de o vizită și de ce, cât a economisit fiecare client, și trimite-i un raport lunar dintr-o atingere.",
     ru: "Каждая сданная система против P50 из её собственного расчёта. Что требует выезда и почему, сколько сэкономил каждый клиент, и ежемесячный отчёт клиенту в одно касание.",
+    uk: "Кожна здана система проти P50 з її власного розрахунку. Що потребує виїзду і чому, скільки заощадив кожен клієнт, і щомісячний звіт клієнту одним дотиком.",
   },
   note: {
     en: "Readings come from each job's Monitoring step. A job linked to a station in a connected inverter portal (FusionSolar, Deye/Solarman, Growatt) fills its finished months every night; for any other, enter the month's kWh from the inverter app.",
     ro: "Citirile vin din pasul Monitorizare al fiecărei lucrări. O lucrare legată de o stație dintr-un portal de invertor conectat (FusionSolar, Deye/Solarman, Growatt) își completează lunile încheiate în fiecare noapte; pentru celelalte, introdu kWh-ul lunii din aplicația invertorului.",
     ru: "Показания берутся из шага «Мониторинг» каждого объекта. Объект, привязанный к станции в подключённом портале инвертора (FusionSolar, Deye/Solarman, Growatt), получает завершённые месяцы каждую ночь; для остальных вносите кВт·ч за месяц из приложения инвертора.",
+    uk: "Показники беруться з кроку «Моніторинг» кожного об’єкта. Об’єкт, прив’язаний до станції в підключеному порталі інвертора (FusionSolar, Deye/Solarman, Growatt), отримує завершені місяці щоночі; для решти вносьте кВт·год за місяць із застосунку інвертора.",
   },
-  k_systems: { en: "systems handed over", ro: "sisteme predate", ru: "сданных систем" },
-  k_ratio: { en: "fleet vs P50 this year (median)", ro: "parcul față de P50 anul acesta (median)", ru: "парк против P50 за год (медиана)" },
-  k_energy: { en: "generated this year", ro: "produși anul acesta", ru: "выработано за год" },
-  k_saved: { en: "your clients saved this year", ro: "au economisit clienții tăi anul acesta", ru: "сэкономили ваши клиенты за год" },
-  k_attention: { en: "need attention", ro: "au nevoie de atenție", ru: "требуют внимания" },
-  k_lost: { en: "below P50 on flagged systems", ro: "sub P50 la sistemele semnalate", ru: "ниже P50 на проблемных системах" },
-  queue: { en: "Needs attention", ro: "Au nevoie de atenție", ru: "Требуют внимания" },
-  queueNone: { en: "Nothing needs a visit. Every system with a reading for {m} is within 15% of its P50.", ro: "Nimic nu necesită o vizită. Toate sistemele cu citire pentru {m} sunt la cel mult 15% sub P50.", ru: "Выезд не нужен. Все системы с показаниями за {m} в пределах 15% от P50." },
-  whatToDo: { en: "What to do", ro: "Ce faci", ru: "Что делать" },
-  logTicket: { en: "Log service ticket", ro: "Deschide tichet de service", ru: "Создать сервисную заявку" },
-  ticketLogged: { en: "Ticket logged", ro: "Tichet deschis", ru: "Заявка создана" },
-  clientUpdate: { en: "Client update", ro: "Raport pentru client", ru: "Отчёт клиенту" },
-  openJob: { en: "Open in workspace", ro: "Deschide în spațiul de lucru", ru: "Открыть в рабочем пространстве" },
-  fleet: { en: "Fleet", ro: "Parc", ru: "Парк" },
-  f_all: { en: "All", ro: "Toate", ru: "Все" },
-  f_attention: { en: "Needs attention", ro: "Necesită atenție", ru: "Требуют внимания" },
-  f_ontrack: { en: "On track", ro: "În grafic", ru: "В норме" },
-  f_pending: { en: "First month pending", ro: "Prima lună în curs", ru: "Первый месяц" },
-  c_system: { en: "System", ro: "Sistem", ru: "Система" },
-  c_last: { en: "Last month", ro: "Ultima lună", ru: "Посл. месяц" },
-  c_ytd: { en: "This year", ro: "Anul acesta", ru: "За год" },
-  c_trend: { en: "Month by month", ro: "Lună de lună", ru: "По месяцам" },
-  c_saved: { en: "Client saved", ro: "Economie client", ru: "Экономия клиента" },
-  c_status: { en: "Status", ro: "Stare", ru: "Статус" },
-  sample: { en: "sample", ro: "exemplu", ru: "пример" },
-  since: { en: "Live since", ro: "Funcționează din", ru: "Работает с" },
-  chartTitle: { en: "Production vs P50", ro: "Producție vs P50", ru: "Выработка vs P50" },
-  legendP50: { en: "P50 promised", ro: "P50 promis", ru: "P50 обещано" },
-  legendAct: { en: "actual", ro: "real", ru: "факт" },
-  noSel: { en: "Select a system in the table to see its detail and write its client update.", ro: "Alege un sistem din tabel pentru detalii și pentru raportul către client.", ru: "Выберите систему в таблице, чтобы увидеть детали и отчёт клиенту." },
-  msgLang: { en: "Message language", ro: "Limba mesajului", ru: "Язык сообщения" },
-  copy: { en: "Copy", ro: "Copiază", ru: "Копировать" },
-  copied: { en: "Message copied", ro: "Mesaj copiat", ru: "Сообщение скопировано" },
+  k_systems: { en: "systems handed over", ro: "sisteme predate", ru: "сданных систем", uk: "зданих систем" },
+  k_ratio: { en: "fleet vs P50 this year (median)", ro: "parcul față de P50 anul acesta (median)", ru: "парк против P50 за год (медиана)", uk: "парк проти P50 за рік (медіана)" },
+  k_energy: { en: "generated this year", ro: "produși anul acesta", ru: "выработано за год", uk: "згенеровано за рік" },
+  k_saved: { en: "your clients saved this year", ro: "au economisit clienții tăi anul acesta", ru: "сэкономили ваши клиенты за год", uk: "заощадили ваші клієнти за рік" },
+  k_attention: { en: "need attention", ro: "au nevoie de atenție", ru: "требуют внимания", uk: "потребують уваги" },
+  k_lost: { en: "below P50 on flagged systems", ro: "sub P50 la sistemele semnalate", ru: "ниже P50 на проблемных системах", uk: "нижче P50 на проблемних системах" },
+  k_ratioSun: { en: "fleet vs what the sun allowed (median)", ro: "parcul față de cât a permis soarele (median)", ru: "парк против того, что позволило солнце (медиана)", uk: "парк проти того, що дозволило сонце (медіана)" },
+  k_lostSun: { en: "below target on flagged systems", ro: "sub țintă la sistemele semnalate", ru: "ниже цели на проблемных системах", uk: "нижче цілі на проблемних системах" },
+  queue: { en: "Needs attention", ro: "Au nevoie de atenție", ru: "Требуют внимания", uk: "Потребують уваги" },
+  queueNone: { en: "Nothing needs a visit. Every system with a reading for {m} is within 15% of its P50.", ro: "Nimic nu necesită o vizită. Toate sistemele cu citire pentru {m} sunt la cel mult 15% sub P50.", ru: "Выезд не нужен. Все системы с показаниями за {m} в пределах 15% от P50.", uk: "Виїзд не потрібен. Усі системи з показниками за {m} у межах 15% від P50." },
+  whatToDo: { en: "What to do", ro: "Ce faci", ru: "Что делать", uk: "Що робити" },
+  logTicket: { en: "Log service ticket", ro: "Deschide tichet de service", ru: "Создать сервисную заявку", uk: "Створити сервісну заявку" },
+  ticketLogged: { en: "Ticket logged", ro: "Tichet deschis", ru: "Заявка создана", uk: "Заявку створено" },
+  clientUpdate: { en: "Client update", ro: "Raport pentru client", ru: "Отчёт клиенту", uk: "Звіт клієнту" },
+  openJob: { en: "Open in workspace", ro: "Deschide în spațiul de lucru", ru: "Открыть в рабочем пространстве", uk: "Відкрити в робочому просторі" },
+  fleet: { en: "Fleet", ro: "Parc", ru: "Парк", uk: "Парк" },
+  f_all: { en: "All", ro: "Toate", ru: "Все", uk: "Усі" },
+  f_attention: { en: "Needs attention", ro: "Necesită atenție", ru: "Требуют внимания", uk: "Потребують уваги" },
+  f_ontrack: { en: "On track", ro: "În grafic", ru: "В норме", uk: "У нормі" },
+  f_pending: { en: "First month pending", ro: "Prima lună în curs", ru: "Первый месяц", uk: "Перший місяць" },
+  c_system: { en: "System", ro: "Sistem", ru: "Система", uk: "Система" },
+  c_last: { en: "Last month", ro: "Ultima lună", ru: "Посл. месяц", uk: "Ост. місяць" },
+  c_ytd: { en: "This year", ro: "Anul acesta", ru: "За год", uk: "За рік" },
+  c_trend: { en: "Month by month", ro: "Lună de lună", ru: "По месяцам", uk: "По місяцях" },
+  c_saved: { en: "Client saved", ro: "Economie client", ru: "Экономия клиента", uk: "Економія клієнта" },
+  c_status: { en: "Status", ro: "Stare", ru: "Статус", uk: "Статус" },
+  sample: { en: "sample", ro: "exemplu", ru: "пример", uk: "приклад" },
+  since: { en: "Live since", ro: "Funcționează din", ru: "Работает с", uk: "Працює з" },
+  chartTitle: { en: "Production vs P50", ro: "Producție vs P50", ru: "Выработка vs P50", uk: "Генерація vs P50" },
+  chartTitleSun: { en: "Production vs what this year's sun allowed", ro: "Producție vs cât a permis soarele anului acesta", ru: "Выработка против того, что позволило солнце этого года", uk: "Генерація проти того, що дозволило сонце цього року" },
+  sunNote: {
+    en: "Adjusted for the weather: each month's target is its P50 scaled by how sunny that month really was at this address, against the same month in the ten years before (NASA POWER satellite data). A cloudy month no longer reads as a fault.",
+    ro: "Ajustat după vreme: ținta fiecărei luni e P50-ul ei înmulțit cu cât de însorită a fost de fapt luna la această adresă, față de aceeași lună din ultimii zece ani (date satelitare NASA POWER). O lună înnorată nu mai apare ca defect.",
+    ru: "С поправкой на погоду: цель каждого месяца, его P50, умноженный на то, насколько солнечным был этот месяц по этому адресу по сравнению с тем же месяцем за предыдущие десять лет (спутниковые данные NASA POWER). Облачный месяц больше не выглядит как неисправность.",
+    uk: "З поправкою на погоду: ціль кожного місяця це його P50, помножений на те, наскільки сонячним був цей місяць за цією адресою порівняно з тим самим місяцем за попередні десять років (супутникові дані NASA POWER). Хмарний місяць більше не виглядає як несправність.",
+  },
+  sunMonth: { en: "sun {p} of a typical {m}", ro: "soare {p} față de un {m} obișnuit", ru: "солнце {p} от обычного месяца ({m})", uk: "сонце {p} від звичайного місяця ({m})" },
+  legendP50: { en: "P50 promised", ro: "P50 promis", ru: "P50 обещано", uk: "P50 обіцяно" },
+  legendAct: { en: "actual", ro: "real", ru: "факт", uk: "факт" },
+  noSel: { en: "Select a system in the table to see its detail and write its client update.", ro: "Alege un sistem din tabel pentru detalii și pentru raportul către client.", ru: "Выберите систему в таблице, чтобы увидеть детали и отчёт клиенту.", uk: "Виберіть систему в таблиці, щоб побачити деталі та звіт клієнту." },
+  msgLang: { en: "Message language", ro: "Limba mesajului", ru: "Язык сообщения", uk: "Мова повідомлення" },
+  copy: { en: "Copy", ro: "Copiază", ru: "Копировать", uk: "Копіювати" },
+  copied: { en: "Message copied", ro: "Mesaj copiat", ru: "Сообщение скопировано", uk: "Повідомлення скопійовано" },
   whyPhone: {
     en: "Sent from your own phone, so it lands as a message from the people who installed the system, not a no-reply email.",
     ro: "Pleacă de pe telefonul tău, deci ajunge ca mesaj de la cei care au montat sistemul, nu ca un e-mail automat.",
     ru: "Уходит с вашего телефона, поэтому приходит как сообщение от тех, кто монтировал систему, а не как автоматическое письмо.",
+    uk: "Надсилається з вашого телефона, тож приходить як повідомлення від тих, хто монтував систему, а не як автоматичний лист.",
   },
-  emptyTitle: { en: "No systems handed over yet", ro: "Niciun sistem predat încă", ru: "Пока нет сданных систем" },
+  emptyTitle: { en: "No systems handed over yet", ro: "Niciun sistem predat încă", ru: "Пока нет сданных систем", uk: "Поки немає зданих систем" },
   emptyBody: {
     en: "A job joins the fleet once its handover certificate is signed in the Installation step of its workspace. The readings you enter in its Monitoring step then show up here, measured against the quote's P50.",
     ro: "O lucrare intră în parc după ce certificatul de predare e semnat în pasul Montaj din spațiul ei de lucru. Citirile introduse în pasul Monitorizare apar apoi aici, măsurate față de P50-ul din ofertă.",
     ru: "Объект попадает в парк, когда акт передачи подписан на шаге «Монтаж» его рабочего пространства. Показания, внесённые на шаге «Мониторинг», появятся здесь в сравнении с P50 из расчёта.",
+    uk: "Об’єкт потрапляє в парк, коли акт передачі підписано на кроці «Монтаж» його робочого простору. Показники, внесені на кроці «Моніторинг», з’являться тут у порівнянні з P50 з розрахунку.",
   },
-  loadSample: { en: "Load a sample fleet (8 systems in Moldova)", ro: "Încarcă un parc exemplu (8 sisteme în Moldova)", ru: "Загрузить пример (8 систем в Молдове)" },
-  removeSample: { en: "Remove sample fleet", ro: "Șterge parcul exemplu", ru: "Удалить пример" },
-  goJobs: { en: "Go to jobs", ro: "Mergi la lucrări", ru: "К объектам" },
-  t_loaded: { en: "Sample fleet loaded", ro: "Parc exemplu încărcat", ru: "Пример загружен" },
-  t_removed: { en: "Sample fleet removed", ro: "Parc exemplu șters", ru: "Пример удалён" },
+  loadSample: { en: "Load a sample fleet (8 systems in Moldova)", ro: "Încarcă un parc exemplu (8 sisteme în Moldova)", ru: "Загрузить пример (8 систем в Молдове)", uk: "Завантажити приклад (8 систем у Молдові)" },
+  removeSample: { en: "Remove sample fleet", ro: "Șterge parcul exemplu", ru: "Удалить пример", uk: "Видалити приклад" },
+  goJobs: { en: "Go to jobs", ro: "Mergi la lucrări", ru: "К объектам", uk: "До об’єктів" },
+  loadingSample: { en: "Loading this year's weather", ro: "Se încarcă vremea anului", ru: "Загружаем погоду этого года", uk: "Завантажуємо погоду цього року" },
+  t_loaded: { en: "Sample fleet loaded", ro: "Parc exemplu încărcat", ru: "Пример загружен", uk: "Приклад завантажено" },
+  t_removed: { en: "Sample fleet removed", ro: "Parc exemplu șters", ru: "Пример удалён", uk: "Приклад видалено" },
 };
 
 const STATUS = {
-  critical: { chip: "red", label: { en: "Critical", ro: "Critic", ru: "Критично" } },
-  nodata: { chip: "amber", label: { en: "No reading", ro: "Fără citire", ru: "Нет данных" } },
-  warn: { chip: "amber", label: { en: "Below P50", ro: "Sub P50", ru: "Ниже P50" } },
-  watch: { chip: "blue", label: { en: "Watch", ro: "De urmărit", ru: "Наблюдать" } },
-  ok: { chip: "green", label: { en: "Healthy", ro: "În parametri", ru: "В норме" } },
-  pending: { chip: "grey", label: { en: "First month pending", ro: "Prima lună în curs", ru: "Первый месяц" } },
+  critical: { chip: "red", label: { en: "Critical", ro: "Critic", ru: "Критично", uk: "Критично" } },
+  nodata: { chip: "amber", label: { en: "No reading", ro: "Fără citire", ru: "Нет данных", uk: "Немає даних" } },
+  warn: { chip: "amber", label: { en: "Below P50", ro: "Sub P50", ru: "Ниже P50", uk: "Нижче P50" } },
+  watch: { chip: "blue", label: { en: "Watch", ro: "De urmărit", ru: "Наблюдать", uk: "Спостерігати" } },
+  ok: { chip: "green", label: { en: "Healthy", ro: "În parametri", ru: "В норме", uk: "У нормі" } },
+  pending: { chip: "grey", label: { en: "First month pending", ro: "Prima lună în curs", ru: "Первый месяц", uk: "Перший місяць" } },
 };
 const NEEDS_ATTENTION = new Set(["critical", "warn", "nodata"]);
 
@@ -153,24 +170,26 @@ function explainRaw(row, lang) {
     case "no_reading": {
       const span = monthSpan(Array.from({ length: e.missingTo - e.missingFrom + 1 }, (_, k) => e.missingFrom + k), e.missingFrom === e.missingTo ? ml : m);
       return {
-        head: fill(L({ en: "No reading for {m}", ro: "Lipsește citirea pentru {m}", ru: "Нет показаний за {m}" }), { m: span }),
+        head: fill(L({ en: "No reading for {m}", ro: "Lipsește citirea pentru {m}", ru: "Нет показаний за {m}", uk: "Немає показників за {m}" }), { m: span }),
         detail: a.last
-          ? fill(L({ en: "The last reading on file is for {m}.", ro: "Ultima citire înregistrată este pentru {m}.", ru: "Последние показания: {m}." }), { m: ml[a.last.i] })
-          : L({ en: "No readings since handover.", ro: "Nicio citire de la predare.", ru: "Нет показаний с момента сдачи." }),
+          ? fill(L({ en: "The last reading on file is for {m}.", ro: "Ultima citire înregistrată este pentru {m}.", ru: "Последние показания: {m}.", uk: "Останні показники: {m}." }), { m: ml[a.last.i] })
+          : L({ en: "No readings since handover.", ro: "Nicio citire de la predare.", ru: "Нет показаний с момента сдачи.", uk: "Немає показників від моменту здачі." }),
         action: L({
           en: "Ask the client for a screenshot of the inverter app, or check the datalogger's Wi-Fi. A new router is the usual culprit.",
           ro: "Cere-i clientului o captură din aplicația invertorului sau verifică Wi-Fi-ul dataloggerului. De obicei e de vină un router nou.",
           ru: "Попросите у клиента скриншот из приложения инвертора или проверьте Wi-Fi логгера. Чаще всего виноват новый роутер.",
+          uk: "Попросіть у клієнта скриншот із застосунку інвертора або перевірте Wi-Fi логера. Найчастіше винен новий роутер.",
         }),
       };
     }
     case "overvoltage":
       return {
-        head: L({ en: "Likely tripping on grid overvoltage", ro: "Probabil se deconectează la supratensiune în rețea", ru: "Вероятно, отключается из-за перенапряжения в сети" }),
+        head: L({ en: "Likely tripping on grid overvoltage", ro: "Probabil se deconectează la supratensiune în rețea", ru: "Вероятно, отключается из-за перенапряжения в сети", uk: "Імовірно, вимикається через перенапругу в мережі" }),
         detail: fill(L({
           en: "{months} ran at {min}–{max}% of P50, while {spring} held {sp}%. The loss follows the midday sun, which is typical of a weak rural line.",
           ro: "{months}: între {min}% și {max}% din P50, deși {spring} a ținut {sp}%. Pierderea urmează soarele de la prânz, tipic pentru o linie rurală slabă.",
           ru: "{months}: {min}–{max}% от P50, хотя {spring} держались на {sp}%. Потери следуют за полуденным солнцем, что типично для слабой сельской линии.",
+          uk: "{months}: {min}–{max}% від P50, хоча {spring} трималися на {sp}%. Втрати йдуть за полуденним сонцем, що типово для слабкої сільської лінії.",
         }), {
           months: monthSpan(e.months, m), min: Math.round(e.min * 100), max: Math.round(e.max * 100),
           spring: monthSpan([2, 3], m), sp: Math.round(e.springAvg * 100),
@@ -179,58 +198,66 @@ function explainRaw(row, lang) {
           en: "Pull the inverter's event log for \"grid overvoltage\" trips around midday. If confirmed, ask the distribution operator (Premier Energy Distribution in the centre and south, RED Nord in the north) to measure voltage at the connection point.",
           ro: "Verifică jurnalul invertorului pentru declanșări „supratensiune rețea” în jurul prânzului. Dacă se confirmă, cere operatorului de distribuție (Premier Energy Distribution în centru și sud, RED Nord în nord) o măsurare a tensiunii la punctul de racordare.",
           ru: "Проверьте журнал инвертора на отключения «перенапряжение сети» около полудня. Если подтвердится, попросите оператора сети (Premier Energy Distribution в центре и на юге, RED Nord на севере) замерить напряжение в точке подключения.",
+          uk: "Перевірте журнал інвертора на вимкнення «перенапруга мережі» близько полудня. Якщо підтвердиться, попросіть оператора мережі (Premier Energy Distribution у центрі й на півдні, RED Nord на півночі) заміряти напругу в точці приєднання.",
         }),
       };
     case "soiling":
       return {
-        head: L({ en: "Output sliding month over month, likely soiling", ro: "Producția scade lună de lună, probabil murdărie", ru: "Выработка падает каждый месяц, вероятно, загрязнение" }),
+        head: L({ en: "Output sliding month over month, likely soiling", ro: "Producția scade lună de lună, probabil murdărie", ru: "Выработка падает каждый месяц, вероятно, загрязнение", uk: "Генерація падає щомісяця, імовірно, забруднення" }),
         detail: fill(L({
           en: "{a} {ra}% → {b} {rb}% of P50, lower every month.",
           ro: "{a} {ra}% → {b} {rb}% din P50, mai puțin în fiecare lună.",
           ru: "{a} {ra}% → {b} {rb}% от P50, ниже с каждым месяцем.",
+          uk: "{a} {ra}% → {b} {rb}% від P50, нижче з кожним місяцем.",
         }), { a: m[e.from], ra: Math.round(e.fromRatio * 100), b: m[e.to], rb: Math.round(e.toRatio * 100) }),
         action: L({
           en: "Book a cleaning visit. Dust from fields and roads builds up fast over a dry summer. Re-check the month after.",
           ro: "Programează o vizită de curățare. Praful de pe câmpuri și drumuri se adună repede într-o vară secetoasă. Reverifică luna următoare.",
           ru: "Запланируйте мойку панелей. Пыль с полей и дорог быстро копится за сухое лето. Проверьте снова через месяц.",
+          uk: "Заплануйте миття панелей. Пил із полів і доріг швидко накопичується за сухе літо. Перевірте знову через місяць.",
         }),
       };
     case "sudden_drop":
       return {
-        head: L({ en: "Sudden drop, possible fault", ro: "Scădere bruscă, posibilă defecțiune", ru: "Резкое падение, возможна неисправность" }),
+        head: L({ en: "Sudden drop, possible fault", ro: "Scădere bruscă, posibilă defecțiune", ru: "Резкое падение, возможна неисправность", uk: "Різке падіння, можлива несправність" }),
         detail: fill(L({
           en: "{m} fell to {r}% of P50 after {pm} at {pr}%.",
           ro: "{m} a scăzut la {r}% din P50, după {pm} cu {pr}%.",
           ru: "{pm}: {pr}% → {m}: {r}% от P50.",
+          uk: "{pm}: {pr}% → {m}: {r}% від P50.",
         }), { m: ml[e.month], r: Math.round(e.ratio * 100), pm: ml[e.prevMonth], pr: Math.round(e.prevRatio * 100) }),
         action: L({
           en: "Check the inverter for error codes and compare string currents. One string or MPPT offline is the usual cause.",
           ro: "Verifică codurile de eroare ale invertorului și compară curenții pe șiruri. De obicei e un șir sau un MPPT deconectat.",
           ru: "Проверьте коды ошибок инвертора и сравните токи цепочек. Обычно отключена одна цепочка или MPPT.",
+          uk: "Перевірте коди помилок інвертора й порівняйте струми стрінгів. Зазвичай вимкнено один стрінг або MPPT.",
         }),
       };
     case "snow":
       return {
-        head: L({ en: "Low winter output, likely snow cover", ro: "Producție mică iarna, probabil zăpadă", ru: "Низкая зимняя выработка, вероятно, снег" }),
-        detail: fill(L({ en: "{m} at {r}% of P50.", ro: "{m}: {r}% din P50.", ru: "{m}: {r}% от P50." }), { m: ml[e.month], r: Math.round(e.ratio * 100) }),
+        head: L({ en: "Low winter output, likely snow cover", ro: "Producție mică iarna, probabil zăpadă", ru: "Низкая зимняя выработка, вероятно, снег", uk: "Низька зимова генерація, імовірно, сніг" }),
+        detail: fill(L({ en: "{m} at {r}% of P50.", ro: "{m}: {r}% din P50.", ru: "{m}: {r}% от P50.", uk: "{m}: {r}% від P50." }), { m: ml[e.month], r: Math.round(e.ratio * 100) }),
         action: L({
           en: "No visit needed unless it persists after the thaw.",
           ro: "Nu e nevoie de vizită decât dacă persistă după dezgheț.",
           ru: "Выезд не нужен, если после оттепели всё восстановится.",
+          uk: "Виїзд не потрібен, якщо після відлиги все відновиться.",
         }),
       };
     case "low":
       return {
-        head: L({ en: "Below the promise", ro: "Sub cât s-a promis", ru: "Ниже обещанного" }),
+        head: L({ en: "Below the promise", ro: "Sub cât s-a promis", ru: "Ниже обещанного", uk: "Нижче обіцяного" }),
         detail: fill(L({
           en: "{m} at {r}% of P50, {y}% for the year so far.",
           ro: "{m}: {r}% din P50, {y}% de la începutul anului.",
           ru: "{m}: {r}% от P50, {y}% с начала года.",
+          uk: "{m}: {r}% від P50, {y}% з початку року.",
         }), { m: ml[e.month], r: Math.round(e.ratio * 100), y: Math.round((a.ratioYtd || 0) * 100) }),
         action: L({
           en: "Look for new shading, soiling or an inverter fault on the next visit.",
           ro: "Caută umbrire nouă, murdărie sau o defecțiune a invertorului la următoarea vizită.",
           ru: "При следующем визите проверьте новое затенение, загрязнение или неисправность инвертора.",
+          uk: "Під час наступного візиту перевірте нове затінення, забруднення або несправність інвертора.",
         }),
       };
     default:
@@ -243,20 +270,27 @@ function ruLei(n) {
   const f = new Intl.PluralRules("ru").select(n);
   return f === "one" ? "лей" : f === "few" ? "лея" : "леев";
 }
+function ukLei(n) {
+  const f = new Intl.PluralRules("uk").select(n);
+  return f === "one" ? "лей" : f === "few" ? "леї" : "леїв";
+}
 
 function clientMessage(row, msgLang) {
   const { job, a, asOf } = row;
-  const loc = msgLang === "ru" ? "ru-RU" : msgLang === "en" ? "en-IE" : "ro-RO";
+  const loc = { ru: "ru-RU", uk: "uk-UA", en: "en-IE" }[msgLang] || "ro-RO";
   const n = (v) => Math.round(v).toLocaleString(loc);
   const month = (MONTHS_LONG[msgLang] || MONTHS_LONG.ro)[asOf];
   const kw = (+job.kw || 0).toLocaleString(loc, { maximumFractionDigits: 1 });
   const kwh = row.monthActual(asOf);
   const ytdLei = Math.round(localLei(row.savedYtdEur, job.market));
+  // lei with Russian and Ukrainian plurals, or hryvnia for a Ukrainian job
+  const lei = (v) => (job.market === "UA" ? localUnit("UA", msgLang) : msgLang === "ru" ? ruLei(v) : msgLang === "uk" ? ukLei(v) : "lei");
 
   if (a.status === "pending") {
     return {
       ro: `Bună ziua! Sistemul dvs. solar de ${kw} kW funcționează. Primul raport lunar vi-l trimitem după prima lună întreagă de producție.`,
       ru: `Здравствуйте! Ваша солнечная станция ${kw} кВт работает. Первый ежемесячный отчёт пришлём после первого полного месяца выработки.`,
+      uk: `Добрий день! Ваша сонячна станція ${kw} кВт працює. Перший щомісячний звіт надішлемо після першого повного місяця генерації.`,
       en: `Hi! Your ${kw} kW solar system is up and running. We'll send your first monthly report after its first full month of production.`,
     }[msgLang];
   }
@@ -264,6 +298,7 @@ function clientMessage(row, msgLang) {
     return {
       ro: `Bună ziua! Nu am primit datele de producție pentru ${month} de la sistemul dvs. solar de ${kw} kW. Ne puteți trimite o captură de ecran din aplicația invertorului? Durează un minut și ne ajută să verificăm că totul funcționează corect.`,
       ru: `Здравствуйте! Мы не получили данные о выработке вашей солнечной станции ${kw} кВт за ${month}. Пришлите, пожалуйста, скриншот из приложения инвертора: это займёт минуту и поможет нам убедиться, что всё работает правильно.`,
+      uk: `Добрий день! Ми не отримали даних про генерацію вашої сонячної станції ${kw} кВт за ${month}. Надішліть, будь ласка, скриншот із застосунку інвертора: це займе хвилину й допоможе нам переконатися, що все працює правильно.`,
       en: `Hi! We haven't received the production figures for ${month} from your ${kw} kW solar system. Could you send us a screenshot from the inverter app? It takes a minute and lets us check everything is working properly.`,
     }[msgLang];
   }
@@ -276,20 +311,26 @@ function clientMessage(row, msgLang) {
   if (msgLang === "ru") {
     const head = `Здравствуйте! Ежемесячный отчёт по вашей солнечной станции ${kw} кВт.\n\nЗа ${month} она выработала ${n(kwh)} кВт·ч, это ${pc}% от расчёта в нашем предложении.`;
     return low
-      ? `${head} Это меньше, чем должно быть, поэтому в ближайшие дни мы свяжемся с вами, чтобы проверить систему.\n\nПримерная экономия с начала года: ~${n(ytdLei)} ${ruLei(ytdLei)}.`
-      : `${head}\nПримерная экономия: ~${n(monthLei)} ${ruLei(monthLei)} за ${month} и ~${n(ytdLei)} ${ruLei(ytdLei)} с начала года.\n\nСистема работает нормально. Если есть вопросы, пишите в любое время.`;
+      ? `${head} Это меньше, чем должно быть, поэтому в ближайшие дни мы свяжемся с вами, чтобы проверить систему.\n\nПримерная экономия с начала года: ~${n(ytdLei)} ${lei(ytdLei)}.`
+      : `${head}\nПримерная экономия: ~${n(monthLei)} ${lei(monthLei)} за ${month} и ~${n(ytdLei)} ${lei(ytdLei)} с начала года.\n\nСистема работает нормально. Если есть вопросы, пишите в любое время.`;
+  }
+  if (msgLang === "uk") {
+    const head = `Добрий день! Щомісячний звіт щодо вашої сонячної станції ${kw} кВт.\n\nЗа ${month} вона згенерувала ${n(kwh)} кВт·год, це ${pc}% від розрахунку в нашій пропозиції.`;
+    return low
+      ? `${head} Це менше, ніж має бути, тому найближчими днями ми зв’яжемося з вами, щоб перевірити систему.\n\nОрієнтовна економія з початку року: ~${n(ytdLei)} ${lei(ytdLei)}.`
+      : `${head}\nОрієнтовна економія: ~${n(monthLei)} ${lei(monthLei)} за ${month} і ~${n(ytdLei)} ${lei(ytdLei)} з початку року.\n\nСистема працює нормально. Якщо є запитання, пишіть будь-коли.`;
   }
   if (msgLang === "en") {
     const M = month;
     const head = `Hi! Here's the monthly report for your ${kw} kW solar system.\n\nIn ${M} it produced ${n(kwh)} kWh, ${pc}% of what we estimated in your quote.`;
     return low
-      ? `${head} That's less than it should be, so we'll be in touch in the next few days to check the system.\n\nEstimated savings so far this year: ~${n(ytdLei)} lei.`
-      : `${head}\nEstimated savings: ~${n(monthLei)} lei in ${M} and ~${n(ytdLei)} lei so far this year.\n\nEverything is working normally. Any questions, just message us.`;
+      ? `${head} That's less than it should be, so we'll be in touch in the next few days to check the system.\n\nEstimated savings so far this year: ~${n(ytdLei)} ${lei(ytdLei)}.`
+      : `${head}\nEstimated savings: ~${n(monthLei)} ${lei(monthLei)} in ${M} and ~${n(ytdLei)} ${lei(ytdLei)} so far this year.\n\nEverything is working normally. Any questions, just message us.`;
   }
   const head = `Bună ziua! Raportul lunar al sistemului dvs. solar de ${kw} kW.\n\nÎn ${month} a produs ${n(kwh)} kWh, adică ${pc}% din cât am estimat în ofertă.`;
   return low
-    ? `${head} Este mai puțin decât ar trebui, așa că vă contactăm în zilele următoare pentru o verificare.\n\nEconomie estimată de la începutul anului: ~${n(ytdLei)} lei.`
-    : `${head}\nEconomie estimată: ~${n(monthLei)} lei în ${month} și ~${n(ytdLei)} lei de la începutul anului.\n\nSistemul funcționează normal. Dacă aveți întrebări, scrieți-ne oricând.`;
+    ? `${head} Este mai puțin decât ar trebui, așa că vă contactăm în zilele următoare pentru o verificare.\n\nEconomie estimată de la începutul anului: ~${n(ytdLei)} ${lei(ytdLei)}.`
+    : `${head}\nEconomie estimată: ~${n(monthLei)} ${lei(monthLei)} în ${month} și ~${n(ytdLei)} ${lei(ytdLei)} de la începutul anului.\n\nSistemul funcționează normal. Dacă aveți întrebări, scrieți-ne oricând.`;
 }
 
 /* ----------------------------------------------------------------- viz ---- */
@@ -314,14 +355,18 @@ function Trend({ ratios, asOf, start }) {
 
 function MonthChart({ row, lang }) {
   const m = MONTHS[lang] || MONTHS.en;
-  const max = Math.max(1, ...row.p50, ...row.actual.map((v) => Number(v) || 0));
+  // The target each month is measured against: P50, scaled by that month's
+  // actual sunshine once it is known (fleetHealth's `expected`).
+  const target = row.a.expected || row.p50;
+  const max = Math.max(1, ...target, ...row.actual.map((v) => Number(v) || 0));
   return (
-    <div className="mn-chart" role="img" aria-label={tx(T.chartTitle, lang)}>
-      {row.p50.map((p, i) => {
+    <div className="mn-chart" role="img" aria-label={tx(row.a.weatherAdjusted ? T.chartTitleSun : T.chartTitle, lang)}>
+      {target.map((p, i) => {
         const act = row.monthActual(i);
         const r = row.a.ratios[i];
+        const sun = row.a.sun?.[i];
         return (
-          <div key={i} className="mn-col" title={`${m[i]} · P50 ${NUM(p)} kWh${act != null ? ` · ${NUM(act)} kWh (${pct(act / p)})` : ""}`}>
+          <div key={i} className="mn-col" title={`${m[i]}, ${sun != null ? tx(T.sunMonth, lang).replace("{p}", pct(sun)).replace("{m}", m[i]) + ", " : ""}${NUM(p)} kWh${act != null ? `, ${NUM(act)} kWh (${pct(act / p)})` : ""}`}>
             <div className="mn-col-bars">
               <span className="mn-col-p50" style={{ height: (p / max) * 100 + "%" }} />
               {act != null && i <= row.asOf && <span className={"mn-col-act " + (r != null ? tone(r) : "")} style={{ height: (act / max) * 100 + "%" }} />}
@@ -358,14 +403,18 @@ function FleetMonitoring() {
   const now = useMemo(() => new Date(), []);
   const m = MONTHS[lang] || MONTHS.en;
 
-  useEffect(() => { document.title = tx(T.title, lang) + " · VoltMira"; }, [lang]);
+  useEffect(() => { document.title = tx(T.title, lang) + " | VoltMira"; }, [lang]);
 
+  // This year's sunshine at each site, so a cloudy month is judged against
+  // the sky it had (fleet-data.js). The fleet shows against the plain P50
+  // until it arrives, and stays that way if the lookup fails.
+  const sunByJob = useSunFactors(hydrated ? jobs : [], now.getFullYear());
   // Readings live in their own localStorage keys, so the job list is the only
   // React state they hang off: loading/removing the sample fleet changes
   // `jobs`, a reading edited in the workspace remounts this page, and a portal
   // sync bumps `readingsRev` once the new months are pulled in.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const rows = useMemo(() => (hydrated ? fleetRows(jobs, now) : []), [jobs, hydrated, now, readingsRev]);
+  const rows = useMemo(() => (hydrated ? fleetRows(jobs, now, sunByJob) : []), [jobs, hydrated, now, readingsRev, sunByJob]);
   const linkable = useMemo(() => jobs.filter((j) => !isSample(j)), [jobs]);
   async function readingsArrived() {
     await hydrate();
@@ -379,7 +428,7 @@ function FleetMonitoring() {
     const saved = rows.reduce((s, r) => s + r.savedYtdEur, 0);
     const lost = rows.reduce((s, r) => s + r.lostEur, 0);
     const attention = rows.filter((r) => NEEDS_ATTENTION.has(r.a.status)).length;
-    return { kwp, mwh, saved, lost, attention, ratio: fleetRatio(rows.map((r) => r.a)) };
+    return { kwp, mwh, saved, lost, attention, ratio: fleetRatio(rows.map((r) => r.a)), weather: rows.some((r) => r.a.weatherAdjusted) };
   }, [rows]);
 
   const queue = useMemo(() => rows.filter((r) => NEEDS_ATTENTION.has(r.a.status)).sort((x, y) => compareUrgency(x.a, y.a)), [rows]);
@@ -406,13 +455,20 @@ function FleetMonitoring() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows]);
   const sel = rows.find((r) => r.job.id === selId) || null;
-  const selLang = msgLang || sel?.job.clientLang || (lang === "ru" ? "ru" : "ro");
+  const selLang = msgLang || sel?.job.clientLang || (lang === "ru" || lang === "uk" ? lang : "ro");
 
   const hasSample = jobs.some(isSample);
 
-  function loadSample() {
-    const added = buildSampleFleet(new Set(jobs.map((j) => j.id)), now);
+  // The sample's readings are made against this year's real sunshine, so its
+  // stories read the same once the fleet is judged against the weather.
+  const [loadingSample, setLoadingSample] = useState(false);
+  async function loadSample() {
+    setLoadingSample(true);
+    const existing = new Set(jobs.map((j) => j.id));
+    const sun = await fetchSunFactors(sampleSitePoints(existing), now.getFullYear());
+    const added = buildSampleFleet(existing, now, sun);
     if (added.length) addJobs(added);
+    setLoadingSample(false);
     fire(t(T.t_loaded));
   }
   function removeSample() {
@@ -465,21 +521,21 @@ function FleetMonitoring() {
           <h2>{t(T.emptyTitle)}</h2>
           <p>{t(T.emptyBody)}</p>
           <div className="mn-empty-cta">
-            <button className="btn primary sm" onClick={loadSample}>{t(T.loadSample)}</button>
+            <button className="btn primary sm" onClick={loadSample} disabled={loadingSample} aria-busy={loadingSample}>{t(loadingSample ? T.loadingSample : T.loadSample)}</button>
             <Link href={PREVIEW_BASE} className="btn ghost sm">{t(T.goJobs)}</Link>
           </div>
         </div>
       ) : (
         <>
           <div className="pv-metrics mn-kpis">
-            <div className="pv-metric"><b>{rows.length}</b><span>{t(T.k_systems)} · {NUM(stats.kwp, stats.kwp < 100 ? 1 : 0)} kWp</span></div>
+            <div className="pv-metric"><b>{rows.length}</b><span>{t(T.k_systems)}, {NUM(stats.kwp, stats.kwp < 100 ? 1 : 0)} kWp</span></div>
             <div className={"pv-metric" + (stats.ratio == null ? "" : stats.ratio >= THRESH.healthy ? " good" : stats.ratio < 0.9 ? " warn" : "")}>
-              <b>{pct(stats.ratio)}</b><span>{t(T.k_ratio)}</span>
+              <b>{pct(stats.ratio)}</b><span>{t(stats.weather ? T.k_ratioSun : T.k_ratio)}</span>
             </div>
             <div className="pv-metric"><b>{NUM(stats.mwh, 1)} MWh</b><span>{t(T.k_energy)}</span></div>
             <div className="pv-metric good"><b>{EUR(stats.saved)}</b><span>{t(T.k_saved)}</span></div>
             <div className={"pv-metric" + (stats.attention ? " warn" : " good")}><b>{stats.attention}</b><span>{t(T.k_attention)}</span></div>
-            <div className={"pv-metric" + (stats.lost > 0 ? " warn" : "")}><b>{EUR(stats.lost)}</b><span>{t(T.k_lost)}</span></div>
+            <div className={"pv-metric" + (stats.lost > 0 ? " warn" : "")}><b>{EUR(stats.lost)}</b><span>{t(stats.weather ? T.k_lostSun : T.k_lost)}</span></div>
           </div>
 
           <section className="mn-section">
@@ -496,7 +552,7 @@ function FleetMonitoring() {
                     <article key={row.job.id} className="mn-card">
                       <header className="mn-card-top">
                         <span className={"pv-stage " + st.chip}>{tx(st.label, lang)}</span>
-                        <span className="mn-card-who"><b>{row.job.name}</b> · {place(row.job)} · {NUM(+row.job.kw, 1)} kW</span>
+                        <span className="mn-card-who"><b>{row.job.name}</b>, {place(row.job)}, {NUM(+row.job.kw, 1)} kW</span>
                         {row.lostEur > 0 && <span className="mn-card-lost">−{EUR(row.lostEur)}</span>}
                       </header>
                       <h3 className="mn-card-head">{ex.head}</h3>
@@ -504,7 +560,7 @@ function FleetMonitoring() {
                       <div className="mn-card-do"><span>{t(T.whatToDo)}</span>{ex.action}</div>
                       <div className="mn-card-btns">
                         <button className="btn primary sm" disabled={logged} onClick={() => logTicket(row, ex)}>
-                          {logged ? t(T.ticketLogged) + " ✓" : t(T.logTicket)}
+                          {logged ? t(T.ticketLogged) : t(T.logTicket)}
                         </button>
                         <button className="btn ghost sm" onClick={() => focus(row)}>{t(T.clientUpdate)}</button>
                         <Link className="btn ghost sm" href={`${PREVIEW_BASE}/jobs/${row.job.id}/configure?step=5`}>{t(T.openJob)}</Link>
@@ -522,7 +578,7 @@ function FleetMonitoring() {
               <div className="pv-fchips">
                 {[["all", T.f_all], ["attention", T.f_attention], ["ontrack", T.f_ontrack], ...(counts.pending ? [["pending", T.f_pending]] : [])].map(([k, lbl]) => (
                   <button key={k} className={"pv-fchip" + (filter === k ? " on" : "")} onClick={() => setFilter(k)}>
-                    {t(lbl)} · {counts[k]}
+                    {t(lbl)}, {counts[k]}
                   </button>
                 ))}
               </div>
@@ -534,7 +590,7 @@ function FleetMonitoring() {
                     <tr>
                       <th>{t(T.c_system)}</th>
                       <th className="th-r">kWp</th>
-                      <th className="th-r">{t(T.c_last)} · {m[asOf]}</th>
+                      <th className="th-r">{t(T.c_last)}, {m[asOf]}</th>
                       <th className="th-r">{t(T.c_ytd)}</th>
                       <th>{t(T.c_trend)}</th>
                       <th className="th-r">{t(T.c_saved)}</th>
@@ -555,14 +611,14 @@ function FleetMonitoring() {
                           <td>
                             <div className="mn-sys">
                               <b>{row.job.name}{isSample(row.job) && <em>{t(T.sample)}</em>}</b>
-                              <span>{place(row.job)} · {row.job.market}</span>
+                              <span>{place(row.job)}, {row.job.market}</span>
                             </div>
                           </td>
                           <td className="num">{NUM(+row.job.kw, 1)}</td>
                           <td className={"num mn-r " + toneCls(lastR)}>{pct(lastR)}</td>
                           <td className={"num mn-r " + toneCls(row.a.ratioYtd)}>{pct(row.a.ratioYtd)}</td>
                           <td><Trend ratios={row.a.ratios} asOf={asOf} start={start} /></td>
-                          <td className="num">{NUM(localLei(row.savedYtdEur, row.job.market))} lei</td>
+                          <td className="num">{NUM(localLei(row.savedYtdEur, row.job.market))} {localUnit(row.job.market, lang)}</td>
                           <td><span className={"pv-stage " + st.chip}>{tx(st.label, lang)}</span></td>
                         </tr>
                       );
@@ -583,7 +639,7 @@ function FleetMonitoring() {
                     <div>
                       <h2 className="mn-det-name">{sel.job.name}</h2>
                       <p className="mn-det-sub">
-                        {[sel.job.address, `${NUM(+sel.job.kw, 1)} kWp`, +sel.job.batteryKwh > 0 ? `${sel.job.batteryKwh} kWh` : null].filter(Boolean).join(" · ")}
+                        {[sel.job.address, `${NUM(+sel.job.kw, 1)} kWp`, +sel.job.batteryKwh > 0 ? `${sel.job.batteryKwh} kWh` : null].filter(Boolean).join(", ")}
                       </p>
                     </div>
                     <span className={"pv-stage " + STATUS[sel.a.status].chip}>{tx(STATUS[sel.a.status].label, lang)}</span>
@@ -591,11 +647,12 @@ function FleetMonitoring() {
                   <div className="mn-det-kv">
                     <div><span>{t(T.c_ytd)}</span><b className={toneCls(sel.a.ratioYtd)}>{pct(sel.a.ratioYtd)}</b></div>
                     <div><span>{t(T.k_energy)}</span><b>{NUM(sel.a.ytdActual)} kWh</b></div>
-                    <div><span>{t(T.c_saved)}</span><b>{NUM(localLei(sel.savedYtdEur, sel.job.market))} lei</b></div>
-                    <div><span>{t(T.since)}</span><b>{sel.job.commissionedAt ? new Date(sel.job.commissionedAt).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "en" ? "en-IE" : "ro-RO") : "—"}</b></div>
+                    <div><span>{t(T.c_saved)}</span><b>{NUM(localLei(sel.savedYtdEur, sel.job.market))} {localUnit(sel.job.market, lang)}</b></div>
+                    <div><span>{t(T.since)}</span><b>{sel.job.commissionedAt ? new Date(sel.job.commissionedAt).toLocaleDateString({ ru: "ru-RU", uk: "uk-UA", en: "en-IE" }[lang] || "ro-RO") : "—"}</b></div>
                   </div>
-                  <h3 className="mn-sub-h">{t(T.chartTitle)}</h3>
+                  <h3 className="mn-sub-h">{t(sel.a.weatherAdjusted ? T.chartTitleSun : T.chartTitle)}</h3>
                   <MonthChart row={sel} lang={lang} />
+                  {sel.a.weatherAdjusted && <p className="mn-sun-note">{t(T.sunNote)}</p>}
                   <div className="mn-legend">
                     <span><i className="p50" />{t(T.legendP50)}</span>
                     <span><i className="act" />{t(T.legendAct)}</span>
@@ -617,12 +674,12 @@ function FleetMonitoring() {
 
                 <div className="pv-panel">
                   <div className="mn-det-head">
-                    <h3 style={{ margin: 0 }}>{t(T.clientUpdate)} · {(MONTHS_LONG[lang] || MONTHS_LONG.en)[asOf]}</h3>
+                    <h3 style={{ margin: 0 }}>{t(T.clientUpdate)}, {(MONTHS_LONG[lang] || MONTHS_LONG.en)[asOf]}</h3>
                   </div>
                   <div className="mn-msg-lang">
                     <span>{t(T.msgLang)}</span>
                     <div className="pv-seg">
-                      {[["ro", "RO"], ["ru", "RU"], ["en", "EN"]].map(([k, l]) => (
+                      {[["ro", "RO"], ["uk", "UK"], ["ru", "RU"], ["en", "EN"]].map(([k, l]) => (
                         <button key={k} className={selLang === k ? "on" : ""} onClick={() => setMsgLang(k)}>{l}</button>
                       ))}
                     </div>
@@ -702,6 +759,7 @@ const CSS = `
 .mn-det-kv span{display:block;font-size:11px;color:var(--muted)}
 .mn-det-kv b{font-size:15px;font-variant-numeric:tabular-nums}
 .mn-sub-h{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 10px}
+.mn-sun-note{margin:8px 0 0;font-size:12px;line-height:1.5;color:var(--muted);padding:8px 10px;border-radius:9px;background:var(--paper);border:1px solid var(--line)}
 .mn-chart{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;height:150px;align-items:end}
 .mn-col{display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;min-width:0}
 .mn-col-bars{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:2px}

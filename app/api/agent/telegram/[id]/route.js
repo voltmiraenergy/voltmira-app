@@ -7,11 +7,13 @@
 // Always answers 200 once the update is genuine: a non-200 makes Telegram
 // retry the same update, and a homeowner would get the same reply twice.
 import { NextResponse } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "../../../../../lib/supabase.js";
 import { isRateLimited } from "../../../../../lib/ratelimit.js";
 import { t, normLang } from "../../../../../lib/i18n.js";
 import { keyFromEnv, open } from "../../../../../lib/secretBox.js";
-import { parseUpdate, secretMatches, sendText, tgCall, webhookServerSecret } from "../../../../../lib/telegram.js";
+import { parseUpdate, secretMatches, sendText, tgCall, getFileBytes, webhookServerSecret } from "../../../../../lib/telegram.js";
+import { readBill, billFacts } from "../../../../../lib/billReader.js";
 import { answerHomeowner } from "../../../../../lib/leadAgentRun.js";
 import { agentConfigured } from "../../../../../lib/claudeClient.js";
 import { MAX_TURNS } from "../../../../../lib/leadAgent.js";
@@ -22,19 +24,20 @@ export const maxDuration = 60;
 
 const OK = () => NextResponse.json({ ok: true });
 
-export async function POST(req, { params }) {
+export async function POST(req, props) {
+  const params = await props.params;
   const channelId = String(params.id || "");
   const secret = webhookServerSecret();
   if (!secret || !secretMatches(req.headers.get("x-telegram-bot-api-secret-token"), channelId, secret)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  let update; try { update = await req.json(); } catch { return OK(); }
+  let update;try { update = await req.json(); } catch { return OK(); }
   const msg = parseUpdate(update);
   if (!msg) return OK();
   // Telegram redelivers an update it thinks went unanswered, even while the
   // first delivery is still being answered: claim each update_id once.
   const updateId = Number(update.update_id) || null;
-  if (updateId && await isRateLimited(`tg:upd:${channelId}:${updateId}`, 1, 86_400_000)) return OK();
+  if (updateId && (await isRateLimited(`tg:upd:${channelId}:${updateId}`, 1, 86_400_000))) return OK();
   if (await isRateLimited(`tg:${channelId}:${msg.chatId}`, 30, 600_000)) return OK();
 
   const db = supabaseAdmin();
@@ -64,16 +67,36 @@ export async function POST(req, { params }) {
   const state = { leadId: conv?.lead_id || null, surveyRequested: !!conv?.survey_requested };
   try { await tgCall(token, "sendChatAction", { chat_id: msg.chatId, action: "typing" }); } catch { /* cosmetic */ }
 
+  // A photo or PDF is their electricity bill: read it (never stored) and hand
+  // the assistant what was found, plus anything they wrote with it.
+  let userText = msg.text;
+  if (msg.file) {
+    if (await isRateLimited(`tg:bill:${channelId}:${msg.chatId}`, 5, 600_000)) { await say(t("agent_slow_down", lang)); return OK(); }
+    await say(t("agent_bill_reading", lang));
+    let facts = null, tooBig = false;
+    try {
+      const bytes = await getFileBytes(token, msg.file.id);
+      const r = await readBill(new Anthropic(), { bytes, mime: msg.file.mime });
+      facts = r.ok ? billFacts(r.bill) : null;
+      tooBig = r.code === "too_large";
+    } catch (e) {
+      tooBig = e?.code === "too_large";
+      console.error("telegram bill read failed", e?.code, e?.message);
+    }
+    if (!facts) { await say(t(tooBig ? "agent_bill_big" : "agent_bill_failed", lang)); return OK(); }
+    userText = msg.text ? `${facts}\nThey also wrote: ${msg.text}` : facts;
+  }
+
   let answer = null;
   try {
-    answer = await answerHomeowner({ db, co, lang, state, turns, text: msg.text, via: "telegram", limitKey: `tg:${msg.chatId}` });
+    answer = await answerHomeowner({ db, co, lang, state, turns, text: userText, via: "telegram", limitKey: `tg:${msg.chatId}` });
   } catch (err) {
     console.error("telegram lead assistant failed", err?.status || "", err?.message);
   }
   const reply = answer || t("agent_trouble", lang);
   await say(reply);
 
-  const next = [...turns, { role: "user", text: msg.text }, { role: "assistant", text: reply }].slice(-MAX_TURNS);
+  const next = [...turns, { role: "user", text: userText }, { role: "assistant", text: reply }].slice(-MAX_TURNS);
   await db.from("agent_conversations").upsert({
     channel_id: ch.id, company_id: co.id, chat_id: msg.chatId, turns: next,
     lead_id: state.leadId, survey_requested: state.surveyRequested,

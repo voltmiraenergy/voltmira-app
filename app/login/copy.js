@@ -1,11 +1,11 @@
-// app/login/copy.js — every string on /login, in the site's three languages.
+// app/login/copy.js — every string on /login, in the site's four languages.
 //
 // Shared by the server page (brand pane, metadata) and the client form. Plain
 // data only: no imports, so the client bundle pays for the strings and nothing
 // else.
 
-export const LOGIN_LANGS = ["en", "ro", "ru"];
-export const SITE_PATH = { en: "/", ro: "/ro", ru: "/ru" };
+export const LOGIN_LANGS = ["en", "ro", "ru", "uk"];
+export const SITE_PATH = { en: "/", ro: "/ro", ru: "/ru", uk: "/uk" };
 
 /** ?lang=, then the saved choice, then the browser's languages, then English. */
 export function pickLoginLang(param, cookie, acceptLanguage) {
@@ -13,7 +13,7 @@ export function pickLoginLang(param, cookie, acceptLanguage) {
   const al = String(acceptLanguage || "").toLowerCase();
   for (const part of al.split(",")) {
     const code = part.trim().slice(0, 2);
-    if (code === "ro" || code === "ru" || code === "en") return code;
+    if (code === "ro" || code === "ru" || code === "uk" || code === "en") return code;
   }
   return "en";
 }
@@ -156,6 +156,52 @@ export const COPY = {
       reset_need_email: "Сначала введите e-mail выше, затем нажмите «Забыли пароль?».",
       reset_sent: "Если для этого e-mail есть аккаунт, ссылка для сброса уже в пути. Проверьте и папку «Спам».",
       oauth: "Вход через Google не завершился. Попробуйте ещё раз.",
+    },
+  },
+
+  uk: {
+    meta_title: "Вхід | VoltMira",
+    meta_desc: "Увійдіть у VoltMira або безкоштовно створіть робочий простір для своєї сонячної компанії.",
+    back: "Назад на сайт",
+    theme: "Перемкнути світлу й темну тему",
+    lang: "Мова",
+    h1: "Чесні цифри<br>продають <span class=\"hl\">більше дахів.</span>",
+    lead: "Три сценарії окупності за реальними сонячними даними, відстежувані посилання на пропозиції та прийняття одним дотиком, усе в одному місці.",
+    signin_h: "З поверненням",
+    signin_sub: "Увійдіть до своїх розрахунків, клієнтів і воронки.",
+    signup_h: "Створіть робочий простір",
+    signup_sub: "Почніть безкоштовно й надішліть першу чесну пропозицію вже сьогодні.",
+    tab_in: "Вхід",
+    tab_up: "Реєстрація",
+    tabs_label: "Вхід або реєстрація",
+    company: "Назва компанії",
+    company_ph: "SolarTech SRL",
+    email: "Робочий e-mail",
+    email_ph: "you@company.ua",
+    password: "Пароль",
+    show: "Показати",
+    hide: "Приховати",
+    show_label: "Показати пароль",
+    hide_label: "Приховати пароль",
+    forgot: "Забули пароль?",
+    submit_in: "Увійти",
+    submit_up: "Створити обліковий запис",
+    busy: "Секунду…",
+    or: "або",
+    google: "Продовжити з Google",
+    new_q: "Уперше у VoltMira?",
+    new_a: "Створити безкоштовний обліковий запис",
+    have_q: "Уже маєте обліковий запис?",
+    have_a: "Увійти",
+    fine: "Продовжуючи, ви погоджуєтеся з <a href=\"/terms\">Умовами</a> та <a href=\"/privacy\">Політикою конфіденційності</a>.",
+    msg: {
+      signin: "Неправильний e-mail або пароль.",
+      signup: "Не вдалося створити обліковий запис із цими даними. Якщо ви вже реєструвалися, скористайтеся входом.",
+      captcha: "Будь ласка, пройдіть перевірку нижче.",
+      setup: "Обліковий запис створено, але налаштування робочого простору не завершилося. Увійдіть, щоб закінчити.",
+      reset_need_email: "Спершу введіть e-mail вище, потім натисніть «Забули пароль?».",
+      reset_sent: "Якщо для цього e-mail є обліковий запис, посилання для скидання вже в дорозі. Перевірте й теку «Спам».",
+      oauth: "Вхід через Google не завершився. Спробуйте ще раз.",
     },
   },
 };

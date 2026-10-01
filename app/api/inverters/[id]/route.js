@@ -17,7 +17,8 @@ async function ownConnection(me, id) {
   return data;
 }
 
-export async function POST(req, { params }) {
+export async function POST(req, props) {
+  const params = await props.params;
   const me = await caller();
   if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const conn = await ownConnection(me, params.id);
@@ -33,7 +34,8 @@ export async function POST(req, { params }) {
   return NextResponse.json(result);
 }
 
-export async function DELETE(_req, { params }) {
+export async function DELETE(_req, props) {
+  const params = await props.params;
   const me = await caller();
   if (!me) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!me.canManage) return NextResponse.json({ error: "forbidden" }, { status: 403 });

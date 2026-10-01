@@ -12,10 +12,10 @@ import { PhotoSlot } from "./PhotoCapture.jsx";
 import SegmentedControl from "./SegmentedControl.jsx";
 
 const SHADE_OPTIONS = (t) => [
-  { value: "none", label: t({ en: "None", ro: "Fără", ru: "Нет" }) },
-  { value: "light", label: t({ en: "Light", ro: "Ușoară", ru: "Лёгкое" }) },
-  { value: "mod", label: t({ en: "Moderate", ro: "Moderată", ru: "Умеренное" }) },
-  { value: "heavy", label: t({ en: "Heavy", ro: "Puternică", ru: "Сильное" }) },
+  { value: "none", label: t({ en: "None", ro: "Fără", ru: "Нет", uk: "Немає" }) },
+  { value: "light", label: t({ en: "Light", ro: "Ușoară", ru: "Лёгкое", uk: "Легке" }) },
+  { value: "mod", label: t({ en: "Moderate", ro: "Moderată", ru: "Умеренное", uk: "Помірне" }) },
+  { value: "heavy", label: t({ en: "Heavy", ro: "Puternică", ru: "Сильное", uk: "Сильне" }) },
 ];
 
 // A slider with an editable number beside it, both bound to the same value:
@@ -64,43 +64,43 @@ export default function SiteRoofStep({ job, patch, lang }) {
   return (
     <>
       <div className="ws-sec">
-        <div className="ws-sec-h"><MapPin size={16} aria-hidden="true" />{t({ en: "Address", ro: "Adresă", ru: "Адрес" })}</div>
+        <div className="ws-sec-h"><MapPin size={16} aria-hidden="true" />{t({ en: "Address", ro: "Adresă", ru: "Адрес", uk: "Адреса" })}</div>
         <AddressField lang={lang} client={job} onPick={patch} />
       </div>
 
       <div className="ws-sec">
-        <div className="ws-sec-h"><Ruler size={16} aria-hidden="true" />{t({ en: "The roof", ro: "Acoperișul", ru: "Крыша" })}</div>
+        <div className="ws-sec-h"><Ruler size={16} aria-hidden="true" />{t({ en: "The roof", ro: "Acoperișul", ru: "Крыша", uk: "Дах" })}</div>
         <div className="ws-box">
-          <NumberSlider id="ws-pitch" label={t({ en: "Roof pitch", ro: "Înclinare acoperiș", ru: "Уклон крыши" })}
+          <NumberSlider id="ws-pitch" label={t({ en: "Roof pitch", ro: "Înclinare acoperiș", ru: "Уклон крыши", uk: "Нахил даху" })}
             value={pitch} min={0} max={90} suffix="°"
             onChange={(v) => { touched.current = true; setPitch(v); }} />
-          <NumberSlider id="ws-az" label={t({ en: "Orientation", ro: "Orientare", ru: "Ориентация" })}
+          <NumberSlider id="ws-az" label={t({ en: "Orientation", ro: "Orientare", ru: "Ориентация", uk: "Орієнтація" })}
             value={az} min={-180} max={180} step={5} suffix="°" extra={dirLabel(az)}
             onChange={(v) => { touched.current = true; setAz(v); }} />
           <div>
-            <span className="ws-label">{t({ en: "Shading", ro: "Umbrire", ru: "Затенение" })}</span>
-            <SegmentedControl full options={SHADE_OPTIONS(t)} value={shade} label={t({ en: "Shading", ro: "Umbrire", ru: "Затенение" })}
+            <span className="ws-label">{t({ en: "Shading", ro: "Umbrire", ru: "Затенение", uk: "Затінення" })}</span>
+            <SegmentedControl full options={SHADE_OPTIONS(t)} value={shade} label={t({ en: "Shading", ro: "Umbrire", ru: "Затенение", uk: "Затінення" })}
               onChange={(v) => { touched.current = true; setShade(v); }} />
           </div>
           {measured ? (
             <div className="ws-callout">
-              <span>{t({ en: "This roof yields", ro: "Acest acoperiș produce", ru: "Эта крыша даёт" })}</span>
-              <b>{Math.round(live * 100)}%<small>{t({ en: "of an ideal south-facing roof", ro: "dintr-un acoperiș ideal spre sud", ru: "от идеальной южной крыши" })}</small></b>
+              <span>{t({ en: "This roof yields", ro: "Acest acoperiș produce", ru: "Эта крыша даёт", uk: "Цей дах дає" })}</span>
+              <b>{Math.round(live * 100)}%<small>{t({ en: "of an ideal south-facing roof", ro: "dintr-un acoperiș ideal spre sud", ru: "от идеальной южной крыши", uk: "від ідеального південного даху" })}</small></b>
             </div>
           ) : (
-            <p className="ws-sec-note">{t({ en: "Set the pitch, orientation and shading you measured on site to work out this roof's yield.", ro: "Setează înclinarea, orientarea și umbrirea măsurate pe teren ca să afli producția acestui acoperiș.", ru: "Укажите уклон, ориентацию и затенение, измеренные на объекте, чтобы рассчитать выработку крыши." })}</p>
+            <p className="ws-sec-note">{t({ en: "Set the pitch, orientation and shading you measured on site to work out this roof's yield.", ro: "Setează înclinarea, orientarea și umbrirea măsurate pe teren ca să afli producția acestui acoperiș.", ru: "Укажите уклон, ориентацию и затенение, измеренные на объекте, чтобы рассчитать выработку крыши.", uk: "Вкажіть нахил, орієнтацію та затінення, виміряні на об’єкті, щоб розрахувати генерацію даху." })}</p>
           )}
         </div>
       </div>
 
       <div className="ws-sec">
-        <div className="ws-sec-h"><Camera size={16} aria-hidden="true" />{t({ en: "Site photos", ro: "Poze de la fața locului", ru: "Фото объекта" })}</div>
-        <p className="ws-sec-note">{t({ en: "Tap a tile to take or pick a photo, or drop one on it.", ro: "Atinge o casetă ca să faci sau să alegi o poză, ori trage una peste ea.", ru: "Нажмите на плитку, чтобы сделать или выбрать фото, или перетащите его." })}</p>
+        <div className="ws-sec-h"><Camera size={16} aria-hidden="true" />{t({ en: "Site photos", ro: "Poze de la fața locului", ru: "Фото объекта", uk: "Фото об’єкта" })}</div>
+        <p className="ws-sec-note">{t({ en: "Tap a tile to take or pick a photo, or drop one on it.", ro: "Atinge o casetă ca să faci sau să alegi o poză, ori trage una peste ea.", ru: "Нажмите на плитку, чтобы сделать или выбрать фото, или перетащите его.", uk: "Натисніть на плитку, щоб зробити або вибрати фото, або перетягніть його сюди." })}</p>
         <div className="ws-photos">
-          <PhotoSlot jobId={job.id} group="site-roof" icon={Home} label={t({ en: "Roof", ro: "Acoperiș", ru: "Крыша" })} />
-          <PhotoSlot jobId={job.id} group="site-board" icon={Zap} label={t({ en: "Electrical panel", ro: "Tablou electric", ru: "Электрощит" })} />
-          <PhotoSlot jobId={job.id} group="site-meter" icon={Gauge} label={t({ en: "Meter", ro: "Contor", ru: "Счётчик" })} />
-          <PhotoSlot jobId={job.id} group="site-access" icon={DoorOpen} label={t({ en: "Access and façade", ro: "Acces și fațadă", ru: "Доступ и фасад" })} />
+          <PhotoSlot jobId={job.id} group="site-roof" icon={Home} label={t({ en: "Roof", ro: "Acoperiș", ru: "Крыша", uk: "Дах" })} />
+          <PhotoSlot jobId={job.id} group="site-board" icon={Zap} label={t({ en: "Electrical panel", ro: "Tablou electric", ru: "Электрощит", uk: "Електрощит" })} />
+          <PhotoSlot jobId={job.id} group="site-meter" icon={Gauge} label={t({ en: "Meter", ro: "Contor", ru: "Счётчик", uk: "Лічильник" })} />
+          <PhotoSlot jobId={job.id} group="site-access" icon={DoorOpen} label={t({ en: "Access and façade", ro: "Acces și fațadă", ru: "Доступ и фасад", uk: "Доступ і фасад" })} />
         </div>
       </div>
     </>

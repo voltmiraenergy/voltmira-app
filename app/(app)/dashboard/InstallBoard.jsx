@@ -47,7 +47,7 @@ export default function InstallBoard({ jobs, stepLabels, labels }) {
                 const st = pr[s] ? "done" : s === next ? "next" : "";
                 return (
                   <li key={s} className={st} title={stepLabels[s] + (pr[s] && pr[s] !== "…" ? `, ${pr[s]}` : "")}>
-                    <span className="sr">{stepLabels[s]}{pr[s] ? " ✓" : ""}</span>
+                    <span className="sr">{stepLabels[s]}{pr[s] ? `, ${labels.mark}` : ""}</span>
                   </li>
                 );
               })}

@@ -12,7 +12,7 @@ import { designCheck, stringInputs } from "../lib/designCheck.js";
 import { dcCableSize, dcCableLengthM, dcBreakerA, acBreakerA, spdCount } from "../lib/bosEstimate.js";
 import { railLengthM, clampCount } from "../lib/mountingEstimate.js";
 
-const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
+const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
 
 function csvEscape(v) {
   const s = String(v ?? "");
@@ -40,33 +40,33 @@ export default function BosEstimate({ lang, bom, kw, battKwh, consKwh, phases, m
   if (!open) {
     return (
       <button type="button" className="btn ghost sm qb-expand" onClick={() => setOpen(true)}>
-        {t3(lang, "Deviz materiale (BOS)", "Materials list (BOS)", "Смета материалов (BOS)")}
+        {t3(lang, "Deviz materiale (BOS)", "Materials list (BOS)", "Смета материалов (BOS)", "Специфікація матеріалів (BOS)")}
       </button>
     );
   }
 
   const rows = [
-    { label: t3(lang, "Secțiune cablu DC", "DC cable cross-section", "Сечение кабеля DC"),
-      value: cable ? `${cable.crossSectionMm2} mm²${cable.overThreshold ? ` (${t3(lang, "peste 1%!", "over 1%!", "выше 1%!")})` : ""}` : "—",
-      note: cable ? `${t3(lang, "cădere de tensiune", "voltage drop", "падение напряжения")} ${cable.voltageDropPct.toFixed(2)}%` : "" },
-    { label: t3(lang, "Metraj cablu DC estimat", "Estimated DC cable length", "Расчётная длина кабеля DC"),
-      value: `${cableLenM.toLocaleString(lang === "ru" ? "ru-RU" : "ro-RO")} m`, note: "" },
-    { label: t3(lang, "Întrerupătoare DC", "DC breakers", "Автоматы DC"),
-      value: dcBreakers.map((b) => `${b.label}: ${b.a != null ? b.a + "A" : "—"}`).join(" · "), note: "" },
-    { label: t3(lang, "Întrerupător AC", "AC breaker", "Автомат AC"),
+    { label: t3(lang, "Secțiune cablu DC", "DC cable cross-section", "Сечение кабеля DC", "Переріз кабелю DC"),
+      value: cable ? `${cable.crossSectionMm2} mm²${cable.overThreshold ? ` (${t3(lang, "peste 1%!", "over 1%!", "выше 1%!", "понад 1%!")})` : ""}` : "—",
+      note: cable ? `${t3(lang, "cădere de tensiune", "voltage drop", "падение напряжения", "спад напруги")} ${cable.voltageDropPct.toFixed(2)}%` : "" },
+    { label: t3(lang, "Metraj cablu DC estimat", "Estimated DC cable length", "Расчётная длина кабеля DC", "Розрахункова довжина кабелю DC"),
+      value: `${cableLenM.toLocaleString(({ ru: "ru-RU", uk: "uk-UA", en: "en-GB" }[lang] || "ro-RO"))} m`, note: "" },
+    { label: t3(lang, "Întrerupătoare DC", "DC breakers", "Автоматы DC", "Автомати DC"),
+      value: dcBreakers.map((b) => `${b.label}: ${b.a != null ? b.a + "A" : "—"}`).join(", "), note: "" },
+    { label: t3(lang, "Întrerupător AC", "AC breaker", "Автомат AC", "Автомат AC"),
       value: ac != null ? `${ac}A × ${d.nInv}` : "—", note: "" },
-    { label: t3(lang, "Protecții supratensiune (SPD)", "Surge protection (SPD)", "Защита от перенапряжения (SPD)"),
-      value: `${spd.dc}× DC (Tip 2) · ${spd.ac}× AC (Tip 2)`, note: "" },
+    { label: t3(lang, "Protecții supratensiune (SPD)", "Surge protection (SPD)", "Защита от перенапряжения (SPD)", "Захист від перенапруги (SPD)"),
+      value: `${spd.dc}× DC (Tip 2), ${spd.ac}× AC (Tip 2)`, note: "" },
     ...(hasLayout ? [
-      { label: t3(lang, "Șine montaj (lungime totală)", "Mounting rail (total length)", "Монтажные рейки (общая длина)"),
-        value: `${railM.toLocaleString(lang === "ru" ? "ru-RU" : "ro-RO", { maximumFractionDigits: 1 })} m`, note: "" },
-      { label: t3(lang, "Cleme montaj", "Mounting clamps", "Крепёжные клеммы"),
-        value: `${clamps.total}× (${clamps.end} ${t3(lang, "capăt", "end", "торцевых")} + ${clamps.mid} ${t3(lang, "mijloc", "mid", "промежуточных")})`, note: "" },
+      { label: t3(lang, "Șine montaj (lungime totală)", "Mounting rail (total length)", "Монтажные рейки (общая длина)", "Монтажні рейки (загальна довжина)"),
+        value: `${railM.toLocaleString(({ ru: "ru-RU", uk: "uk-UA", en: "en-GB" }[lang] || "ro-RO"), { maximumFractionDigits: 1 })} m`, note: "" },
+      { label: t3(lang, "Cleme montaj", "Mounting clamps", "Крепёжные клеммы", "Кріпильні затискачі"),
+        value: `${clamps.total}× (${clamps.end} ${t3(lang, "capăt", "end", "торцевых", "торцевих")} + ${clamps.mid} ${t3(lang, "mijloc", "mid", "промежуточных", "проміжних")})`, note: "" },
     ] : []),
   ];
 
   function exportCsv() {
-    const lines = [[t3(lang, "Articol", "Item", "Позиция"), t3(lang, "Valoare", "Value", "Значение"), t3(lang, "Notă", "Note", "Примечание")]
+    const lines = [[t3(lang, "Articol", "Item", "Позиция", "Позиція"), t3(lang, "Valoare", "Value", "Значение", "Значення"), t3(lang, "Notă", "Note", "Примечание", "Примітка")]
       .map(csvEscape).join(",")];
     rows.forEach((r) => lines.push([r.label, r.value, r.note].map(csvEscape).join(",")));
     const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
@@ -80,26 +80,26 @@ export default function BosEstimate({ lang, bom, kw, battKwh, consKwh, phases, m
   return (
     <section className="card bos-card">
       <div className="bos-head">
-        <h4>{t3(lang, "Deviz materiale (BOS)", "Materials list (BOS)", "Смета материалов (BOS)")}</h4>
+        <h4>{t3(lang, "Deviz materiale (BOS)", "Materials list (BOS)", "Смета материалов (BOS)", "Специфікація матеріалів (BOS)")}</h4>
         <button type="button" className="btn ghost sm" onClick={() => setOpen(false)}>✕</button>
       </div>
       <p className="bos-note">
         {t3(lang,
           "Calculat din stringurile și invertorul reale din deviz (cădere de tensiune reală pe cablu, dimensionare întrerupătoare la 1,25× curentul de scurtcircuit, practică standard). Nu include optimizatoare de putere: catalogul nu are niciun invertor din acea clasă, deci nu există un produs real de recomandat. Rezultatul e o specificație (secțiune, calibru, cantitate) pentru echipa ta să cumpere, nu un articol de deviz cu preț.",
           "Computed from the real strings and inverter already in the BOM (real cable voltage-drop, breakers sized at 1.25× short-circuit current, standard practice). Doesn't include power optimizers: the catalog has no inverter in that class, so there's no real product to recommend. The result is a specification (cross-section, rating, quantity) for your team to buy, not a priced BOM line.",
-          "Рассчитано по реальным стрингам и инвертору из сметы (реальное падение напряжения на кабеле, автоматы рассчитаны на 1,25× тока короткого замыкания). Не включает оптимизаторы мощности, в каталоге нет инвертора такого класса. Результат, спецификация (сечение, номинал, количество), не позиция сметы с ценой.")}
+          "Рассчитано по реальным стрингам и инвертору из сметы (реальное падение напряжения на кабеле, автоматы рассчитаны на 1,25× тока короткого замыкания). Не включает оптимизаторы мощности, в каталоге нет инвертора такого класса. Результат, спецификация (сечение, номинал, количество), не позиция сметы с ценой.", "Розраховано за реальними стрінгами й інвертором зі специфікації (реальний спад напруги на кабелі, автомати розраховано на 1,25× струму короткого замикання, стандартна практика). Не включає оптимізатори потужності: у каталозі немає інвертора такого класу, тож немає реального продукту для рекомендації. Результат це специфікація (переріз, номінал, кількість) для закупівлі вашою командою, а не позиція специфікації з ціною.")}
       </p>
       {!hasLayout && (
         <p className="bos-note">
           {t3(lang,
             "Șine/cleme apar aici după ce desenezi acoperișul real în Proiectare amplasament: lungimea și numărul depind de layout-ul real al panourilor, nu de un rând ipotetic.",
             "Rail/clamp figures appear here once you draw the real roof in Site Designer: the length and count depend on the actual panel layout, not a hypothetical row.",
-            "Данные по рейкам/клеммам появятся после того, как вы нарисуете реальную крышу в Проектировании: длина и количество зависят от реальной раскладки панелей.")}
+            "Данные по рейкам/клеммам появятся после того, как вы нарисуете реальную крышу в Проектировании: длина и количество зависят от реальной раскладки панелей.", "Дані щодо рейок і затискачів з’являться, щойно ви намалюєте реальний дах у Проєктуванні: довжина й кількість залежать від реальної розкладки панелей, а не від умовного ряду.")}
         </p>
       )}
 
       <div className="field" style={{ maxWidth: 220, marginBottom: 14 }}>
-        <label>{t3(lang, "Traseu cablu (acoperiș → invertor, m)", "Cable run (roof → inverter, m)", "Трасса кабеля (крыша → инвертор, м)")}</label>
+        <label>{t3(lang, "Traseu cablu (acoperiș → invertor, m)", "Cable run (roof → inverter, m)", "Трасса кабеля (крыша → инвертор, м)", "Траса кабелю (дах → інвертор, м)")}</label>
         <input className="input" type="number" min="1" step="1" value={runM} onChange={(e) => setRunM(e.target.value)} />
       </div>
 
@@ -107,14 +107,14 @@ export default function BosEstimate({ lang, bom, kw, battKwh, consKwh, phases, m
         {rows.map((r) => (
           <tr key={r.label}>
             <td>{r.label}</td>
-            <td><b>{r.value}</b>{r.note ? <span className="bos-sub"> · {r.note}</span> : null}</td>
+            <td><b>{r.value}</b>{r.note ? <span className="bos-sub">, {r.note}</span> : null}</td>
           </tr>
         ))}
       </tbody></table>
 
       <div className="bos-foot">
-        <button type="button" className="btn ghost" onClick={exportCsv}>{t3(lang, "Exportă Excel (CSV)", "Export Excel (CSV)", "Экспорт Excel (CSV)")}</button>
-        <button type="button" className="btn primary" onClick={() => window.print()}>{t3(lang, "Exportă PDF", "Export PDF", "Экспорт PDF")}</button>
+        <button type="button" className="btn ghost" onClick={exportCsv}>{t3(lang, "Exportă Excel (CSV)", "Export Excel (CSV)", "Экспорт Excel (CSV)", "Експорт Excel (CSV)")}</button>
+        <button type="button" className="btn primary" onClick={() => window.print()}>{t3(lang, "Exportă PDF", "Export PDF", "Экспорт PDF", "Експорт PDF")}</button>
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `

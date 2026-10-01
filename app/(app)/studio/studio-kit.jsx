@@ -47,13 +47,13 @@ export function useLang() {
     if (provided) return;                       // provider is authoritative
     try {
       const v = localStorage.getItem("voltmira_lang");
-      if (v === "en" || v === "ro" || v === "ru") setLang(v);
+      if (v === "en" || v === "ro" || v === "ru" || v === "uk") setLang(v);
     } catch { /* private mode / disabled storage — stay English */ }
   }, [provided]);
   return provided || lang;
 }
 
-// tx({ en, ro, ru }, lang) → best string for the language, English as the floor.
+// tx({ en, ro, ru, uk }, lang) → best string for the language, English as the floor.
 export function tx(dict, lang) {
   if (!dict) return "";
   return dict[lang] || dict.en || dict.ro || "";
@@ -138,14 +138,14 @@ export const DEMO_SYSTEM = systemFor({});
 // aligned with ANRE Ord. 228/2018 and Moldelectrica connection rules).
 // `fn` and the wordy parts of set/time are localised — render with protRows(lang).
 export const PROTECTION = [
-  { fn: { ro: "U< (subtensiune, treapta 1)", en: "U< (undervoltage, stage 1)", ru: "U< (пониж. напряжение, ступень 1)" }, set: "0,85 Un", time: "1,5 s" },
-  { fn: { ro: "U< (subtensiune, treapta 2)", en: "U< (undervoltage, stage 2)", ru: "U< (пониж. напряжение, ступень 2)" }, set: "0,45 Un", time: "0,3 s" },
-  { fn: { ro: "U> (supratensiune, treapta 1)", en: "U> (overvoltage, stage 1)", ru: "U> (повыш. напряжение, ступень 1)" }, set: "1,10 Un", time: "1,5 s" },
-  { fn: { ro: "U> (medie pe 10 min.)", en: "U> (10-min mean)", ru: "U> (среднее за 10 мин.)" }, set: "1,10 Un", time: "3,0 s" },
-  { fn: { ro: "f< (subfrecvență)", en: "f< (underfrequency)", ru: "f< (пониж. частота)" }, set: "47,5 Hz", time: "0,2 s" },
-  { fn: { ro: "f> (suprafrecvență)", en: "f> (overfrequency)", ru: "f> (повыш. частота)" }, set: "51,5 Hz", time: "0,2 s" },
-  { fn: { ro: "Anti-insularizare (LoM)", en: "Anti-islanding (LoM)", ru: "Защита от островного режима (LoM)" }, set: { ro: "salt de vector / RoCoF", en: "vector shift / RoCoF", ru: "векторный сдвиг / RoCoF" }, time: "≤ 0,15 s" },
-  { fn: { ro: "Reconectare după declanșare", en: "Reconnection after trip", ru: "Повторное включение после отключения" }, set: "0,90–1,10 Un · 47,5–50,05 Hz", time: { ro: "temporizare 60 s", en: "60 s delay", ru: "задержка 60 с" } },
+  { fn: { ro: "U< (subtensiune, treapta 1)", en: "U< (undervoltage, stage 1)", ru: "U< (пониж. напряжение, ступень 1)", uk: "U< (знижена напруга, ступінь 1)" }, set: "0,85 Un", time: "1,5 s" },
+  { fn: { ro: "U< (subtensiune, treapta 2)", en: "U< (undervoltage, stage 2)", ru: "U< (пониж. напряжение, ступень 2)", uk: "U< (знижена напруга, ступінь 2)" }, set: "0,45 Un", time: "0,3 s" },
+  { fn: { ro: "U> (supratensiune, treapta 1)", en: "U> (overvoltage, stage 1)", ru: "U> (повыш. напряжение, ступень 1)", uk: "U> (підвищена напруга, ступінь 1)" }, set: "1,10 Un", time: "1,5 s" },
+  { fn: { ro: "U> (medie pe 10 min.)", en: "U> (10-min mean)", ru: "U> (среднее за 10 мин.)", uk: "U> (середнє за 10 хв)" }, set: "1,10 Un", time: "3,0 s" },
+  { fn: { ro: "f< (subfrecvență)", en: "f< (underfrequency)", ru: "f< (пониж. частота)", uk: "f< (знижена частота)" }, set: "47,5 Hz", time: "0,2 s" },
+  { fn: { ro: "f> (suprafrecvență)", en: "f> (overfrequency)", ru: "f> (повыш. частота)", uk: "f> (підвищена частота)" }, set: "51,5 Hz", time: "0,2 s" },
+  { fn: { ro: "Anti-insularizare (LoM)", en: "Anti-islanding (LoM)", ru: "Защита от островного режима (LoM)", uk: "Захист від острівного режиму (LoM)" }, set: { ro: "salt de vector / RoCoF", en: "vector shift / RoCoF", ru: "векторный сдвиг / RoCoF", uk: "векторний зсув / RoCoF" }, time: "≤ 0,15 s" },
+  { fn: { ro: "Reconectare după declanșare", en: "Reconnection after trip", ru: "Повторное включение после отключения", uk: "Повторне ввімкнення після вимкнення" }, set: "0,90–1,10 Un, 47,5–50,05 Hz", time: { ro: "temporizare 60 s", en: "60 s delay", ru: "задержка 60 с", uk: "затримка 60 с" } },
 ];
 // Resolve PROTECTION for a language → [{fn, set, time}] of plain strings.
 export function protRows(lang) {
@@ -243,44 +243,45 @@ export function ClientBar({ lang }) {
   return (
     <div className="pv-panel cl-bar">
       <div className="cl-head">
-        <h3 style={{ margin: 0 }}>{T({ en: "Client & system", ro: "Client și sistem", ru: "Клиент и система" })}</h3>
+        <h3 style={{ margin: 0 }}>{T({ en: "Client & system", ro: "Client și sistem", ru: "Клиент и система", uk: "Клієнт і система" })}</h3>
         <select className="cl-preset" value={activeId} onChange={(e) => selectJob(e.target.value)}>
           {jobs.map((j) => <option key={j.id} value={j.id}>{j.name}</option>)}
         </select>
         <Link href={`${PREVIEW_BASE}/jobs/${activeId}`} className="btn ghost sm">
-          {T({ en: "Open job hub", ro: "Deschide fișa lucrării", ru: "Открыть карточку объекта" })}
+          {T({ en: "Open job hub", ro: "Deschide fișa lucrării", ru: "Открыть карточку объекта", uk: "Відкрити картку об’єкта" })}
         </Link>
         <span className="spacer" style={{ flex: 1 }} />
         <button className="btn ghost sm" onClick={() => setOpen((o) => !o)}>
-          {open ? T({ en: "Collapse", ro: "Restrânge", ru: "Свернуть" }) : T({ en: "Edit", ro: "Editează", ru: "Изменить" })}
+          {open ? T({ en: "Collapse", ro: "Restrânge", ru: "Свернуть", uk: "Згорнути" }) : T({ en: "Edit", ro: "Editează", ru: "Изменить", uk: "Змінити" })}
         </button>
       </div>
       {open ? (
         <div className="cl-grid">
-          <label>{T({ en: "Client", ro: "Client", ru: "Клиент" })}
+          <label>{T({ en: "Client", ro: "Client", ru: "Клиент", uk: "Клієнт" })}
             <input className="pv-input" value={client.name} onChange={(e) => update({ name: e.target.value })} /></label>
-          <label style={{ gridColumn: "1 / -1" }}>{T({ en: "Address", ro: "Adresă", ru: "Адрес" })}
+          <label style={{ gridColumn: "1 / -1" }}>{T({ en: "Address", ro: "Adresă", ru: "Адрес", uk: "Адреса" })}
             <AddressField lang={lang} client={client} onPick={(p) => update(p)} /></label>
-          <label>{T({ en: "Contract no.", ro: "Nr. contract", ru: "№ договора" })}
+          <label>{T({ en: "Contract no.", ro: "Nr. contract", ru: "№ договора", uk: "№ договору" })}
             <input className="pv-input" value={client.contractNo} onChange={(e) => update({ contractNo: e.target.value })} /></label>
-          <label>{T({ en: "Market", ro: "Piață", ru: "Рынок" })}
+          <label>{T({ en: "Market", ro: "Piață", ru: "Рынок", uk: "Ринок" })}
             <div className="pv-seg">
               <button className={client.market === "MD" ? "on" : ""} onClick={() => update({ market: "MD" })}>MD</button>
+              <button className={client.market === "UA" ? "on" : ""} onClick={() => update({ market: "UA" })}>UA</button>
               <button className={client.market === "RO" ? "on" : ""} onClick={() => update({ market: "RO" })}>RO</button>
             </div></label>
-          <label>{T({ en: "System size", ro: "Putere sistem", ru: "Мощность" })} <output>{(+client.kw).toFixed(1)} kW</output>
+          <label>{T({ en: "System size", ro: "Putere sistem", ru: "Мощность", uk: "Потужність" })} <output>{(+client.kw).toFixed(1)} kW</output>
             <input type="range" min="2" max="300" step="0.5" value={client.kw}
               style={{ "--fill": ((+client.kw - 2) / 298) * 100 + "%" }}
               onChange={(e) => update({ kw: +e.target.value })} /></label>
-          <label>{T({ en: "Annual use (kWh)", ro: "Consum anual (kWh)", ru: "Потребление (кВт·ч)" })}{num("cons", 100)}</label>
-          <label>{T({ en: "Price (€/kWh)", ro: "Preț (€/kWh)", ru: "Цена (€/кВт·ч)" })}{num("price", 0.005)}</label>
-          <label>{T({ en: "Battery (kWh)", ro: "Baterie (kWh)", ru: "Батарея (кВт·ч)" })}{num("batteryKwh", 0.5)}</label>
-          <label>{T({ en: "Connection", ro: "Racordare", ru: "Подключение" })}
+          <label>{T({ en: "Annual use (kWh)", ro: "Consum anual (kWh)", ru: "Потребление (кВт·ч)", uk: "Споживання (кВт·год)" })}{num("cons", 100)}</label>
+          <label>{T({ en: "Price (€/kWh)", ro: "Preț (€/kWh)", ru: "Цена (€/кВт·ч)", uk: "Ціна (€/кВт·год)" })}{num("price", 0.005)}</label>
+          <label>{T({ en: "Battery (kWh)", ro: "Baterie (kWh)", ru: "Батарея (кВт·ч)", uk: "Батарея (кВт·год)" })}{num("batteryKwh", 0.5)}</label>
+          <label>{T({ en: "Connection", ro: "Racordare", ru: "Подключение", uk: "Підключення" })}
             <div className="pv-seg">
               <button className={client.phases === 1 ? "on" : ""} onClick={() => update({ phases: 1 })}>
-                {T({ en: "1~ single", ro: "1~ monofazat", ru: "1~ однофазн." })}</button>
+                {T({ en: "1~ single", ro: "1~ monofazat", ru: "1~ однофазн.", uk: "1~ однофазне" })}</button>
               <button className={client.phases === 3 ? "on" : ""} onClick={() => update({ phases: 3 })}>
-                {T({ en: "3~ three", ro: "3~ trifazat", ru: "3~ трёхфазн." })}</button>
+                {T({ en: "3~ three", ro: "3~ trifazat", ru: "3~ трёхфазн.", uk: "3~ трифазне" })}</button>
             </div></label>
         </div>
       ) : (
@@ -338,7 +339,7 @@ export function PreviewNav({ lang }) {
   return (
     <nav className="pv-tabs" aria-label="Studio">
       <Link href={PREVIEW_BASE} className="pv-tab pv-tab-home">
-        <FeatureIcon slug="overview" /><span>{tx({ en: "Studio", ro: "Studio", ru: "Studio" }, lang)}</span>
+        <FeatureIcon slug="overview" /><span>{tx({ en: "Studio", ro: "Studio", ru: "Studio", uk: "Studio" }, lang)}</span>
       </Link>
       {PREVIEW_FEATURES.map((f, i) => (
         <Link key={f.slug} href={`${PREVIEW_BASE}/${f.slug}`} className={"pv-tab" + (active(f.slug) ? " on" : "")}
@@ -394,8 +395,8 @@ export function DocReveal({ lang, children }) {
     <div className={"pv-docreveal" + (open ? " open" : "")}>
       <button type="button" className="btn ghost doc-reveal-btn" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         <span>{open
-          ? tx({ en: "Hide the full document", ro: "Ascunde documentul complet", ru: "Скрыть документ" }, lang)
-          : tx({ en: "Show the full document", ro: "Arată documentul complet", ru: "Показать документ" }, lang)}</span>
+          ? tx({ en: "Hide the full document", ro: "Ascunde documentul complet", ru: "Скрыть документ", uk: "Приховати документ" }, lang)
+          : tx({ en: "Show the full document", ro: "Arată documentul complet", ru: "Показать документ", uk: "Показати документ" }, lang)}</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
       </button>
       <div className="pv-doc-scroll">{children}</div>
@@ -426,7 +427,7 @@ export function CopyButton({ text, label, done, className = "btn sm ghost" }) {
     <button type="button" className={className} onClick={() => {
       try { navigator.clipboard?.writeText(text); } catch {}
       setOk(true); setTimeout(() => setOk(false), 1600);
-    }}>{ok ? (done || "Copied ✓") : label}</button>
+    }}>{ok ? (done || "Copied") : label}</button>
   );
 }
 

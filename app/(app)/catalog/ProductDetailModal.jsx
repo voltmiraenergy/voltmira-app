@@ -40,7 +40,7 @@ export default function ProductDetailModal({ p, lang, isAdded, addPending, onAdd
           ))}
           <tr>
             <td>{t("cat_det_supplier", lang)}</td>
-            <td>{sup.name}{p.leadDays > 0 ? ` · ${t("cat_sup_days", lang, { n: p.leadDays })}` : ""}</td>
+            <td>{sup.name}{p.leadDays > 0 ? `, ${t("cat_sup_days", lang, { n: p.leadDays })}` : ""}</td>
           </tr>
         </tbody></table>
 

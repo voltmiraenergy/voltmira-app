@@ -17,12 +17,13 @@ import LeadAttribution from "./LeadAttribution.jsx";
 import AddLead from "./AddLead.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Leads · VoltMira" };
+export const metadata = { title: "Leads | VoltMira" };
 
 const STATUSES = ["new", "contacted", "converted", "archived"];
 
-export default async function LeadsPage({ searchParams }) {
-  const sb = supabaseServer();
+export default async function LeadsPage(props) {
+  const searchParams = await props.searchParams;
+  const sb = await supabaseServer();
   const co = await currentCompany();
   const lang = normLang(co?.lang);
   const locale = LOCALE[lang] || "en-GB";
@@ -89,7 +90,7 @@ export default async function LeadsPage({ searchParams }) {
           <nav className="dx-tabs ld-tabs" aria-label={t("col_status", lang)}>
             {tabs.map(([k, label, n]) => (
               <Link key={k} href={href({ status: k })} className={"ld-tab t-" + k + (filter === k ? " on" : "")} aria-current={filter === k ? "page" : undefined}>
-                {k !== "all" && <i aria-hidden="true" />}{label}<span>{n}</span>
+                {label}<span>{n}</span>
               </Link>
             ))}
           </nav>
@@ -109,10 +110,10 @@ export default async function LeadsPage({ searchParams }) {
             groups.map((g) => (
               <section key={g.s} className="ld-group" aria-label={t("lead_" + g.s, lang)}>
                 {filter === "all" && (
-                  <h2 className={"ld-group-h t-" + g.s}><i aria-hidden="true" />{t("lead_" + g.s, lang)}<span>{g.items.length}</span></h2>
+                  <h2 className={"ld-group-h t-" + g.s}>{t("lead_" + g.s, lang)}<span>{g.items.length}</span></h2>
                 )}
                 <div className="ld-list">
-                  {g.items.map(l => <LeadCard key={l.id} lead={l} lang={lang} />)}
+                  {g.items.map(l => <LeadCard key={l.id} lead={l} lang={lang} company={co?.name || ""} />)}
                 </div>
               </section>
             ))

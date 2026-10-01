@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "../../lib/supabase-browser.js";
 import { LOGIN_LANGS, SITE_PATH } from "./copy.js";
+import { bootstrapWorkspace } from "../../lib/bootstrapWorkspace.js";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
@@ -58,6 +59,12 @@ export default function LoginForm({ lang, c, error = "" }) {
 
   // The root layout renders <html lang="en">; screen readers should hear this page's language.
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
+  // Arriving from the Russian or Romanian homepage (?lang=ru) counts as a
+  // choice: remember it, so a Google sign-up, which skips the form, still
+  // creates the workspace in that language (lib/session.js reads the cookie).
+  useEffect(() => {
+    try { if (new URLSearchParams(location.search).get("lang")) rememberLang(lang); } catch {}
+  }, [lang]);
 
   // ---- theme ---- (the root layout's no-flash script already stamped data-theme)
   function toggleTheme() {
@@ -116,9 +123,8 @@ export default function LoginForm({ lang, c, error = "" }) {
           email, password, options: { captchaToken },
         });
         if (error) { resetCaptcha(); return toast(M.signup); }
-        const { error: e2 } = await sb.rpc("bootstrap_company", {
-          company_name: company, user_name: "",
-        });
+        // The workspace starts in the language this page is in.
+        const { error: e2 } = await bootstrapWorkspace(sb, { company, lang });
         if (e2) return toast(M.setup);
         location.href = "/dashboard";
       } else {
@@ -187,9 +193,15 @@ export default function LoginForm({ lang, c, error = "" }) {
     <>
       <section className="fp">
         <div className="fp-bar">
-          <a className="fp-back" href={SITE_PATH[lang]}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-            <span>{c.back}</span>
+          <a className="fp-logo" href={SITE_PATH[lang]} aria-label={c.back}>
+            <svg width="32" height="32" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+              <rect width="34" height="34" rx="8" fill="#142A21" />
+              <path d="M8 25 L14 12" stroke="#C4543B" strokeWidth="2.6" strokeLinecap="round" />
+              <path d="M14.5 25 L20.5 9" stroke="#E89B2D" strokeWidth="2.6" strokeLinecap="round" />
+              <path d="M21 25 L27 6.5" stroke="#3FAE6A" strokeWidth="2.6" strokeLinecap="round" />
+              <circle cx="20.5" cy="9" r="2.1" fill="#E89B2D" />
+            </svg>
+            <span><b>Volt</b><i>Mira</i></span>
           </a>
           <nav className="langs" aria-label={c.lang}>
             {LOGIN_LANGS.map((l) => (

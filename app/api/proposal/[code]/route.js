@@ -62,7 +62,8 @@ async function notifyProposalOpened(db, prop) {
   }
 }
 
-export async function GET(req, { params }) {
+export async function GET(req, props) {
+  const params = await props.params;
   const ip = clientIp(req);
   if (await isRateLimited(`prop:get:${ip}`, 60, 60_000))
     return NextResponse.json({ error: "rate" }, { status: 429 });
@@ -138,11 +139,14 @@ export async function GET(req, { params }) {
     // from their authenticated pipeline.
     signedName: prop.signer_name || null,
     signedAt: prop.accepted_at || null,
-    sentAt: prop.created_at,   // when the link was created — drives "valid until"
+    sentAt: prop.created_at,   // when the link was created, drives "valid until"
     // lang drives the client-facing proposal copy — the client reads it in the
     // installer's chosen language, not always English.
     company: { name: co?.name, shortName: co?.short_name, logoUrl: co?.logo_url, currency: co?.currency, lang: co?.lang, plan: co?.plan || "free", wonCount: wonCount || 0, installWarrantyYears: co?.install_warranty_years || null },
     preparedBy,
+    // the exchange rates frozen with the proposal, so a client in Moldova reads
+    // the same lei figure on every visit (lib/money.js)
+    fx: E?.fx || null,
     inputs: {
       title: prop.snapshot.title, client: prop.snapshot.client, address: prop.snapshot.address,
       kw: prop.snapshot.kw, batt: prop.snapshot.batt, battKwh: prop.snapshot.battKwh ?? 10,
@@ -163,6 +167,10 @@ export async function GET(req, { params }) {
       // Derived from the frozen BOM's own line kinds, so the client-side audit
       // panel prices the battery exactly the way the server did.
       bomHasBattery: bomHasBattery(prop.snapshot.bom),
+      // Ukraine: when the system starts (the green tariff ends with 2029) and
+      // the outage and loan plan the installer chose (lib/uaMarket.js).
+      startYear: Number(prop.snapshot.startYear) || undefined,
+      uaPlan: prop.snapshot.uaPlan || undefined,
     },
     quote: {
       cost: q.e.cost, prod0: q.e.prod0, year1: q.e.year1, self: q.e.self,
@@ -173,7 +181,7 @@ export async function GET(req, { params }) {
         opti: { payback: q.o.payback, roi: q.o.roi, rows: q.o.rows },
       },
       horizon: q.e.horizon,
-      assumptions: E, // full transparency — the honesty engine, server-verified
+      assumptions: E, // full transparency, the honesty engine, server-verified
       // the yield actually used (PVGIS override when the roof was looked up)
       yieldPerKwp: prop.snapshot.yieldOverride || E.baseYield,
       afmSubsidy: !!prop.snapshot.afmSubsidy,
@@ -209,7 +217,8 @@ export async function GET(req, { params }) {
   });
 }
 
-export async function POST(req, { params }) {
+export async function POST(req, props) {
+  const params = await props.params;
   const ip = clientIp(req);
   if (await isRateLimited(`prop:post:${ip}`, 120, 60_000))
     return NextResponse.json({ error: "rate" }, { status: 429 });
@@ -256,7 +265,7 @@ export async function POST(req, { params }) {
     const title = escapeHtml(rawTitle);
     let text, actKind = "open", key;
     if (n <= 1) { text = `<b>${who}</b> opened “${title}”`; key = "act_opened"; }
-    else if (n >= 3) { text = `<b>${who}</b> opened “${title}” again — ${n}× total. Worth a call now.`; actKind = "lead"; key = "act_opened_hot"; }
+    else if (n >= 3) { text = `<b>${who}</b> opened “${title}” again, ${n}× total. Worth a call now.`; actKind = "lead"; key = "act_opened_hot"; }
     else { text = `<b>${who}</b> opened “${title}” again (${n}×)`; key = "act_opened_again"; }
     await logActivity(db, { companyId: prop.company_id, kind: actKind, key, params: { b: rawWho, title: rawTitle, n }, text, link: `/projects/${prop.project_id}` });
     // Retention feature: tell the installer while the client is still reading.

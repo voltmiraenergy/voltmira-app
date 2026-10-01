@@ -108,20 +108,20 @@ export function saveJobsState(jobs, activeId) {
 // standalone survey/annex/schedule/monitoring pages these used to link to.
 export const STAGES = [
   { key: "survey", step: 0, chip: "blue",
-    label: { en: "Survey", ro: "Vizită", ru: "Осмотр" },
-    todo: { en: "Site survey not done yet", ro: "Vizita tehnică nu a fost făcută încă", ru: "Техосмотр ещё не проведён" } },
+    label: { en: "Survey", ro: "Vizită", ru: "Осмотр", uk: "Огляд" },
+    todo: { en: "Site survey not done yet", ro: "Vizita tehnică nu a fost făcută încă", ru: "Техосмотр ещё не проведён", uk: "Технічний огляд ще не проведено" } },
   { key: "paperwork", step: 3, chip: "amber",
-    label: { en: "Paperwork", ro: "Documentație", ru: "Документы" },
-    todo: { en: "Grid-connection paperwork not filed yet", ro: "Dosarul de racordare nu a fost depus", ru: "Заявка на подключение не подана" } },
+    label: { en: "Paperwork", ro: "Documentație", ru: "Документы", uk: "Документи" },
+    todo: { en: "Grid-connection paperwork not filed yet", ro: "Dosarul de racordare nu a fost depus", ru: "Заявка на подключение не подана", uk: "Заяву на приєднання не подано" } },
   { key: "install", step: 4, chip: "amber",
-    label: { en: "Install", ro: "Montaj", ru: "Монтаж" },
-    todo: { en: "Not scheduled for install yet", ro: "Nu e programată la montaj", ru: "Монтаж не запланирован" } },
+    label: { en: "Install", ro: "Montaj", ru: "Монтаж", uk: "Монтаж" },
+    todo: { en: "Not scheduled for install yet", ro: "Nu e programată la montaj", ru: "Монтаж не запланирован", uk: "Монтаж не заплановано" } },
   { key: "handover", step: 4, chip: "green-soft",
-    label: { en: "Handover", ro: "Predare", ru: "Передача" },
-    todo: { en: "Handover certificate not signed yet", ro: "Certificatul de predare nu a fost semnat", ru: "Акт передачи не подписан" } },
+    label: { en: "Handover", ro: "Predare", ru: "Передача", uk: "Передача" },
+    todo: { en: "Handover certificate not signed yet", ro: "Certificatul de predare nu a fost semnat", ru: "Акт передачи не подписан", uk: "Акт передачі не підписано" } },
   { key: "monitoring", step: 5, chip: "green",
-    label: { en: "Monitoring", ro: "Monitorizare", ru: "Мониторинг" },
-    todo: { en: "No production data logged yet", ro: "Nicio producție înregistrată încă", ru: "Данные о выработке не внесены" } },
+    label: { en: "Monitoring", ro: "Monitorizare", ru: "Мониторинг", uk: "Моніторинг" },
+    todo: { en: "No production data logged yet", ro: "Nicio producție înregistrată încă", ru: "Данные о выработке не внесены", uk: "Дані про генерацію не внесено" } },
 ];
 export const stageIndex = (key) => Math.max(0, STAGES.findIndex((s) => s.key === key));
 

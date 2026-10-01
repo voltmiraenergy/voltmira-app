@@ -31,7 +31,7 @@ import { csvEsc } from "../../../lib/csv.js";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
   const co = await currentCompany();

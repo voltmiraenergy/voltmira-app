@@ -46,7 +46,7 @@ export default function LeadAttribution({ leads, lang }) {
               <span className="ld-attr-ch"><i style={{ background: CHANNEL_DOT[r.k] }} aria-hidden="true" />{t("lead_ch_" + r.k, lang)}</span>
               <b className="ld-attr-n">{r.total}</b>
               <span className={"ld-attr-won" + (r.won ? " on" : "")}>
-                {r.won ? `${r.won} (${Math.round((r.won / r.total) * 100)}%)` : "—"}
+                {r.won ? `${r.won} (${Math.round((r.won / r.total) * 100)}%)` : "0"}
               </span>
             </div>
             <span className="ld-attr-bar" aria-hidden="true">

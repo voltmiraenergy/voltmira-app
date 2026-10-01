@@ -34,6 +34,7 @@ import { createPortal } from "react-dom";
 import { buildServiceContract, buildCommissioningAct } from "../../../../lib/legalDocs.js";
 import { t } from "../../../../lib/i18n.js";
 import SingleLineDiagram from "../../../../components/SingleLineDiagram.jsx";
+import { OPERATORS, suggestOperator } from "../../../../lib/mdGrid.js";
 
 // Renders its children into a node directly under <body>, isolated from the
 // rest of the app — this is also the exact node downloadCleanPdf() reads
@@ -105,7 +106,11 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
     templateOverride: company.commissioning_template_override,
   }));
 
-  const racordareUrl = project.id ? `/api/projects/${project.id}/racordare-pdf` : null;
+  // Two operators, two real forms: RED Nord for Bălți and the north, Premier
+  // Energy elsewhere. Starts on the one the quote's grid file chose, else the
+  // one its address suggests (lib/mdGrid.js); the installer can switch.
+  const [op, setOp] = useState(() => (OPERATORS[project.gridOperator] ? project.gridOperator : suggestOperator([project.address, project.title].filter(Boolean).join(", "))));
+  const racordareUrl = project.id ? `/api/projects/${project.id}/racordare-pdf?op=${op}` : null;
 
   // One ref shared by all three exported doc types — PrintPortal always
   // renders exactly one of them at a time (matching docType), so a single
@@ -156,7 +161,13 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
 
         {docType === "racordare" && (
           <>
-            <div className="ld-warn"><b>{t("ld_warn_title", lang)}</b> {t("ld_racordare_source", lang)}</div>
+            <div className="ld-op" role="radiogroup" aria-label={t("gf_operator", lang)}>
+              {Object.values(OPERATORS).map((o) => (
+                <button key={o.id} type="button" role="radio" aria-checked={op === o.id}
+                  className={"ld-tab" + (op === o.id ? " on" : "")} onClick={() => setOp(o.id)}>{o.short}</button>
+              ))}
+            </div>
+            <div className="ld-warn"><b>{t("ld_warn_title", lang)}</b> {t(op === "rednord" ? "ld_racordare_source_rn" : "ld_racordare_source", lang)}</div>
             <div className="ld-rec-card">
               <div className="ld-rec-row"><span>{t("ld_rec_name", lang)}</span><b>{project.clientName || "—"}</b></div>
               <div className="ld-rec-row"><span>{t("ld_rec_address", lang)}</span><b>{project.address || "—"}</b></div>
@@ -228,6 +239,7 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
       <style dangerouslySetInnerHTML={{ __html: `
         .ld-modal{width:min(760px,100%)}
         .ld-tabs{display:flex;gap:2px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:3px;margin:12px 0;flex-wrap:wrap}
+        .ld-op{display:flex;gap:2px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:3px;margin:0 0 12px;max-width:380px}
         .ld-tab{flex:1;min-width:120px;padding:9px;font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);
           background:none;border:none;border-radius:8px;cursor:pointer;transition:background .14s,color .14s}
         .ld-tab.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,42,33,.12)}

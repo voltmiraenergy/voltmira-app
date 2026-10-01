@@ -64,10 +64,15 @@ const CSS = `
   /* ============ Shell ============ */
   .sidebar{
     background:var(--ink);color:#fff;
-    display:flex;flex-direction:column;padding:22px 14px 16px;
+    display:flex;flex-direction:column;padding:0 14px 16px;
     position:sticky;top:0;height:100vh;z-index:40;
   }
-  .logo{display:flex;align-items:center;gap:10px;font-family:var(--font-d);font-weight:700;font-size:20px;letter-spacing:-.02em;padding:0 10px 24px;color:#fff}
+  /* the logo exactly as on the homepage, on a light green band across the top
+     of the sidebar: the app's own green tint (selected tabs, icon tiles), so it
+     belongs to the green sidebar while the logo keeps its real colours */
+  .logo{display:flex;align-items:center;flex:none;height:72px;margin:0 -14px 18px;padding:0 24px;
+    background:#E4EFE9;border-bottom:1px solid rgba(20,42,33,.12);text-decoration:none}
+  .logo:focus-visible{outline-offset:-4px}
   .nav{display:flex;flex-direction:column;gap:3px}
   .nav a{
     display:flex;align-items:center;gap:11px;text-decoration:none;
@@ -163,6 +168,13 @@ const CSS = `
   .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;box-shadow:none!important}
   .btn.wapp{background:#25D366;color:#fff;box-shadow:0 3px 12px rgba(37,211,102,.3)}
   .btn.wapp:hover{background:#1FBE5A;transform:translateY(-1px);box-shadow:0 6px 18px rgba(37,211,102,.4)}
+  .btn.viber{background:#7360F2;color:#fff}
+  .btn.viber:hover{background:#6352DE;transform:translateY(-1px)}
+  .btn.tg{background:#229ED9;color:#fff}
+  .btn.tg:hover{background:#1A8BC2;transform:translateY(-1px)}
+  .share-lbl{font-size:12px;font-weight:600;color:var(--muted);margin:2px 0 6px}
+  .share-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
+  .share-row .btn{justify-content:center;padding:11px 8px;min-height:44px}
 
   /* First-run screen (empty workspace). Two choices, generous space, nothing
      to scroll past — the opposite of the all-zeros dashboard it replaces. */
@@ -228,6 +240,9 @@ const CSS = `
   .email-msg.ok{color:var(--green)}
   .email-msg.bad{color:var(--red)}
 
+  /* no signal (OfflineReady.jsx): a plain strip, no dot, no motion */
+  .offline-bar{margin-bottom:14px;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.45;color:var(--ink);
+    background:var(--paper-2);border:1px solid var(--line)}
   .demo-bar{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:18px;
     padding:10px 14px;border-radius:12px;background:var(--amber-tint);
     border:1px solid color-mix(in srgb,var(--amber) 38%,transparent)}

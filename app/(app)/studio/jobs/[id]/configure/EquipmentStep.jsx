@@ -80,8 +80,8 @@ function ComparePanel({ items, fields, onClose, onRemove, t }) {
   return (
     <div className="ws-compare">
       <div className="ws-compare-top">
-        <span>{t({ en: "Side by side", ro: "Comparație", ru: "Сравнение" })} ({items.length})</span>
-        <button type="button" className="ws-x" onClick={onClose} aria-label={t({ en: "Close", ro: "Închide", ru: "Закрыть" })}><X size={14} /></button>
+        <span>{t({ en: "Side by side", ro: "Comparație", ru: "Сравнение", uk: "Порівняння" })} ({items.length})</span>
+        <button type="button" className="ws-x" onClick={onClose} aria-label={t({ en: "Close", ro: "Închide", ru: "Закрыть", uk: "Закрити" })}><X size={14} /></button>
       </div>
       <table>
         <thead>
@@ -91,7 +91,7 @@ function ComparePanel({ items, fields, onClose, onRemove, t }) {
               <th key={it.id}>
                 <div>
                   <span>{it.brand} {it.model}</span>
-                  <button type="button" className="ws-x" onClick={() => onRemove(it.id)} aria-label={t({ en: "Remove", ro: "Scoate", ru: "Убрать" })}><X size={12} /></button>
+                  <button type="button" className="ws-x" onClick={() => onRemove(it.id)} aria-label={t({ en: "Remove", ro: "Scoate", ru: "Убрать", uk: "Прибрати" })}><X size={12} /></button>
                 </div>
               </th>
             ))}
@@ -137,65 +137,65 @@ export default function EquipmentStep({ job, patch, derived, lang }) {
   }
 
   const panelCols = [
-    { key: "watt", label: t({ en: "Model", ro: "Model", ru: "Модель" }), format: (v, it) => `${it.brand} ${v}W` },
+    { key: "watt", label: t({ en: "Model", ro: "Model", ru: "Модель", uk: "Модель" }), format: (v, it) => `${it.brand} ${v}W` },
     { key: "voc", label: "Voc", align: "right", format: (v) => `${v}V` },
-    { key: "eff", label: t({ en: "Eff.", ro: "Rand.", ru: "КПД" }), align: "right", format: (v) => `${v}%` },
-    { key: "price", label: t({ en: "Price", ro: "Preț", ru: "Цена" }), align: "right", format: (v) => EUR(v) },
+    { key: "eff", label: t({ en: "Eff.", ro: "Rand.", ru: "КПД", uk: "ККД" }), align: "right", format: (v) => `${v}%` },
+    { key: "price", label: t({ en: "Price", ro: "Preț", ru: "Цена", uk: "Ціна" }), align: "right", format: (v) => EUR(v) },
   ];
   const inverterCols = [
-    { key: "kw", label: t({ en: "Model", ro: "Model", ru: "Модель" }), format: (v, it) => `${it.brand} ${v}kW` },
-    { key: "type", label: t({ en: "Type", ro: "Tip", ru: "Тип" }) },
-    { key: "maxDcV", label: t({ en: "Max DC", ro: "DC max", ru: "Макс. DC" }), align: "right", format: (v) => `${v}V` },
-    { key: "price", label: t({ en: "Price", ro: "Preț", ru: "Цена" }), align: "right", format: (v) => EUR(v) },
+    { key: "kw", label: t({ en: "Model", ro: "Model", ru: "Модель", uk: "Модель" }), format: (v, it) => `${it.brand} ${v}kW` },
+    { key: "type", label: t({ en: "Type", ro: "Tip", ru: "Тип", uk: "Тип" }) },
+    { key: "maxDcV", label: t({ en: "Max DC", ro: "DC max", ru: "Макс. DC", uk: "Макс. DC" }), align: "right", format: (v) => `${v}V` },
+    { key: "price", label: t({ en: "Price", ro: "Preț", ru: "Цена", uk: "Ціна" }), align: "right", format: (v) => EUR(v) },
   ];
   const batteryCols = [
-    { key: "kwh", label: t({ en: "Model", ro: "Model", ru: "Модель" }), format: (v, it) => `${it.brand} ${v}kWh` },
-    { key: "chem", label: t({ en: "Chemistry", ro: "Chimie", ru: "Химия" }) },
-    { key: "price", label: t({ en: "Price", ro: "Preț", ru: "Цена" }), align: "right", format: (v) => EUR(v) },
+    { key: "kwh", label: t({ en: "Model", ro: "Model", ru: "Модель", uk: "Модель" }), format: (v, it) => `${it.brand} ${v}kWh` },
+    { key: "chem", label: t({ en: "Chemistry", ro: "Chimie", ru: "Химия", uk: "Хімія" }) },
+    { key: "price", label: t({ en: "Price", ro: "Preț", ru: "Цена", uk: "Ціна" }), align: "right", format: (v) => EUR(v) },
   ];
 
   const panelCompareFields = [
     { key: "watt", label: "Watt", format: (v) => `${v}W` },
     { key: "voc", label: "Voc", format: (v) => `${v}V` },
-    { key: "eff", label: t({ en: "Efficiency", ro: "Randament", ru: "КПД" }), format: (v) => `${v}%` },
-    { key: "tempCoeff", label: t({ en: "Temp. coeff.", ro: "Coef. temp.", ru: "Темп. коэф." }), format: (v) => `${v}%/°C` },
-    { key: "warrantyYears", label: t({ en: "Warranty", ro: "Garanție", ru: "Гарантия" }), format: (v) => `${v} ${t({ en: "yrs", ro: "ani", ru: "лет" })}` },
-    { key: "price", label: t({ en: "Price", ro: "Preț", ru: "Цена" }), format: (v) => EUR(v) },
+    { key: "eff", label: t({ en: "Efficiency", ro: "Randament", ru: "КПД", uk: "ККД" }), format: (v) => `${v}%` },
+    { key: "tempCoeff", label: t({ en: "Temp. coeff.", ro: "Coef. temp.", ru: "Темп. коэф.", uk: "Темп. коеф." }), format: (v) => `${v}%/°C` },
+    { key: "warrantyYears", label: t({ en: "Warranty", ro: "Garanție", ru: "Гарантия", uk: "Гарантія" }), format: (v) => `${v} ${t({ en: "yrs", ro: "ani", ru: "лет", uk: "р." })}` },
+    { key: "price", label: t({ en: "Price", ro: "Preț", ru: "Цена", uk: "Ціна" }), format: (v) => EUR(v) },
   ];
   const inverterCompareFields = [
     { key: "kw", label: "kW", format: (v) => `${v}kW` },
-    { key: "type", label: t({ en: "Type", ro: "Tip", ru: "Тип" }) },
-    { key: "phases", label: t({ en: "Phases", ro: "Faze", ru: "Фазы" }) },
-    { key: "maxDcV", label: t({ en: "Max DC voltage", ro: "Tensiune DC max", ru: "Макс. напряжение DC" }), format: (v) => `${v}V` },
-    { key: "maxEfficiencyPct", label: t({ en: "Peak efficiency", ro: "Randament maxim", ru: "Пиковый КПД" }), format: (v) => (v == null ? "—" : `${v}%`) },
-    { key: "warrantyYears", label: t({ en: "Warranty", ro: "Garanție", ru: "Гарантия" }), format: (v) => `${v} ${t({ en: "yrs", ro: "ani", ru: "лет" })}` },
-    { key: "price", label: t({ en: "Price", ro: "Preț", ru: "Цена" }), format: (v) => EUR(v) },
+    { key: "type", label: t({ en: "Type", ro: "Tip", ru: "Тип", uk: "Тип" }) },
+    { key: "phases", label: t({ en: "Phases", ro: "Faze", ru: "Фазы", uk: "Фази" }) },
+    { key: "maxDcV", label: t({ en: "Max DC voltage", ro: "Tensiune DC max", ru: "Макс. напряжение DC", uk: "Макс. напруга DC" }), format: (v) => `${v}V` },
+    { key: "maxEfficiencyPct", label: t({ en: "Peak efficiency", ro: "Randament maxim", ru: "Пиковый КПД", uk: "Піковий ККД" }), format: (v) => (v == null ? "—" : `${v}%`) },
+    { key: "warrantyYears", label: t({ en: "Warranty", ro: "Garanție", ru: "Гарантия", uk: "Гарантія" }), format: (v) => `${v} ${t({ en: "yrs", ro: "ani", ru: "лет", uk: "р." })}` },
+    { key: "price", label: t({ en: "Price", ro: "Preț", ru: "Цена", uk: "Ціна" }), format: (v) => EUR(v) },
   ];
   const batteryCompareFields = [
     { key: "kwh", label: "kWh" },
-    { key: "chem", label: t({ en: "Chemistry", ro: "Chimie", ru: "Химия" }) },
-    { key: "cycles", label: t({ en: "Cycle life", ro: "Durată de viață", ru: "Ресурс циклов" }) },
-    { key: "warrantyYears", label: t({ en: "Warranty", ro: "Garanție", ru: "Гарантия" }), format: (v) => `${v} ${t({ en: "yrs", ro: "ani", ru: "лет" })}` },
-    { key: "price", label: t({ en: "Price", ro: "Preț", ru: "Цена" }), format: (v) => EUR(v) },
+    { key: "chem", label: t({ en: "Chemistry", ro: "Chimie", ru: "Химия", uk: "Хімія" }) },
+    { key: "cycles", label: t({ en: "Cycle life", ro: "Durată de viață", ru: "Ресурс циклов", uk: "Ресурс циклів" }) },
+    { key: "warrantyYears", label: t({ en: "Warranty", ro: "Garanție", ru: "Гарантия", uk: "Гарантія" }), format: (v) => `${v} ${t({ en: "yrs", ro: "ani", ru: "лет", uk: "р." })}` },
+    { key: "price", label: t({ en: "Price", ro: "Preț", ru: "Цена", uk: "Ціна" }), format: (v) => EUR(v) },
   ];
 
   const comparedPanels = PANELS.filter((p) => comparePanels.has(p.id));
   const comparedInverters = INVERTERS.filter((i) => compareInverters.has(i.id));
   const comparedBatteries = BATTERIES.filter((b) => compareBatteries.has(b.id));
 
-  const compareLabel = t({ en: "Compare", ro: "Compară", ru: "Сравнить" });
+  const compareLabel = t({ en: "Compare", ro: "Compară", ru: "Сравнить", uk: "Порівняти" });
   const sys = derived?.sys;
   return (
     <>
       {noInverter ? (
-        <div className="ws-note err"><XCircle size={16} aria-hidden="true" /><div><b>{t({ en: "No inverter chosen yet.", ro: "Niciun invertor ales încă.", ru: "Инвертор ещё не выбран." })}</b> {t({ en: "Pick one below; the string-voltage check and the annex need it.", ro: "Alege unul mai jos; verificarea tensiunii și anexa au nevoie de el.", ru: "Выберите ниже; он нужен для проверки напряжения и приложения." })}</div></div>
+        <div className="ws-note err"><XCircle size={16} aria-hidden="true" /><div><b>{t({ en: "No inverter chosen yet.", ro: "Niciun invertor ales încă.", ru: "Инвертор ещё не выбран.", uk: "Інвертор ще не вибрано." })}</b> {t({ en: "Pick one below; the string-voltage check and the annex need it.", ro: "Alege unul mai jos; verificarea tensiunii și anexa au nevoie de el.", ru: "Выберите ниже; он нужен для проверки напряжения и приложения.", uk: "Виберіть нижче; він потрібен для перевірки напруги та додатка." })}</div></div>
       ) : derived?.vocExceeds ? (
-        <div className="ws-note warn"><AlertTriangle size={16} aria-hidden="true" /><div><b>{t({ en: "String voltage is above this inverter's limit.", ro: "Tensiunea șirului depășește limita invertorului.", ru: "Напряжение цепочки выше предела инвертора." })}</b> {t({ en: "Choose an inverter with a higher DC input, or fewer panels per string.", ro: "Alege un invertor cu intrare DC mai mare sau mai puține panouri pe șir.", ru: "Выберите инвертор с большим DC-входом или меньше панелей в цепочке." })}</div></div>
+        <div className="ws-note warn"><AlertTriangle size={16} aria-hidden="true" /><div><b>{t({ en: "String voltage is above this inverter's limit.", ro: "Tensiunea șirului depășește limita invertorului.", ru: "Напряжение цепочки выше предела инвертора.", uk: "Напруга стрінга перевищує межу інвертора." })}</b> {t({ en: "Choose an inverter with a higher DC input, or fewer panels per string.", ro: "Alege un invertor cu intrare DC mai mare sau mai puține panouri pe șir.", ru: "Выберите инвертор с большим DC-входом или меньше панелей в цепочке.", uk: "Виберіть інвертор із більшим DC-входом або менше панелей у стрінгу." })}</div></div>
       ) : (
-        <div className="ws-note ok"><CheckCircle2 size={16} aria-hidden="true" /><div><b>{t({ en: "These parts work together.", ro: "Aceste componente merg împreună.", ru: "Эти компоненты совместимы." })}</b> {t({ en: "String voltage is within the inverter's limit.", ro: "Tensiunea șirului e în limita invertorului.", ru: "Напряжение цепочки в пределах инвертора." })}</div></div>
+        <div className="ws-note ok"><CheckCircle2 size={16} aria-hidden="true" /><div><b>{t({ en: "These parts work together.", ro: "Aceste componente merg împreună.", ru: "Эти компоненты совместимы.", uk: "Ці компоненти сумісні." })}</b> {t({ en: "String voltage is within the inverter's limit.", ro: "Tensiunea șirului e în limita invertorului.", ru: "Напряжение цепочки в пределах инвертора.", uk: "Напруга стрінга в межах інвертора." })}</div></div>
       )}
 
-      <Accordion title={t({ en: "Panels", ro: "Panouri", ru: "Панели" })} icon={PanelsTopLeft}
+      <Accordion title={t({ en: "Panels", ro: "Panouri", ru: "Панели", uk: "Панелі" })} icon={PanelsTopLeft}
         aside={!noPanel && sys ? `${sys.panel.brand} ${sys.panel.watt} W` : ""}>
         <CategoryTable items={PANELS} columns={panelCols} selectedId={job.panelId} invalid={noPanel} compareLabel={compareLabel}
           onPick={(p) => patch({ panelId: p.id })} compare={comparePanels} onToggleCompare={toggle(setComparePanels)} />
@@ -205,7 +205,7 @@ export default function EquipmentStep({ job, patch, derived, lang }) {
         )}
       </Accordion>
 
-      <Accordion title={t({ en: "Inverter", ro: "Invertor", ru: "Инвертор" })} icon={Zap}
+      <Accordion title={t({ en: "Inverter", ro: "Invertor", ru: "Инвертор", uk: "Інвертор" })} icon={Zap}
         aside={!noInverter && sys ? `${sys.inverter.brand} ${sys.inverter.kw} kW` : ""}>
         <CategoryTable items={INVERTERS} columns={inverterCols} selectedId={job.inverterId} invalid={noInverter} compareLabel={compareLabel}
           onPick={(inv) => patch({ inverterId: inv.id })} compare={compareInverters} onToggleCompare={toggle(setCompareInverters)} />
@@ -215,10 +215,10 @@ export default function EquipmentStep({ job, patch, derived, lang }) {
         )}
       </Accordion>
 
-      <Accordion title={t({ en: "Battery", ro: "Baterie", ru: "Батарея" })} icon={BatteryFull}
-        aside={hasBattery && sys ? `${sys.battery.brand} ${job.batteryKwh} kWh` : t({ en: "None", ro: "Fără", ru: "Нет" })}>
+      <Accordion title={t({ en: "Battery", ro: "Baterie", ru: "Батарея", uk: "Батарея" })} icon={BatteryFull}
+        aside={hasBattery && sys ? `${sys.battery.brand} ${job.batteryKwh} kWh` : t({ en: "None", ro: "Fără", ru: "Нет", uk: "Немає" })}>
         <button type="button" onClick={() => pickBattery(null)} className={"ws-choice" + (!hasBattery ? " on" : "")}>
-          {t({ en: "No battery", ro: "Fără baterie", ru: "Без батареи" })}
+          {t({ en: "No battery", ro: "Fără baterie", ru: "Без батареи", uk: "Без батареї" })}
         </button>
         <CategoryTable items={BATTERIES} columns={batteryCols} selectedId={hasBattery ? job.batteryId : null} invalid={false} compareLabel={compareLabel}
           onPick={pickBattery} compare={compareBatteries} onToggleCompare={toggle(setCompareBatteries)} />

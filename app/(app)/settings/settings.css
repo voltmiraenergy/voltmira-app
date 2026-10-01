@@ -1,0 +1,142 @@
+/* app/(app)/settings/settings.css — Settings on the shared workspace look
+   (dx.css). Every selector starts with .app for the reason dx.css gives. */
+
+.app .st-loading { padding: 40px; color: var(--muted); }
+.app .st-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 22px; align-items: start; }
+
+/* ---- the section menu */
+.app .st-nav { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 2px; padding: 6px;
+  background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--dx-radius); box-shadow: var(--shadow); }
+.app .st-nav-i {
+  display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 11px; width: 100%;
+  padding: 9px 10px; border-radius: 11px; text-align: left; color: var(--ink); transition: background .15s;
+}
+.app .st-nav-i:hover { background: var(--dx-hover); }
+.app .st-nav-i.on { background: var(--green-tint); }
+.app .st-nav-ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--paper); border: 1px solid var(--line); color: var(--muted); transition: color .15s, background .15s, border-color .15s; }
+.app .st-nav-i.on .st-nav-ic { background: var(--green); border-color: var(--green); color: var(--dx-on-green); }
+.app .st-nav-tx { display: flex; flex-direction: column; min-width: 0; }
+.app .st-nav-tx b { font-size: 13.5px; font-weight: 650; }
+.app .st-nav-tx small { font-size: 11.5px; color: var(--muted); line-height: 1.35; margin-top: 1px; }
+
+/* ---- one section */
+.app .st-panel { display: flex; flex-direction: column; gap: 16px; min-width: 0; animation: dx-in .35s cubic-bezier(.2, .7, .2, 1) both; }
+.app .st-panel-h h2 { font-family: var(--dx-d); font-size: 21px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
+.app .st-panel-h p { font-size: 13.5px; color: var(--muted); margin-top: 3px; }
+.app .st-card-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+.app .st-card-h h3 { font-family: var(--dx-d); font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); }
+.app .st-card-h p { font-size: 12.5px; color: var(--muted); margin-top: 3px; line-height: 1.5; max-width: 62ch; }
+.app .st-card-h .dx-btn { flex: none; }
+.app .st-card.st-danger { border-color: color-mix(in srgb, var(--red) 45%, var(--line)); }
+.app .st-card .set-grid { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.app .st-card .set-grid.st-narrow { grid-template-columns: minmax(0, 240px); }
+.app .st-card .field { margin-bottom: 0; }
+.app .st-unit { font-weight: 400; margin-left: 6px; font-size: 12px; }
+.app .st-note-tight { margin-top: 6px; }
+.app .st-gap { margin-top: 14px; }
+.app .st-p { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+.app .st-err { color: var(--red); font-size: 13px; margin: 0 0 12px; }
+
+.app .st-toggles { display: flex; flex-direction: column; gap: 14px; }
+.app .st-toggle { align-items: flex-start; }
+.app .st-indent { padding-left: 54px; }
+
+/* logo */
+.app .st-logo-field { margin-top: 16px !important; }
+.app .st-logo-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.app .st-logo { width: 56px; height: 56px; flex: none; border-radius: 12px; object-fit: contain; border: 1px solid var(--line); background: var(--paper-2); }
+.app .st-logo-ph { display: grid; place-items: center; font-family: var(--dx-d); font-weight: 700; font-size: 22px; color: var(--green); background: var(--green-tint); }
+.app .st-logo-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.app .st-upload { cursor: pointer; }
+.app .st-upload input { display: none; }
+.app .st-logo-url { margin-top: 10px; }
+
+/* documents */
+.app .st-fold { border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.app .st-fold + .st-fold { margin-top: 10px; }
+.app .st-fold summary { cursor: pointer; padding: 12px 14px; font-size: 13.5px; font-weight: 600; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+.app .st-fold summary::-webkit-details-marker { display: none; }
+.app .st-fold summary::after { content: ""; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); margin-top: -4px; transition: transform .2s; }
+.app .st-fold[open] summary::after { transform: rotate(-135deg); margin-top: 4px; }
+.app .st-fold textarea { display: block; width: calc(100% - 20px); margin: 0 10px 10px; }
+.app .st-mono { min-height: 150px; font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; }
+
+/* calculations */
+.app .st-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.app .st-bands { width: 100%; border-collapse: collapse; min-width: 380px; }
+.app .st-bands th { font-size: 12px; font-weight: 600; padding: 0 6px 10px; text-align: center; white-space: nowrap; color: var(--muted); }
+.app .st-bands td { padding: 4px 6px; }
+.app .st-bands td.rlbl { font-size: 12.5px; color: var(--muted); text-align: left; padding-left: 0; white-space: nowrap; }
+.app .st-bands td.locked { text-align: center; font-size: 13px; color: var(--muted); }
+.app .st-bands input { text-align: center; }
+.app .st-band-wrap { overflow-x: auto; }
+.app .st-cdot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+
+/* assistants */
+.app .st-embed { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; }
+.app .st-embed .embed-code { flex: 1 1 280px; min-width: 0; white-space: nowrap; overflow-x: auto; }
+.app .st-embed .dx-btn { height: auto; min-height: 36px; }
+
+/* plan */
+.app .st-plan-badge { font-size: 11.5px; font-weight: 700; background: var(--amber-tint); color: var(--amber-ink); border-radius: 99px; padding: 3px 11px; text-transform: capitalize; }
+.app .st-plan-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.app .st-plan-acts .dx-btn { height: 38px; padding: 0 16px; font-size: 13.5px; }
+.app .st-del-go { background: var(--red) !important; border-color: var(--red) !important; color: #fff !important; }
+.app .st-locked { display: flex; gap: 12px; align-items: flex-start; color: var(--muted); }
+.app .st-locked b { color: var(--ink); font-size: 14px; }
+.app .st-locked p { font-size: 13px; margin-top: 3px; }
+
+/* ---- the save bar: floats in only when something changed */
+.app .st-savebar {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 45;
+  display: flex; align-items: center; gap: 14px; padding: 10px 10px 10px 18px;
+  background: var(--ink); color: var(--paper-2); border-radius: 14px;
+  box-shadow: 0 18px 44px -14px rgba(10, 22, 16, .55); max-width: calc(100vw - 32px);
+  animation: st-bar-in .25s cubic-bezier(.2, .8, .2, 1) both;
+}
+@keyframes st-bar-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.app .st-savebar-msg { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; white-space: nowrap; padding-right: 8px; }
+.app .st-savebar:not(.is-dirty) { padding-right: 18px; }
+.app .st-savebar-msg svg { flex: none; color: var(--amber); }
+.app .st-savebar-acts { display: flex; gap: 8px; }
+.app .st-savebar .dx-btn { height: 36px; padding: 0 14px; font-size: 13px; }
+.app .st-savebar .dx-btn:not(.primary) { background: transparent !important; color: var(--paper-2) !important; border-color: color-mix(in srgb, var(--paper-2) 30%, transparent) !important; }
+/* keep the last card clear of the floating bar */
+.app .st { padding-bottom: 70px; }
+
+@media (min-width: 1081px) { .app .st-savebar { left: calc(50% + 110px); } }
+
+@media (max-width: 900px) {
+  .app .st-layout { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  /* the menu becomes a row of tabs under the title, staying in reach */
+  .app .st-nav {
+    position: sticky; top: calc(env(safe-area-inset-top, 0px) + 6px); z-index: 20; flex-direction: row; gap: 4px;
+    overflow-x: auto; scrollbar-width: none; padding: 4px; border-radius: 13px;
+  }
+  .app .st-nav::-webkit-scrollbar { display: none; }
+  .app .st-nav-i { grid-template-columns: auto; width: auto; flex: none; padding: 8px 12px; border-radius: 10px; }
+  .app .st-nav-ic, .app .st-nav-tx small { display: none; }
+  .app .st-nav-i.on { background: var(--green); color: var(--dx-on-green); }
+  .app .st-nav-tx b { font-size: 13.5px; white-space: nowrap; }
+  .app .st-panel-h h2 { font-size: 19px; }
+}
+@media (max-width: 768px) {
+  .app .st-savebar { bottom: calc(var(--mnav-h, 66px) + env(safe-area-inset-bottom, 0px) + 10px); width: calc(100vw - 24px); justify-content: space-between; gap: 10px; }
+  .app .st { padding-bottom: 90px; }
+  .app .st-indent { padding-left: 0; }
+  .app .st-card-h { flex-wrap: wrap; }
+}
+@media (max-width: 420px) {
+  .app .st-savebar-msg { font-size: 12.5px; }
+  .app .st-savebar .dx-btn { padding: 0 11px; }
+}
+
+/* "Working in Ukraine?" — appears when Ukrainian is picked for a Moldovan workspace */
+.app .st-ua {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 14px; padding: 14px 16px;
+  border-radius: 12px; background: var(--green-tint); border: 1px solid color-mix(in srgb, var(--green) 25%, transparent);
+}
+.app .st-ua-t { flex: 1 1 280px; display: flex; flex-direction: column; gap: 3px; font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+.app .st-ua-t b { font-size: 14.5px; }
+.app .st-ua-a { display: flex; flex-wrap: wrap; gap: 8px; }

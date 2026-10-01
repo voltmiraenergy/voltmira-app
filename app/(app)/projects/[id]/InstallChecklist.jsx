@@ -6,6 +6,7 @@
 import { useState, useTransition } from "react";
 import { setInstallStep } from "../../../../lib/actions.js";
 import { t } from "../../../../lib/i18n.js";
+import { Check } from "lucide-react";
 
 const STEPS = ["deposit", "permit", "order", "install", "grid", "commission"];
 
@@ -74,7 +75,7 @@ export default function InstallChecklist({ projectId, initial = {}, lang }) {
                 display: "grid", placeItems: "center", fontSize: 13, fontWeight: 700,
                 border: date ? "none" : "1.5px solid var(--line)",
                 background: date ? "var(--green)" : "transparent", color: "#fff" }}>
-                {date ? "✓" : ""}
+                {date ? <Check size={14} strokeWidth={3} /> : null}
               </span>
               <span style={{ flex: 1, fontSize: 14.5, fontWeight: date ? 600 : 400,
                 color: date ? "var(--ink)" : "var(--ink-soft,#2B4438)" }}>

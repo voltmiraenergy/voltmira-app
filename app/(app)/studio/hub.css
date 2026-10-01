@@ -7,11 +7,11 @@
   display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
   font-size: 12px; color: var(--muted);
 }
-.app .sx-preview i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex: none; }
-.app .sx-preview.s-saving i { background: var(--amber); }
+.app .sx-preview svg { flex: none; color: var(--green); }
+.app .sx-preview.s-saving svg { color: var(--amber); }
 .app .sx-preview.s-offline { color: var(--amber-ink); }
-.app .sx-preview.s-offline i { background: var(--amber); }
-.app .sx-preview.s-local i { background: var(--muted); }
+.app .sx-preview.s-offline svg { color: var(--amber); }
+.app .sx-preview.s-local svg { color: var(--muted); }
 
 /* stage colours follow the chip each stage already has in jobs-data.js */
 .app .c-blue { --c: var(--blue); --ct: var(--blue-tint); }

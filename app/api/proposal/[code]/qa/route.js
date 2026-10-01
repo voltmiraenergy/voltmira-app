@@ -63,7 +63,8 @@ function fallbackAnswer(lang, preparedBy) {
 
 const round = (n) => Math.round(Number(n) || 0);
 
-export async function POST(req, { params }) {
+export async function POST(req, props) {
+  const params = await props.params;
   const ip = clientIp(req);
   const code = params.code;
 

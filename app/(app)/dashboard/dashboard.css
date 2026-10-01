@@ -1,6 +1,6 @@
 /* app/(app)/dashboard/dashboard.css — the parts only the dashboard has: the
- * lead-to-live line, next moves, pulse, vitals, the install board and the
- * installed-base band. The shared header, cards, buttons and palette live in
+ * stage tiles, next moves, pulse, the numbers list, the tabbed book, the
+ * install board and the installed-base band. The shared header, cards, buttons and palette live in
  * app/(app)/dx.css. Same `.app` prefix rule as there.
  */
 
@@ -12,47 +12,23 @@
 }
 html[data-theme="dark"] .app .dx { --dx-base-bg: #0B1510; }
 
-/* ---------------------------------------------------------------- flow line */
-.app .dx-flow { background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--dx-radius); padding: 20px 22px 16px; box-shadow: var(--shadow); }
-.app .dx-flow-head { display: flex; align-items: baseline; gap: 6px 14px; flex-wrap: wrap; }
-.app .dx-flow-head h2 { font-family: var(--dx-d); font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
-.app .dx-flow-head p { font-size: 12.5px; color: var(--muted); }
-.app .dx-flow-line {
-  list-style: none; display: grid; grid-template-columns: repeat(7, minmax(122px, 1fr));
-  margin-top: 18px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 4px;
-  scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+/* ---------------------------------------------------------------- stage tiles */
+/* Seven plain tiles, left to right in the order a job moves: each one a link
+   to that list. A thin coloured edge on top says which stage it is. */
+.app .dx-stages { list-style: none; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+.app .dx-st a {
+  display: flex; flex-direction: column; gap: 2px; height: 100%; padding: 14px 14px 13px;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--paper);
+  box-shadow: inset 0 3px 0 var(--c); text-decoration: none; color: inherit;
+  transition: border-color .16s, background .16s, box-shadow .16s;
 }
-.app .dx-stage { position: relative; padding-top: 26px; scroll-snap-align: start; min-width: 0; }
-.app .dx-stage::before {
-  content: ""; position: absolute; top: 0; left: 0; width: 12px; height: 12px; border-radius: 50%;
-  background: var(--c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 18%, transparent);
-}
-.app .dx-stage.zero::before { background: var(--paper-2); border: 2px solid var(--line); box-shadow: none; }
-.app .dx-join {
-  position: absolute; top: 5px; left: 22px; right: 10px; height: 2px; border-radius: 2px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 60%, var(--line)), var(--line));
-}
-.app .dx-stage.zero .dx-join { background: var(--line); }
-.app .dx-join em {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  font-style: normal; font-size: 10.5px; font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums;
-  background: var(--paper-2); border: 1px solid var(--line); color: var(--dx-soft);
-  padding: 2px 7px; border-radius: 99px;
-}
-.app .dx-stage-in {
-  display: flex; flex-direction: column; gap: 1px; padding: 2px 10px 6px 0;
-  text-decoration: none; color: inherit; border-radius: 10px;
-}
-.app .dx-stage-lbl { font-size: 11.5px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
-.app .dx-stage-n {
-  font-family: var(--dx-d); font-size: 30px; font-weight: 700; line-height: 1.15; letter-spacing: -.02em;
-  font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 3px; transition: color .16s;
-}
-.app .dx-stage-eur { font-size: 13px; font-weight: 650; color: var(--c); font-variant-numeric: tabular-nums; min-height: 18px; }
-.app .dx-stage-sub { font-size: 12px; color: var(--muted); min-height: 17px; line-height: 1.35; }
-.app .dx-stage.zero .dx-stage-n { color: color-mix(in srgb, var(--muted) 60%, transparent); }
-.app .dx-stage-in:hover .dx-stage-n { color: var(--c); }
-.app .dx-stage-in:hover .dx-stage-lbl { color: var(--ink); }
+.app .dx-st a:hover { border-color: var(--c); background: var(--paper-2); box-shadow: inset 0 3px 0 var(--c), var(--shadow); }
+.app .dx-st-lbl { font-size: 11.5px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .dx-st-n { font-family: var(--dx-d); font-size: 30px; font-weight: 700; line-height: 1.15; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 4px; }
+.app .dx-st-eur { font-size: 13px; font-weight: 650; color: var(--c); font-variant-numeric: tabular-nums; min-height: 18px; }
+.app .dx-st-sub { font-size: 12px; color: var(--muted); line-height: 1.35; }
+.app .dx-st.zero a { box-shadow: inset 0 3px 0 var(--line); }
+.app .dx-st.zero .dx-st-n { color: color-mix(in srgb, var(--muted) 60%, transparent); }
 .app .s-leads { --c: var(--amber-ink); }
 .app .s-drafts { --c: var(--muted); }
 .app .s-sent { --c: var(--blue); }
@@ -85,15 +61,6 @@ html[data-theme="dark"] .app .dx { --dx-base-bg: #0B1510; }
 .app .k-health { --k: var(--red); --kt: var(--red-tint); }
 .app .k-unopened, .app .k-quiet, .app .k-draft, .app .k-nodata { --k: var(--muted); --kt: var(--paper); }
 .app .k-unopened .dx-move-ic, .app .k-quiet .dx-move-ic, .app .k-draft .dx-move-ic, .app .k-nodata .dx-move-ic { border: 1px solid var(--line); }
-.app .dx-ping {
-  position: absolute; top: -3px; right: -3px; width: 11px; height: 11px; border-radius: 50%;
-  background: var(--green); border: 2px solid var(--paper-2);
-}
-.app .dx-ping::after {
-  content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--green);
-  animation: dx-ping 1.6s cubic-bezier(0, 0, .2, 1) infinite;
-}
-@keyframes dx-ping { from { transform: scale(1); opacity: .8; } to { transform: scale(2.4); opacity: 0; } }
 
 .app .dx-move-body { min-width: 0; }
 .app .dx-move-meta { display: flex; align-items: center; gap: 8px; min-height: 18px; }
@@ -128,12 +95,6 @@ html[data-theme="dark"] .app .dx { --dx-base-bg: #0B1510; }
 .app .dx-hidden { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
 
 /* ---------------------------------------------------------------- pulse */
-.app .dx-live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); position: relative; flex: none; }
-.app .dx-live-dot.on { background: var(--green); }
-.app .dx-live-dot.on::after {
-  content: ""; position: absolute; inset: -1px; border-radius: 50%; border: 2px solid var(--green);
-  animation: dx-ping 1.6s cubic-bezier(0, 0, .2, 1) infinite;
-}
 .app .dx-pulse-list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
 .app .dx-pulse-list a {
   display: flex; align-items: center; gap: 11px; padding: 8px 10px; margin: 0 -10px;
@@ -149,18 +110,21 @@ html[data-theme="dark"] .app .dx { --dx-base-bg: #0B1510; }
   padding: 3px 8px; border-radius: 99px; background: var(--paper); border: 1px solid var(--line);
 }
 
-/* ---------------------------------------------------------------- vitals */
-.app .dx-vital-grid {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px;
-  background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
-}
-.app .dx-vital-grid > div { background: var(--paper-2); padding: 13px 14px 12px; display: flex; flex-direction: column; min-width: 0; }
-.app .dx-vital-grid dt { font-size: 11px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.app .dx-vital-grid dd {
-  font-family: var(--dx-d); font-size: 21px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2;
-  font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 5px; overflow-wrap: anywhere;
-}
-.app .dx-vital-grid dd.dx-v-sub { font-family: var(--font-b); font-size: 11.5px; font-weight: 500; letter-spacing: 0; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+/* ---------------------------------------------------------------- the numbers */
+/* One number per row: what it is (and what it counts) on the left, the value on the right. */
+.app .dx-vlist { display: flex; flex-direction: column; }
+.app .dx-vlist > div { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 11px 0; }
+.app .dx-vlist > div + div { border-top: 1px solid var(--line); }
+.app .dx-vlist dt { min-width: 0; font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+.app .dx-vlist dt small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+.app .dx-vlist dd { flex: none; font-family: var(--dx-d); font-size: 19px; font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; color: var(--ink); text-align: right; }
+
+/* ---------------------------------------------------------------- the book */
+.app .dx-book-head { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.app .dx-book-head .dx-tabs { margin-bottom: 0; max-width: 100%; }
+.app .dx-book .dx-tabs button { padding: 8px 14px; font-size: 13.5px; }
+.app .dx-book .dx-tabs button span { font-size: 11.5px; }
+.app .dx-book-note { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
 
 /* ---------------------------------------------------------------- quotes table */
 .app .dx-tbl td { padding: 11px 12px; }
@@ -248,9 +212,7 @@ html[data-theme="dark"] .app .dx-base { border-color: var(--line); }
   .app .dx-base-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 768px) {
-  .app .dx-flow { padding: 16px; border-radius: 14px; }
-  .app .dx-flow-line { grid-template-columns: repeat(7, minmax(116px, 1fr)); margin-right: -16px; padding-right: 16px; }
-  .app .dx-stage-n { font-size: 26px; }
+  .app .dx-st-n { font-size: 26px; }
   /* The table scrolls sideways on a phone; give the quote name room first. */
   .app .dx-tbl td:first-child { min-width: 216px; }
   .app .dx-move { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 11px; padding: 14px 10px; margin: 0 -10px; }
@@ -260,24 +222,15 @@ html[data-theme="dark"] .app .dx-base { border-color: var(--line); }
   .app .dx-base-stats dd { font-size: 25px; }
   .app .dx-base-mark { width: 150px; height: 150px; right: -18px; bottom: auto; top: -26px; opacity: .2; }
 }
-/* Phone: the seven stages read top to bottom, each a row of label and count,
-   with the line running down the left and each conversion rate on it. */
+/* Tablet: two rows of tiles. Phone: two columns, the last stage full width. */
+@media (max-width: 1180px) {
+  .app .dx-stages { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 @media (max-width: 560px) {
-  .app .dx-flow-line { grid-template-columns: minmax(0, 1fr); overflow: visible; margin-right: 0; padding-right: 0; margin-top: 14px; }
-  .app .dx-stage { padding: 0 0 30px 26px; }
-  .app .dx-stage:last-child { padding-bottom: 0; }
-  .app .dx-stage::before { top: 5px; }
-  .app .dx-join { top: 22px; bottom: 2px; left: 5px; right: auto; width: 2px; height: auto;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--c) 60%, var(--line)), var(--line)); }
-  .app .dx-join em { top: auto; bottom: 13px; left: 12px; transform: translateY(50%); }
-  .app .dx-stage-in {
-    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "lbl n" "sub eur";
-    column-gap: 12px; align-items: baseline; padding: 0;
-  }
-  .app .dx-stage-lbl { grid-area: lbl; }
-  .app .dx-stage-n { grid-area: n; font-size: 24px; margin-top: 0; line-height: 1; text-align: right; }
-  .app .dx-stage-eur { grid-area: eur; text-align: right; min-height: 0; }
-  .app .dx-stage-sub { grid-area: sub; min-height: 0; }
+  .app .dx-stages { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .app .dx-st:last-child { grid-column: 1 / -1; }
+  .app .dx-st a { padding: 12px; }
+  .app .dx-book .dx-tabs button { padding: 8px 11px; font-size: 13px; }
 }
 @media (max-width: 560px) {
   .app .dx-lead-bottom { flex-direction: column; align-items: flex-start; }
@@ -286,6 +239,4 @@ html[data-theme="dark"] .app .dx-base { border-color: var(--line); }
 @media (pointer: coarse) {
   .app .dx-done { width: 40px; height: 40px; opacity: 1; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .app .dx-ping::after, .app .dx-live-dot.on::after { animation: none !important; }
-}
+

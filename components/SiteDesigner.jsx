@@ -1,175 +1,227 @@
 "use client";
-// components/SiteDesigner.jsx — the roof survey surface. Every quote today
-// assumes one flat plane at a hardcoded 35°-south tilt (see engine/pvgis.js's
-// defaults) and derives panel count backwards from a kW slider
-// (lib/supplierCatalog.js's autoBom: kw*1000/panelWatt) instead of from
-// anything that actually fits on the roof. This component is where that gets
-// fixed: the installer draws the roof (one or more planes, each with its own
-// tilt/azimuth) and its obstacles on real satellite imagery, picks a real
-// module, and sees real payback/CO2 numbers for whatever the layout implies —
-// before ever touching the main kW field.
+// components/SiteDesigner.jsx — the roof survey workspace. The installer draws
+// each side of the roof (its own pitch, facing and material) and whatever is
+// in the way on real satellite imagery; the chosen module is fitted into every
+// side, skipping obstacles, and the real price, payback and CO2 for that many
+// panels show beside the map before anything touches the quote.
 //
-// Esri World Imagery is the default base layer: free, no API key or billing
-// account, good enough resolution for outlining a roof. When a real
+// Full screen: the map on the left with the drawing tools floating over it,
+// and on the right the roof sides, obstacles, electrical points, panel choice
+// and the result with "Use in the quote". Stacked on a phone.
+//
+// What it saves (onChange → projects.site_design): the drawn planes, obstacles
+// and markers, plus `layout` — the module, orientation and spacing chosen
+// here — so the quote's rail estimate and the proposal's roof drawing fit
+// panels exactly as this screen did (lib/roofLayout.js fitOptions).
+//
+// Esri World Imagery is the default base layer: free, no API key. When a real
 // NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set (installer's own Google Cloud
-// project, billing enabled — see .env.example), the map switches to Google's
-// satellite tiles instead, via the official Maps JavaScript API loaded under
-// leaflet.gridlayer.googlemutant (not raw google tile-server URLs, which
-// aren't licensed for direct use outside that API). No key set: unchanged
-// Esri behavior. Leaflet + leaflet-geoman are loaded dynamically inside an
-// effect (not a static top-level import) because they touch `window` at load
-// time and this file is server-rendered on first paint.
+// project, billing enabled — see .env.example), Google's satellite tiles are
+// used instead, via the official Maps JavaScript API loaded under
+// leaflet.gridlayer.googlemutant (never raw tile-server URLs, which aren't
+// licensed for direct use). Leaflet + leaflet-geoman are loaded inside an
+// effect because they touch `window` at load time.
 import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
-import { fitPanels, compassLabel, project } from "../lib/roofLayout.js";
+import "./SiteDesigner.css";
+import {
+  X, Undo2, Redo2, Pentagon, Box, TreeDeciduous, Ruler, Plug, Move, LocateFixed, Trash2, Check,
+  House, ChevronDown, ChevronRight, Info, Eye,
+} from "lucide-react";
+import { fitPanels, compassLabel, project, polygonAreaM2, facingFromShape, fitOptions } from "../lib/roofLayout.js";
 import { PANELS, findPanel, recommendPanel } from "../lib/supplierCatalog.js";
+import { designCheck } from "../lib/designCheck.js";
 import { SOLAR_SEASON, effectiveConsumption } from "@voltmira/engine";
 import { CashflowSVG, MonthlySVG } from "../app/p/[code]/charts.jsx";
 
-const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
+/* --------------------------------------------------------------- words --- */
+const TX = {
+  title: { en: "Roof design", ro: "Proiectare amplasament", ru: "Проект крыши", uk: "Проєкт даху" },
+  noAddress: { en: "Pinned on the map", ro: "Fixat pe hartă", ru: "Отмечено на карте", uk: "Позначено на мапі" },
+  undo: { en: "Undo", ro: "Anulează", ru: "Отменить", uk: "Скасувати" },
+  redo: { en: "Redo", ro: "Refă", ru: "Повторить", uk: "Повторити" },
+  close: { en: "Close", ro: "Închide", ru: "Закрыть", uk: "Закрити" },
+  tools: { en: "Drawing tools", ro: "Unelte de desen", ru: "Инструменты", uk: "Інструменти" },
+  t_plane: { en: "Roof side", ro: "Parte de acoperiș", ru: "Скат", uk: "Схил" },
+  t_obstacle: { en: "Obstacle", ro: "Obstacol", ru: "Препятствие", uk: "Перешкода" },
+  t_tree: { en: "Tree", ro: "Copac", ru: "Дерево", uk: "Дерево" },
+  t_measure: { en: "Measure", ro: "Măsoară", ru: "Измерить", uk: "Виміряти" },
+  t_marker: { en: "Electrical point", ro: "Punct electric", ru: "Электроточка", uk: "Електроточка" },
+  t_edit: { en: "Adjust shapes", ro: "Ajustează forme", ru: "Изменить формы", uk: "Змінити форми" },
+  h_plane: { en: "Click each corner of this side of the roof. Click the first corner again to close it.", ro: "Apasă pe fiecare colț al acestei părți de acoperiș. Apasă din nou pe primul colț ca să închizi forma.", ru: "Щёлкните по каждому углу ската. Щёлкните по первому углу ещё раз, чтобы замкнуть контур.", uk: "Клацніть по кожному куту схилу. Клацніть по першому куту ще раз, щоб замкнути контур." },
+  h_obstacle: { en: "Click around the chimney, roof window or dormer. Click the first point again to close it.", ro: "Apasă în jurul coșului, ferestrei de mansardă sau lucarnei. Apasă din nou pe primul punct ca să închizi forma.", ru: "Обведите дымоход, мансардное или слуховое окно. Щёлкните по первой точке, чтобы замкнуть контур.", uk: "Обведіть димар, мансардне чи слухове вікно. Клацніть по першій точці, щоб замкнути контур." },
+  h_tree: { en: "Press on the trunk and drag out to the edge of the crown.", ro: "Apasă pe trunchi și trage până la marginea coroanei.", ru: "Нажмите на ствол и потяните до края кроны.", uk: "Натисніть на стовбур і потягніть до краю крони." },
+  h_measure: { en: "Click two points to measure the distance between them.", ro: "Apasă pe două puncte ca să măsori distanța dintre ele.", ru: "Щёлкните по двум точкам, чтобы измерить расстояние.", uk: "Клацніть по двох точках, щоб виміряти відстань." },
+  h_measured: { en: "{d} m between the two points. Click two more to measure again.", ro: "{d} m între cele două puncte. Apasă pe alte două ca să măsori din nou.", ru: "{d} м между точками. Щёлкните ещё две, чтобы измерить снова.", uk: "{d} м між точками. Клацніть ще дві, щоб виміряти знову." },
+  h_marker: { en: "Pick what it is, then click where it sits.", ro: "Alege ce este, apoi apasă unde se află.", ru: "Выберите, что это, и щёлкните, где оно находится.", uk: "Виберіть, що це, і клацніть, де воно розташоване." },
+  h_edit: { en: "Drag a corner to move it, or the dot between two corners to add one. Right-click a corner to remove it.", ro: "Trage un colț ca să-l muți sau punctul dintre două colțuri ca să adaugi unul. Click dreapta pe un colț îl șterge.", ru: "Перетащите угол, чтобы сдвинуть его, или точку между углами, чтобы добавить новый. Правый щелчок по углу удаляет его.", uk: "Перетягніть кут, щоб зсунути його, або точку між кутами, щоб додати новий. Правий клік по куту видаляє його." },
+  cancel: { en: "Cancel", ro: "Anulează", ru: "Отмена", uk: "Скасувати" },
+  done: { en: "Done", ro: "Gata", ru: "Готово", uk: "Готово" },
+  lengths: { en: "Edge lengths", ro: "Lungimi laturi", ru: "Длины сторон", uk: "Довжини сторін" },
+  recenter: { en: "Back to the house", ro: "Înapoi la casă", ru: "К дому", uk: "До будинку" },
+  loading: { en: "Loading satellite imagery", ro: "Se încarcă imaginea din satelit", ru: "Загружаем спутниковый снимок", uk: "Завантажуємо супутниковий знімок" },
+  loadError: { en: "The map could not load. Check the connection, then close and open the roof design again.", ro: "Harta nu s-a putut încărca. Verifică conexiunea, apoi închide și redeschide proiectarea.", ru: "Карта не загрузилась. Проверьте соединение, затем закройте и снова откройте проект крыши.", uk: "Мапа не завантажилася. Перевірте з’єднання, потім закрийте й знову відкрийте проєкт даху." },
 
-const PLANE_STYLE = { color: "#2E7D5B", weight: 2, fillColor: "#2E7D5B", fillOpacity: 0.18 };
-const OBSTACLE_STYLE = { color: "#B4472F", weight: 2, fillColor: "#B4472F", fillOpacity: 0.35 };
-const TREE_STYLE = { color: "#5B7A3A", weight: 2, fillColor: "#5B7A3A", fillOpacity: 0.35 };
 
-let googleMapsScriptPromise = null;
-function loadGoogleMapsScript(key) {
-  if (window.google?.maps) return Promise.resolve();
-  if (!googleMapsScriptPromise) {
-    googleMapsScriptPromise = new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}`;
-      s.async = true;
-      s.onload = () => resolve();
-      s.onerror = () => reject(new Error("google maps script failed to load"));
-      document.head.appendChild(s);
-    });
-  }
-  return googleMapsScriptPromise;
+  plane: { en: "Side {n}", ro: "Partea {n}", ru: "Скат {n}", uk: "Схил {n}" },
+  planeSum: { en: "{a} m², {tilt}° pitch, faces {dir}", ro: "{a} m², înclinare {tilt}°, spre {dir}", ru: "{a} м², наклон {tilt}°, на {dir}", uk: "{a} м², нахил {tilt}°, на {dir}" },
+  del: { en: "Delete {name}", ro: "Șterge {name}", ru: "Удалить: {name}", uk: "Видалити: {name}" },
+  material: { en: "Roof material", ro: "Tip acoperiș", ru: "Тип кровли", uk: "Тип покрівлі" },
+  pitch: { en: "Pitch", ro: "Înclinare", ru: "Наклон", uk: "Нахил" },
+  facing: { en: "Faces", ro: "Orientare", ru: "Направление", uk: "Напрямок" },
+  facesDir: { en: "Faces {dir}", ro: "Spre {dir}", ru: "На {dir}", uk: "На {dir}" },
+  exact: { en: "Exact angle", ro: "Unghi exact", ru: "Точный угол", uk: "Точний кут" },
+  exactHelp: { en: "0 is south, −90 east, 90 west", ro: "0 e sud, −90 est, 90 vest", ru: "0 юг, −90 восток, 90 запад", uk: "0 південь, −90 схід, 90 захід" },
+  guessed: { en: "Guessed from the longest edge. Pick the opposite side if the roof slopes the other way.", ro: "Dedusă din latura cea mai lungă. Alege partea opusă dacă acoperișul coboară invers.", ru: "Определено по самой длинной стороне. Выберите противоположную, если скат идёт в другую сторону.", uk: "Визначено за найдовшою стороною. Виберіть протилежну, якщо схил іде в інший бік." },
+
+  obstacles: { en: "Obstacles", ro: "Obstacole", ru: "Препятствия", uk: "Перешкоди" },
+  points: { en: "Electrical points", ro: "Puncte electrice", ru: "Электроточки", uk: "Електроточки" },
+
+  module: { en: "Module", ro: "Modul", ru: "Модуль", uk: "Модуль" },
+  fromQuote: { en: "The panel in this quote's equipment list", ro: "Panoul din lista de echipamente a ofertei", ru: "Панель из списка оборудования предложения", uk: "Панель зі списку обладнання розрахунку" },
+  laid: { en: "Laid", ro: "Așezare", ru: "Раскладка", uk: "Розкладка" },
+  portrait: { en: "Portrait", ro: "Portret", ru: "Вертикально", uk: "Вертикально" },
+  landscape: { en: "Landscape", ro: "Peisaj", ru: "Горизонтально", uk: "Горизонтально" },
+  auto: { en: "Most fit", ro: "Maxim", ru: "Максимум", uk: "Максимум" },
+  setback: { en: "Distance from the roof edge", ro: "Distanța față de marginea acoperișului", ru: "Отступ от края крыши", uk: "Відступ від краю даху" },
+  more: { en: "More spacing options", ro: "Mai multe opțiuni de distanțare", ru: "Другие настройки отступов", uk: "Інші налаштування відступів" },
+  rowGap: { en: "Gap between rows", ro: "Spațiu între rânduri", ru: "Зазор между рядами", uk: "Зазор між рядами" },
+  colGap: { en: "Gap between panels", ro: "Spațiu între panouri", ru: "Зазор между панелями", uk: "Зазор між панелями" },
+  blockW: { en: "Longest block along the ridge", ro: "Bloc maxim de-a lungul coamei", ru: "Макс. блок вдоль конька", uk: "Макс. блок уздовж гребеня" },
+  blockH: { en: "Tallest block up the slope", ro: "Bloc maxim pe pantă", ru: "Макс. блок по скату", uk: "Макс. блок по схилу" },
+  blockGap: { en: "Gap between blocks", ro: "Spațiu între blocuri", ru: "Зазор между блоками", uk: "Зазор між блоками" },
+  blockHelp: { en: "Leave the block sizes at 0 for one continuous field of panels.", ro: "Lasă dimensiunile blocurilor pe 0 pentru un singur câmp continuu de panouri.", ru: "Оставьте размеры блоков 0, чтобы панели шли сплошным полем.", uk: "Залиште розміри блоків 0, щоб панелі йшли суцільним полем." },
+
+  tab1: { en: "Roof", ro: "Acoperiș", ru: "Крыша", uk: "Дах" },
+  tab2: { en: "Obstacles", ro: "Obstacole", ru: "Препятствия", uk: "Перешкоди" },
+  tab3: { en: "Panels", ro: "Panouri", ru: "Панели", uk: "Панелі" },
+  st1h: { en: "Outline the roof", ro: "Conturează acoperișul", ru: "Обведите крышу", uk: "Обведіть дах" },
+  st1p: { en: "Draw each side of the roof that will carry panels. Each side keeps its own pitch and direction.", ro: "Desenează fiecare parte a acoperișului pe care vor sta panouri. Fiecare parte își păstrează înclinarea și orientarea ei.", ru: "Обведите каждый скат, на котором будут панели. У каждого ската свой наклон и направление.", uk: "Обведіть кожен схил, на якому будуть панелі. Кожен схил має власний нахил і напрямок." },
+  drawFirst: { en: "Draw the first side", ro: "Desenează prima parte", ru: "Нарисовать первый скат", uk: "Намалювати перший схил" },
+  drawMore: { en: "Add another side", ro: "Adaugă încă o parte", ru: "Добавить ещё скат", uk: "Додати ще схил" },
+  drawCancel: { en: "Stop drawing", ro: "Oprește desenarea", ru: "Остановить рисование", uk: "Зупинити малювання" },
+  how1: { en: "Click one corner of the roof on the map.", ro: "Apasă pe un colț al acoperișului, pe hartă.", ru: "Щёлкните по углу крыши на карте.", uk: "Клацніть по куту даху на мапі." },
+  how2: { en: "Click the other corners, one after another.", ro: "Apasă pe celelalte colțuri, pe rând.", ru: "Щёлкайте по остальным углам по очереди.", uk: "Клацайте по інших кутах по черзі." },
+  how3: { en: "Click the first corner again to close the shape.", ro: "Apasă din nou pe primul colț ca să închizi forma.", ru: "Щёлкните по первому углу ещё раз, чтобы замкнуть контур.", uk: "Клацніть по першому куту ще раз, щоб замкнути контур." },
+  next2: { en: "Next: obstacles", ro: "Mai departe: obstacole", ru: "Далее: препятствия", uk: "Далі: перешкоди" },
+  next3: { en: "Next: panels", ro: "Mai departe: panouri", ru: "Далее: панели", uk: "Далі: панелі" },
+  st2h: { en: "What's on the roof", ro: "Ce e pe acoperiș", ru: "Что есть на крыше", uk: "Що є на даху" },
+  st2p: { en: "Mark what keeps panels away: chimneys, roof windows, trees that cast shade. Skip this step if the roof is clear.", ro: "Marchează ce ține panourile departe: coșuri, ferestre de mansardă, copaci care umbresc. Sari peste pas dacă acoperișul e liber.", ru: "Отметьте, что мешает панелям: дымоходы, мансардные окна, деревья с тенью. Пропустите шаг, если крыша свободна.", uk: "Позначте, що заважає панелям: димарі, мансардні вікна, дерева, що дають тінь. Пропустіть крок, якщо дах вільний." },
+  addOb: { en: "Chimney or window", ro: "Coș sau fereastră", ru: "Дымоход или окно", uk: "Димар або вікно" },
+  addTree: { en: "Tree", ro: "Copac", ru: "Дерево", uk: "Дерево" },
+  optional: { en: "optional", ro: "opțional", ru: "необязательно", uk: "необов’язково" },
+  pointsP: { en: "Mark the main panel, the meter and the inverter spot, so the crew knows where the cables run.", ro: "Marchează tabloul principal, contorul și locul invertorului, ca echipa să știe pe unde trec cablurile.", ru: "Отметьте главный щит, счётчик и место инвертора, чтобы бригада знала, где пойдут кабели.", uk: "Позначте головний щит, лічильник і місце інвертора, щоб бригада знала, де підуть кабелі." },
+  addPoint: { en: "Add an electrical point", ro: "Adaugă un punct electric", ru: "Добавить электроточку", uk: "Додати електроточку" },
+  st3h: { en: "Choose the panels", ro: "Alege panourile", ru: "Выберите панели", uk: "Виберіть панелі" },
+  st3p: { en: "Panels place themselves on every side, around the obstacles. Change the model or the spacing and they rearrange.", ro: "Panourile se așază singure pe fiecare parte, ocolind obstacolele. Schimbă modelul sau distanțele și se rearanjează.", ru: "Панели сами раскладываются на каждом скате, обходя препятствия. Измените модель или отступы, и раскладка обновится.", uk: "Панелі самі розкладаються на кожному схилі, оминаючи перешкоди. Змініть модель або відступи, і розкладка оновиться." },
+  flat: { en: "flat", ro: "plat", ru: "плоско", uk: "пласко" },
+  charts: { en: "Production and payback", ro: "Producție și recuperare", ru: "Выработка и окупаемость", uk: "Генерація та окупність" },
+  monthly: { en: "Month by month", ro: "Lună de lună", ru: "По месяцам", uk: "По місяцях" },
+  cash: { en: "Money over the years", ro: "Banii de-a lungul anilor", ru: "Деньги по годам", uk: "Гроші по роках" },
+
+  resultEmpty: { en: "Draw a side of the roof and the panels that fit on it appear here.", ro: "Desenează o parte a acoperișului și aici apar panourile care încap pe ea.", ru: "Обведите скат, и здесь появятся панели, которые на нём помещаются.", uk: "Обведіть схил, і тут з’являться панелі, які на ньому вміщаються." },
+  roofUse: { en: "{used} m² of panels on {roof} m² of roof", ro: "{used} m² de panouri pe {roof} m² de acoperiș", ru: "{used} м² панелей на {roof} м² крыши", uk: "{used} м² панелей на {roof} м² даху" },
+  price: { en: "System price", ro: "Preț sistem", ru: "Цена системы", uk: "Ціна системи" },
+  payback: { en: "Pays back in", ro: "Se recuperează în", ru: "Окупается за", uk: "Окуповується за" },
+  co2: { en: "CO₂ avoided", ro: "CO₂ evitat", ru: "Меньше CO₂", uk: "Менше CO₂" },
+  perYear: { en: "{t} t a year", ro: "{t} t pe an", ru: "{t} т в год", uk: "{t} т на рік" },
+  noFit: { en: "No panel fits. Draw the outline larger, or lower the distance from the roof edge.", ro: "Niciun panou nu încape. Desenează conturul mai mare sau micșorează distanța față de margine.", ru: "Ни одна панель не помещается. Увеличьте контур или уменьшите отступ от края.", uk: "Жодна панель не вміщається. Збільште контур або зменште відступ від краю." },
+  apply: { en: "Use {n} in the quote", ro: "Folosește {n} în ofertă", ru: "Перенести в предложение: {n}", uk: "Перенести в розрахунок: {n}" },
+  applying: { en: "Updating the quote", ro: "Se actualizează oferta", ru: "Обновляем предложение", uk: "Оновлюємо розрахунок" },
+};
+
+function makeT(lang) {
+  return (k, vars) => {
+    const e = TX[k];
+    let s = e ? (e[lang] || e.en) : k;
+    if (vars) for (const [a, b] of Object.entries(vars)) s = s.split("{" + a + "}").join(String(b));
+    return s;
+  };
 }
 
-// Real Google satellite tiles, via the official Maps JavaScript API (never
-// raw mt0/mt1.google.com tile URLs — those aren't licensed for direct use
-// outside that API and Google actively blocks scraped traffic). Any failure
-// — bad key, network, billing not enabled on the installer's own Google
-// Cloud project — resolves to null so the caller falls back to Esri instead
-// of leaving the map blank.
-async function loadGoogleSatelliteLayer(L, key) {
-  try {
-    await loadGoogleMapsScript(key);
-    await import("leaflet.gridlayer.googlemutant");
-    return L.gridLayer.googleMutant({ type: "satellite", maxZoom: 21 });
-  } catch {
-    return null;
+// "18 panels" / "18 panouri" / "20 de panouri" / "18 панелей" / "3 панелі"
+function panelsNoun(n, lang) {
+  if (lang === "ru" || lang === "uk") {
+    const m10 = n % 10, m100 = n % 100;
+    return m10 === 1 && m100 !== 11 ? "панель" : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? (lang === "uk" ? "панелі" : "панели") : "панелей";
   }
+  if (lang === "ro") return n === 1 ? "panou" : n >= 20 && (n % 100 === 0 || n % 100 >= 20) ? "de panouri" : "panouri";
+  return n === 1 ? "panel" : "panels";
 }
+function yearsLabel(y, lang) {
+  if (y == null) return lang === "ro" ? "25+ ani" : lang === "ru" ? "25+ лет" : lang === "uk" ? "25+ років" : "25+ years";
+  const v = y.toLocaleString({ ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB", { maximumFractionDigits: 1 });
+  if (lang === "uk") {
+    // 7,4 року; 5 років; 2 роки; 1 рік
+    const r = Math.round(y * 10) / 10;
+    if (!Number.isInteger(r)) return `${v} року`;
+    const f = new Intl.PluralRules("uk").select(r);
+    return `${v} ${f === "one" ? "рік" : f === "few" ? "роки" : "років"}`;
+  }
+  return lang === "ro" ? `${v} ani` : lang === "ru" ? `${v} года` : `${v} years`;
+}
+
+/* ------------------------------------------------------------ constants --- */
+const PLANE_STYLE = { color: "#2E9A5E", weight: 2, fillColor: "#2E9A5E", fillOpacity: 0.16 };
+const PLANE_ON = { color: "#E89B2D", weight: 3, fillColor: "#E89B2D", fillOpacity: 0.14 };
+const OBSTACLE_STYLE = { color: "#C4543B", weight: 2, fillColor: "#C4543B", fillOpacity: 0.35 };
+const TREE_STYLE = { color: "#6E8F3E", weight: 2, fillColor: "#6E8F3E", fillOpacity: 0.35 };
 
 // Matches lib/supplierCatalog.js's ROOF_TYPE_MOUNT_TEST keys exactly, so a
-// plane's chosen roof type maps straight to a real, verified mount SKU (or
-// honestly to none, for "flat" — see that file's own comment).
+// plane's chosen roof type maps straight to a real, verified mount SKU.
 const ROOF_TYPES = ["tile", "trapezoidal", "standingSeam", "flat", "ground"];
 const ROOF_TYPE_LABEL = {
-  tile: { ro: "Țiglă", en: "Tile", ru: "Черепица" },
-  trapezoidal: { ro: "Tablă cutată", en: "Trapezoidal sheet", ru: "Профлист" },
-  standingSeam: { ro: "Falț stâlp", en: "Standing-seam metal", ru: "Фальцевая кровля" },
-  flat: { ro: "Terasă (acoperiș plat)", en: "Flat roof / terrace", ru: "Плоская крыша" },
-  ground: { ro: "Sol / carport", en: "Ground / carport", ru: "Грунт / навес" },
+  tile: { ro: "Țiglă", en: "Tile", ru: "Черепица", uk: "Черепиця" },
+  trapezoidal: { ro: "Tablă cutată", en: "Trapezoidal sheet", ru: "Профлист", uk: "Профнастил" },
+  standingSeam: { ro: "Tablă fălțuită", en: "Standing-seam metal", ru: "Фальцевая кровля", uk: "Фальцева покрівля" },
+  flat: { ro: "Terasă (acoperiș plat)", en: "Flat roof or terrace", ru: "Плоская крыша", uk: "Плаский дах або тераса" },
+  ground: { ro: "Sol sau carport", en: "Ground or carport", ru: "Грунт или навес", uk: "Ґрунт або навіс" },
 };
 
 const OBSTACLE_KINDS = ["chimney", "vent", "dormer", "tree", "other"];
 const KIND_LABEL = {
-  chimney: { ro: "Coș", en: "Chimney", ru: "Дымоход" },
-  vent: { ro: "Ventilație", en: "Vent", ru: "Вентиляция" },
-  dormer: { ro: "Lucarnă", en: "Dormer", ru: "Слуховое окно" },
-  tree: { ro: "Copac", en: "Tree", ru: "Дерево" },
-  other: { ro: "Altul", en: "Other", ru: "Другое" },
+  chimney: { ro: "Coș", en: "Chimney", ru: "Дымоход", uk: "Димар" },
+  vent: { ro: "Ventilație", en: "Vent", ru: "Вентиляция", uk: "Вентиляція" },
+  dormer: { ro: "Lucarnă", en: "Dormer", ru: "Слуховое окно", uk: "Слухове вікно" },
+  tree: { ro: "Copac", en: "Tree", ru: "Дерево", uk: "Дерево" },
+  other: { ro: "Altceva", en: "Something else", ru: "Другое", uk: "Інше" },
 };
 
-// Draggable, cosmetic-only points for a lightweight single-line layout —
-// real electrical validation lives in the separate String Designer.
+// Draggable points for a lightweight single-line layout; real electrical
+// validation lives in the separate String Designer.
 const MARKER_TYPES = ["mainPanel", "meter", "inverter", "secondaryPanel"];
 const MARKER_LABEL = {
-  mainPanel: { ro: "Tablou principal", en: "Main panel", ru: "Главный щит" },
-  meter: { ro: "Contor", en: "Meter", ru: "Счётчик" },
-  inverter: { ro: "Invertor", en: "Inverter", ru: "Инвертор" },
-  secondaryPanel: { ro: "Tablou secundar", en: "Secondary panel", ru: "Доп. щит" },
+  mainPanel: { ro: "Tablou principal", en: "Main panel", ru: "Главный щит", uk: "Головний щит" },
+  meter: { ro: "Contor", en: "Meter", ru: "Счётчик", uk: "Лічильник" },
+  inverter: { ro: "Invertor", en: "Inverter", ru: "Инвертор", uk: "Інвертор" },
+  secondaryPanel: { ro: "Tablou secundar", en: "Secondary panel", ru: "Доп. щит", uk: "Дод. щит" },
 };
 const MARKER_ABBR = { mainPanel: "TP", meter: "C", inverter: "INV", secondaryPanel: "TS" };
 
-// Same per-market kg CO2/kWh factors as PrintSheet.jsx's MKT table, kept as a
-// separate copy rather than an import so this modal's bundle doesn't pull in
-// the whole PDF-rendering module for three numbers.
+// The eight ways a roof can face, as PVGIS azimuths (0 = south, -90 = east),
+// laid out as a compass: north at the top.
+const DIRS = [
+  { az: 135, en: "NW", ro: "NV", ru: "СЗ", uk: "ПнЗх" }, { az: 180, en: "N", ro: "N", ru: "С", uk: "Пн" }, { az: -135, en: "NE", ro: "NE", ru: "СВ", uk: "ПнСх" },
+  { az: 90, en: "W", ro: "V", ru: "З", uk: "Зх" }, null, { az: -90, en: "E", ro: "E", ru: "В", uk: "Сх" },
+  { az: 45, en: "SW", ro: "SV", ru: "ЮЗ", uk: "ПдЗх" }, { az: 0, en: "S", ro: "S", ru: "Ю", uk: "Пд" }, { az: -45, en: "SE", ro: "SE", ru: "ЮВ", uk: "ПдСх" },
+];
+const angleGap = (a, b) => Math.abs((((a - b) % 360) + 540) % 360 - 180);
+const nearestDir = (az) => DIRS.filter(Boolean).reduce((best, d) => (angleGap(d.az, az) < angleGap(best.az, az) ? d : best));
+
+// Same per-market kg CO2/kWh factors as PrintSheet.jsx's MKT table.
 const CO2_FACTOR = { RO: 0.30, MD: 0.40, DE: 0.35 };
 
+const PIN_SVG = `<svg class="sd-pin" viewBox="0 0 32 40" aria-hidden="true"><path d="M16 39s13-12.4 13-23A13 13 0 0 0 3 16c0 10.6 13 23 13 23z" fill="#E89B2D" stroke="#fff" stroke-width="2"/><path d="M10.5 17.5 16 13l5.5 4.5V23h-3.6v-3.4h-3.8V23h-3.6z" fill="#142A21"/></svg>`;
+
 function uid() { return Math.random().toString(36).slice(2, 10); }
-
-function planePopupHtml(layer, lang) {
-  const tilt = layer._sdTilt ?? 35;
-  const az = layer._sdAzimuth ?? 0;
-  const roofType = layer._sdRoofType || "tile";
-  const roofOpts = ROOF_TYPES.map((k) =>
-    `<option value="${k}"${k === roofType ? " selected" : ""}>${ROOF_TYPE_LABEL[k][lang] || ROOF_TYPE_LABEL[k].ro}</option>`
-  ).join("");
-  // A drag can't land on an exact degree — a paired number box lets the
-  // installer type a figure from a real site survey instead of hunting for
-  // it on the slider.
-  return `<div class="sd-pop">
-    <div class="sd-pop-row">
-      <label>${t3(lang, "Tip acoperiș", "Roof material", "Тип крыши")}</label>
-      <select class="sd-pop-roof">${roofOpts}</select>
-    </div>
-    <div class="sd-pop-row">
-      <label>${t3(lang, "Înclinare", "Tilt", "Наклон")}</label>
-      <div class="sd-pop-inrow">
-        <input type="range" class="sd-pop-tilt" min="0" max="60" step="1" value="${tilt}">
-        <input type="number" class="sd-pop-tiltnum" min="0" max="60" step="1" value="${Math.round(tilt)}">
-      </div>
-    </div>
-    <div class="sd-pop-row">
-      <label>${t3(lang, "Orientare", "Azimuth", "Азимут")}</label>
-      <div class="sd-pop-inrow">
-        <input type="range" class="sd-pop-az" min="-180" max="180" step="5" value="${az}">
-        <input type="number" class="sd-pop-aznum" min="-180" max="180" step="5" value="${Math.round(az)}">
-      </div>
-      <span class="sd-pop-val sd-pop-azval">${compassLabel(az, lang)}</span>
-    </div>
-  </div>`;
-}
-
-function obstaclePopupHtml(layer, lang) {
-  const kind = layer._sdObstacleKind || "chimney";
-  const opts = OBSTACLE_KINDS.map((k) =>
-    `<option value="${k}"${k === kind ? " selected" : ""}>${KIND_LABEL[k][lang] || KIND_LABEL[k].ro}</option>`
-  ).join("");
-  return `<div class="sd-pop">
-    <div class="sd-pop-row">
-      <label>${t3(lang, "Tip obstacol", "Obstacle type", "Тип препятствия")}</label>
-      <select class="sd-pop-kind">${opts}</select>
-    </div>
-  </div>`;
-}
-
-function markerPopupHtml(lang) {
-  return `<div class="sd-pop">
-    <button type="button" class="sd-pop-remove">${t3(lang, "Șterge markerul", "Remove marker", "Удалить маркер")}</button>
-  </div>`;
-}
-
-function ringToLatLon(layer) {
-  const ring = layer.getLatLngs()[0] || [];
-  return ring.map((ll) => [ll.lat, ll.lng]);
-}
-
+function ringToLatLon(layer) { return (layer.getLatLngs()[0] || []).map((ll) => [ll.lat, ll.lng]); }
 function centroidOf(ring) {
   let sx = 0, sy = 0;
   for (const [a, b] of ring) { sx += a; sy += b; }
   return [sx / ring.length, sy / ring.length];
 }
-
-// A circle drawn by geoman is converted to a plain polygon ring immediately
-// on creation, so it flows through the exact same obstacle pipeline
-// (fitPanels, storage, redraw) as a hand-drawn polygon obstacle — no second
-// shape type anywhere downstream.
+// A circle drawn by geoman becomes a plain polygon ring at once, so a tree
+// flows through the same obstacle pipeline as any other shape.
 function circleToRing(center, radiusM, n) {
   const R = 6371000;
   const latRad = (center.lat * Math.PI) / 180;
@@ -182,15 +234,8 @@ function circleToRing(center, radiusM, n) {
   }
   return ring;
 }
-
-// A plain flat-blue rectangle doesn't read as "a solar panel" at a glance.
-// This defines one shared SVG pattern — a small cell grid with a soft
-// highlight, sized as a fraction of each shape's own bounding box (so it
-// automatically fits any panel's rectangle regardless of zoom or panel
-// size) — reused as the fill for every placed panel instead of a per-panel
-// texture, so drawing hundreds of panels costs the same as drawing hundreds
-// of plain rectangles. Not a claim about the selected module's real cell
-// count/layout — just enough texture to read as a module from above.
+// One shared SVG pattern (a small cell grid with a soft highlight) as the fill
+// for every placed panel, so hundreds of panels cost the same as plain shapes.
 function ensurePanelPattern(map) {
   const svg = map.getPanes().overlayPane.querySelector("svg");
   if (!svg || svg.querySelector("#sdPanelCells")) return;
@@ -215,22 +260,58 @@ function ensurePanelPattern(map) {
   pattern.appendChild(bg); pattern.appendChild(shine); pattern.appendChild(grid);
   defs.appendChild(pattern);
 }
-
-// Screen-upright bearing (degrees) from a to b, via the same local-meters
-// projection fitPanels uses — accurate enough at roof scale, and stable
-// under Leaflet's own pan/zoom since it never rotates the map itself.
+// Screen-upright bearing (degrees) from a to b, so an edge's length label
+// runs along the edge and is never upside-down.
 function edgeAngleDeg(a, b) {
   const [p0, p1] = project([a, b], a[0], a[1]);
-  const dx = p1[0] - p0[0], dy = p1[1] - p0[1];
-  let deg = (Math.atan2(-dy, dx) * 180) / Math.PI;
-  if (deg > 90 || deg < -90) deg += 180; // keep the label upright, never upside-down
+  let deg = (Math.atan2(-(p1[1] - p0[1]), p1[0] - p0[0]) * 180) / Math.PI;
+  if (deg > 90 || deg < -90) deg += 180;
   return deg;
 }
 
+let googleMapsScriptPromise = null;
+function loadGoogleMapsScript(key) {
+  if (window.google?.maps) return Promise.resolve();
+  if (!googleMapsScriptPromise) {
+    googleMapsScriptPromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}`;
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("google maps script failed to load"));
+      document.head.appendChild(s);
+    });
+  }
+  return googleMapsScriptPromise;
+}
+// Any failure (bad key, network, billing off) resolves to null, so the map
+// falls back to Esri instead of staying blank.
+async function loadGoogleSatelliteLayer(L, key) {
+  try {
+    await loadGoogleMapsScript(key);
+    await import("leaflet.gridlayer.googlemutant");
+    return L.gridLayer.googleMutant({ type: "satellite", maxZoom: 21 });
+  } catch {
+    return null;
+  }
+}
+
+const clampNum = (v, lo, hi) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo; };
+const savedNum = (v, d) => (v === "" || v == null || !Number.isFinite(Number(v)) ? d : Number(v));
+
+/* ============================================================ component === */
 export default function SiteDesigner({
-  lang, lat, lon, siteDesign, onChange, onApply, applying = false,
-  projectInputs = {}, onComputeQuote,
+  lang, lat, lon, address = "", siteDesign, onChange, onApply, applying = false,
+  projectInputs = {}, onComputeQuote, onClose, money,
 }) {
+  const tr = useMemo(() => makeT(lang), [lang]);
+  const L3 = (o) => o[lang] || o.en;
+  const fmtMoney = money || ((n) => "€" + Math.round(n).toLocaleString("en-IE"));
+  const loc = { en: "en-GB", ru: "ru-RU", uk: "uk-UA" }[lang] || "ro-RO";
+  const nf = (n, d = 0) => Number(n).toLocaleString(loc, { maximumFractionDigits: d, minimumFractionDigits: d });
+
+  const shellRef = useRef(null);
+  const stageRef = useRef(null);
   const mapEl = useRef(null);
   const mapRef = useRef(null);
   const Lref = useRef(null);
@@ -239,213 +320,309 @@ export default function SiteDesigner({
   const markerLayers = useRef(new Map());
   const panelGroupRef = useRef(null);
   const dimensionGroupRef = useRef(null);
-  const pendingKind = useRef(null);
-  const pendingMarkerType = useRef(null);
-  const measuringRef = useRef(false);
-  const measurePtsRef = useRef([]);
   const measureLayerRef = useRef(null);
+  const measurePtsRef = useRef([]);
+  const pendingKind = useRef(null);
+  const toolRef = useRef(null);
+  const markerTypeRef = useRef("mainPanel");
+  const selectedRef = useRef(null);
   const showDimensionsRef = useRef(true);
-  const debounceTimer = useRef(null);
-  const runAutoLayoutRef = useRef(null);
-  const renderDimensionLabelsRef = useRef(null);
-  const undoRef = useRef(null);
-  const redoRef = useRef(null);
-  const historyRef = useRef([]);
-  const historyIndexRef = useRef(-1);
-  const restoringRef = useRef(false);
+  const layoutTimer = useRef(null);
+  const commitTimer = useRef(null);
+  const api = useRef({});
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [counts, setCounts] = useState({ planes: 0, obstacles: 0, markers: 0 });
-  const [layout, setLayout] = useState(null);
-
-  const [selectedPanelId, setSelectedPanelId] = useState(() => recommendPanel().id);
-  const [orientation, setOrientation] = useState("portrait");
-  const [rowSpacingCm, setRowSpacingCm] = useState(2);
-  const [colSpacingCm, setColSpacingCm] = useState(2);
-  const [setbackCm, setSetbackCm] = useState(30);
-  const [clusterMaxW, setClusterMaxW] = useState(0);
-  const [clusterMaxH, setClusterMaxH] = useState(0);
-  const [clusterGap, setClusterGap] = useState(0);
+  const [tool, setTool] = useState(null);
   const [markerType, setMarkerType] = useState("mainPanel");
-  const [measuring, setMeasuring] = useState(false);
   const [measureResult, setMeasureResult] = useState(null);
   const [showDimensions, setShowDimensions] = useState(true);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  measuringRef.current = measuring;
+  const [shapes, setShapes] = useState({ planes: [], obstacles: [], markers: [] });
+  const [selectedId, setSelectedId] = useState(null);
+  const [layout, setLayout] = useState(null);
+  const [step, setStep] = useState(1);
+  markerTypeRef.current = markerType;
 
+  // The panel and spacing: what was saved with this roof, else the panel in
+  // the quote's equipment list, else the best one in stock.
+  const saved = siteDesign?.layout && typeof siteDesign.layout === "object" ? siteDesign.layout : {};
+  const bomPanelId = useMemo(() => {
+    try {
+      const d = designCheck({ bom: Array.isArray(projectInputs?.bom) ? projectInputs.bom : [], kw: Number(projectInputs?.kw) || 0 });
+      return d.fromBom.panel ? d.panel.id : null;
+    } catch { return null; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [panelId, setPanelId] = useState(() => (PANELS.some((x) => x.id === saved.panelId) ? saved.panelId : bomPanelId || recommendPanel().id));
+  const [orientation, setOrientation] = useState(() => (["portrait", "landscape", "auto"].includes(saved.orientation) ? saved.orientation : "portrait"));
+  const [rowSpacingCm, setRowSpacingCm] = useState(() => savedNum(saved.rowSpacingCm, 2));
+  const [colSpacingCm, setColSpacingCm] = useState(() => savedNum(saved.colSpacingCm, 2));
+  const [setbackCm, setSetbackCm] = useState(() => savedNum(saved.setbackCm, 30));
+  const [clusterMaxW, setClusterMaxW] = useState(() => savedNum(saved.clusterMaxW, 0));
+  const [clusterMaxH, setClusterMaxH] = useState(() => savedNum(saved.clusterMaxH, 0));
+  const [clusterGap, setClusterGap] = useState(() => savedNum(saved.clusterGap, 0));
+  const settings = { panelId, orientation, rowSpacingCm, colSpacingCm, setbackCm, clusterMaxW, clusterMaxH, clusterGap };
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+
+  /* ------------------------------------------------------------ the map --- */
   useEffect(() => {
     let cancelled = false;
+    const history = { list: [], index: -1, restoring: false };
 
+    function styleOf(layer) {
+      const on = layer._sdId === selectedRef.current;
+      if (layer._sdKind === "plane") return on ? PLANE_ON : PLANE_STYLE;
+      const base = layer._sdObstacleKind === "tree" ? TREE_STYLE : OBSTACLE_STYLE;
+      return on ? { ...base, weight: 4 } : base;
+    }
+    function restyle() {
+      for (const l of planeLayers.current.values()) l.setStyle(styleOf(l));
+      for (const l of obstacleLayers.current.values()) l.setStyle(styleOf(l));
+      for (const [id, m] of markerLayers.current) m.getElement()?.querySelector(".sd-mk")?.classList.toggle("on", id === selectedRef.current);
+    }
+
+    function selectFromMap(ev, id) {
+      // While drawing or measuring, a click on a shape belongs to that tool.
+      if (toolRef.current && toolRef.current !== "edit") return;
+      Lref.current.DomEvent.stop(ev);
+      setSelectedId(id);
+      setStep(planeLayers.current.has(id) ? 1 : 2);
+    }
     function placeMarker(latlng, type, id) {
       const L = Lref.current;
       const icon = L.divIcon({
-        className: "sd-marker-wrap",
-        html: `<div class="sd-marker-dot">${MARKER_ABBR[type] || "?"}</div>`,
-        iconSize: [24, 24], iconAnchor: [12, 12],
+        className: "sd-mk-wrap",
+        html: `<span class="sd-mk">${MARKER_ABBR[type] || "?"}</span>`,
+        iconSize: [30, 30], iconAnchor: [15, 15],
       });
-      const m = L.marker(latlng, { icon, draggable: true }).addTo(mapRef.current);
       const mid = id || uid();
+      const m = L.marker(latlng, { icon, draggable: true, pmIgnore: true, title: L3(MARKER_LABEL[type] || MARKER_LABEL.mainPanel) }).addTo(mapRef.current);
       m._sdMarkerType = type; m._sdId = mid;
-      // Native Leaflet dragging only — geoman auto-patches every layer type it
-      // supports, and its own drag/edit machinery would otherwise fight the
-      // simple dragend handler this needs.
-      if (m.pm && typeof m.pm.disable === "function") m.pm.disable();
-      m.bindPopup(markerPopupHtml(lang));
-      m.on("dragend", () => syncToParent());
+      m.on("dragend", () => commit({ geometry: false }));
+      m.on("click", (ev) => selectFromMap(ev, mid));
       markerLayers.current.set(mid, m);
       return m;
     }
-
-    function attachPlane(layer, id, tiltDeg, azimuthDeg, roofType) {
+    function attachPlane(layer, id, { tilt = 35, az = 0, roofType = "tile", guessed = false } = {}) {
       layer._sdKind = "plane"; layer._sdId = id;
-      layer._sdTilt = tiltDeg ?? 35; layer._sdAzimuth = azimuthDeg ?? 0;
+      layer._sdTilt = clampNum(tilt, 0, 60); layer._sdAzimuth = clampNum(az, -180, 180);
       layer._sdRoofType = ROOF_TYPES.includes(roofType) ? roofType : "tile";
-      layer.setStyle?.(PLANE_STYLE);
-      layer.bindPopup(planePopupHtml(layer, lang));
+      layer._sdAzGuess = guessed;
+      layer.setStyle(styleOf(layer));
+      // geoman fires its edit events on the shape itself, never on the map
+      layer.on("pm:edit", () => commit({ geometry: true }));
+      layer.on("click", (ev) => selectFromMap(ev, id));
       planeLayers.current.set(id, layer);
     }
     function attachObstacle(layer, id, kind) {
       layer._sdKind = "obstacle"; layer._sdId = id;
-      layer._sdObstacleKind = kind || "chimney";
-      layer.setStyle?.(layer._sdObstacleKind === "tree" ? TREE_STYLE : OBSTACLE_STYLE);
-      layer.bindPopup(obstaclePopupHtml(layer, lang));
+      layer._sdObstacleKind = OBSTACLE_KINDS.includes(kind) ? kind : "chimney";
+      layer.setStyle(styleOf(layer));
+      layer.on("pm:edit", () => commit({ geometry: true }));
+      layer.on("click", (ev) => selectFromMap(ev, id));
       obstacleLayers.current.set(id, layer);
     }
 
-    // Every edge of every drawn plane/obstacle, labeled with its real length —
-    // recomputed from the live geometry, never stored, so it can never drift
-    // from what's actually drawn.
+    // Every edge of every drawn shape, labelled with its real length:
+    // recomputed from the live geometry, never stored.
     function renderDimensionLabels() {
       const map = mapRef.current, L = Lref.current;
       if (!map || !L) return;
       if (!dimensionGroupRef.current) dimensionGroupRef.current = L.layerGroup().addTo(map);
       dimensionGroupRef.current.clearLayers();
-      if (!showDimensionsRef.current) return;
-      const shapes = [...planeLayers.current.values(), ...obstacleLayers.current.values()];
-      for (const layer of shapes) {
+      if (!showDimensionsRef.current || map.getZoom() < 18) return;
+      for (const layer of [...planeLayers.current.values(), ...obstacleLayers.current.values()]) {
         const ring = ringToLatLon(layer);
         for (let i = 0; i < ring.length; i++) {
           const a = ring[i], b = ring[(i + 1) % ring.length];
           const lengthM = map.distance(L.latLng(a), L.latLng(b));
-          const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-          const deg = edgeAngleDeg(a, b);
+          // an edge too short on screen for its label would only bury the shape
+          if (map.latLngToContainerPoint(a).distanceTo(map.latLngToContainerPoint(b)) < 48) continue;
           const icon = L.divIcon({
             className: "sd-dim-icon",
-            html: `<div class="sd-dim-label" style="transform:rotate(${deg.toFixed(1)}deg)">${lengthM.toFixed(1)}m</div>`,
-            iconSize: [50, 18], iconAnchor: [25, 9],
+            html: `<div class="sd-dim-label" style="transform:rotate(${edgeAngleDeg(a, b).toFixed(1)}deg)">${nf(lengthM, 1)} m</div>`,
+            iconSize: [56, 18], iconAnchor: [28, 9],
           });
-          L.marker(mid, { icon, interactive: false }).addTo(dimensionGroupRef.current);
+          L.marker([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], { icon, interactive: false, pmIgnore: true, keyboard: false }).addTo(dimensionGroupRef.current);
         }
       }
     }
-    renderDimensionLabelsRef.current = renderDimensionLabels;
 
-    function currentSnapshot() {
-      const planes = [...planeLayers.current.entries()].map(([id, layer]) => ({
-        id, polygon: ringToLatLon(layer), tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0,
-        roofType: layer._sdRoofType || "tile",
-      }));
-      const obstacles = [...obstacleLayers.current.entries()].map(([id, layer]) => ({
-        id, polygon: ringToLatLon(layer), kind: layer._sdObstacleKind || "chimney",
-      }));
-      const markers = [...markerLayers.current.entries()].map(([id, layer]) => {
-        const ll = layer.getLatLng();
-        return { id, type: layer._sdMarkerType, lat: ll.lat, lon: ll.lng };
-      });
-      return { planes, obstacles, markers };
+    function snapshotShapes() {
+      return {
+        planes: [...planeLayers.current.entries()].map(([id, l]) => ({
+          id, polygon: ringToLatLon(l), tiltDeg: l._sdTilt, azimuthDeg: l._sdAzimuth, roofType: l._sdRoofType,
+        })),
+        obstacles: [...obstacleLayers.current.entries()].map(([id, l]) => ({ id, polygon: ringToLatLon(l), kind: l._sdObstacleKind })),
+        markers: [...markerLayers.current.entries()].map(([id, m]) => { const ll = m.getLatLng(); return { id, type: m._sdMarkerType, lat: ll.lat, lon: ll.lng }; }),
+      };
     }
-
+    // React's copy of what is on the map, for the side panel.
+    function mirror() {
+      setShapes({
+        planes: [...planeLayers.current.entries()].map(([id, l]) => ({
+          id, tilt: l._sdTilt, az: l._sdAzimuth, roofType: l._sdRoofType, guessed: !!l._sdAzGuess, area: polygonAreaM2(ringToLatLon(l)),
+        })),
+        obstacles: [...obstacleLayers.current.entries()].map(([id, l]) => ({ id, kind: l._sdObstacleKind })),
+        markers: [...markerLayers.current.entries()].map(([id, m]) => ({ id, type: m._sdMarkerType })),
+      });
+    }
     function clearAllLayers() {
       const map = mapRef.current;
-      for (const layer of planeLayers.current.values()) map.removeLayer(layer);
-      for (const layer of obstacleLayers.current.values()) map.removeLayer(layer);
-      for (const layer of markerLayers.current.values()) map.removeLayer(layer);
+      for (const l of planeLayers.current.values()) map.removeLayer(l);
+      for (const l of obstacleLayers.current.values()) map.removeLayer(l);
+      for (const l of markerLayers.current.values()) map.removeLayer(l);
       planeLayers.current.clear(); obstacleLayers.current.clear(); markerLayers.current.clear();
     }
-
-    // Shared by the initial mount redraw AND undo/redo — one code path that
-    // turns a stored/historical {planes,obstacles,markers} snapshot into
-    // real map layers.
+    // Shared by the first draw and by undo/redo: a stored snapshot becomes map layers.
     function loadSnapshot(snap) {
+      const L = Lref.current, map = mapRef.current;
       clearAllLayers();
       (snap?.planes || []).forEach((pl) => {
         if (!Array.isArray(pl.polygon) || pl.polygon.length < 3) return;
-        const layer = Lref.current.polygon(pl.polygon.map(([a, b]) => [a, b])).addTo(mapRef.current);
-        attachPlane(layer, pl.id || uid(), pl.tiltDeg, pl.azimuthDeg, pl.roofType);
+        attachPlane(L.polygon(pl.polygon).addTo(map), pl.id || uid(), { tilt: pl.tiltDeg ?? 35, az: pl.azimuthDeg ?? 0, roofType: pl.roofType });
       });
       (snap?.obstacles || []).forEach((ob) => {
         if (!Array.isArray(ob.polygon) || ob.polygon.length < 3) return;
-        const layer = Lref.current.polygon(ob.polygon.map(([a, b]) => [a, b])).addTo(mapRef.current);
-        attachObstacle(layer, ob.id || uid(), ob.kind);
+        attachObstacle(L.polygon(ob.polygon).addTo(map), ob.id || uid(), ob.kind);
       });
       (snap?.markers || []).forEach((mk) => {
         if (mk.lat == null || mk.lon == null || !MARKER_ABBR[mk.type]) return;
         placeMarker([mk.lat, mk.lon], mk.type, mk.id);
       });
-      setCounts({
-        planes: planeLayers.current.size, obstacles: obstacleLayers.current.size,
-        markers: markerLayers.current.size,
-      });
+      if (selectedRef.current && !planeLayers.current.has(selectedRef.current) && !obstacleLayers.current.has(selectedRef.current) && !markerLayers.current.has(selectedRef.current)) setSelectedId(null);
+      mirror();
       renderDimensionLabels();
     }
 
     function pushHistory(snap) {
-      if (restoringRef.current) return;
-      const trimmed = historyRef.current.slice(0, historyIndexRef.current + 1);
-      trimmed.push(snap);
-      while (trimmed.length > 50) trimmed.shift();
-      historyRef.current = trimmed;
-      historyIndexRef.current = trimmed.length - 1;
-      setCanUndo(historyIndexRef.current > 0);
+      if (history.restoring) return;
+      history.list = history.list.slice(0, history.index + 1);
+      history.list.push(snap);
+      while (history.list.length > 60) history.list.shift();
+      history.index = history.list.length - 1;
+      setCanUndo(history.index > 0);
       setCanRedo(false);
     }
-
-    function restoreHistoryStep(nextIndex) {
-      restoringRef.current = true;
-      historyIndexRef.current = nextIndex;
-      const snap = historyRef.current[nextIndex];
-      loadSnapshot(snap);
-      onChangeRef.current?.(snap);
-      restoringRef.current = false;
-      setCanUndo(historyIndexRef.current > 0);
-      setCanRedo(historyIndexRef.current < historyRef.current.length - 1);
-      clearTimeout(debounceTimer.current);
-      debounceTimer.current = setTimeout(() => runAutoLayoutRef.current?.(), 400);
+    function restoreHistoryStep(i) {
+      history.restoring = true;
+      history.index = i;
+      loadSnapshot(history.list[i]);
+      onChangeRef.current?.({ ...history.list[i], layout: settingsRef.current });
+      history.restoring = false;
+      setCanUndo(history.index > 0);
+      setCanRedo(history.index < history.list.length - 1);
+      scheduleLayout(0);
     }
-    function undo() { if (historyIndexRef.current > 0) restoreHistoryStep(historyIndexRef.current - 1); }
-    function redo() { if (historyIndexRef.current < historyRef.current.length - 1) restoreHistoryStep(historyIndexRef.current + 1); }
-    undoRef.current = undo;
-    redoRef.current = redo;
+    const undo = () => { if (history.index > 0) restoreHistoryStep(history.index - 1); };
+    const redo = () => { if (history.index < history.list.length - 1) restoreHistoryStep(history.index + 1); };
 
-    function syncToParent() {
-      const snap = currentSnapshot();
-      setCounts({ planes: snap.planes.length, obstacles: snap.obstacles.length, markers: snap.markers.length });
-      onChangeRef.current?.(snap);
+    // Something changed on the roof: save it, remember it for undo, and
+    // refit the panels. A moved outline drops the old panels at once (so a
+    // stale layout never looks current) and refits after a short pause.
+    function commit({ geometry }) {
+      const snap = snapshotShapes();
+      mirror();
+      onChangeRef.current?.({ ...snap, layout: settingsRef.current });
       renderDimensionLabels();
       pushHistory(snap);
-      // The geometry moved — any previously fitted panel layout no longer
-      // reflects what's actually drawn. Clear the drawing immediately (so a
-      // stale layout never looks current) but recompute the real numbers
-      // after a short pause, so a mid-drag isn't spending real CPU on every
-      // frame.
-      panelGroupRef.current?.clearLayers();
-      clearTimeout(debounceTimer.current);
-      debounceTimer.current = setTimeout(() => runAutoLayoutRef.current?.(), 400);
+      if (geometry) panelGroupRef.current?.clearLayers();
+      scheduleLayout(geometry ? 350 : 0);
+    }
+    function scheduleLayout(ms) {
+      clearTimeout(layoutTimer.current);
+      layoutTimer.current = setTimeout(() => api.current.runLayout?.(), ms);
     }
 
+    function endTool() {
+      const map = mapRef.current;
+      if (map) {
+        map.pm.disableDraw();
+        if (map.pm.globalEditModeEnabled()) map.pm.disableGlobalEditMode();
+        map.getContainer().style.cursor = "";
+      }
+      pendingKind.current = null;
+      measurePtsRef.current = [];
+      if (measureLayerRef.current && map) { map.removeLayer(measureLayerRef.current); measureLayerRef.current = null; }
+      toolRef.current = null;
+      setTool(null);
+      setMeasureResult(null);
+    }
+    function startTool(next) {
+      endTool();
+      const map = mapRef.current;
+      if (!next || !map) return;
+      if (next === "plane" || next === "obstacle") {
+        pendingKind.current = next;
+        map.pm.enableDraw("Polygon", { pathOptions: next === "plane" ? PLANE_ON : OBSTACLE_STYLE, snappable: true, snapDistance: 14, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
+      } else if (next === "tree") {
+        map.pm.enableDraw("Circle", { pathOptions: TREE_STYLE, snappable: true });
+      } else if (next === "measure" || next === "marker") {
+        map.getContainer().style.cursor = next === "measure" ? "crosshair" : "copy";
+      } else if (next === "edit") {
+        map.pm.enableGlobalEditMode({ allowSelfIntersection: false, snappable: true });
+      }
+      toolRef.current = next;
+      setTool(next);
+    }
+
+    function removeShape(id) {
+      const map = mapRef.current;
+      const l = planeLayers.current.get(id) || obstacleLayers.current.get(id) || markerLayers.current.get(id);
+      if (!l || !map) return;
+      map.removeLayer(l);
+      planeLayers.current.delete(id); obstacleLayers.current.delete(id); markerLayers.current.delete(id);
+      if (selectedRef.current === id) setSelectedId(null);
+      commit({ geometry: true });
+    }
+    function focusShape(id) {
+      const map = mapRef.current;
+      const l = planeLayers.current.get(id) || obstacleLayers.current.get(id);
+      if (l && map) map.fitBounds(l.getBounds(), { padding: [70, 70], maxZoom: 20 });
+      const m = markerLayers.current.get(id);
+      if (m && map) map.panTo(m.getLatLng());
+    }
+    function recenter() {
+      const map = mapRef.current, L = Lref.current;
+      if (!map || !L) return;
+      if (planeLayers.current.size) map.fitBounds(L.featureGroup([...planeLayers.current.values()]).getBounds(), { padding: [70, 70], maxZoom: 20 });
+      else map.setView([lat, lon], 19);
+    }
+    function updatePlane(id, patch) {
+      const l = planeLayers.current.get(id);
+      if (!l) return;
+      if (patch.tilt != null && Number.isFinite(patch.tilt)) l._sdTilt = Math.round(clampNum(patch.tilt, 0, 60));
+      if (patch.az != null && Number.isFinite(patch.az)) { l._sdAzimuth = Math.round(clampNum(patch.az, -180, 180)); l._sdAzGuess = false; }
+      if (patch.roofType) l._sdRoofType = patch.roofType;
+      mirror();
+      // a slider sends many small moves: save and remember the last one
+      clearTimeout(commitTimer.current);
+      commitTimer.current = setTimeout(() => commit({ geometry: false }), 280);
+    }
+    function updateObstacle(id, kind) {
+      const l = obstacleLayers.current.get(id);
+      if (!l) return;
+      l._sdObstacleKind = kind;
+      l.setStyle(styleOf(l));
+      commit({ geometry: false });
+    }
+    function setDimensions(on) {
+      showDimensionsRef.current = on;
+      renderDimensionLabels();
+    }
+    api.current = { ...api.current, undo, redo, startTool, endTool, removeShape, focusShape, recenter, updatePlane, updateObstacle, restyle, setDimensions, snapshotShapes, scheduleLayout };
+
     async function init() {
-      // leaflet-geoman-free's dist bundle references a bare, unimported `L`
-      // (it's built to run after Leaflet's own <script> tag, which used to set
-      // window.L as a side effect) — it never imports Leaflet itself. Loading
-      // it as an ES module via a bundler skips that side effect, so its
-      // top-level `L.PM.initialize()` throws "L is not defined" the instant
-      // it's evaluated, aborting this whole function before setReady(true)
-      // ever runs — the map then sits on "Loading satellite imagery…" forever
-      // with no visible error. Leaflet must be imported AND published to
-      // window.L first, in that order, before geoman is imported at all.
+      // leaflet-geoman's bundle expects a global `L` (it was built to run after
+      // Leaflet's own <script> tag), so Leaflet is imported and published to
+      // window.L first, then geoman.
       const { default: L } = await import("leaflet");
       if (cancelled || !mapEl.current) return;
       window.L = L;
@@ -454,153 +631,92 @@ export default function SiteDesigner({
       if (cancelled || !mapEl.current) return;
       Lref.current = L;
 
-      const map = L.map(mapEl.current, { zoomControl: true }).setView([lat, lon], 18);
-      mapRef.current = map; // set early: loadSnapshot/clearAllLayers below read it via the ref
+      const map = L.map(mapEl.current, { zoomControl: false, maxZoom: 21 }).setView([lat, lon], 19);
+      mapRef.current = map;
+      L.control.zoom({ position: "bottomright" }).addTo(map);
+      map.pm.setLang(lang === "ru" ? "ru" : lang === "uk" ? "ua" : lang === "ro" ? "ro" : "en");
 
       const googleKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
       const googleLayer = googleKey ? await loadGoogleSatelliteLayer(L, googleKey) : null;
-      if (googleLayer) {
-        googleLayer.addTo(map);
-      } else {
-        // Esri's real imagery resolution varies a lot by place — most of
-        // RO/MD has nothing past ~z18, and requesting further just gets back
-        // Esri's own "Map data not yet available" filler tile. maxNativeZoom
-        // stops fetching there and lets Leaflet upscale that last real tile
-        // instead, so zooming in shows a blurrier roof rather than a blank
-        // grid.
-        L.tileLayer(
-          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-          { maxZoom: 21, maxNativeZoom: 18, attribution: "Tiles &copy; Esri" }
-        ).addTo(map);
+      if (googleLayer) googleLayer.addTo(map);
+      else {
+        // Esri has nothing past ~z18 over most of Moldova and Romania, so it
+        // stops fetching there and upscales the last real tile instead of
+        // showing its "no data" filler.
+        L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          { maxZoom: 21, maxNativeZoom: 18, attribution: "Tiles &copy; Esri" }).addTo(map);
       }
       if (cancelled || !mapEl.current) return;
-      L.marker([lat, lon]).addTo(map);
+      L.marker([lat, lon], {
+        icon: L.divIcon({ className: "sd-pin-wrap", html: PIN_SVG, iconSize: [32, 40], iconAnchor: [16, 39] }),
+        interactive: false, keyboard: false, pmIgnore: true, zIndexOffset: -100,
+      }).addTo(map);
 
-      map.pm.addControls({
-        position: "topleft",
-        drawMarker: false, drawCircleMarker: false, drawCircle: false,
-        drawPolyline: false, drawRectangle: false, drawText: false,
-        drawPolygon: false, // we supply our own shape buttons below the map
-        editMode: true, dragMode: true, removalMode: true,
-        cutPolygon: false, rotateMode: false,
-      });
-
-      // Redraw whatever was already saved for this project, then seed the
-      // undo history so the very first undo step returns to this baseline.
       loadSnapshot(siteDesign);
-      historyRef.current = [currentSnapshot()];
-      historyIndexRef.current = 0;
+      history.list = [snapshotShapes()];
+      history.index = 0;
       setCanUndo(false); setCanRedo(false);
+      if (planeLayers.current.size) map.fitBounds(L.featureGroup([...planeLayers.current.values()]).getBounds(), { padding: [70, 70], maxZoom: 20 });
 
       map.on("pm:create", (e) => {
+        const id = uid();
         if (e.shape === "Polygon") {
           const kind = pendingKind.current || "plane";
-          pendingKind.current = null;
-          map.pm.disableDraw("Polygon");
-          if (kind === "plane") attachPlane(e.layer, uid());
-          else attachObstacle(e.layer, uid());
-          syncToParent();
+          if (kind === "plane") {
+            const ring = ringToLatLon(e.layer);
+            const prev = [...planeLayers.current.values()].pop();
+            const az = facingFromShape(ring);
+            attachPlane(e.layer, id, { tilt: prev?._sdTilt ?? 35, az: az ?? 0, roofType: prev?._sdRoofType || "tile", guessed: az != null });
+          } else {
+            attachObstacle(e.layer, id, "chimney");
+          }
         } else if (e.shape === "Circle") {
-          map.pm.disableDraw("Circle");
-          const center = e.layer.getLatLng();
-          const radiusM = e.layer.getRadius();
+          const ring = circleToRing(e.layer.getLatLng(), e.layer.getRadius(), 24);
           map.removeLayer(e.layer);
-          const ring = circleToRing(center, radiusM, 24);
-          const poly = L.polygon(ring).addTo(map);
-          attachObstacle(poly, uid(), "tree");
-          syncToParent();
-        }
-      });
-      map.on("pm:remove", (e) => {
-        const id = e.layer?._sdId;
-        if (id) {
-          planeLayers.current.delete(id); obstacleLayers.current.delete(id); markerLayers.current.delete(id);
-          syncToParent();
-        }
-      });
-      map.on("pm:edit pm:dragend pm:markerdragend pm:vertexadded pm:vertexremoved", (e) => {
-        if (e.layer?._sdKind) syncToParent();
-      });
-      map.on("click", (e) => {
-        if (pendingMarkerType.current) {
-          const type = pendingMarkerType.current;
-          pendingMarkerType.current = null;
-          map.getContainer().style.cursor = "";
-          placeMarker(e.latlng, type);
-          syncToParent();
+          attachObstacle(L.polygon(ring).addTo(map), id, "tree");
+        } else {
           return;
         }
-        if (measuringRef.current) {
+        endTool();
+        selectedRef.current = id;
+        setSelectedId(id);
+        setStep(planeLayers.current.has(id) ? 1 : 2);
+        restyle();
+        commit({ geometry: true });
+      });
+      map.on("click", (e) => {
+        const t = toolRef.current;
+        if (t === "marker") {
+          const id = uid();
+          placeMarker(e.latlng, markerTypeRef.current, id);
+          endTool();
+          selectedRef.current = id;
+          setSelectedId(id);
+          setStep(2);
+          restyle();
+          commit({ geometry: false });
+          return;
+        }
+        if (t === "measure") {
           measurePtsRef.current.push(e.latlng);
+          if (measureLayerRef.current) { map.removeLayer(measureLayerRef.current); measureLayerRef.current = null; }
           if (measurePtsRef.current.length === 1) {
-            if (measureLayerRef.current) map.removeLayer(measureLayerRef.current);
-            measureLayerRef.current = L.circleMarker(e.latlng, { radius: 4, color: "#2E5BFF" }).addTo(map);
+            setMeasureResult(null);
+            measureLayerRef.current = L.circleMarker(e.latlng, { radius: 5, color: "#fff", weight: 2, fillColor: "#E89B2D", fillOpacity: 1, pmIgnore: true, interactive: false }).addTo(map);
           } else {
             const [p1, p2] = measurePtsRef.current;
-            if (measureLayerRef.current) map.removeLayer(measureLayerRef.current);
-            measureLayerRef.current = L.polyline([p1, p2], { color: "#2E5BFF", weight: 2, dashArray: "5 5" }).addTo(map);
+            measureLayerRef.current = L.polyline([p1, p2], { color: "#E89B2D", weight: 3, dashArray: "6 6", pmIgnore: true, interactive: false }).addTo(map);
             setMeasureResult(map.distance(p1, p2));
             measurePtsRef.current = [];
           }
-        }
-      });
-      map.on("popupopen", (e) => {
-        const layer = e.popup._source;
-        if (layer?._sdMarkerType) {
-          const el = e.popup.getElement();
-          const btn = el.querySelector(".sd-pop-remove");
-          if (btn) btn.onclick = () => {
-            map.removeLayer(layer);
-            markerLayers.current.delete(layer._sdId);
-            syncToParent();
-          };
           return;
         }
-        if (!layer?._sdKind) return;
-        const el = e.popup.getElement();
-        if (layer._sdKind === "plane") {
-          const roofEl = el.querySelector(".sd-pop-roof");
-          if (roofEl) roofEl.onchange = () => { layer._sdRoofType = roofEl.value; syncToParent(); };
-          const tiltEl = el.querySelector(".sd-pop-tilt");
-          const azEl = el.querySelector(".sd-pop-az");
-          const tiltNum = el.querySelector(".sd-pop-tiltnum");
-          const azNum = el.querySelector(".sd-pop-aznum");
-          const azVal = el.querySelector(".sd-pop-azval");
-          // Slider and number box both drive the same value — typing a
-          // figure moves the slider too, and vice versa, so neither goes
-          // stale while the popup is open.
-          const setTilt = (v) => {
-            layer._sdTilt = v;
-            if (tiltEl) tiltEl.value = v;
-            if (tiltNum) tiltNum.value = Math.round(v);
-            syncToParent();
-          };
-          const setAz = (v) => {
-            layer._sdAzimuth = v;
-            if (azEl) azEl.value = v;
-            if (azNum) azNum.value = Math.round(v);
-            if (azVal) azVal.textContent = compassLabel(v, lang);
-            syncToParent();
-          };
-          if (tiltEl) tiltEl.oninput = () => setTilt(+tiltEl.value);
-          if (tiltNum) tiltNum.oninput = () => { const v = +tiltNum.value; if (!Number.isNaN(v)) setTilt(Math.min(60, Math.max(0, v))); };
-          if (azEl) azEl.oninput = () => setAz(+azEl.value);
-          if (azNum) azNum.oninput = () => { const v = +azNum.value; if (!Number.isNaN(v)) setAz(Math.min(180, Math.max(-180, v))); };
-        } else if (layer._sdKind === "obstacle") {
-          const sel = el.querySelector(".sd-pop-kind");
-          if (sel) sel.onchange = () => {
-            layer._sdObstacleKind = sel.value;
-            layer.setStyle?.(sel.value === "tree" ? TREE_STYLE : OBSTACLE_STYLE);
-            syncToParent();
-          };
-        }
+        if (!t) setSelectedId(null);
       });
+      map.on("zoomend", renderDimensionLabels);
 
       setReady(true);
-      // Show real numbers immediately for a roof that was already drawn on a
-      // previous visit, instead of waiting for the installer to press the
-      // button again.
-      if (planeLayers.current.size > 0) setTimeout(() => runAutoLayoutRef.current?.(), 50);
+      if (planeLayers.current.size) scheduleLayout(50);
     }
 
     init().catch((e) => {
@@ -611,125 +727,121 @@ export default function SiteDesigner({
 
     return () => {
       cancelled = true;
-      clearTimeout(debounceTimer.current);
+      clearTimeout(layoutTimer.current);
+      clearTimeout(commitTimer.current);
       mapRef.current?.remove();
       mapRef.current = null;
       planeLayers.current.clear();
       obstacleLayers.current.clear();
       markerLayers.current.clear();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     };
-  }, []); // fresh mount every time the modal opens, at the address the project has right now
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // a fresh map each time the designer opens, at the address the quote has now
 
-  function startDraw(kind) {
-    pendingKind.current = kind;
-    mapRef.current?.pm.enableDraw("Polygon", {
-      pathOptions: kind === "plane" ? PLANE_STYLE : OBSTACLE_STYLE,
-      snappable: true, snapDistance: 12,
-    });
-  }
-  function startDrawCircle() {
-    mapRef.current?.pm.enableDraw("Circle", { pathOptions: TREE_STYLE, snappable: true });
-  }
-  function toggleMeasure() {
-    const map = mapRef.current;
-    const next = !measuring;
-    if (!next) {
-      if (measureLayerRef.current) { map?.removeLayer(measureLayerRef.current); measureLayerRef.current = null; }
-      measurePtsRef.current = [];
-    } else {
-      setMeasureResult(null);
-    }
-    setMeasuring(next);
-    if (map) map.getContainer().style.cursor = next ? "crosshair" : "";
-  }
-  function armMarkerPlacement() {
-    pendingMarkerType.current = markerType;
-    if (mapRef.current) mapRef.current.getContainer().style.cursor = "copy";
-  }
-  function toggleShowDimensions(checked) {
-    setShowDimensions(checked);
-    showDimensionsRef.current = checked;
-    renderDimensionLabelsRef.current?.();
-  }
+  // The map fills whatever space it is given: keep Leaflet's size in step
+  // (a phone turning, the side panel wrapping under the map).
+  useEffect(() => {
+    if (!mapEl.current || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => mapRef.current?.invalidateSize());
+    ro.observe(mapEl.current);
+    return () => ro.disconnect();
+  }, []);
 
-  // Fits the SELECTED panel into every drawn roof plane, skipping every
-  // obstacle — replacing autoBom's kw*1000/panelWatt guess with a real,
-  // physical count. Draws the result on the map so the installer can see
-  // what's assumed before applying it to the quote.
-  function runAutoLayout() {
+  // Selection: highlight on the map, bring the card into view.
+  useEffect(() => {
+    selectedRef.current = selectedId;
+    api.current.restyle?.();
+    if (selectedId) document.getElementById("sd-item-" + selectedId)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selectedId]);
+
+  // Fits the chosen module into every drawn side, skipping every obstacle,
+  // and draws rails and panels on the map.
+  function runLayout() {
     const L = Lref.current, map = mapRef.current;
     if (!L || !map) return;
-    if (planeLayers.current.size === 0) {
-      panelGroupRef.current?.clearLayers();
-      setLayout(null); // e.g. undo removed the only plane — don't leave a stale result on screen
-      return;
-    }
-    const panel = findPanel(selectedPanelId) || recommendPanel();
-    const { w, h } = panel.dimensionsMm || { w: 1909, h: 1134 };
-    const obstaclePolys = [...obstacleLayers.current.values()].map(ringToLatLon);
-    const fitOpts = {
-      orientation,
-      rowSpacingM: rowSpacingCm / 100,
-      colSpacingM: colSpacingCm / 100,
-      marginM: setbackCm / 100,
-      clusterMaxWidthM: clusterMaxW > 0 ? clusterMaxW : 0,
-      clusterMaxHeightM: clusterMaxH > 0 ? clusterMaxH : 0,
-      clusterGapM: clusterGap > 0 ? clusterGap : 0,
-    };
-
     if (!panelGroupRef.current) panelGroupRef.current = L.layerGroup().addTo(map);
     panelGroupRef.current.clearLayers();
+    if (planeLayers.current.size === 0) { setLayout(null); return; }
+    const s = settingsRef.current;
+    const panel = findPanel(s.panelId) || recommendPanel();
+    const { w, h } = panel.dimensionsMm || { w: 1909, h: 1134 };
+    const obstaclePolys = [...obstacleLayers.current.values()].map(ringToLatLon);
+    const opts = fitOptions(s);
     ensurePanelPattern(map);
 
-    let totalCount = 0;
+    let totalCount = 0, roofAreaM2 = 0;
     const perPlane = [];
     for (const [id, layer] of planeLayers.current) {
       const polygon = ringToLatLon(layer);
-      // Conventional portrait mounting: the panel's long side (w) runs
-      // up-slope, its short side (h) runs along the ridge — orientation/auto
-      // then decides which axis actually gets which side.
-      const { panels, count, rows } = fitPanels(polygon, obstaclePolys, h, w, fitOpts);
+      // Portrait: the panel's long side runs up the slope, its short side along the ridge.
+      const { panels, count, rows } = fitPanels(polygon, obstaclePolys, h, w, opts);
       totalCount += count;
+      const areaM2 = polygonAreaM2(polygon);
+      roofAreaM2 += areaM2;
       const [clat, clon] = centroidOf(polygon);
-      perPlane.push({
-        id, tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0,
-        roofType: layer._sdRoofType || "tile", lat: clat, lon: clon, count,
-      });
-      // Rails drawn first, panels on top — same real row geometry
-      // lib/mountingEstimate.js sizes the materials list from, just shown
-      // instead of counted.
+      perPlane.push({ id, tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0, roofType: layer._sdRoofType || "tile", lat: clat, lon: clon, count, areaM2 });
+      // rails first, panels on top: the same rows lib/mountingEstimate.js counts
       rows.forEach((r) => {
-        L.polyline(r.rail1, { color: "#5B6B7A", weight: 3, opacity: 0.85, interactive: false }).addTo(panelGroupRef.current);
-        L.polyline(r.rail2, { color: "#5B6B7A", weight: 3, opacity: 0.85, interactive: false }).addTo(panelGroupRef.current);
+        L.polyline(r.rail1, { color: "#5B6B7A", weight: 3, opacity: 0.85, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
+        L.polyline(r.rail2, { color: "#5B6B7A", weight: 3, opacity: 0.85, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
       });
       panels.forEach((corners) => {
-        L.polygon(corners, { color: "#B9C4CE", weight: 1, fillColor: "url(#sdPanelCells)", fillOpacity: 1, interactive: false })
-          .addTo(panelGroupRef.current);
+        L.polygon(corners, { color: "#B9C4CE", weight: 1, fillColor: "url(#sdPanelCells)", fillOpacity: 1, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
       });
     }
-    const kw = Math.round((totalCount * panel.watt / 1000) * 10) / 10;
-    setLayout({ totalCount, kw, perPlane, panelId: panel.id, panelBrand: panel.brand, panelModel: panel.model, panelWatt: panel.watt });
+    const kw = Math.round(((totalCount * panel.watt) / 1000) * 10) / 10;
+    setLayout({
+      totalCount, kw, perPlane, panelId: panel.id, panelBrand: panel.brand, panelModel: panel.model, panelWatt: panel.watt,
+      panelAreaM2: (totalCount * w * h) / 1e6, roofAreaM2,
+    });
   }
-  runAutoLayoutRef.current = runAutoLayout;
+  api.current.runLayout = runLayout;
 
-  // Any layout-affecting setting change recomputes automatically, same as a
-  // geometry edit — no separate "apply settings" step to remember.
+  // A changed panel or spacing refits at once and is saved with the roof,
+  // so the quote and the proposal fit panels the same way.
+  const settingsJson = JSON.stringify(settings);
+  const lastSettings = useRef(settingsJson);
   useEffect(() => {
-    if (!ready || planeLayers.current.size === 0) return;
-    clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => runAutoLayoutRef.current?.(), 400);
-    return () => clearTimeout(debounceTimer.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, selectedPanelId, orientation, rowSpacingCm, colSpacingCm, setbackCm, clusterMaxW, clusterMaxH, clusterGap]);
+    if (!ready || settingsJson === lastSettings.current) return;
+    lastSettings.current = settingsJson;
+    onChangeRef.current?.({ ...api.current.snapshotShapes(), layout: settingsRef.current });
+    api.current.scheduleLayout?.(200);
+  }, [ready, settingsJson]);
 
-  // Real payback/CO2 for the layout's own kWp — same engine call the main
-  // quote uses, just with kw swapped, so the two can never disagree.
+  // Keyboard: Esc ends the tool (or closes), Ctrl+Z / Ctrl+Shift+Z undo and
+  // redo, Delete removes what is selected. Never while typing in a field.
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (toolRef.current) api.current.endTool?.();
+        else onCloseRef.current?.();
+        return;
+      }
+      if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target?.tagName || "")) return;
+      const k = e.key.toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); if (e.shiftKey) api.current.redo?.(); else api.current.undo?.(); }
+      else if ((e.ctrlKey || e.metaKey) && k === "y") { e.preventDefault(); api.current.redo?.(); }
+      else if ((e.key === "Delete" || e.key === "Backspace") && selectedRef.current && !toolRef.current) { e.preventDefault(); api.current.removeShape?.(selectedRef.current); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // The page behind stays put while the designer is open.
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    shellRef.current?.focus();
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  /* ------------------------------------------------------------ numbers --- */
+  // Real payback/CO2 for the layout's own kWp: the same engine call the
+  // quote uses, with only kw swapped, so the two can never disagree.
   const quoteResult = useMemo(
-    () => (layout && typeof onComputeQuote === "function" ? onComputeQuote(layout.kw) : null),
+    () => (layout && layout.totalCount > 0 && typeof onComputeQuote === "function" ? onComputeQuote(layout.kw) : null),
     [layout, onComputeQuote]);
-  const loc = lang === "en" ? "en-US" : lang === "ru" ? "ru-RU" : "ro-RO";
-  const fmtEur = (n) => "€" + Math.round(n).toLocaleString("en-IE");
   let bands = null, prodMonthly = null, consMonthly = null, co2Year = 0;
   if (quoteResult) {
     bands = { pess: quoteResult.p, expc: quoteResult.e, opti: quoteResult.o };
@@ -741,221 +853,388 @@ export default function SiteDesigner({
     consMonthly = (projectInputs?.useMonthly && Array.isArray(projectInputs.consMonthly) && projectInputs.consMonthly.length === 12)
       ? projectInputs.consMonthly.map((v) => Number(v) || 0)
       : new Array(12).fill(consEff / 12);
-    const co2Factor = CO2_FACTOR[projectInputs?.market] ?? CO2_FACTOR.RO;
-    co2Year = quoteResult.e.prod0 * co2Factor;
+    co2Year = quoteResult.e.prod0 * (CO2_FACTOR[projectInputs?.market] ?? CO2_FACTOR.MD);
   }
+  const countFor = (id) => layout?.perPlane.find((p) => p.id === id)?.count ?? null;
 
-  return (
-    <div className="sd-wrap">
-      <div className="sd-toolbar">
-        <button type="button" className="btn ghost sm" disabled={!ready || !canUndo}
-          onClick={() => undoRef.current?.()} title={t3(lang, "Anulează", "Undo", "Отменить")}>↶</button>
-        <button type="button" className="btn ghost sm" disabled={!ready || !canRedo}
-          onClick={() => redoRef.current?.()} title={t3(lang, "Refă", "Redo", "Повторить")}>↷</button>
-        <button type="button" className="btn ghost sm" onClick={() => startDraw("plane")}>
-          {t3(lang, "+ Acoperiș", "+ Roof plane", "+ Скат крыши")}
-        </button>
-        <button type="button" className="btn ghost sm" onClick={() => startDraw("obstacle")}>
-          {t3(lang, "+ Obstacol", "+ Obstacle", "+ Препятствие")}
-        </button>
-        <button type="button" className="btn ghost sm" onClick={startDrawCircle}>
-          {t3(lang, "+ Copac (cerc)", "+ Tree (circle)", "+ Дерево (круг)")}
-        </button>
-        <button type="button" className="btn amber sm" disabled={counts.planes === 0} onClick={runAutoLayout}>
-          {t3(lang, "Așază panourile automat", "Auto-layout panels", "Авторазмещение панелей")}
-        </button>
-        <span className="sd-counts">
-          {t3(lang, `${counts.planes} acoperiș(uri) · ${counts.obstacles} obstacol(e) · ${counts.markers} marker(e)`,
-            `${counts.planes} roof plane(s) · ${counts.obstacles} obstacle(s) · ${counts.markers} marker(s)`,
-            `${counts.planes} скат(ов) · ${counts.obstacles} препятствий · ${counts.markers} маркеров`)}
-        </span>
-      </div>
+  /* ------------------------------------------------------------- render --- */
+  // The map's own toolbar: the drawing tools, then the two that work on
+  // anything already drawn. Electrical points live in the Obstacles tab.
+  const TOOLS = [
+    { id: "plane", Icon: Pentagon, label: tr("t_plane") },
+    { id: "obstacle", Icon: Box, label: tr("t_obstacle") },
+    { id: "tree", Icon: TreeDeciduous, label: tr("t_tree") },
+    "sep",
+    { id: "measure", Icon: Ruler, label: tr("t_measure") },
+    { id: "edit", Icon: Move, label: tr("t_edit") },
+  ];
+  const TOOL_TAB = { plane: 1, obstacle: 2, tree: 2, marker: 2 };
+  const pick = (id) => {
+    const next = tool === id ? null : id;
+    if (next && TOOL_TAB[next]) setStep(TOOL_TAB[next]);
+    api.current.startTool?.(next);
+    // On a phone the tabs sit under the map: bring the map back into view to draw on.
+    const r = stageRef.current?.getBoundingClientRect();
+    if (next && r && (r.top < 0 || r.bottom > window.innerHeight + 1)) stageRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const hasPlanes = shapes.planes.length > 0;
+  const hasObstacles = shapes.obstacles.length > 0;
+  const hasPoints = shapes.markers.length > 0;
+  const fitsAny = !!layout && layout.totalCount > 0;
+  const tabDone = { 1: hasPlanes, 2: hasObstacles || hasPoints, 3: fitsAny };
+  const panel = findPanel(panelId);
 
-      <div className="sd-toolbar sd-toolbar2">
-        <label className="sd-inline">
-          {t3(lang, "Panou", "Module", "Модуль")}
-          <select className="sd-sel" value={selectedPanelId} onChange={(e) => setSelectedPanelId(e.target.value)}>
-            {PANELS.map((pnl) => (
-              <option key={pnl.id} value={pnl.id}>{pnl.brand} {pnl.model} · {pnl.watt}W</option>
-            ))}
-          </select>
-        </label>
-        <label className="sd-inline">
-          {t3(lang, "Orientare", "Orientation", "Ориентация")}
-          <select className="sd-sel" value={orientation} onChange={(e) => setOrientation(e.target.value)}>
-            <option value="portrait">{t3(lang, "Portret", "Portrait", "Портрет")}</option>
-            <option value="landscape">{t3(lang, "Peisaj", "Landscape", "Ландшафт")}</option>
-            <option value="auto">{t3(lang, "Automat (maxim)", "Auto (max fit)", "Авто (максимум)")}</option>
-          </select>
-        </label>
-        <label className="sd-check">
-          <input type="checkbox" checked={showDimensions} onChange={(e) => toggleShowDimensions(e.target.checked)} />
-          {t3(lang, "Arată dimensiunile", "Show dimensions", "Показать размеры")}
-        </label>
-      </div>
+  let hint = null;
+  if (tool === "plane") hint = tr("h_plane");
+  else if (tool === "obstacle") hint = tr("h_obstacle");
+  else if (tool === "tree") hint = tr("h_tree");
+  else if (tool === "measure") hint = tr("h_measure");
+  else if (tool === "marker") hint = tr("h_marker");
+  else if (tool === "edit") hint = tr("h_edit");
 
-      <div className="sd-toolbar sd-toolbar3">
-        <button type="button" className={"btn sm" + (measuring ? " amber" : " ghost")} onClick={toggleMeasure}>
-          {measuring
-            ? t3(lang, "Anulează măsurarea", "Cancel measuring", "Отменить измерение")
-            : t3(lang, "Măsoară distanța", "Measure distance", "Измерить расстояние")}
-        </button>
-        {measureResult != null && <span className="sd-measure-out">{measureResult.toFixed(1)} m</span>}
-        <label className="sd-inline">
-          <select className="sd-sel" value={markerType} onChange={(e) => setMarkerType(e.target.value)}>
-            {MARKER_TYPES.map((mt) => (
-              <option key={mt} value={mt}>{MARKER_LABEL[mt][lang] || MARKER_LABEL[mt].ro}</option>
-            ))}
-          </select>
-        </label>
-        <button type="button" className="btn ghost sm" onClick={armMarkerPlacement}>
-          {t3(lang, "+ Marker electric", "+ Electrical marker", "+ Электрический маркер")}
-        </button>
-      </div>
-
-      <div ref={mapEl} className="sd-map" />
-      {!ready && (
-        <div className="sd-loading">
-          {loadError
-            ? t3(lang, "Harta nu s-a putut încărca. Reîncearcă.", "The map failed to load. Try again.", "Не удалось загрузить карту. Попробуйте снова.")
-            : t3(lang, "Se încarcă imaginea satelitară…", "Loading satellite imagery…", "Загрузка изображения…")}
-        </div>
-      )}
-      {layout && (
-        <div className="sd-layout">
-          <div>
-            <b>{layout.totalCount}</b> {t3(lang, "panouri", "panels", "панелей")} · <b>{layout.kw}</b> kW
-            <span className="sd-layout-panel"> · {layout.panelBrand} {layout.panelModel}</span>
-            {layout.totalCount === 0 && (
-              <div className="sd-layout-empty">
-                {t3(lang, "Niciun panou nu încape — verifică dimensiunile acoperișului sau obstacolele.",
-                  "No panel fits — check the roof size or the obstacles.",
-                  "Ни одна панель не помещается — проверьте размеры крыши или препятствия.")}
-              </div>
-            )}
-          </div>
-          <button type="button" className="btn primary sm" disabled={!layout.totalCount || applying}
-            onClick={() => onApply?.(layout)}>
-            {applying
-              ? t3(lang, "Se aplică…", "Applying…", "Применение…")
-              : t3(lang, "Aplică la ofertă", "Apply to quote", "Применить к предложению")}
+  // One roof side: a summary row, and when it is the one being worked on,
+  // its material, pitch and facing.
+  const planeCard = (pl, i) => {
+    const name = tr("plane", { n: i + 1 });
+    const open = selectedId === pl.id || shapes.planes.length === 1;
+    const dir = nearestDir(pl.az);
+    const count = countFor(pl.id);
+    return (
+      <article key={pl.id} id={"sd-item-" + pl.id} className={"sd-plane" + (selectedId === pl.id ? " on" : "")}>
+        <div className="sd-plane-top">
+          <button type="button" className="sd-plane-name" onClick={() => { setSelectedId(pl.id); api.current.focusShape?.(pl.id); }} aria-expanded={open}>
+            <i className="sd-swatch" aria-hidden="true" />
+            <span>
+              <b>{name}</b>
+              <small>{tr("planeSum", { a: nf(pl.area, 0), tilt: pl.tilt, dir: compassLabel(pl.az, lang).toLowerCase() })}</small>
+            </span>
+          </button>
+          {count != null && <span className="sd-plane-fit">{count} {panelsNoun(count, lang)}</span>}
+          <button type="button" className="sd-ibtn del" onClick={() => api.current.removeShape?.(pl.id)} aria-label={tr("del", { name })} title={tr("del", { name })}>
+            <Trash2 size={17} />
           </button>
         </div>
-      )}
-
-      <details className="sd-adv">
-        <summary>{t3(lang, "Distanțare și grupare avansată", "Advanced spacing & clustering", "Расширенные настройки")}</summary>
-        <div className="sd-adv-grid">
-          <label>{t3(lang, "Distanță rânduri (cm)", "Row spacing (cm)", "Расст. рядов (см)")}
-            <input type="number" min="0" max="20" value={rowSpacingCm} onChange={(e) => setRowSpacingCm(+e.target.value || 0)} /></label>
-          <label>{t3(lang, "Distanță module (cm)", "Module spacing (cm)", "Расст. модулей (см)")}
-            <input type="number" min="0" max="20" value={colSpacingCm} onChange={(e) => setColSpacingCm(+e.target.value || 0)} /></label>
-          <label>{t3(lang, "Retragere margine (cm)", "Edge setback (cm)", "Отступ от края (см)")}
-            <input type="number" min="0" max="100" value={setbackCm} onChange={(e) => setSetbackCm(+e.target.value || 0)} /></label>
-          <label>{t3(lang, "Lățime max. grup (m)", "Max cluster width (m)", "Макс. ширина группы (м)")}
-            <input type="number" min="0" max="30" value={clusterMaxW} onChange={(e) => setClusterMaxW(+e.target.value || 0)} placeholder="0" /></label>
-          <label>{t3(lang, "Înălțime max. grup (m)", "Max cluster height (m)", "Макс. высота группы (м)")}
-            <input type="number" min="0" max="30" value={clusterMaxH} onChange={(e) => setClusterMaxH(+e.target.value || 0)} placeholder="0" /></label>
-          <label>{t3(lang, "Interval între grupuri (m)", "Gap between clusters (m)", "Промежуток между группами (м)")}
-            <input type="number" min="0" max="10" step="0.1" value={clusterGap} onChange={(e) => setClusterGap(+e.target.value || 0)} placeholder="0" /></label>
-        </div>
-        <p className="sd-adv-hint">
-          {t3(lang, "Lasă lățimea/înălțimea grupului pe 0 pentru un singur câmp continuu de panouri.",
-            "Leave cluster width/height at 0 for one continuous panel field.",
-            "Оставьте ширину/высоту группы на 0 для одного сплошного поля панелей.")}
-        </p>
-      </details>
-
-      {layout && quoteResult && (
-        <div className="sd-results">
-          <div className="sd-results-kpis">
-            <div><b>{layout.totalCount}</b><span>{t3(lang, "panouri", "panels", "панелей")}</span></div>
-            <div><b>{layout.kw}</b><span>kWp</span></div>
-            <div><b>{fmtEur(quoteResult.e.cost)}</b><span>{t3(lang, "cost estimat", "estimated cost", "ориент. стоимость")}</span></div>
-            <div><b>{quoteResult.e.payback == null ? "25+" : quoteResult.e.payback.toFixed(1)}</b>
-              <span>{t3(lang, "ani recuperare (mediu)", "yrs payback (expected)", "лет окупаемости")}</span></div>
-            <div><b>{Math.round(co2Year).toLocaleString(loc)} kg</b><span>CO₂ / {t3(lang, "an", "year", "год")}</span></div>
-          </div>
-          <div className="sd-chart-wrap">
-            <div className="sd-chart-box">
-              <h5>{t3(lang, "Producție lunară", "Monthly production", "Ежемесячная выработка")}</h5>
-              <MonthlySVG prod={prodMonthly} cons={consMonthly} lang={lang} loc={loc} />
+        {open && (
+          <div className="sd-plane-body">
+            <label className="sd-field">
+              <span className="sd-lbl">{tr("material")}</span>
+              <select className="sd-select" value={pl.roofType} onChange={(e) => api.current.updatePlane?.(pl.id, { roofType: e.target.value })}>
+                {ROOF_TYPES.map((k) => <option key={k} value={k}>{L3(ROOF_TYPE_LABEL[k])}</option>)}
+              </select>
+            </label>
+            <div className="sd-field">
+              <span className="sd-lbl-row">
+                <span className="sd-lbl" id={"sd-pitch-" + pl.id}>{tr("pitch")}</span>
+                <span className="sd-numwrap">
+                  <input type="number" className="sd-num" min="0" max="60" step="1" value={pl.tilt} aria-labelledby={"sd-pitch-" + pl.id}
+                    onChange={(e) => e.target.value !== "" && api.current.updatePlane?.(pl.id, { tilt: +e.target.value })} />
+                  <span className="sd-unit">°</span>
+                </span>
+              </span>
+              <input type="range" className="sd-slider" min="0" max="60" step="1" value={pl.tilt} aria-labelledby={"sd-pitch-" + pl.id}
+                style={{ "--fill": (pl.tilt / 60) * 100 + "%" }} onChange={(e) => api.current.updatePlane?.(pl.id, { tilt: +e.target.value })} />
+              <span className="sd-scale" aria-hidden="true"><span>0° {tr("flat")}</span><span>30°</span><span>60°</span></span>
             </div>
-            <div className="sd-chart-box">
-              <h5>{t3(lang, "Flux de numerar", "Cashflow", "Денежный поток")}</h5>
-              <CashflowSVG bands={bands} cost={quoteResult.e.cost} horizon={quoteResult.e.horizon} lang={lang} money={fmtEur} />
+            <div className="sd-field">
+              <span className="sd-lbl">{tr("facing")}</span>
+              <div className="sd-compass-row">
+                <div className="sd-compass" role="radiogroup" aria-label={tr("facing")}>
+                  {DIRS.map((d, k) => d ? (
+                    <button key={k} type="button" role="radio" aria-checked={dir.az === d.az} className={"sd-dir" + (dir.az === d.az ? " on" : "")}
+                      onClick={() => api.current.updatePlane?.(pl.id, { az: d.az })} title={compassLabel(d.az, lang)}>{d[lang] || d.en}</button>
+                  ) : (
+                    <span key={k} className="sd-compass-mid" aria-hidden="true">
+                      {/* points down the slope: facing south points down the compass */}
+                      <svg width="24" height="24" viewBox="0 0 24 24" style={{ transform: `rotate(${pl.az + 180}deg)` }}>
+                        <path d="M12 3 L18 15 H13.5 V21 H10.5 V15 H6 Z" fill="currentColor" />
+                      </svg>
+                    </span>
+                  ))}
+                </div>
+                <div className="sd-compass-side">
+                  <b>{tr("facesDir", { dir: compassLabel(pl.az, lang) })}</b>
+                  <label className="sd-field">
+                    <span className="sd-lbl">{tr("exact")}</span>
+                    <span className="sd-numwrap">
+                      <input type="number" className="sd-num" min="-180" max="180" step="5" value={pl.az}
+                        onChange={(e) => e.target.value !== "" && e.target.value !== "-" && api.current.updatePlane?.(pl.id, { az: +e.target.value })} />
+                      <span className="sd-unit">°</span>
+                    </span>
+                  </label>
+                  <span className="sd-note">{tr("exactHelp")}</span>
+                </div>
+              </div>
+              {pl.guessed && <p className="sd-guess"><Info size={15} aria-hidden="true" />{tr("guessed")}</p>}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </article>
+    );
+  };
 
-      <p className="sd-hint">
-        {t3(lang,
-          "Desenează conturul unui acoperiș (click pe fiecare colț, apoi click pe primul punct pentru a termina). Apasă pe o formă ca să-i setezi înclinarea și orientarea, sau tipul obstacolului.",
-          "Draw a roof plane's outline (click each corner, then click the first point to finish). Click a shape to set its tilt/azimuth, or an obstacle's type.",
-          "Обведите контур ската крыши (щёлкайте по углам, затем по первой точке, чтобы завершить). Щёлкните форму, чтобы задать наклон/азимут или тип препятствия.")}
-      </p>
-      <style dangerouslySetInnerHTML={{ __html: `
-        .sd-modal{width:min(1080px,96vw)}
-        .sd-wrap{position:relative}
-        .sd-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-        .sd-toolbar2,.sd-toolbar3{display:flex;align-items:center;gap:14px;margin-bottom:10px;flex-wrap:wrap}
-        .sd-inline{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
-        .sd-check{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);cursor:pointer}
-        .sd-check input{cursor:pointer}
-        .sd-sel{padding:4px 6px;font-size:12.5px;border:1px solid #ccc;border-radius:6px;color-scheme:light;
-          background:#fff;color:#222;max-width:220px}
-        .sd-measure-out{font-size:12.5px;font-weight:600;color:#2E5BFF;font-variant-numeric:tabular-nums}
-        .sd-counts{font-size:12px;color:var(--muted);margin-left:auto}
-        .sd-map{width:100%;height:520px;border-radius:12px;overflow:hidden;background:#e8e8e8}
-        .sd-loading{position:absolute;inset:0;display:grid;place-items:center;font-size:13px;color:var(--muted);
-          background:rgba(255,255,255,.6);pointer-events:none}
-        .sd-hint{font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.5}
-        .sd-layout{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;
-          padding:10px 13px;background:var(--paper,#f5f5f0);border:1px solid var(--line,#ddd);border-radius:10px;
-          font-size:13.5px;flex-wrap:wrap}
-        .sd-layout-panel{color:var(--muted);font-size:12px}
-        .sd-layout-empty{font-size:12px;color:#B4472F;margin-top:3px}
-        .sd-adv{margin-top:10px;font-size:12.5px}
-        .sd-adv summary{cursor:pointer;color:var(--muted)}
-        .sd-adv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px}
-        .sd-adv-grid label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:#555}
-        .sd-adv-grid input{padding:4px 6px;font-size:12.5px;border:1px solid #ccc;border-radius:6px;color-scheme:light;
-          background:#fff;color:#222;font-variant-numeric:tabular-nums}
-        .sd-adv-hint{color:var(--muted);font-size:11.5px;margin-top:6px}
-        .sd-marker-dot{width:24px;height:24px;border-radius:50%;background:#B4472F;color:#fff;display:flex;
-          align-items:center;justify-content:center;font-size:9px;font-weight:700;border:2px solid #fff;
-          box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:move}
-        .sd-dim-label{background:rgba(20,20,20,.82);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;
-          border-radius:4px;white-space:nowrap;display:inline-block;font-variant-numeric:tabular-nums}
-        .sd-results{margin-top:16px;border-top:1px solid var(--line,#ddd);padding-top:14px}
-        .sd-results-kpis{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px}
-        .sd-results-kpis div{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)}
-        .sd-results-kpis b{font-size:16px;font-variant-numeric:tabular-nums}
-        .sd-chart-wrap{display:flex;gap:16px;flex-wrap:wrap}
-        .sd-chart-box{flex:1;min-width:280px}
-        .sd-chart-box h5{font-size:12px;color:var(--muted);margin:0 0 6px}
-        .sd-chart-box .p-chart{width:100%;height:auto;display:block;border:1px solid #E5E2D6;border-radius:8px;background:#FCFBF7}
-        .sd-pop{min-width:200px;font-size:12.5px}
-        .sd-pop-row{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
-        .sd-pop-row:last-child{margin-bottom:0}
-        .sd-pop-row label{font-weight:600;color:#333}
-        /* The popup itself is Leaflet's own chrome — always white, regardless
-           of the app's own light/dark theme — but a plain native input still
-           takes its dark/light rendering from the PAGE's color-scheme, not
-           the popup's background. Pin it, or these go dark-on-dark under the
-           app's dark mode. */
-        .sd-pop-row select{width:100%;padding:4px;font-size:12.5px;color-scheme:light;
-          background:#fff;color:#222;border:1px solid #ccc;border-radius:6px}
-        .sd-pop-remove{width:100%;padding:6px;font-size:12px;color:#B4472F;background:#fff;
-          border:1px solid #B4472F;border-radius:6px;cursor:pointer}
-        .sd-pop-val{font-variant-numeric:tabular-nums;color:#555}
-        .sd-pop-inrow{display:flex;align-items:center;gap:8px}
-        .sd-pop-inrow input[type=range]{flex:1;min-width:0}
-        .sd-pop-inrow input[type=number]{width:52px;flex:none;text-align:right;font-size:12.5px;
-          padding:3px 5px;border:1px solid #ccc;border-radius:6px;font-variant-numeric:tabular-nums;
-          color-scheme:light;background:#fff;color:#222}
-      ` }} />
+  return (
+    <div className="sd-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose?.(); }}>
+      <section className="sd-shell" role="dialog" aria-modal="true" aria-labelledby="sd-title" ref={shellRef} tabIndex={-1}>
+        <header className="sd-head">
+          <span className="sd-head-ic" aria-hidden="true"><House size={20} /></span>
+          <div className="sd-head-tx">
+            <h2 id="sd-title">{tr("title")}</h2>
+            <p>{address || tr("noAddress")}</p>
+          </div>
+          <div className="sd-head-acts">
+            <button type="button" className="sd-ibtn" disabled={!ready || !canUndo} onClick={() => api.current.undo?.()}
+              aria-label={tr("undo")} title={tr("undo") + " (Ctrl+Z)"}><Undo2 size={19} /></button>
+            <button type="button" className="sd-ibtn" disabled={!ready || !canRedo} onClick={() => api.current.redo?.()}
+              aria-label={tr("redo")} title={tr("redo") + " (Ctrl+Shift+Z)"}><Redo2 size={19} /></button>
+            <span className="sd-head-sep" aria-hidden="true" />
+            <button type="button" className="sd-ibtn" onClick={() => onClose?.()} aria-label={tr("close")} title={tr("close") + " (Esc)"}><X size={20} /></button>
+          </div>
+        </header>
+
+        <div className="sd-body">
+          {/* ------------------------------------------------------ map */}
+          <div className="sd-stage" ref={stageRef}>
+            <div ref={mapEl} className="sd-map" />
+            {ready && (
+              <div className="sd-tools" role="toolbar" aria-label={tr("tools")}>
+                {TOOLS.map((tl, i) => tl === "sep"
+                  ? <span key={"sep" + i} className="sd-tool-sep" aria-hidden="true" />
+                  : (
+                    <button key={tl.id} type="button" className={"sd-tool" + (tool === tl.id ? " on" : "")} aria-pressed={tool === tl.id}
+                      onClick={() => pick(tl.id)} title={tl.label}>
+                      <tl.Icon size={18} aria-hidden="true" /><span>{tl.label}</span>
+                    </button>
+                  ))}
+              </div>
+            )}
+            {hint && (
+              <div className="sd-hint" role="status">
+                <div className="sd-hint-tx">
+                  {tool === "measure" && measureResult != null ? tr("h_measured", { d: nf(measureResult, 2) }) : hint}
+                  {tool === "marker" && (
+                    <div className="sd-hint-types" role="radiogroup" aria-label={tr("t_marker")}>
+                      {MARKER_TYPES.map((mt) => (
+                        <button key={mt} type="button" role="radio" aria-checked={markerType === mt} className={markerType === mt ? "on" : ""}
+                          onClick={() => setMarkerType(mt)}>{L3(MARKER_LABEL[mt])}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button type="button" className="sd-hint-end" onClick={() => api.current.endTool?.()}>
+                  {tool === "edit" || tool === "measure" ? tr("done") : tr("cancel")}
+                </button>
+              </div>
+            )}
+            {ready && (
+              <div className="sd-mapctl">
+                <button type="button" className={"sd-chip" + (showDimensions ? " on" : "")} aria-pressed={showDimensions}
+                  onClick={() => { const on = !showDimensions; setShowDimensions(on); api.current.setDimensions?.(on); }}>
+                  <Eye size={16} aria-hidden="true" />{tr("lengths")}
+                </button>
+                <button type="button" className="sd-chip" onClick={() => api.current.recenter?.()}>
+                  <LocateFixed size={16} aria-hidden="true" />{tr("recenter")}
+                </button>
+              </div>
+            )}
+            {!ready && <div className="sd-loading" role="status">{loadError ? tr("loadError") : tr("loading")}</div>}
+          </div>
+
+          {/* --------------------------------------------- the three tabs */}
+          <aside className="sd-side">
+            <nav className="sd-tabs" role="tablist" aria-label={tr("title")}>
+              {[1, 2, 3].map((n) => (
+                <button key={n} type="button" role="tab" id={"sd-tab-" + n} aria-selected={step === n} aria-controls="sd-tabpanel"
+                  className={"sd-tab" + (step === n ? " on" : "") + (tabDone[n] ? " done" : "")} onClick={() => setStep(n)}>
+                  <span className="sd-tab-n" aria-hidden="true">{tabDone[n] ? <Check size={14} strokeWidth={3} /> : n}</span>
+                  <span className="sd-tab-tx">{tr("tab" + n)}</span>
+                </button>
+              ))}
+            </nav>
+
+            <div className="sd-scroll" id="sd-tabpanel" role="tabpanel" aria-labelledby={"sd-tab-" + step}>
+              {step === 1 && (
+                <>
+                  <header className="sd-step-h">
+                    <h3>{tr("st1h")}</h3>
+                    <p>{tr("st1p")}</p>
+                  </header>
+                  <button type="button" className={"sd-btn big" + (tool === "plane" ? " on" : " primary")} onClick={() => pick("plane")} disabled={!ready}>
+                    {tool === "plane"
+                      ? <><X size={19} aria-hidden="true" />{tr("drawCancel")}</>
+                      : <><Pentagon size={19} aria-hidden="true" />{hasPlanes ? tr("drawMore") : tr("drawFirst")}</>}
+                  </button>
+                  {(tool === "plane" || !hasPlanes) && (
+                    <ol className="sd-how">
+                      <li><span aria-hidden="true">1</span>{tr("how1")}</li>
+                      <li><span aria-hidden="true">2</span>{tr("how2")}</li>
+                      <li><span aria-hidden="true">3</span>{tr("how3")}</li>
+                    </ol>
+                  )}
+                  {hasPlanes && <div className="sd-cards">{shapes.planes.map(planeCard)}</div>}
+                  {hasPlanes && (
+                    <button type="button" className="sd-btn big" onClick={() => setStep(2)}>{tr("next2")}<ChevronRight size={19} aria-hidden="true" /></button>
+                  )}
+                </>
+              )}
+
+              {step === 2 && (
+                <>
+                  <header className="sd-step-h">
+                    <h3>{tr("st2h")}</h3>
+                    <p>{tr("st2p")}</p>
+                  </header>
+                  <div className="sd-pair">
+                    <button type="button" className={"sd-btn big" + (tool === "obstacle" ? " on" : "")} onClick={() => pick("obstacle")} disabled={!ready}>
+                      <Box size={19} aria-hidden="true" />{tr("addOb")}
+                    </button>
+                    <button type="button" className={"sd-btn big" + (tool === "tree" ? " on" : "")} onClick={() => pick("tree")} disabled={!ready}>
+                      <TreeDeciduous size={19} aria-hidden="true" />{tr("addTree")}
+                    </button>
+                  </div>
+                  {hasObstacles && (
+                    <ul className="sd-list">
+                      {shapes.obstacles.map((ob) => (
+                        <li key={ob.id} id={"sd-item-" + ob.id} className={"sd-row" + (selectedId === ob.id ? " on" : "")}>
+                          <button type="button" className={"sd-row-ic " + (ob.kind === "tree" ? "tree" : "ob")} onClick={() => { setSelectedId(ob.id); api.current.focusShape?.(ob.id); }}
+                            aria-label={L3(KIND_LABEL[ob.kind] || KIND_LABEL.other)}>
+                            {ob.kind === "tree" ? <TreeDeciduous size={17} aria-hidden="true" /> : <Box size={17} aria-hidden="true" />}
+                          </button>
+                          <select className="sd-select" value={ob.kind} onChange={(e) => api.current.updateObstacle?.(ob.id, e.target.value)} aria-label={tr("obstacles")}>
+                            {OBSTACLE_KINDS.map((k) => <option key={k} value={k}>{L3(KIND_LABEL[k])}</option>)}
+                          </select>
+                          <button type="button" className="sd-ibtn del" onClick={() => api.current.removeShape?.(ob.id)}
+                            aria-label={tr("del", { name: L3(KIND_LABEL[ob.kind] || KIND_LABEL.other) })}><Trash2 size={17} /></button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <div className="sd-sub">
+                    <div className="sd-sub-h">
+                      <h4>{tr("points")}</h4>
+                      <span className="sd-tag">{tr("optional")}</span>
+                    </div>
+                    <p className="sd-help">{tr("pointsP")}</p>
+                    <button type="button" className={"sd-btn big" + (tool === "marker" ? " on" : "")} onClick={() => pick("marker")} disabled={!ready}>
+                      <Plug size={19} aria-hidden="true" />{tr("addPoint")}
+                    </button>
+                    {hasPoints && (
+                      <ul className="sd-list">
+                        {shapes.markers.map((mk) => (
+                          <li key={mk.id} id={"sd-item-" + mk.id} className={"sd-row" + (selectedId === mk.id ? " on" : "")}>
+                            <span className="sd-row-ic mk" aria-hidden="true">{MARKER_ABBR[mk.type]}</span>
+                            <button type="button" className="sd-row-name" onClick={() => { setSelectedId(mk.id); api.current.focusShape?.(mk.id); }}>
+                              {L3(MARKER_LABEL[mk.type] || MARKER_LABEL.mainPanel)}
+                            </button>
+                            <button type="button" className="sd-ibtn del" onClick={() => api.current.removeShape?.(mk.id)}
+                              aria-label={tr("del", { name: L3(MARKER_LABEL[mk.type] || MARKER_LABEL.mainPanel) })}><Trash2 size={17} /></button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <button type="button" className="sd-btn big" onClick={() => setStep(3)}>{tr("next3")}<ChevronRight size={19} aria-hidden="true" /></button>
+                </>
+              )}
+
+              {step === 3 && (
+                <>
+                  <header className="sd-step-h">
+                    <h3>{tr("st3h")}</h3>
+                    <p>{tr("st3p")}</p>
+                  </header>
+                  <label className="sd-field">
+                    <span className="sd-lbl">{tr("module")}</span>
+                    <select className="sd-select" value={panelId} onChange={(e) => setPanelId(e.target.value)}>
+                      {PANELS.map((pnl) => <option key={pnl.id} value={pnl.id}>{pnl.brand} {pnl.model}, {pnl.watt} W</option>)}
+                    </select>
+                    <span className="sd-note">
+                      {panel?.dimensionsMm ? `${nf(panel.dimensionsMm.w / 1000, 2)} × ${nf(panel.dimensionsMm.h / 1000, 2)} m` : ""}
+                      {bomPanelId && bomPanelId === panelId ? (panel?.dimensionsMm ? ". " : "") + tr("fromQuote") : ""}
+                    </span>
+                  </label>
+                  <div className="sd-field">
+                    <span className="sd-lbl" id="sd-laid">{tr("laid")}</span>
+                    <div className="sd-seg" role="radiogroup" aria-labelledby="sd-laid">
+                      {["portrait", "landscape", "auto"].map((o) => (
+                        <button key={o} type="button" role="radio" aria-checked={orientation === o} className={orientation === o ? "on" : ""} onClick={() => setOrientation(o)}>{tr(o)}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="sd-field">
+                    <span className="sd-lbl-row">
+                      <span className="sd-lbl" id="sd-setback">{tr("setback")}</span>
+                      <span className="sd-numwrap">
+                        <input type="number" className="sd-num" min="0" max="100" value={setbackCm} onChange={(e) => setSetbackCm(clampNum(e.target.value, 0, 100))} aria-labelledby="sd-setback" />
+                        <span className="sd-unit">cm</span>
+                      </span>
+                    </span>
+                    <input type="range" className="sd-slider" min="0" max="100" step="5" value={setbackCm} style={{ "--fill": setbackCm + "%" }} onChange={(e) => setSetbackCm(+e.target.value)} aria-labelledby="sd-setback" />
+                  </div>
+                  <details className="sd-more">
+                    <summary><ChevronDown size={17} aria-hidden="true" />{tr("more")}</summary>
+                    <div className="sd-grid2">
+                      <label className="sd-field"><span className="sd-lbl">{tr("rowGap")} (cm)</span>
+                        <input type="number" className="sd-num wide" min="0" max="20" value={rowSpacingCm} onChange={(e) => setRowSpacingCm(clampNum(e.target.value, 0, 20))} /></label>
+                      <label className="sd-field"><span className="sd-lbl">{tr("colGap")} (cm)</span>
+                        <input type="number" className="sd-num wide" min="0" max="20" value={colSpacingCm} onChange={(e) => setColSpacingCm(clampNum(e.target.value, 0, 20))} /></label>
+                      <label className="sd-field"><span className="sd-lbl">{tr("blockW")} (m)</span>
+                        <input type="number" className="sd-num wide" min="0" max="30" step="0.5" value={clusterMaxW} onChange={(e) => setClusterMaxW(clampNum(e.target.value, 0, 30))} /></label>
+                      <label className="sd-field"><span className="sd-lbl">{tr("blockH")} (m)</span>
+                        <input type="number" className="sd-num wide" min="0" max="30" step="0.5" value={clusterMaxH} onChange={(e) => setClusterMaxH(clampNum(e.target.value, 0, 30))} /></label>
+                      <label className="sd-field"><span className="sd-lbl">{tr("blockGap")} (m)</span>
+                        <input type="number" className="sd-num wide" min="0" max="10" step="0.1" value={clusterGap} onChange={(e) => setClusterGap(clampNum(e.target.value, 0, 10))} /></label>
+                      <p className="sd-help">{tr("blockHelp")}</p>
+                    </div>
+                  </details>
+                  {quoteResult && (
+                    <details className="sd-more">
+                      <summary><ChevronDown size={17} aria-hidden="true" />{tr("charts")}</summary>
+                      <div className="sd-chart">
+                        <h4>{tr("monthly")}</h4>
+                        <MonthlySVG prod={prodMonthly} cons={consMonthly} lang={lang} loc={loc} narrow />
+                      </div>
+                      <div className="sd-chart">
+                        <h4>{tr("cash")}</h4>
+                        <CashflowSVG bands={bands} cost={quoteResult.e.cost} horizon={quoteResult.e.horizon} lang={lang} money={fmtMoney} narrow />
+                      </div>
+                    </details>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* the result, always in view */}
+            <div className="sd-result" aria-live="polite">
+              {!layout ? (
+                <p className="sd-result-empty">{tr("resultEmpty")}</p>
+              ) : (
+                <>
+                  <div className="sd-result-top">
+                    <div className="sd-big"><b>{layout.totalCount}</b><span>{panelsNoun(layout.totalCount, lang)}</span></div>
+                    <div className="sd-big"><b>{nf(layout.kw, 1)}</b><span>kWp</span></div>
+                    {layout.totalCount > 0 && (
+                      <span className="sd-use">{tr("roofUse", { used: nf(layout.panelAreaM2, 0), roof: nf(layout.roofAreaM2, 0) })}</span>
+                    )}
+                  </div>
+                  {layout.totalCount === 0 && <p className="sd-warn" role="alert">{tr("noFit")}</p>}
+                  {quoteResult && (
+                    <dl className="sd-metrics">
+                      <div><dt>{tr("price")}</dt><dd>{fmtMoney(quoteResult.e.cost)}</dd></div>
+                      <div><dt>{tr("payback")}</dt><dd>{yearsLabel(quoteResult.e.payback, lang)}</dd></div>
+                      <div><dt>{tr("co2")}</dt><dd>{tr("perYear", { t: nf(co2Year / 1000, 1) })}</dd></div>
+                    </dl>
+                  )}
+                  <button type="button" className="sd-btn primary big sd-apply" disabled={!fitsAny || applying} aria-busy={applying}
+                    onClick={() => onApply?.(layout)}>
+                    {applying ? tr("applying") : <><Check size={19} aria-hidden="true" />{tr("apply", { n: `${layout.totalCount} ${panelsNoun(layout.totalCount, lang)}` })}</>}
+                  </button>
+                </>
+              )}
+            </div>
+          </aside>
+        </div>
+      </section>
     </div>
   );
 }

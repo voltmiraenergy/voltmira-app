@@ -45,7 +45,7 @@ async function authorize(req, id) {
   const co = await currentCompany();
   if (!co) return NextResponse.json({ error: "no_company" }, { status: 403 });
   // RLS-scoped read: a project outside the caller's company simply isn't there.
-  const { data: project } = await supabaseServer()
+  const { data: project } = await (await supabaseServer())
     .from("projects").select("id, title, client_name, company_id, invoice_no").eq("id", id).maybeSingle();
   if (!project) return NextResponse.json({ error: "not_found" }, { status: 404 });
   return { user, co, project };
@@ -62,7 +62,8 @@ function targetUrl(req, id, dep) {
   return `${base}/projects/${id}/invoice?pdf=1${dep > 0 ? `&deposit=${dep}` : ""}`;
 }
 
-export async function GET(req, { params }) {
+export async function GET(req, props) {
+  const params = await props.params;
   if (await isRateLimited(`inv:${clientIp(req)}`, 30, 60 * 60 * 1000)) {
     return NextResponse.json({ error: "rate" }, { status: 429 });
   }
@@ -87,7 +88,8 @@ export async function GET(req, { params }) {
   }
 }
 
-export async function POST(req, { params }) {
+export async function POST(req, props) {
+  const params = await props.params;
   if (!emailConfigured()) return NextResponse.json({ error: "email_not_configured" }, { status: 503 });
   if (await isRateLimited(`invmail:${clientIp(req)}`, 30, 60 * 60 * 1000)) {
     return NextResponse.json({ error: "rate" }, { status: 429 });

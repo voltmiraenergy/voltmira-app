@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import { hourlyLoadShape, RO_URBAN_LOAD_SHAPE_SOURCE } from "../lib/residentialLoadProfile.js";
 import { simulatePeakShaving } from "../lib/peakShaving.js";
 
-const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
+const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
 const fmt1 = (n) => (Math.round((Number(n) || 0) * 10) / 10).toString();
 
 function PeakChart({ hours, battKwh }) {
@@ -78,7 +78,7 @@ export default function PeakShaving({ lang, lat, lon, kw, cons, battKwh, market,
   if (!open) {
     return (
       <button type="button" className="btn ghost sm qb-expand" onClick={() => setOpen(true)}>
-        {t3(lang, "Descărcare de vârf (baterie)", "Peak shaving (battery)", "Сглаживание пика (батарея)")}
+        {t3(lang, "Descărcare de vârf (baterie)", "Peak shaving (battery)", "Сглаживание пика (батарея)", "Згладжування піку (батарея)")}
       </button>
     );
   }
@@ -86,46 +86,46 @@ export default function PeakShaving({ lang, lat, lon, kw, cons, battKwh, market,
   return (
     <section className="card ps-card">
       <div className="ps-head">
-        <h4>{t3(lang, "Descărcare de vârf, o zi reprezentativă", "Peak shaving, a representative day", "Сглаживание пика, типовой день")}</h4>
+        <h4>{t3(lang, "Descărcare de vârf, o zi reprezentativă", "Peak shaving, a representative day", "Сглаживание пика, типовой день", "Згладжування піку, типовий день")}</h4>
         <button type="button" className="btn ghost sm" onClick={() => setOpen(false)}>✕</button>
       </div>
       <p className="ps-note">
         {t3(lang,
           "Producția orară e din PVGIS (aceleași date reale de iradiere, reduse la o zi tipică pe sezon). Consumul orar e profilul rezidențial oficial publicat de DEER (Transilvania Sud, decizia ANRE 122/2020), nu o curbă inventată.",
           "Hourly production is real PVGIS data (the same reanalysis irradiance, reduced to a typical day per season). Hourly consumption is DEER's own officially published residential profile (Transilvania Sud, ANRE decision 122/2020), not an invented curve.",
-          "Часовая выработка, реальные данные PVGIS (те же данные облучённости, сведённые к типовому дню сезона). Часовое потребление, официальный жилой профиль DEER (Трансильвания Sud, решение ANRE 122/2020), не выдуманная кривая.")}
+          "Часовая выработка, реальные данные PVGIS (те же данные облучённости, сведённые к типовому дню сезона). Часовое потребление, официальный жилой профиль DEER (Трансильвания Sud, решение ANRE 122/2020), не выдуманная кривая.", "Погодинна генерація це реальні дані PVGIS (ті самі дані опромінення, зведені до типового дня сезону). Погодинне споживання це офіційно опублікований житловий профіль DEER (Transilvania Sud, рішення ANRE 122/2020), а не вигадана крива.")}
       </p>
       {market === "MD" && (
         <p className="ps-warn">
           {t3(lang,
             "Profilul de consum e românesc (niciun profil orar public nu a putut fi găsit pentru Moldova), folosit aici doar ca reper de formă, nu ca datele reale ale clientului din Moldova.",
             "The consumption shape is Romanian (no public hourly profile could be found for Moldova), used here only as a reference shape, not this Moldovan client's real data.",
-            "Профиль потребления, румынский (публичный часовой профиль для Молдовы не найден), используется только как ориентир формы, не как реальные данные клиента из Молдовы.")}
+            "Профиль потребления, румынский (публичный часовой профиль для Молдовы не найден), используется только как ориентир формы, не как реальные данные клиента из Молдовы.", "Профіль споживання румунський (публічного погодинного профілю для Молдови не знайдено), тут він використовується лише як орієнтир форми, а не як реальні дані клієнта з Молдови.")}
         </p>
       )}
 
-      {loading && <p className="ps-note">{t3(lang, "Se încarcă…", "Loading…", "Загрузка…")}</p>}
-      {error && <p className="ps-warn">{t3(lang, "PVGIS indisponibil momentan.", "PVGIS unavailable right now.", "PVGIS сейчас недоступен.")}</p>}
+      {loading && <p className="ps-note">{t3(lang, "Se încarcă…", "Loading…", "Загрузка…", "Завантаження…")}</p>}
+      {error && <p className="ps-warn">{t3(lang, "PVGIS indisponibil momentan.", "PVGIS unavailable right now.", "PVGIS сейчас недоступен.", "PVGIS зараз недоступний.")}</p>}
 
       {pv && (
         <>
           <div className="ps-controls">
             <div className="field">
-              <label>{t3(lang, "Sezon", "Season", "Сезон")}</label>
+              <label>{t3(lang, "Sezon", "Season", "Сезон", "Сезон")}</label>
               <select className="input" value={season} onChange={(e) => setSeason(e.target.value)}>
-                <option value="cold">{t3(lang, "Rece (oct-mar)", "Cold (Oct-Mar)", "Холодный (окт-мар)")}</option>
-                <option value="warm">{t3(lang, "Cald (apr-sep)", "Warm (Apr-Sep)", "Тёплый (апр-сен)")}</option>
+                <option value="cold">{t3(lang, "Rece (oct-mar)", "Cold (Oct-Mar)", "Холодный (окт-мар)", "Холодний (жов-бер)")}</option>
+                <option value="warm">{t3(lang, "Cald (apr-sep)", "Warm (Apr-Sep)", "Тёплый (апр-сен)", "Теплий (кві-вер)")}</option>
               </select>
             </div>
             <div className="field">
-              <label>{t3(lang, "Zi", "Day", "День")}</label>
+              <label>{t3(lang, "Zi", "Day", "День", "День")}</label>
               <select className="input" value={isWorkingDay ? "1" : "0"} onChange={(e) => setIsWorkingDay(e.target.value === "1")}>
-                <option value="1">{t3(lang, "Lucrătoare", "Working", "Рабочий")}</option>
-                <option value="0">{t3(lang, "Weekend", "Weekend", "Выходной")}</option>
+                <option value="1">{t3(lang, "Lucrătoare", "Working", "Рабочий", "Робочий")}</option>
+                <option value="0">{t3(lang, "Weekend", "Weekend", "Выходной", "Вихідний")}</option>
               </select>
             </div>
             <div className="field">
-              <label>{t3(lang, "Baterie (kWh)", "Battery (kWh)", "Батарея (кВт·ч)")}</label>
+              <label>{t3(lang, "Baterie (kWh)", "Battery (kWh)", "Батарея (кВт·ч)", "Батарея (кВт·год)")}</label>
               <input className="input" type="number" min="0" step="0.5" value={battOverride} onChange={(e) => setBattOverride(e.target.value)} />
             </div>
           </div>
@@ -134,28 +134,28 @@ export default function PeakShaving({ lang, lat, lon, kw, cons, battKwh, market,
             <>
               <PeakChart hours={sim.hours} battKwh={Number(battOverride) || 1} />
               <div className="ps-legend">
-                <span><i className="sw prod" /> {t3(lang, "Producție", "Production", "Выработка")}</span>
-                <span><i className="sw cons" /> {t3(lang, "Consum", "Consumption", "Потребление")}</span>
-                <span><i className="sw soc" /> {t3(lang, "Nivel baterie", "Battery level", "Заряд батареи")}</span>
+                <span><i className="sw prod" /> {t3(lang, "Producție", "Production", "Выработка", "Генерація")}</span>
+                <span><i className="sw cons" /> {t3(lang, "Consum", "Consumption", "Потребление", "Споживання")}</span>
+                <span><i className="sw soc" /> {t3(lang, "Nivel baterie", "Battery level", "Заряд батареи", "Заряд батареї")}</span>
               </div>
               <div className="ps-stats">
                 <div className="ps-stat">
                   <b>{fmt1(sim.shiftedKwh)} kWh</b>
-                  <span>{t3(lang, "mutate din surplus în seară", "shifted from surplus to evening", "перенесено с излишка на вечер")}</span>
+                  <span>{t3(lang, "mutate din surplus în seară", "shifted from surplus to evening", "перенесено с излишка на вечер", "перенесено з надлишку на вечір")}</span>
                 </div>
                 <div className="ps-stat">
                   <b>{Math.round(sim.eveningCoverPct)}%</b>
-                  <span>{t3(lang, "din consumul de seară (18-22h) acoperit din baterie", "of evening (18-22h) draw covered by the battery", "вечернего потребления (18-22ч) покрыто батареей")}</span>
+                  <span>{t3(lang, "din consumul de seară (18-22h) acoperit din baterie", "of evening (18-22h) draw covered by the battery", "вечернего потребления (18-22ч) покрыто батареей", "вечірнього споживання (18-22 год) покрито батареєю")}</span>
                 </div>
                 <div className="ps-stat">
                   <b>{fmt1(sim.gridExportKwh)} kWh</b>
-                  <span>{t3(lang, "exportat în rețea (ziua tipică)", "exported to the grid (typical day)", "экспортировано в сеть (типовой день)")}</span>
+                  <span>{t3(lang, "exportat în rețea (ziua tipică)", "exported to the grid (typical day)", "экспортировано в сеть (типовой день)", "експортовано в мережу (типовий день)")}</span>
                 </div>
               </div>
             </>
           )}
           <p className="ps-source">
-            {t3(lang, "Sursă profil consum: ", "Consumption profile source: ", "Источник профиля потребления: ")}
+            {t3(lang, "Sursă profil consum: ", "Consumption profile source: ", "Источник профиля потребления: ", "Джерело профілю споживання: ")}
             <a href={RO_URBAN_LOAD_SHAPE_SOURCE.url} target="_blank" rel="noopener noreferrer">{RO_URBAN_LOAD_SHAPE_SOURCE.org}, {RO_URBAN_LOAD_SHAPE_SOURCE.legal}</a>
           </p>
         </>

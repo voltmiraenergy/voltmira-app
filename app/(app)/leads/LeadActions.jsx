@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { setLeadStatus, deleteLead, createProjectFromLead } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
 
-export default function LeadActions({ id, status, projectId, lang, onEdit, editing = false }) {
+export default function LeadActions({ id, status, projectId, lang, onEdit, onVisit, editing = false }) {
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -29,6 +29,10 @@ export default function LeadActions({ id, status, projectId, lang, onEdit, editi
       {onEdit && (
         <button type="button" className={"dx-btn" + (editing ? " on" : "")}
           disabled={pending} onClick={onEdit} aria-expanded={editing}>{t("lead_edit", lang)}</button>
+      )}
+      {/* Book the site visit: opens the editor on the date field. */}
+      {onVisit && (
+        <button type="button" className="dx-btn" disabled={pending} onClick={onVisit}>{t("lead_visit_book", lang)}</button>
       )}
       {status === "converted" && projectId ? (
         <button type="button" className="dx-btn primary" disabled={pending} onClick={() => router.push(`/projects/${projectId}`)}>

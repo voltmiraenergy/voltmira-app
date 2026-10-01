@@ -7,8 +7,11 @@ import SignOut from "./signout.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import SideNav from "./SideNav.jsx";
 import AppTheme from "./AppTheme.jsx";
+import OfflineReady from "./OfflineReady.jsx";
 import Logo from "../../lib/Logo.jsx";
+import HtmlLang from "../../lib/HtmlLang.jsx";
 import { t, normLang } from "../../lib/i18n.js";
+import { pt } from "../../lib/portfolioText.js";
 import { currentUser, currentCompany } from "../../lib/session.js";
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { isDemoEmail } from "../../lib/demo.js";
@@ -41,6 +44,7 @@ export default async function AppLayout({ children }) {
     { href: "/dashboard", label: t("nav_dashboard", lang) },
     { href: "/leads", label: t("nav_leads", lang) },
     { href: "/projects", label: t("nav_projects", lang) },
+    { href: "/portfolios", label: pt("nav", lang) },
     { href: "/documents", label: t("nav_documents", lang) },
     { href: "/activity", label: t("nav_activity", lang) },
     { href: "/studio", label: t("nav_studio", lang) },
@@ -53,13 +57,14 @@ export default async function AppLayout({ children }) {
   return (
     <div className="app">
       <AppTheme />
+      <HtmlLang lang={lang} />
       {/* Persist the workspace language so the client error boundary (which can't
           read the server-side company lang) can localize itself, and as a cookie
           so /login greets a signed-out user in the same language. */}
       <script dangerouslySetInnerHTML={{ __html: `try{localStorage.setItem('voltmira_lang',${JSON.stringify(lang)})}catch(e){}document.cookie='voltmira_lang='+${JSON.stringify(lang)}+'; path=/; max-age=31536000; samesite=lax'` }} />
-      <a className="skip-link" href="#main">{lang === "ro" ? "Sari la conținut" : lang === "ru" ? "К содержимому" : "Skip to content"}</a>
+      <a className="skip-link" href="#main">{lang === "ro" ? "Sari la conținut" : lang === "ru" ? "К содержимому" : lang === "uk" ? "До вмісту" : "Skip to content"}</a>
       <aside className="sidebar">
-        <div className="logo"><Logo dark size={26} /></div>
+        <Link className="logo" href="/dashboard" aria-label="VoltMira"><Logo size={32} /></Link>
         <SideNav items={items} moreLabel={t("nav_more", lang)}
           sheetFooter={
             <>
@@ -88,6 +93,9 @@ export default async function AppLayout({ children }) {
       <main className="main" id="main">
         {/* Demo tenants are real workspaces (see lib/demoSeed.js), so without this
             strip there is nothing telling a visitor the data is invented. */}
+        {/* Offline mode: keeps opened pages and recent quotes for places
+            with no signal, and says so when there is none. */}
+        <OfflineReady lang={lang} demo={isDemoEmail(user.email)} />
         {isDemoEmail(user.email) && (
           <div className="demo-bar">
             <span className="demo-badge">{t("demo_badge", lang)}</span>

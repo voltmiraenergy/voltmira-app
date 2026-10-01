@@ -35,6 +35,7 @@ const THEME_VARS = `
     --app-ok:#1E6B4E; --app-ok-tint:#E4EFE9;
     --app-warn-ink:#8A5A0F; --app-warn-tint:#FBF0DD;
     --app-bad:#C4543B; --app-bad-tint:#F7E6E1;
+    --logo-plate:transparent;
   }
   html{color-scheme:light}
   html[data-theme="dark"]{
@@ -44,6 +45,7 @@ const THEME_VARS = `
     --app-ok:#4FB584; --app-ok-tint:rgba(79,181,132,.16);
     --app-warn-ink:#F2B85F; --app-warn-tint:rgba(232,155,45,.14);
     --app-bad:#E0725A; --app-bad-tint:rgba(196,84,59,.18);
+    --logo-plate:#F6F5F0;
   }
   body{background:var(--app-bg);transition:background .2s}
 

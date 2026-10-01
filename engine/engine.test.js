@@ -398,3 +398,70 @@ test("amortizedMonthlyPayment never returns NaN or a negative figure for junk in
     assert.ok(Number.isFinite(m) && m >= 0, `rate=${bad} produced ${m}`);
   }
 });
+
+/* ---------------- Ukraine: green tariff with monthly netting ---------------- */
+// A flat year so the arithmetic stays checkable by hand: 5 kW × 1,200 kWh/kWp
+// = 6,000 kWh, 500 a month; consumption 3,600 kWh, 300 a month; no O&M.
+// Tariffs: retail €0.08, green tariff 6 UAH at 50 UAH/EUR = €0.12,
+// after 2030 2.5 UAH = €0.05.
+const UA_E = { ...defaultEngineSettings(), opexPct: 0, uaFitUah: 6, uaFeedAfterUah: 2.5, fx: { UAH: 50 } };
+const UA = {
+  kw: 5, price: 0.08, cons: 3600, batt: false, useMonthly: false, afmSubsidy: false,
+  market: "UA", yieldOverride: 1200, monthlyYieldShape: Array(12).fill(1 / 12),
+};
+
+test("UA: each month's production first cancels consumption, the rest earns the green tariff", () => {
+  // Every month: 300 kWh offset at retail (€24) + 200 kWh surplus at €0.12 (€24)
+  // = €48; × 12 = €576. Year 1 has no degradation or inflation yet.
+  const r = simulate({ ...UA, startYear: 2026 }, UA_E, "expc");
+  assert.ok(Math.abs(r.year1 - 576) < 1e-6, `year1 ${r.year1}`);
+});
+
+test("UA: a battery adds no saving while the green tariff runs", () => {
+  // Netting is monthly, so moving a kWh from noon to evening changes nothing.
+  const a = simulate({ ...UA, startYear: 2026 }, UA_E, "expc");
+  const b = simulate({ ...UA, startYear: 2026, batt: true, battKwh: 10 }, UA_E, "expc");
+  assert.ok(Math.abs(a.year1 - b.year1) < 1e-6);
+  assert.ok(b.cost > a.cost, "the battery still costs money");
+});
+
+test("UA: after 2030 the surplus is valued at the market price, not the green tariff", () => {
+  // Starting in 2031: no green-tariff share. Self-consumption follows the
+  // engine's own propensity model, so check against the two bounds instead:
+  // below the green-tariff year, above a year where everything sells at €0.05.
+  const fit = simulate({ ...UA, startYear: 2026 }, UA_E, "expc").year1;
+  const after = simulate({ ...UA, startYear: 2031 }, UA_E, "expc").year1;
+  assert.ok(after < fit, `after ${after} vs fit ${fit}`);
+  assert.ok(after > 6000 * 0.05, "self-consumed kWh are still worth retail");
+});
+
+test("UA: a year that straddles 1 January 2030 is split by the share inside the tariff", () => {
+  // Start mid-2029: year 1 is half green tariff, half after.
+  const full = simulate({ ...UA, startYear: 2026 }, UA_E, "expc").year1;
+  const none = simulate({ ...UA, startYear: 2031 }, UA_E, "expc").year1;
+  const half = simulate({ ...UA, startYear: 2029.5 }, UA_E, "expc").year1;
+  assert.ok(Math.abs(half - (full + none) / 2) < 1e-6, `half ${half}`);
+});
+
+test("UA: above 30 kW there is no green tariff, even before 2030", () => {
+  // A 40 kW plant built in 2026 is valued exactly like a plant built after the
+  // tariff ended: per kW, the same as a small system starting in 2031.
+  const big = { ...UA, kw: 40, cons: 3600 * 8 };
+  const early = simulate({ ...big, startYear: 2026 }, UA_E, "expc").year1;
+  const late = simulate({ ...big, startYear: 2031 }, UA_E, "expc").year1;
+  assert.ok(Math.abs(early - late) < 1e-6, `early ${early} late ${late}`);
+  // and 30 kW exactly still earns it
+  const edge = { ...UA, kw: 30, cons: 3600 * 6 };
+  assert.ok(simulate({ ...edge, startYear: 2026 }, UA_E, "expc").year1 > simulate({ ...edge, startYear: 2031 }, UA_E, "expc").year1);
+});
+
+test("UA: the tariffs convert at the frozen NBU rate", () => {
+  // Same UAH tariffs at 60 UAH/EUR are worth less in EUR: surplus €0.10.
+  // Month: €24 + 200 × €0.10 = €44; × 12 = €528.
+  const r = simulate({ ...UA, startYear: 2026 }, { ...UA_E, fx: { UAH: 60 } }, "expc");
+  assert.ok(Math.abs(r.year1 - 528) < 1e-6, `year1 ${r.year1}`);
+});
+
+test("UA: formatMoney shows hryvnia", () => {
+  assert.equal(formatMoney(100, "UAH").replace(/\s/g, " "), "5 100 грн");
+});

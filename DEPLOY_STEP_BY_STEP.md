@@ -66,7 +66,7 @@ subfolders to configure, so a plain import just works.
    | `NEXT_PUBLIC_APP_URL` | `https://voltmira.com` |
    | `GEOCODER_EMAIL` | `voltmiraenergy@gmail.com` |
 
-   **Stripe is NOT required to launch.** Leave the four `STRIPE_*` variables out for now — billing is a later step. The app runs fine without them; only the checkout button is inactive.
+   **Paddle is not required to launch.** Leave the `PADDLE_*` variables out for now; billing is a later step. The app runs fine without them; only the checkout button is inactive.
 
 5. Click **Deploy**. Wait ~2 minutes. You'll get a URL like `voltmira-xxx.vercel.app`.
 6. **Test it** at that temporary URL:
@@ -111,10 +111,10 @@ If the proposal opens on your phone and the dashboard knows — your backend, au
 
 ## What to do later (not needed for launch)
 
-- **Stripe billing**: create Products/Prices (€49 Pro, €99 Team) in Stripe, add the four `STRIPE_*` env vars in Vercel, redeploy. Guide in `docs/DEPLOYMENT.md`.
+- **Paddle billing**: create the prices in Paddle, add the `PADDLE_*` env vars in Vercel, redeploy. Guide in `docs/DEPLOYMENT.md`.
 - **Email confirmation ON**: re-enable in Supabase once you're past hand-holding pilots.
 - **Privacy/Terms pages**: live at `/privacy` and `/terms` — the landing footer links to them.
-- **Social sharing / SEO domain**: the landing `<head>` hardcodes `https://voltmira.com` in the canonical link, hreflang alternates, and `og:image`/`og:url` tags, and the share image lives at `public/og.png`. If you launch on a different domain, search-and-replace `voltmira.com` inside `app/_landing/landing.html` (head section only).
+- **Social sharing / SEO domain**: the landing `<head>` hardcodes `https://voltmira.com` in the canonical link, hreflang alternates, and `og:image`/`og:url` tags, and the share image lives at `public/og.png`. If you launch on a different domain, search-and-replace `voltmira.com` inside `app/_landing/landing-en-v6.html` (head section only).
 
 ---
 

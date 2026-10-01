@@ -14,6 +14,7 @@ import "../dx.css";
 import "./hub.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { Cloud, CloudUpload, CloudOff, HardDrive } from "lucide-react";
 import { PREVIEW_BASE } from "./features.js";
 import {
   useLang, tx, EUR, FeatureIcon,
@@ -22,85 +23,93 @@ import {
 import { useStudioSync } from "./studio-sync.js";
 
 const T = {
-  title: { en: "Studio", ro: "Studio", ru: "Studio" },
+  title: { en: "Studio", ro: "Studio", ru: "Studio", uk: "Studio" },
   summary: {
     en: "{n} jobs from survey to monitoring. {owed} still to collect.",
     ro: "{n} lucrări, de la vizită la monitorizare. {owed} de încasat.",
     ru: "Объектов: {n}, от осмотра до мониторинга. К получению: {owed}.",
+    uk: "Об’єктів: {n}, від огляду до моніторингу. До отримання: {owed}.",
   },
   summaryEmpty: {
     en: "Add a job to track it from the site survey to the first production reading.",
     ro: "Adaugă o lucrare ca s-o urmărești de la vizita tehnică la prima citire de producție.",
     ru: "Добавьте объект, чтобы вести его от осмотра до первых данных о выработке.",
+    uk: "Додайте об’єкт, щоб вести його від огляду до перших даних про генерацію.",
   },
   // Where Studio's data lives right now (studio-sync.js).
   sync_cloud: {
     en: "Saved to your workspace, on every device you sign in on.",
     ro: "Salvat în spațiul tău de lucru, pe orice dispozitiv te conectezi.",
     ru: "Сохраняется в рабочем пространстве, на любом вашем устройстве.",
+    uk: "Зберігається в робочому просторі, на будь-якому вашому пристрої.",
   },
-  sync_saving: { en: "Saving to your workspace…", ro: "Se salvează…", ru: "Сохранение…" },
+  sync_saving: { en: "Saving to your workspace…", ro: "Se salvează…", ru: "Сохранение…", uk: "Збереження…" },
   sync_offline: {
     en: "Can't reach the server. Changes are kept here and will save when you're back online.",
     ro: "Serverul nu răspunde. Modificările sunt păstrate aici și se salvează când revii online.",
     ru: "Нет связи с сервером. Изменения сохранены здесь и отправятся, когда связь вернётся.",
+    uk: "Немає зв’язку із сервером. Зміни збережено тут, і вони надішлються, коли зв’язок повернеться.",
   },
   sync_local: {
     en: "Saved in this browser only.",
     ro: "Salvat doar în acest browser.",
     ru: "Сохраняется только в этом браузере.",
+    uk: "Зберігається лише в цьому браузері.",
   },
-  flowTitle: { en: "Where every job stands", ro: "Unde se află fiecare lucrare", ru: "Где сейчас каждый объект" },
+  flowTitle: { en: "Where every job stands", ro: "Unde se află fiecare lucrare", ru: "Где сейчас каждый объект", uk: "Де зараз кожен об’єкт" },
   flowSub: {
     en: "The stage comes from what you've done in each tool, never from a status set by hand. Tap a stage to filter.",
     ro: "Etapa vine din ce ai făcut în fiecare unealtă, nu dintr-un status setat manual. Atinge o etapă ca să filtrezi.",
     ru: "Этап вычисляется из сделанного в инструментах, а не задаётся вручную. Нажмите на этап для фильтра.",
+    uk: "Етап обчислюється з того, що зроблено в інструментах, а не задається вручну. Натисніть на етап, щоб відфільтрувати.",
   },
-  idle: { en: "none here", ro: "niciuna", ru: "пусто" },
-  jobsTitle: { en: "Jobs", ro: "Lucrări", ru: "Объекты" },
-  showAll: { en: "Show all", ro: "Arată toate", ru: "Показать все" },
-  newJob: { en: "New job", ro: "Lucrare nouă", ru: "Новый объект" },
-  add: { en: "Add job", ro: "Adaugă lucrarea", ru: "Добавить объект" },
-  cancel: { en: "Cancel", ro: "Anulează", ru: "Отмена" },
-  name: { en: "Client or company", ro: "Client sau firmă", ru: "Клиент или компания" },
-  address: { en: "Address", ro: "Adresă", ru: "Адрес" },
-  kw: { en: "System size (kW)", ro: "Putere (kW)", ru: "Мощность (кВт)" },
-  market: { en: "Market", ro: "Piață", ru: "Рынок" },
-  needName: { en: "Add the client's name first.", ro: "Adaugă mai întâi numele clientului.", ru: "Сначала укажите имя клиента." },
-  next: { en: "Next", ro: "Urmează", ru: "Далее" },
+  idle: { en: "none here", ro: "niciuna", ru: "пусто", uk: "порожньо" },
+  jobsTitle: { en: "Jobs", ro: "Lucrări", ru: "Объекты", uk: "Об’єкти" },
+  showAll: { en: "Show all", ro: "Arată toate", ru: "Показать все", uk: "Показати всі" },
+  newJob: { en: "New job", ro: "Lucrare nouă", ru: "Новый объект", uk: "Новий об’єкт" },
+  add: { en: "Add job", ro: "Adaugă lucrarea", ru: "Добавить объект", uk: "Додати об’єкт" },
+  cancel: { en: "Cancel", ro: "Anulează", ru: "Отмена", uk: "Скасувати" },
+  name: { en: "Client or company", ro: "Client sau firmă", ru: "Клиент или компания", uk: "Клієнт або компанія" },
+  address: { en: "Address", ro: "Adresă", ru: "Адрес", uk: "Адреса" },
+  kw: { en: "System size (kW)", ro: "Putere (kW)", ru: "Мощность (кВт)", uk: "Потужність (кВт)" },
+  market: { en: "Market", ro: "Piață", ru: "Рынок", uk: "Ринок" },
+  needName: { en: "Add the client's name first.", ro: "Adaugă mai întâi numele clientului.", ru: "Сначала укажите имя клиента.", uk: "Спершу вкажіть ім’я клієнта." },
+  next: { en: "Next", ro: "Urmează", ru: "Далее", uk: "Далі" },
   allDone: {
     en: "Every step done. Keep logging production each month.",
     ro: "Toți pașii gata. Continuă să introduci producția lunar.",
     ru: "Все этапы пройдены. Вносите выработку каждый месяц.",
+    uk: "Усі етапи пройдено. Вносьте генерацію щомісяця.",
   },
-  battery: { en: "{n} kWh battery", ro: "baterie {n} kWh", ru: "батарея {n} кВт·ч" },
-  depDue: { en: "Deposit due", ro: "Avans de încasat", ru: "Ждём аванс" },
-  balDue: { en: "Balance due", ro: "Rest de încasat", ru: "Ждём остаток" },
-  paid: { en: "Paid in full", ro: "Achitat integral", ru: "Оплачено полностью" },
-  of: { en: "of {total}", ro: "din {total}", ru: "из {total}" },
-  empty: { en: "No jobs at this stage.", ro: "Nicio lucrare în această etapă.", ru: "На этом этапе объектов нет." },
-  emptyAll: { en: "No jobs yet", ro: "Încă nicio lucrare", ru: "Пока нет объектов" },
-  moneyTitle: { en: "Money on these jobs", ro: "Banii din aceste lucrări", ru: "Деньги по объектам" },
-  contract: { en: "Contract value", ro: "Valoare contracte", ru: "Сумма договоров" },
-  collected: { en: "Collected", ro: "Încasat", ru: "Получено" },
-  toCollect: { en: "To collect", ro: "De încasat", ru: "К получению" },
-  moneyLink: { en: "Open payments", ro: "Deschide încasările", ru: "Открыть оплаты" },
-  toolsTitle: { en: "Tools", ro: "Unelte", ru: "Инструменты" },
+  battery: { en: "{n} kWh battery", ro: "baterie {n} kWh", ru: "батарея {n} кВт·ч", uk: "батарея {n} кВт·год" },
+  depDue: { en: "Deposit due", ro: "Avans de încasat", ru: "Ждём аванс", uk: "Чекаємо аванс" },
+  balDue: { en: "Balance due", ro: "Rest de încasat", ru: "Ждём остаток", uk: "Чекаємо залишок" },
+  paid: { en: "Paid in full", ro: "Achitat integral", ru: "Оплачено полностью", uk: "Оплачено повністю" },
+  of: { en: "of {total}", ro: "din {total}", ru: "из {total}", uk: "з {total}" },
+  empty: { en: "No jobs at this stage.", ro: "Nicio lucrare în această etapă.", ru: "На этом этапе объектов нет.", uk: "На цьому етапі об’єктів немає." },
+  emptyAll: { en: "No jobs yet", ro: "Încă nicio lucrare", ru: "Пока нет объектов", uk: "Поки немає об’єктів" },
+  moneyTitle: { en: "Money on these jobs", ro: "Banii din aceste lucrări", ru: "Деньги по объектам", uk: "Гроші за об’єктами" },
+  contract: { en: "Contract value", ro: "Valoare contracte", ru: "Сумма договоров", uk: "Сума договорів" },
+  collected: { en: "Collected", ro: "Încasat", ru: "Получено", uk: "Отримано" },
+  toCollect: { en: "To collect", ro: "De încasat", ru: "К получению", uk: "До отримання" },
+  moneyLink: { en: "Open payments", ro: "Deschide încasările", ru: "Открыть оплаты", uk: "Відкрити оплати" },
+  toolsTitle: { en: "Tools", ro: "Unelte", ru: "Инструменты", uk: "Інструменти" },
   toolsSub: {
     en: "Not tied to a single job.",
     ro: "Nu sunt legate de o singură lucrare.",
     ru: "Не привязаны к одному объекту.",
+    uk: "Не прив’язані до одного об’єкта.",
   },
 };
 const TOOLS = [
-  { slug: "payments", name: { en: "Payments", ro: "Încasări", ru: "Оплаты" },
-    desc: { en: "Deposits, balances and invoices for every job", ro: "Avansuri, resturi și facturi pentru fiecare lucrare", ru: "Авансы, остатки и счета по всем объектам" } },
-  { slug: "monitoring", name: { en: "Fleet monitoring", ro: "Monitorizarea parcului", ru: "Мониторинг систем" },
-    desc: { en: "Every handed-over system against its promised P50", ro: "Fiecare sistem predat față de P50-ul promis", ru: "Каждая система против обещанного P50" } },
-  { slug: "bankability", name: { en: "P50 / P90 export", ro: "Export P50 / P90", ru: "Экспорт P50 / P90" },
-    desc: { en: "The yield assessment a lender asks for", ro: "Evaluarea producției cerută de un finanțator", ru: "Оценка выработки для кредитора" } },
-  { slug: "lead-widget", name: { en: "Calculator widget", ro: "Widget calculator", ru: "Виджет-калькулятор" },
-    desc: { en: "The public estimate that fills your Leads", ro: "Estimarea publică ce îți umple lead-urile", ru: "Публичный расчёт, который приносит заявки" } },
+  { slug: "payments", name: { en: "Payments", ro: "Încasări", ru: "Оплаты", uk: "Оплати" },
+    desc: { en: "Deposits, balances and invoices for every job", ro: "Avansuri, resturi și facturi pentru fiecare lucrare", ru: "Авансы, остатки и счета по всем объектам", uk: "Аванси, залишки й рахунки за всіма об’єктами" } },
+  { slug: "monitoring", name: { en: "Fleet monitoring", ro: "Monitorizarea parcului", ru: "Мониторинг систем", uk: "Моніторинг систем" },
+    desc: { en: "Every handed-over system against its promised P50", ro: "Fiecare sistem predat față de P50-ul promis", ru: "Каждая система против обещанного P50", uk: "Кожна система проти обіцяного P50" } },
+  { slug: "bankability", name: { en: "P50 / P90 export", ro: "Export P50 / P90", ru: "Экспорт P50 / P90", uk: "Експорт P50 / P90" },
+    desc: { en: "The yield assessment a lender asks for", ro: "Evaluarea producției cerută de un finanțator", ru: "Оценка выработки для кредитора", uk: "Оцінка генерації для кредитора" } },
+  { slug: "lead-widget", name: { en: "Calculator widget", ro: "Widget calculator", ru: "Виджет-калькулятор", uk: "Віджет-калькулятор" },
+    desc: { en: "The public estimate that fills your Leads", ro: "Estimarea publică ce îți umple lead-urile", ru: "Публичный расчёт, который приносит заявки", uk: "Публічний розрахунок, який приносить заявки" } },
 ];
 
 const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ""));
@@ -120,7 +129,7 @@ export default function StudioOverview() {
   const [form, setForm] = useState({ name: "", address: "", kw: "5", market: "MD" });
   const nameRef = useRef(null);
   const sync = useStudioSync();
-  useEffect(() => { document.title = "Studio · VoltMira"; }, []);
+  useEffect(() => { document.title = "Studio | VoltMira"; }, []);
   useEffect(() => { if (adding) setTimeout(() => nameRef.current?.focus(), 30); }, [adding]);
 
   // Memoized on [jobs] only: stage/money read localStorage keys the other
@@ -179,7 +188,10 @@ export default function StudioOverview() {
             {rows.length ? t(T.summary, { n: rows.length, owed: EUR(totals.owed) }) : t(T.summaryEmpty)}
           </p>
           <p className={"sx-preview s-" + sync} role="status">
-            <i aria-hidden="true" />
+            {sync === "saving" ? <CloudUpload size={15} aria-hidden="true" />
+              : sync === "offline" ? <CloudOff size={15} aria-hidden="true" />
+              : sync === "local" ? <HardDrive size={15} aria-hidden="true" />
+              : <Cloud size={15} aria-hidden="true" />}
             {t(T["sync_" + (sync === "loading" ? "cloud" : sync)] || T.sync_local)}
           </p>
         </div>
@@ -207,7 +219,7 @@ export default function StudioOverview() {
             <div className="sx-new-market" role="group" aria-label={t(T.market)}>
               <span>{t(T.market)}</span>
               <div className="sx-seg">
-                {["MD", "RO"].map((m) => (
+                {["MD", "UA", "RO"].map((m) => (
                   <button key={m} type="button" className={form.market === m ? "on" : ""} aria-pressed={form.market === m}
                     onClick={() => setForm((f) => ({ ...f, market: m }))}>{m}</button>
                 ))}

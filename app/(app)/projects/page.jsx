@@ -30,9 +30,10 @@ import NewQuoteMenu from "./NewQuoteMenu.jsx";
 import TemplateBar from "./TemplateBar.jsx";
 import BulkBar from "./BulkBar.jsx";
 import Avatar, { initials } from "../../../lib/Avatar.jsx";
+import { moneyFormatter, numFor } from "../../../lib/money.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Quotes · VoltMira" };
+export const metadata = { title: "Quotes | VoltMira" };
 
 const PAGE_SIZE = 10;
 const STATUSES = ["all", "draft", "sent", "won", "lost"];
@@ -63,7 +64,8 @@ const Svg = ({ d, size = 15, w = 2 }) => (
 );
 const VIEW_ICON = { hot: "flame", unopened: "mail", stale: "clock", followup: "cal" };
 
-export default async function Projects({ searchParams }) {
+export default async function Projects(props) {
+  const searchParams = await props.searchParams;
   const status = STATUSES.includes(searchParams?.status) ? searchParams.status : "all";
   const view = VIEWS.includes(searchParams?.view) ? searchParams.view : "";
   const q = (searchParams?.q || "").slice(0, 80);
@@ -71,7 +73,7 @@ export default async function Projects({ searchParams }) {
   const dir = searchParams?.dir === "asc" ? "asc" : "desc";
   const sgn = dir === "asc" ? 1 : -1;
 
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
   const co = await currentCompany();
   const [{ data: allRowsRaw }, { data: team }, stats, user] = await Promise.all([
     sb.from("projects").select("*").order("updated_at", { ascending: false }),
@@ -94,9 +96,11 @@ export default async function Projects({ searchParams }) {
   const locale = LOCALE[lang] || "en-GB";
   const now = Date.now();
   const todayKey = mdDayKey(now);
-  const fmt = (n) => "€" + Math.round(n).toLocaleString("en-IE");
-  const kfmt = (n) => (n >= 1000 ? "€" + (n / 1000).toFixed(n >= 100000 ? 0 : 1).replace(/\.0$/, "") + "k" : fmt(n));
-  const yrsF = (p) => p === null ? "25+" : p === 0 ? "now" : p.toFixed(1);
+  // In the workspace's currency (lei in Moldova) at today's rate (lib/money.js).
+  const fmt = moneyFormatter({ currency: co?.currency, lang, fx: E?.fx });
+  const kfmt = (n) => fmt.compact(n);
+  const nf = numFor(lang);
+  const yrsF = (p) => p === null ? "25+" : p === 0 ? "now" : nf(p, 1);
   const ownerOf = (id) => (team || []).find(m => m.id === id);
   // "sent" date proxied by the proposal; fall back to updated_at
   const sentOf = (p) => (stats.get(p.id)?.sentAt) || p.updated_at;

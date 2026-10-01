@@ -53,7 +53,7 @@ export default function RecommendedKits({ lang, onAdded }) {
           return (
             <article key={kit.id} className="cat-kit-card">
               <div className="cat-kit-head">
-                <b>{kit.kw} kW — {t(TIER_LABEL_KEY[kit.id] || "cat_kit_compact", lang)}</b>
+                <b>{kit.kw} kW, {t(TIER_LABEL_KEY[kit.id] || "cat_kit_compact", lang)}</b>
                 {battLine && <span className="cat-kit-battchip">{t("cat_kit_batt_incl", lang, { n: kit.battKwh })}</span>}
               </div>
 

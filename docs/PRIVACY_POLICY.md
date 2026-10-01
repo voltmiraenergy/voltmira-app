@@ -7,7 +7,7 @@ installers. Contact: contact@voltmira.com, [COMPANY LEGAL NAME, ADDRESS].
 
 **Data we process.**
 - *Account data* (you, the installer): name, email, company details, billing
-  via Stripe. Legal basis: contract.
+  via Paddle. Legal basis: contract.
 - *Client data you enter* (your customers): names, addresses, phone numbers,
   energy consumption. You are the controller; we process it solely to provide
   the service, under our Data Processing Addendum. Legal basis: contract.
@@ -16,7 +16,7 @@ installers. Contact: contact@voltmira.com, [COMPANY LEGAL NAME, ADDRESS].
   advertising profiles. No third-party ad trackers, ever.
 
 **Where.** All data is stored in the EU (Frankfurt). Sub-processors:
-Supabase (database/auth), Vercel (hosting), Stripe (payments),
+Supabase (database/auth), Vercel (hosting), Paddle (payments),
 [Resend/Postmark] (email). Each is bound by a DPA.
 If the optional proposal Q&A / follow-up automations (`docs/MAKE_AUTOMATIONS.md`)
 are enabled, real proposal data also passes through Make.com and whichever

@@ -14,16 +14,18 @@ import { cookies, headers } from "next/headers";
 import LoginForm from "./LoginForm.jsx";
 import { COPY, pickLoginLang } from "./copy.js";
 
-function langFor(searchParams) {
+async function langFor(searchParams) {
+  const [jar, h] = await Promise.all([cookies(), headers()]);
   return pickLoginLang(
     searchParams?.lang,
-    cookies().get("voltmira_lang")?.value,
-    headers().get("accept-language"),
+    jar.get("voltmira_lang")?.value,
+    h.get("accept-language"),
   );
 }
 
-export function generateMetadata({ searchParams }) {
-  const c = COPY[langFor(searchParams)];
+export async function generateMetadata(props) {
+  const searchParams = await props.searchParams;
+  const c = COPY[await langFor(searchParams)];
   return {
     title: c.meta_title,
     description: c.meta_desc,
@@ -37,6 +39,7 @@ const CSS = `
   --ink:#142A21; --ink-2:#2E473B; --muted:#66756C;
   --line:#E3E1D6; --line-2:#D3D0C3;
   --green:#1E6B4E; --green-tint:#E4EFE9;
+  --logo-plate:transparent;
   --amber:#E89B2D; --amber-hover:#F0A945; --amber-tint:#FBF0DD; --on-amber:#1B1305;
   --pess:#C4543B; --expc:#E89B2D; --opti:#2E9A5E;
   --f-d:'Inter Tight',Inter,system-ui,sans-serif;
@@ -50,6 +53,7 @@ const CSS = `
     --ink:#EEF1EA; --ink-2:#C7D0C8; --muted:#8E998F;
     --line:#26302A; --line-2:#34403A;
     --green:#4FB584; --green-tint:rgba(79,181,132,.14);
+    --logo-plate:#F6F5F0;
     --amber:#EBA542; --amber-hover:#F2B85F; --amber-tint:rgba(232,155,45,.14);
     --pess:#E0725A; --expc:#EBA542; --opti:#4FB584;
   }
@@ -59,6 +63,7 @@ const CSS = `
   --ink:#EEF1EA; --ink-2:#C7D0C8; --muted:#8E998F;
   --line:#26302A; --line-2:#34403A;
   --green:#4FB584; --green-tint:rgba(79,181,132,.14);
+  --logo-plate:#F6F5F0;
   --amber:#EBA542; --amber-hover:#F2B85F; --amber-tint:rgba(232,155,45,.14);
   --pess:#E0725A; --expc:#EBA542; --opti:#4FB584;
 }
@@ -77,10 +82,6 @@ body{margin:0;font-family:var(--f-b);color:var(--ink);background:var(--paper-2);
 .lp-photo::after{content:"";position:absolute;inset:0;background:
   linear-gradient(90deg,rgba(7,14,10,.74) 0%,rgba(7,14,10,.42) 55%,rgba(7,14,10,.2) 100%),
   linear-gradient(180deg,rgba(7,14,10,.34) 0%,rgba(7,14,10,0) 26%,rgba(7,14,10,.36) 62%,rgba(7,14,10,.9) 100%)}
-.lp-logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:#fff;
-  font-family:var(--f-d);font-weight:800;font-size:20px;letter-spacing:-.02em;align-self:flex-start}
-.lp-logo .m{color:#7FDCA4}
-.lp-logo svg{border-radius:8px;box-shadow:0 0 0 1px rgba(255,255,255,.22)}
 .lp-copy{margin:auto 0 0;padding-top:48px}
 .lp-h{font-family:var(--f-h);font-weight:800;font-size:clamp(40px,4.3vw,64px);line-height:1.03;letter-spacing:-.03em;
   margin:0 0 20px;max-width:12ch;text-wrap:balance;text-shadow:0 2px 30px rgba(0,0,0,.25)}
@@ -90,7 +91,6 @@ body{margin:0;font-family:var(--f-b);color:var(--ink);background:var(--paper-2);
 /* desktop: the headline sits in the middle of the photo; the logo stays in its corner */
 @media (min-width:901px){
   .lp{justify-content:center}
-  .lp-logo{position:absolute;top:clamp(28px,4vw,48px);left:clamp(28px,4.4vw,64px)}
   .lp-copy{margin:0 auto;padding-top:0;text-align:center}
   .lp-h,.lp-lead{margin-inline:auto}
   .lp-photo::after{background:
@@ -101,9 +101,15 @@ body{margin:0;font-family:var(--f-b);color:var(--ink);background:var(--paper-2);
 /* ---------------- the form pane ---------------- */
 .fp{position:relative;display:flex;flex-direction:column;background:var(--paper-2);padding:22px clamp(18px,4vw,56px) 28px}
 .fp-bar{display:flex;align-items:center;gap:10px}
-.fp-back{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--muted);text-decoration:none;margin-right:auto;min-height:40px}
-.fp-back:hover{color:var(--ink)}
-.fp-back svg{width:16px;height:16px}
+/* the company logo, exactly as on the homepage (lib/Logo.jsx): ink "Volt",
+   brand-green "Mira", never recoloured. In dark mode it sits on a paper plate
+   (--logo-plate), as in the app's sidebar; the negative margin keeps it lined
+   up with the form either way. */
+.fp-logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;margin:0 auto 0 -5px;min-height:40px;
+  padding:4px 14px 4px 5px;border-radius:12px;background:var(--logo-plate);
+  font-family:var(--f-d);font-weight:800;font-size:20px;letter-spacing:-.02em;line-height:1}
+.fp-logo b{color:#142A21;font-weight:800}
+.fp-logo i{color:#1E6B4E;font-style:normal}
 .langs{display:flex;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
 .langs a{min-width:36px;height:32px;display:grid;place-items:center;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:.04em;
   color:var(--muted);text-decoration:none;transition:color .2s,background-color .2s}
@@ -180,8 +186,8 @@ body{margin:0;font-family:var(--f-b);color:var(--ink);background:var(--paper-2);
 
 @media (max-width:900px){
   .auth{grid-template-columns:minmax(0,1fr);min-height:0}
-  .lp{padding:18px 16px 24px}
-  .lp-copy{padding-top:52px}
+  .lp{padding:30px 16px 24px}
+  .lp-copy{padding-top:36px}
   .lp-h{font-size:clamp(30px,8.4vw,40px);margin-bottom:0;max-width:14ch}
   .lang-ru .lp-h{font-size:clamp(28px,7.4vw,36px)}
   .lp-lead{display:none}
@@ -189,17 +195,17 @@ body{margin:0;font-family:var(--f-b);color:var(--ink);background:var(--paper-2);
   .fp{padding:14px 16px 24px}
   .fp-main{padding:26px 0 8px;place-items:start center}
 }
-@media (max-width:420px){.fp-back span{display:none}}
 /* finger-sized targets for the two small text controls, without moving them */
-.link-btn,.fp-back{position:relative}
-.link-btn::after,.fp-back::after{content:"";position:absolute;inset:-10px -8px}
+.link-btn{position:relative}
+.link-btn::after{content:"";position:absolute;inset:-10px -8px}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 `;
 
-export default function LoginPage({ searchParams }) {
-  const lang = langFor(searchParams);
+export default async function LoginPage(props) {
+  const searchParams = await props.searchParams;
+  const lang = await langFor(searchParams);
   const c = COPY[lang];
 
   return (
@@ -220,17 +226,6 @@ export default function LoginPage({ searchParams }) {
           <div className="lp-photo">
             <Image src="/landing/hero-tile-roof.jpg" alt="" fill priority sizes="(max-width: 900px) 100vw, 55vw" />
           </div>
-
-          <a className="lp-logo" href={lang === "en" ? "/" : `/${lang}`}>
-            <svg width="32" height="32" viewBox="0 0 34 34" fill="none" aria-hidden="true">
-              <rect width="34" height="34" rx="8" fill="#142A21" />
-              <path d="M8 25 L14 12" stroke="#C4543B" strokeWidth="2.6" strokeLinecap="round" />
-              <path d="M14.5 25 L20.5 9" stroke="#E89B2D" strokeWidth="2.6" strokeLinecap="round" />
-              <path d="M21 25 L27 6.5" stroke="#3FAE6A" strokeWidth="2.6" strokeLinecap="round" />
-              <circle cx="20.5" cy="9" r="2.1" fill="#E89B2D" />
-            </svg>
-            <span>Volt<span className="m">Mira</span></span>
-          </a>
 
           <div className="lp-copy">
             <h1 className="lp-h" dangerouslySetInnerHTML={{ __html: c.h1 }} />

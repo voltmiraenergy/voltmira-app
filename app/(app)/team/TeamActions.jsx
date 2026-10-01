@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { t } from "../../../lib/i18n.js";
 import { saveCompany } from "../../../lib/actions.js";
+import { moneyFormatter } from "../../../lib/money.js";
 
 export default function TeamActions({ lang, meId, me, members, counts = {}, pending = [], stats = {}, currency = "EUR", seatCap = null, restrictedView = false, rbacEnabled = false }) {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function TeamActions({ lang, meId, me, members, counts = {}, pend
   const cap = seatCap;
   const atCap = cap != null && members.length >= cap;
   const [openMember, setOpenMember] = useState(null);
-  const money = (n) => "€" + Math.round(n || 0).toLocaleString("en-IE");
+  const money = moneyFormatter({ currency, lang });
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [title, setTitle] = useState("sales");

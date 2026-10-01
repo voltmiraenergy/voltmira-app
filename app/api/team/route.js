@@ -13,7 +13,7 @@ import { sendEmail, teamInviteEmail, emailConfigured } from "../../../lib/email.
 import { normalizeTitle } from "../../../lib/teamValidation.js";
 
 async function callerProfile() {
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return null;
   // Read the caller's own profile via the service role, scoped to their

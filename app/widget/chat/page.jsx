@@ -4,6 +4,7 @@
 import { supabaseAdmin } from "../../../lib/supabase.js";
 import { normLang, LANGS } from "../../../lib/i18n.js";
 import ChatBox from "./ChatBox.jsx";
+import HtmlLang from "../../../lib/HtmlLang.jsx";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Chat", robots: { index: false } };
@@ -18,7 +19,8 @@ async function companyInfo(companyId) {
   }
 }
 
-export default async function WidgetChatPage({ searchParams }) {
+export default async function WidgetChatPage(props) {
+  const searchParams = await props.searchParams;
   const companyId = String(searchParams?.c || "");
   const override = String(searchParams?.lang || "");
   const co = await companyInfo(companyId);
@@ -28,6 +30,7 @@ export default async function WidgetChatPage({ searchParams }) {
     // site and must look right there, whatever the visitor's OS theme is.
     <main lang={lang} style={{ maxWidth: 420, margin: "0 auto", height: "100dvh", display: "flex", flexDirection: "column",
       fontFamily: "Inter, system-ui, sans-serif", color: "#142A21", background: "#fff", colorScheme: "light" }}>
+      <HtmlLang lang={lang} />
       <ChatBox companyId={companyId} lang={lang} companyName={co.name} />
     </main>
   );

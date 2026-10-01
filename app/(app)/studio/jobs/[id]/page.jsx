@@ -14,27 +14,27 @@ import {
 } from "../../studio-kit.jsx";
 
 const T = {
-  back: { en: "All jobs", ro: "Toate lucrările", ru: "Все объекты" },
-  outstanding: { en: "Outstanding", ro: "De rezolvat", ru: "Осталось сделать" },
-  allDone: { en: "Everything's done for this job's current stage.", ro: "Totul e făcut pentru etapa curentă a lucrării.", ru: "Всё сделано для текущего этапа этого объекта." },
-  money: { en: "Money", ro: "Bani", ru: "Деньги" },
-  deposit: { en: "Deposit", ro: "Avans", ru: "Аванс" },
-  balance: { en: "Balance", ro: "Rest", ru: "Остаток" },
-  paidFull: { en: "Paid in full", ro: "Achitat integral", ru: "Оплачено полностью" },
-  paid: { en: "paid", ro: "plătit", ru: "оплачено" },
-  notPaid: { en: "not paid yet", ro: "neîncasat încă", ru: "пока не оплачено" },
-  managePayments: { en: "Manage in Payments →", ro: "Gestionează în Încasări →", ru: "Управлять в Оплатах →" },
-  tools: { en: "Tools for this job", ro: "Unelte pentru această lucrare", ru: "Инструменты для этого объекта" },
-  notes: { en: "Notes", ro: "Notițe", ru: "Заметки" },
-  notesPh: { en: "Anything worth remembering about this job…", ro: "Ceva de reținut despre această lucrare…", ru: "Что-то важное об этом объекте…" },
-  survey: { en: "Site survey", ro: "Vizită tehnică", ru: "Техобследование" },
-  annex: { en: "Technical annex", ro: "Anexă tehnică", ru: "Техническое приложение" },
-  payments: { en: "Payments", ro: "Încasări", ru: "Оплаты" },
-  schedule: { en: "Install schedule", ro: "Planificare montaj", ru: "График монтажа" },
-  monitoring: { en: "Monitoring", ro: "Monitorizare", ru: "Мониторинг" },
-  bankability: { en: "Lender export", ro: "Export finanțator", ru: "Экспорт для кредитора" },
-  notFound: { en: "Job not found.", ro: "Lucrarea nu a fost găsită.", ru: "Объект не найден." },
-  openWorkspace: { en: "Open configuration workspace", ro: "Deschide spațiul de configurare", ru: "Открыть рабочее пространство" },
+  back: { en: "All jobs", ro: "Toate lucrările", ru: "Все объекты", uk: "Усі об’єкти" },
+  outstanding: { en: "Outstanding", ro: "De rezolvat", ru: "Осталось сделать", uk: "Залишилося зробити" },
+  allDone: { en: "Everything's done for this job's current stage.", ro: "Totul e făcut pentru etapa curentă a lucrării.", ru: "Всё сделано для текущего этапа этого объекта.", uk: "Усе зроблено для поточного етапу цього об’єкта." },
+  money: { en: "Money", ro: "Bani", ru: "Деньги", uk: "Гроші" },
+  deposit: { en: "Deposit", ro: "Avans", ru: "Аванс", uk: "Аванс" },
+  balance: { en: "Balance", ro: "Rest", ru: "Остаток", uk: "Залишок" },
+  paidFull: { en: "Paid in full", ro: "Achitat integral", ru: "Оплачено полностью", uk: "Оплачено повністю" },
+  paid: { en: "paid", ro: "plătit", ru: "оплачено", uk: "оплачено" },
+  notPaid: { en: "not paid yet", ro: "neîncasat încă", ru: "пока не оплачено", uk: "ще не оплачено" },
+  managePayments: { en: "Manage in Payments →", ro: "Gestionează în Încasări →", ru: "Управлять в Оплатах →", uk: "Керувати в Оплатах →" },
+  tools: { en: "Tools for this job", ro: "Unelte pentru această lucrare", ru: "Инструменты для этого объекта", uk: "Інструменти для цього об’єкта" },
+  notes: { en: "Notes", ro: "Notițe", ru: "Заметки", uk: "Нотатки" },
+  notesPh: { en: "Anything worth remembering about this job…", ro: "Ceva de reținut despre această lucrare…", ru: "Что-то важное об этом объекте…", uk: "Щось важливе про цей об’єкт…" },
+  survey: { en: "Site survey", ro: "Vizită tehnică", ru: "Техобследование", uk: "Технічне обстеження" },
+  annex: { en: "Technical annex", ro: "Anexă tehnică", ru: "Техническое приложение", uk: "Технічний додаток" },
+  payments: { en: "Payments", ro: "Încasări", ru: "Оплаты", uk: "Оплати" },
+  schedule: { en: "Install schedule", ro: "Planificare montaj", ru: "График монтажа", uk: "Графік монтажу" },
+  monitoring: { en: "Monitoring", ro: "Monitorizare", ru: "Мониторинг", uk: "Моніторинг" },
+  bankability: { en: "Lender export", ro: "Export finanțator", ru: "Экспорт для кредитора", uk: "Експорт для кредитора" },
+  notFound: { en: "Job not found.", ro: "Lucrarea nu a fost găsită.", ru: "Объект не найден.", uk: "Об’єкт не знайдено." },
+  openWorkspace: { en: "Open configuration workspace", ro: "Deschide spațiul de configurare", ru: "Открыть рабочее пространство", uk: "Відкрити робочий простір" },
 };
 
 export default function JobHub() {
@@ -44,7 +44,7 @@ export default function JobHub() {
   const { jobs, activeId, selectJob, hydrated } = useStudioJobs();
   const job = jobs.find((j) => j.id === params.id);
 
-  useEffect(() => { document.title = job ? `${job.name} — VoltMira Studio` : "Studio"; }, [job]);
+  useEffect(() => { document.title = job ? `${job.name} | VoltMira Studio` : "Studio"; }, [job]);
   useEffect(() => {
     if (job && activeId !== job.id) selectJob(job.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps

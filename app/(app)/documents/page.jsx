@@ -19,7 +19,7 @@ import { paperworkFor, paperworkTotals } from "../../../lib/paperwork.js";
 import Avatar from "../../../lib/Avatar.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Documents · VoltMira" };
+export const metadata = { title: "Documents | VoltMira" };
 
 const VIEWS = ["all", "todo", "won", "signed"];
 
@@ -40,10 +40,11 @@ const Svg = ({ d, size = 14, w = 2 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{I[d]}</svg>
 );
 
-export default async function DocumentsPage({ searchParams }) {
+export default async function DocumentsPage(props0) {
+  const searchParams = await props0.searchParams;
   const view = VIEWS.includes(searchParams?.view) ? searchParams.view : "all";
   const q = (searchParams?.q || "").trim().slice(0, 80);
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
   const co = await currentCompany();
   const lang = normLang(co?.lang);
   const locale = LOCALE[lang] || "en-GB";
@@ -130,6 +131,10 @@ export default async function DocumentsPage({ searchParams }) {
     if (p.market === "MD") out.push(
       <a key="grid" className={"doc-pill" + (docs.grid.state === "done" ? " done" : "")} href={`/api/projects/${id}/racordare-pdf`} target="_blank" rel="noopener noreferrer">
         <Svg d="plug" />{docs.grid.state === "done" ? t("doc_grid_done", lang, { date: date(docs.grid.at) }) : t("doc_grid_req", lang)}</a>);
+    // Ukraine has no single national form: the file lives on the quote (GridFile.jsx)
+    else if (p.market === "UA") out.push(
+      <Link key="grid" className={"doc-pill" + (docs.grid.state === "done" ? " done" : "")} href={`/projects/${id}`}>
+        <Svg d="plug" />{docs.grid.state === "done" ? t("doc_grid_done", lang, { date: date(docs.grid.at) }) : t("gf_title", lang)}</Link>);
     if (won) out.push(
       <Link key="com" className={"doc-pill" + (docs.commissioning.state === "done" ? " done" : "")} href={`/projects/${id}?docs=commissioning`}>
         <Svg d="stamp" />{docs.commissioning.state === "done" ? t("doc_commission_done", lang, { date: date(docs.commissioning.at) }) : t("ld_tab_commissioning", lang)}</Link>);

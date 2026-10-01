@@ -9,10 +9,10 @@ import { normLang } from "../../../lib/i18n.js";
 import CatalogManager from "./CatalogManager.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Catalog · VoltMira" };
+export const metadata = { title: "Catalog | VoltMira" };
 
 export default async function CatalogPage() {
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
   const co = await currentCompany();
   const lang = normLang(co?.lang);
   const { data: products } = await sb.from("products").select("*").order("created_at", { ascending: true });
@@ -44,6 +44,6 @@ export default async function CatalogPage() {
     }
   }
 
-  return <CatalogManager initial={products || []} lang={lang}
+  return <CatalogManager initial={products || []} lang={lang} market={co?.default_market || "MD"}
     committed={committed} reserved={reserved} usedIn={usedIn} />;
 }

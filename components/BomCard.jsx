@@ -24,7 +24,7 @@ import {
 } from "../lib/supplierCatalog.js";
 import { bomTotal, kindLabel } from "../lib/quoteAnalysis.js";
 
-const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
+const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
 
 // autoBom itself now lives in lib/supplierCatalog.js (pure, no React) so a
 // server action can size a lead's first draft without importing a "use client"
@@ -62,13 +62,13 @@ export default function BomCard({
     key: "own-" + r.id, productId: r.id,
     kind: r.kind || "other", brand: r.brand || "", model: r.model || "",
     spec: r.spec || "", unit_price: Number(r.cost_price) > 0 ? Number(r.cost_price) : (Number(r.unit_price) || 0),
-    meta: r.track_stock ? `${r.stock ?? 0} ${t3(lang, "în stoc", "in stock", "в наличии")}` : "",
+    meta: r.track_stock ? `${r.stock ?? 0} ${t3(lang, "în stoc", "in stock", "в наличии", "у наявності")}` : "",
   })), [catalog, lang]);
 
   const supplierRows = useMemo(() => ALL_SUPPLIER_PRODUCTS.map((p) => ({
     key: "sup-" + p.id, kind: p.kind, brand: p.brand, model: p.model, spec: p.specString,
     unit_price: Number(p.price ?? p.eurPerKw) || 0,
-    meta: `${findSupplier(p.supplierId).name} · ${p.stock > 0 ? `${p.stock} ${t3(lang, "în stoc", "in stock", "в наличии")}` : t3(lang, "comandă", "order", "заказ")}`,
+    meta: `${findSupplier(p.supplierId).name}, ${p.stock > 0 ? `${p.stock} ${t3(lang, "în stoc", "in stock", "в наличии", "у наявності")}` : t3(lang, "comandă", "order", "заказ", "замовлення")}`,
   })), [lang]);
 
   const pool = picking === "own" ? ownRows : supplierRows;
@@ -91,10 +91,10 @@ export default function BomCard({
   return (
     <section className={className}>
       <div className="bom-head">
-        <h3 style={{ margin: 0, flex: 1 }}>{t3(lang, "Echipament & deviz", "Equipment & bill of materials", "Оборудование и смета")}</h3>
+        <h3 style={{ margin: 0, flex: 1 }}>{t3(lang, "Echipament & deviz", "Equipment & bill of materials", "Оборудование и смета", "Обладнання та специфікація")}</h3>
         {bom.length > 0 && (
           <button type="button" className="btn ghost sm" onClick={() => onChange([])}>
-            {t3(lang, "golește", "clear", "очистить")}
+            {t3(lang, "golește", "clear", "очистить", "очистити")}
           </button>
         )}
       </div>
@@ -102,12 +102,12 @@ export default function BomCard({
         {t3(lang,
           "Ce intră fizic în sistem, la prețurile tale de achiziție. Nu schimbă prețul din ofertă (acesta rămâne condus de puterea sistemului). Arată marja: preț ofertă minus materiale.",
           "What physically goes into the system, at your purchase prices. It doesn't change the quoted price (that stays driven by system size). It shows the margin: quote price minus materials.",
-          "Что физически входит в систему, по вашим закупочным ценам. Цена предложения не меняется (она зависит от мощности). Зато видна маржа: цена минус материалы.")}
+          "Что физически входит в систему, по вашим закупочным ценам. Цена предложения не меняется (она зависит от мощности). Зато видна маржа: цена минус материалы.", "Що фізично входить у систему, за вашими закупівельними цінами. Ціна пропозиції не змінюється (вона залежить від потужності). Натомість видно маржу: ціна мінус матеріали.")}
       </p>
 
       {bom.length === 0 && (
         <div className="bom-empty">
-          {t3(lang, "Niciun articol încă.", "No items yet.", "Пока пусто.")}
+          {t3(lang, "Niciun articol încă.", "No items yet.", "Пока пусто.", "Поки порожньо.")}
         </div>
       )}
 
@@ -120,18 +120,18 @@ export default function BomCard({
                   grid row with the number inputs in the narrow inputs column. */}
               <div className="bom-desc">
                 <b>{l.brand} {l.model}</b>
-                <span>{kindLabel(l.kind, lang)}{l.spec ? ` · ${l.spec}` : ""}</span>
+                <span>{kindLabel(l.kind, lang)}{l.spec ? `, ${l.spec}` : ""}</span>
               </div>
               <div className="bom-nums">
                 <input className="input bom-qty" type="number" min="0" step="0.1" value={l.qty}
-                  aria-label={t3(lang, "cantitate", "quantity", "количество")}
+                  aria-label={t3(lang, "cantitate", "quantity", "количество", "кількість")}
                   onChange={(e) => setLine(i, { qty: +e.target.value || 0 })} />
                 <span className="bom-op">×</span>
                 <input className="input bom-price" type="number" min="0" step="1" value={l.unit_price}
-                  aria-label={t3(lang, "preț unitar", "unit price", "цена за единицу")}
+                  aria-label={t3(lang, "preț unitar", "unit price", "цена за единицу", "ціна за одиницю")}
                   onChange={(e) => setLine(i, { unit_price: +e.target.value || 0 })} />
                 <b className="bom-total">{money((Number(l.qty) || 0) * (Number(l.unit_price) || 0))}</b>
-                <button type="button" className="bom-del" aria-label={t3(lang, "șterge", "remove", "удалить")}
+                <button type="button" className="bom-del" aria-label={t3(lang, "șterge", "remove", "удалить", "видалити")}
                   onClick={() => onChange(bom.filter((_, j) => j !== i))}>✕</button>
               </div>
             </div>
@@ -141,35 +141,35 @@ export default function BomCard({
 
       <div className="bom-acts">
         <button type="button" className="btn ghost sm" onClick={() => { setPicking(picking === "supplier" ? null : "supplier"); setQ(""); }}>
-          {t3(lang, "+ din catalogul furnizorilor", "+ from the supplier catalog", "+ из каталога поставщиков")}
+          {t3(lang, "+ din catalogul furnizorilor", "+ from the supplier catalog", "+ из каталога поставщиков", "+ з каталогу постачальників")}
         </button>
         <button type="button" className="btn ghost sm" disabled={ownRows.length === 0}
           onClick={() => { setPicking(picking === "own" ? null : "own"); setQ(""); }}>
           {ownRows.length
-            ? t3(lang, `+ din catalogul meu (${ownRows.length})`, `+ from my catalog (${ownRows.length})`, `+ из моего каталога (${ownRows.length})`)
-            : t3(lang, "catalogul meu e gol", "my catalog is empty", "мой каталог пуст")}
+            ? t3(lang, `+ din catalogul meu (${ownRows.length})`, `+ from my catalog (${ownRows.length})`, `+ из моего каталога (${ownRows.length})`, `+ з мого каталогу (${ownRows.length})`)
+            : t3(lang, "catalogul meu e gol", "my catalog is empty", "мой каталог пуст", "мій каталог порожній")}
         </button>
         <button type="button" className="btn ghost sm" disabled={!(kw > 0)}
           onClick={() => onChange(autoBom(kw, battKwh))}>
-          {t3(lang, "⚡ completează automat", "⚡ auto-fill", "⚡ заполнить автоматически")}
+          {t3(lang, "⚡ completează automat", "⚡ auto-fill", "⚡ заполнить автоматически", "⚡ заповнити автоматично")}
         </button>
       </div>
 
       {picking && (
         <div className="bom-picker">
           <input className="input" autoFocus value={q} onChange={(e) => setQ(e.target.value)}
-            placeholder={t3(lang, "caută brand, model sau tip…", "search brand, model or type…", "поиск бренда, модели или типа…")} />
+            placeholder={t3(lang, "caută brand, model sau tip…", "search brand, model or type…", "поиск бренда, модели или типа…", "пошук бренду, моделі або типу…")} />
           <div className="bom-pick-list">
             {filtered.map((r) => (
               <button type="button" key={r.key} className="bom-pick" onClick={() => addLine(r)}>
                 <span className="bp-main">{r.brand} {r.model}</span>
-                <span className="bp-spec">{kindLabel(r.kind, lang)}{r.spec ? ` · ${r.spec}` : ""}</span>
+                <span className="bp-spec">{kindLabel(r.kind, lang)}{r.spec ? `, ${r.spec}` : ""}</span>
                 <span className="bp-meta">{r.meta}</span>
                 <b className="bp-price">{money(r.unit_price)}</b>
               </button>
             ))}
             {filtered.length === 0 && (
-              <div className="bom-empty">{t3(lang, "nicio potrivire", "no matches", "нет совпадений")}</div>
+              <div className="bom-empty">{t3(lang, "nicio potrivire", "no matches", "нет совпадений", "немає збігів")}</div>
             )}
           </div>
         </div>
@@ -177,10 +177,10 @@ export default function BomCard({
 
       {bom.length > 0 && (
         <div className="bom-sum">
-          <div className="bom-sum-row"><span>{t3(lang, "Materiale", "Materials", "Материалы")}</span><b>{money(materials)}</b></div>
-          <div className="bom-sum-row"><span>{t3(lang, "Preț ofertă", "Quote price", "Цена предложения")}</span><b>{money(quotePrice)}</b></div>
+          <div className="bom-sum-row"><span>{t3(lang, "Materiale", "Materials", "Материалы", "Матеріали")}</span><b>{money(materials)}</b></div>
+          <div className="bom-sum-row"><span>{t3(lang, "Preț ofertă", "Quote price", "Цена предложения", "Ціна пропозиції")}</span><b>{money(quotePrice)}</b></div>
           <div className={"bom-sum-row margin" + (margin < 0 ? " neg" : "")}>
-            <span>{t3(lang, "Marjă brută", "Gross margin", "Валовая маржа")}</span>
+            <span>{t3(lang, "Marjă brută", "Gross margin", "Валовая маржа", "Валова маржа")}</span>
             <b>{money(margin)} <em>{marginPct.toFixed(0)}%</em></b>
           </div>
           {margin < 0 && (
@@ -188,7 +188,7 @@ export default function BomCard({
               {t3(lang,
                 "Materialele costă mai mult decât prețul din ofertă: manopera și transportul nu sunt încă acoperite.",
                 "Materials cost more than the quoted price: labour and transport aren't covered yet.",
-                "Материалы дороже цены предложения: работа и доставка ещё не покрыты.")}
+                "Материалы дороже цены предложения: работа и доставка ещё не покрыты.", "Матеріали дорожчі за ціну пропозиції: роботу й доставку ще не покрито.")}
             </div>
           )}
         </div>

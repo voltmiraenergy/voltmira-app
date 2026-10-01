@@ -6,8 +6,9 @@
 // file is only the on-screen presentation of them.
 import { useMemo } from "react";
 import { designCheck, designCheckRows, designCheckLead, stringInputs } from "../lib/designCheck.js";
+import { Check } from "lucide-react";
 
-const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
+const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
 
 export default function DesignChecks({ lang, bom, kw, battKwh, consKwh, phases, market, className = "card" }) {
   const d = useMemo(() => designCheck({ bom, kw, battKwh, consKwh, phases, market }), [bom, kw, battKwh, consKwh, phases, market]);
@@ -20,18 +21,18 @@ export default function DesignChecks({ lang, bom, kw, battKwh, consKwh, phases, 
 
   return (
     <section className={className}>
-      <h3>{t3(lang, "Verificări de proiectare", "Design checks", "Проверки проекта")}</h3>
+      <h3>{t3(lang, "Verificări de proiectare", "Design checks", "Проверки проекта", "Перевірки проєкту")}</h3>
       <p className="dc-lead">{designCheckLead(d, lang)}</p>
 
       <ul className="dc-list">
         {rows.map((r, i) => (
           <li key={i} className={r.ok ? "ok" : "warn"}>
-            <span className="dc-dot">{r.ok ? "✓" : "!"}</span>
+            <span className="dc-dot">{r.ok ? <Check size={12} strokeWidth={3.2} /> : "!"}</span>
             <div className="dc-body">
               <div className="dc-line"><span className="dc-label">{r.label}</span><b className={r.ok ? "" : "bad"}>{r.value}</b></div>
               <div className="dc-detail">
                 {r.detail}
-                {r.note ? <> · <i>{r.note}</i></> : null}
+                {r.note ? <>, <i>{r.note}</i></> : null}
                 {r.warn ? <>: <em>{r.warn}</em></> : null}
               </div>
             </div>
@@ -41,12 +42,12 @@ export default function DesignChecks({ lang, bom, kw, battKwh, consKwh, phases, 
 
       {inputs.length > 1 && (
         <div className="dc-inputs">
-          <div className="dc-in-cap">{t3(lang, "Repartizare pe intrări MPPT", "Split across MPPT inputs", "Разбивка по входам MPPT")}</div>
+          <div className="dc-in-cap">{t3(lang, "Repartizare pe intrări MPPT", "Split across MPPT inputs", "Разбивка по входам MPPT", "Розподіл за входами MPPT")}</div>
           <div className="dc-in-grid" style={{ gridTemplateColumns: `repeat(${inputs.length}, 1fr)` }}>
             {inputs.map((r) => (
               <div key={r.label} className={"dc-in" + (r.ok ? "" : " bad")}>
-                <span className="dc-in-label">{t3(lang, "Intrare", "Input", "Вход")} {r.label}</span>
-                <b>{r.strings} × {r.modulesPerString} {t3(lang, "module", "modules", "модулей")}</b>
+                <span className="dc-in-label">{t3(lang, "Intrare", "Input", "Вход", "Вхід")} {r.label}</span>
+                <b>{r.strings} × {r.modulesPerString} {t3(lang, "module", "modules", "модулей", "модулів")}</b>
                 <span className="dc-in-v">{Math.round(r.vString)} V</span>
               </div>
             ))}
@@ -56,7 +57,7 @@ export default function DesignChecks({ lang, bom, kw, battKwh, consKwh, phases, 
 
       {allClear && (
         <div className="dc-clear">
-          {t3(lang, "Toate verificările trec: sistemul e coerent.", "Every check passes: the design is sound.", "Все проверки пройдены.")}
+          {t3(lang, "Toate verificările trec: sistemul e coerent.", "Every check passes: the design is sound.", "Все проверки пройдены.", "Усі перевірки пройдено: проєкт надійний.")}
         </div>
       )}
 

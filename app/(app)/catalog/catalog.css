@@ -89,3 +89,7 @@
 @media (pointer: coarse) {
   .app .cx .cat-acts { opacity: 1; }
 }
+
+/* Ukraine: the import duty and VAT note above the catalog */
+.app .cx .cx-duty { margin: 0 0 14px; padding: 10px 13px; border-radius: 10px; background: var(--green-tint); color: var(--ink);
+  font-size: 12.5px; line-height: 1.5; max-width: 90ch; }

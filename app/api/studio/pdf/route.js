@@ -27,7 +27,7 @@ const TOKENS = ":root{--line:#E3E1D6;--green:#1E6B4E;--amber:#E89B2D;--ink:#1421
 
 export async function POST(req) {
   // Studio lives behind the app shell — authenticated callers only.
-  const { data: { user } } = await supabaseServer().auth.getUser();
+  const { data: { user } } = await (await supabaseServer()).auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
 
   if (await isRateLimited(`studiopdf:${clientIp(req)}`, 40, 60 * 60 * 1000)) {

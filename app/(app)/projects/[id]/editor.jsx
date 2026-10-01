@@ -23,18 +23,23 @@ import PeakShaving from "../../../../components/PeakShaving.jsx";
 import DesignSuggestions from "../../../../components/DesignSuggestions.jsx";
 import BatterySizingPanel from "../../../../components/BatterySizingPanel.jsx";
 import SurplusPanel, { useBuyback } from "../../../../components/SurplusPanel.jsx";
+import UaPanel from "../../../../components/UaPanel.jsx";
 import InstallChecklist from "./InstallChecklist.jsx";
+import GridFile from "./GridFile.jsx";
 import SignedContract from "./SignedContract.jsx";
 import ShareCard from "./ShareCard.jsx";
 import LegalDocsModal from "./LegalDocsModal.jsx";
 import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
 import { financials, bomTotal } from "../../../../lib/quoteAnalysis.js";
+import { startYearOf } from "../../../../lib/quoteInput.js";
 import { applyCalibration } from "../../../../lib/yieldCalibration.js";
 import { t } from "../../../../lib/i18n.js";
 import { autoBom, recommendMount } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
 import { designCheck } from "../../../../lib/designCheck.js";
-import { fitPanels } from "../../../../lib/roofLayout.js";
+import { fitPanels, fitOptions } from "../../../../lib/roofLayout.js";
+import { moneyFormatter, numFor } from "../../../../lib/money.js";
+import { saveOutbox, readOutbox, clearOutbox, isNetworkError } from "../../../../lib/offline.js";
 
 // System-size slider range — raised to 500 kW: Site Designer's own real,
 // drawn-roof panel counts can land well past a "residential" size for a large
@@ -43,7 +48,7 @@ const KW_MIN = 2, KW_MAX = 500;
 
 // Short month labels in the app's language, via Intl — no extra i18n keys needed.
 function monthLabels(lang) {
-  const loc = { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB";
+  const loc = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB";
   const fmt = new Intl.DateTimeFormat(loc, { month: "short" });
   return Array.from({ length: 12 }, (_, i) => fmt.format(new Date(2021, i, 1)));
 }
@@ -104,7 +109,7 @@ function Donut({ self, prod0, cons, lang }) {
   // the ring, where it has the width to read as one sentence.
   return (
     <svg viewBox="0 0 100 100" width="96" height="96" className="ss-ring" role="img"
-      aria-label={`${Math.round(sc * 100)}% of production self-consumed, covering ${Math.round(coverage * 100)}% of the client's use`}>
+      aria-label={t("ss_ring_aria", lang, { s: Math.round(sc * 100), c: Math.round(coverage * 100) })}>
       <circle cx="50" cy="50" r={r} fill="none" stroke="var(--line)" strokeWidth="12" />
       <circle cx="50" cy="50" r={r} fill="none" stroke="#E89B2D" strokeWidth="12" opacity=".65"
         strokeDasharray={`${c * (1 - sc)} ${c}`} transform="rotate(-90 50 50)" strokeLinecap="round" />
@@ -119,7 +124,21 @@ function Donut({ self, prod0, cons, lang }) {
 }
 
 /* ---------- editor ---------- */
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, calibration = null, canEditTechnical = true }) {
+// The electricity price typed in lei for a Moldovan or Romanian workspace.
+// The quote stores EUR, so the field keeps the text being typed ("3," then
+// "3,4") and only converts what it hands on; it shows the stored price, in
+// lei, again once it loses focus.
+function LocalPriceInput({ eur, fmt, onEur }) {
+  const [draft, setDraft] = useState(null);
+  const shown = draft ?? String(Math.round(fmt.toLocal(eur) * 100) / 100);
+  return (
+    <input className="input" type="number" step="0.01" min="0" value={shown}
+      onFocus={() => setDraft(shown)} onBlur={() => setDraft(null)}
+      onChange={(e) => { setDraft(e.target.value); const v = +e.target.value; if (v > 0) onEur(fmt.fromLocal(v)); }} />
+  );
+}
+
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, calibration = null, canEditTechnical = true }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
@@ -142,6 +161,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     ownerId: initial.owner_id || null,
     nextFollowUp: initial.next_follow_up || "",
     notes: initial.notes || "",
+    // Ukraine: outage length, what stays on, generator, Energy Credit term (UaPanel)
+    uaPlan: initial.ua_plan && typeof initial.ua_plan === "object" ? initial.ua_plan : {},
   });
   const [saved, setSaved] = useState("saved");     // saved | saving | error
   const [pvgisBusy, setPvgisBusy] = useState(false);
@@ -195,19 +216,28 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // use, so an offer and its supporting documents never disagree.
   const buyback = useBuyback(Number(p.price) || 0.18, FX.MDL);
   const isMD = p.market === "MD";
+  const isUA = p.market === "UA";
   const feedOverride = isMD ? buyback.weightedEur : undefined;
+  // Ukraine's green tariff ends with 2029, so the year the system starts decides
+  // how many years of it the client gets (engine: startYear).
+  const startYear = useMemo(() => startYearOf(initial.created_at), [initial.created_at]);
 
   // Quote price is driven entirely by system size (kW × rate + battery); the
   // bill of materials is the installer's cost, not a price override (see
   // lib/quoteInput.js).
   const q = useMemo(
-    () => quote({ ...p, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) }, E),
-    [p, E, feedOverride]);
-  const fmt = n => "€" + Math.round(n).toLocaleString("en-IE");
-  const num = n => Math.round(Number(n) || 0).toLocaleString("en-IE");
-  const yrs = n => n === null ? "25+" : n === 0 ? tr("pp_immediate") : n.toFixed(1);
+    () => quote({ ...p, startYear, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) }, E),
+    [p, E, feedOverride, startYear]);
+  // Money in the workspace's currency (lei in Moldova) at today's rate; the
+  // engine and the stored quote stay in EUR (lib/money.js).
+  const fmt = moneyFormatter({ currency, lang, fx: E?.fx });
+  const nf = numFor(lang);
+  const num = n => Math.round(Number(n) || 0).toLocaleString({ en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB");
+  const yrs = n => n === null ? "25+" : n === 0 ? tr("pp_immediate") : nf(n, 1);
   // per-kWh prices need decimals, and 0.036 must not print as "0.04"
-  const eurKwh = v => "€" + Number(v).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+  const eurKwh = v => fmt.local ? fmt.perKwh(v) : "€" + Number(v).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+  // The message that goes with the proposal link on Viber, WhatsApp and the share image.
+  const shareMsg = tr("wa_message", { client: p.client || tr("your_client"), company: companyName, url: propUrl || "" });
 
   // How far the array overshoots what the client can actually use, and the size
   // that would roughly match their annual consumption. Honours the monthly
@@ -242,8 +272,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // current pick.
   const sweepBase = useMemo(() => {
     const { batt, battKwh, ...rest } = p;
-    return { ...rest, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) };
-  }, [p, feedOverride]);
+    return { ...rest, startYear, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) };
+  }, [p, feedOverride, startYear]);
 
   /* debounced autosave — MUST surface failure: a false "Saved" while the write
      was rejected (expired session, offline, RLS) silently loses the edit. */
@@ -265,12 +295,19 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         next_follow_up: next.nextFollowUp || null,
         notes: next.notes ?? "",
       }).eq("id", initial.id);
+      // No signal: keep the edit on this device and save it when the signal
+      // is back (lib/offline.js), instead of calling it a failure.
+      if (error && isNetworkError(error)) { if (saveOutbox(initial.id, next)) { setSaved("device"); return; } }
+      // Ukraine before supabase/add-ukrainian.sql has run: the database still
+      // refuses the UA market. Say that, not "check your connection".
+      if (error && /projects_market_check/.test(error.message || "")) { setSaved("db"); return; }
       setSaved(error ? "error" : "saved");
       if (error) console.error("autosave failed:", error.message);
       // batt_kwh is written separately + best-effort so a workspace that hasn't
       // run add-battery-kwh.sql yet still autosaves everything else (the column
       // may not exist; swallow that error rather than fail the whole save).
       else {
+        clearOutbox(initial.id);
         sb.from("projects").update({ batt_kwh: next.battKwh }).eq("id", initial.id)
           .then(({ error: e2 }) => { if (e2) console.warn("batt_kwh not stored (run add-battery-kwh.sql?):", e2.message); });
         sb.from("projects").update({ options: next.options }).eq("id", initial.id)
@@ -285,12 +322,32 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           .then(({ error: e7 }) => { if (e7) console.warn("client email not stored (run add-proposal-nudges.sql?):", e7.message); });
         sb.from("projects").update({ tariff_mode: next.tariffMode || "flat" }).eq("id", initial.id)
           .then(({ error: e8 }) => { if (e8) console.warn("tariff mode not stored (run add-tariff-mode.sql?):", e8.message); });
+        if (next.market === "UA") sb.from("projects").update({ ua_plan: next.uaPlan || {} }).eq("id", initial.id)
+          .then(({ error: e9 }) => { if (e9) console.warn("Ukraine plan not stored (run add-ukrainian.sql?):", e9.message); });
       }
     } catch (e) {
+      if (isNetworkError(e) && saveOutbox(initial.id, next)) { setSaved("device"); return; }
       setSaved("error");
       console.error("autosave threw:", e?.message || e);
     }
   }
+  // Edits made with no signal wait on the device (see persist). When this quote
+  // opens with some still waiting, they are the engineer's latest: show them
+  // and save them as soon as there is a network, now or when it comes back.
+  useEffect(() => {
+    const flush = () => {
+      const box = readOutbox(initial.id);
+      if (!box) return;
+      setP(box.data);
+      setSaved(navigator.onLine === false ? "device" : "saving");
+      if (navigator.onLine !== false) persist(box.data);
+    };
+    flush();
+    window.addEventListener("online", flush);
+    return () => window.removeEventListener("online", flush);
+    // persist reads only initial.id and the edit it is handed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial.id]);
   function update(patch) {
     const next = { ...p, ...patch };
     setP(next); setSaved("saving");
@@ -404,7 +461,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       ? p.siteDesign.obstacles.map((o) => o.polygon).filter((o) => Array.isArray(o) && o.length >= 3)
       : [];
     const { w, h } = designCheck({ bom: p.bom, kw: p.kw }).panel.dimensionsMm || { w: 1909, h: 1134 };
-    return validPlanes.flatMap((pl) => fitPanels(pl.polygon, obstacles, h, w, { orientation: "portrait" }).rows);
+    const opts = fitOptions(p.siteDesign?.layout);
+    return validPlanes.flatMap((pl) => fitPanels(pl.polygon, obstacles, h, w, opts).rows);
   }, [p.siteDesign, p.bom, p.kw]);
 
   async function applySiteDesignLayout(layout) {
@@ -553,7 +611,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const validUntilDate = proposalSentAt ? new Date(new Date(proposalSentAt).getTime() + validityDays * 86400000) : null;
   const quoteStale = validUntilDate ? validUntilDate.getTime() < Date.now() : false;
   // app timezone, so this matches the date printed on the client's PDF
-  const validUntilStr = validUntilDate ? fmtDate(validUntilDate, { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB") : null;
+  const validUntilStr = validUntilDate ? fmtDate(validUntilDate, { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB") : null;
 
   // Switching market pre-fills the electricity price with the new market's
   // regional default — but only when the user hasn't typed a custom price yet
@@ -597,8 +655,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               </span>
               <span className={"chip static " + p.status}>{tr("st_" + p.status)}</span>
               <span className={"qb-saved s-" + saved} role="status">
-                <i aria-hidden="true" />
-                {saved === "saving" ? tr("saving") : saved === "error" ? tr("save_failed") : tr("saved")}
+                {saved === "saving" ? tr("saving") : saved === "error" ? tr("save_failed") : saved === "device" ? tr("saved_device") : saved === "db" ? tr("save_needs_ua_db") : tr("saved")}
                 {saved === "error" && (
                   <button className="btn sm danger" style={{ marginLeft: 8 }} onClick={() => { setSaved("saving"); persist(p); }}>{tr("retry")}</button>
                 )}
@@ -637,7 +694,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       {/* What the client will see, and what it leaves you, pinned while you edit. */}
       <dl className="qb-bar" aria-live="polite">
         <div><dt>{tr("qb_pays")}</dt><dd>{fmt(q.e.cost)}</dd>
-          <dd className="qb-bar-sub">{grants > 0 ? tr("qb_pays_grant", { v: fmt(grants) }) : costPerW > 0 ? costPerW.toFixed(2) + " €/W" : ""}</dd></div>
+          <dd className="qb-bar-sub">{grants > 0 ? tr("qb_pays_grant", { v: fmt(grants) }) : costPerW > 0 ? nf(costPerW, 2) + " €/W" : ""}</dd></div>
         <div className="hi"><dt>{tr("qb_payback")}</dt><dd>{yrs(q.e.payback)} <small>{tr("yrs")}</small></dd>
           <dd className="qb-bar-sub">{tr("qb_range", { a: yrs(q.o.payback), b: yrs(q.p.payback) })}</dd></div>
         <div><dt>{tr("savings_y1")}</dt><dd>{fmt(q.e.year1)}</dd>
@@ -703,7 +760,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             {p.yieldOverride && (
               <div className="pvgis-data">
                 <span className="pvg-k">{Math.round(p.yieldOverride)}</span> {tr("unit_kwp_yr")}
-                {Array.isArray(p.monthlyYieldShape) && p.monthlyYieldShape.length === 12 && <> · {tr("pvgis_monthly")}</>}
+                {Array.isArray(p.monthlyYieldShape) && p.monthlyYieldShape.length === 12 && <>, {tr("pvgis_monthly")}</>}
                 {/* Sunny Design names a "site for meteorological data" and a
                     distance to it — SMA runs on a network of physical
                     stations, so that number means something for them. PVGIS is
@@ -748,6 +805,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <div className="field"><label>{tr("market")}</label>
               <select className="input" value={p.market} onChange={e => changeMarket(e.target.value)}>
                 <option value="MD">{tr("market_md")}</option>
+                <option value="UA">{tr("market_ua")}</option>
                 <option value="RO">{tr("market_ro")}</option>
               </select></div>
             <div className="field"><label>{tr("next_followup")}</label>
@@ -781,9 +839,11 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                   onChange={e => update({ kw: +e.target.value || KW_MIN })} />
               </div>
             </div>
-            <div className="field"><label>{tr("elec_price")}</label>
-              <input className="input" type="number" step="0.01" value={p.price}
-                onChange={e => update({ price: +e.target.value || 0.21 })} /></div>
+            <div className="field"><label>{fmt.local ? tr("elec_price_local", { u: fmt.unit }) : tr("elec_price")}</label>
+              {fmt.local
+                ? <LocalPriceInput eur={p.price} fmt={fmt} onEur={(v) => update({ price: v })} />
+                : <input className="input" type="number" step="0.01" value={p.price}
+                    onChange={e => update({ price: +e.target.value || 0.21 })} />}</div>
             {/* Only Moldova has this plan (Premier Energy/RED Nord, ANRE-
                 approved) — real self-consumption is ~entirely daytime, so a
                 differentiated plan makes solar worth more than the flat
@@ -820,7 +880,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                   ))}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8, textAlign: "right" }}>
-                  {tr("mo_total_yr", { v: (p.consMonthly || []).reduce((a, b) => a + (+b || 0), 0).toLocaleString() })}
+                  {tr("mo_total_yr", { v: num((p.consMonthly || []).reduce((a, b) => a + (+b || 0), 0)) })}
                 </div>
               </div>
             )}
@@ -836,7 +896,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             {billRes && (
               <div className="pvgis-data" style={{ marginTop: 8 }}>
                 <div style={{ fontWeight: 700, marginBottom: 4 }}>{tr("bill_found")}</div>
-                <div>{tr("annual_cons")}: <span className="pvg-k">{billRes.annualKwh ? Math.round(billRes.annualKwh).toLocaleString() : "—"}</span> kWh</div>
+                <div>{tr("annual_cons")}: <span className="pvg-k">{billRes.annualKwh ? num(billRes.annualKwh) : "—"}</span> kWh</div>
                 {billRes.meterNumber && <div>{tr("bill_meter")}: {billRes.meterNumber}</div>}
                 {billRes.supplier && <div>{tr("bill_supplier")}: {billRes.supplier}</div>}
                 {billRes.subsidy && <div>{tr("bill_subsidy")}: {billRes.subsidy}</div>}
@@ -872,7 +932,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                   <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                     <input className="input" type="number" min="0" step="0.5" style={{ width: 120 }}
                       value={p.battKwh} onChange={e => update({ battKwh: +e.target.value || 0 })} />
-                    <span style={{ color: "var(--muted)", fontSize: 13 }}>kWh · {fmt(battCost)}</span>
+                    <span style={{ color: "var(--muted)", fontSize: 13 }}>kWh, {fmt(battCost)}</span>
                   </div>
                 </div>
               );
@@ -939,7 +999,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <div className="cost-line">
               <div className="k"><b>{fmt(q.e.cost)}</b>
                 <span>{tr("total_invest")}</span></div>
-              <div className="k"><b>{Math.round(q.e.prod0).toLocaleString()} kWh</b>
+              <div className="k"><b>{num(q.e.prod0)} kWh</b>
                 <span>{tr("prod_year")}{p.yieldOverride ? " " + tr("tag_pvgis") : " " + tr("tag_default")}</span></div>
               <div className="k"><b>{fmt(q.e.year1)}</b><span>{tr("savings_y1")}</span></div>
             </div>
@@ -947,7 +1007,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 market in one glance — €/W here, not the demo's lei/W, because
                 this installer-side view is EUR throughout (see fmt above). */}
             {costPerW > 0 && (
-              <div className="cost-spec">{tr("cost_per_w")}: <b>{costPerW.toFixed(2)} €/W</b></div>
+              <div className="cost-spec">{tr("cost_per_w")}: <b>{nf(costPerW, 2)} €/W</b></div>
             )}
             {/* Ring + legend side by side. Previously a spacer shoved the ring to
                 the far right of the number row, leaving a dead gap across the
@@ -1024,8 +1084,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <div className="fin-metrics">
               <div className="fm"><b>{fmt(fin.npv)}</b><span>{tr("m_npv")} @ {disc.toFixed(0)}%</span></div>
               <div className="fm"><b>{fin.irr == null ? "—" : (fin.irr * 100).toFixed(1) + "%"}</b><span>{tr("m_irr")}</span></div>
-              <div className="fm"><b>€{fin.lcoe.toFixed(3)}</b>
-                <span>{tr("m_lcoe")} · {tr("m_vs_price")} {eurKwh(Number(p.price) || 0)}</span></div>
+              <div className="fm"><b>{eurKwh(fin.lcoe)}</b>
+                <span>{tr("m_lcoe")}, {tr("m_vs_price")} {eurKwh(Number(p.price) || 0)}</span></div>
             </div>
             <label className="disc-row">
               {tr("m_disc")}<output>{disc.toFixed(1)}%</output>
@@ -1081,6 +1141,22 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             netMetering={mkt.oneToOne}
           />
 
+          {isUA && (
+            <UaPanel
+              lang={lang}
+              kw={Number(p.kw) || 0}
+              battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+              plan={p.uaPlan}
+              onPlan={(uaPlan) => update({ uaPlan })}
+              onApplyBattery={(kwh) => update({ batt: true, battKwh: kwh })}
+              costEur={q.e.cost}
+              fxUah={Number(E?.fx?.UAH) || FX.UAH}
+              fitUah={Number(E?.uaFitUah) || 6.1331}
+              afterUah={Number(E?.uaFeedAfterUah) || 2.5}
+              money={fmt}
+            />
+          )}
+
           {isMD && (
             <SurplusPanel
               lang={lang}
@@ -1115,23 +1191,23 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           {p.status === "won" && (
             <InstallChecklist projectId={initial.id} initial={initial.install_progress} lang={lang} />
           )}
+
+          {/* The grid-connection file, Moldova's or Ukraine's: from the moment
+              the offer is out (some installers apply for the approval before
+              the client signs). */}
+          {(isMD || isUA) && (p.status !== "draft" || initial.install_progress?.gridFile) && (
+            <GridFile key={p.market} projectId={initial.id} market={p.market} address={[p.address, p.title].filter(Boolean).join(", ")} initial={initial.install_progress?.gridFile} lang={lang} />
+          )}
         </div>
       </div>
 
-      {/* site designer modal: draw the roof on satellite imagery */}
+      {/* site designer: draw the roof on satellite imagery, full screen */}
       {siteDesignerOpen && p.lat != null && p.lon != null && (
-        <div className="overlay" onClick={() => setSiteDesignerOpen(false)}>
-          <div className="modal sd-modal" onClick={e => e.stopPropagation()}>
-            <h4>{tr("site_designer_title")}</h4>
-            <SiteDesigner lang={lang} lat={p.lat} lon={p.lon} siteDesign={p.siteDesign}
-              onChange={(sd) => update({ siteDesign: sd })}
-              onApply={applySiteDesignLayout} applying={siteDesignApplying}
-              projectInputs={p} onComputeQuote={computeSiteDesignQuote} />
-            <div className="modal-acts" style={{ marginTop: 14 }}>
-              <button className="btn ghost" onClick={() => setSiteDesignerOpen(false)}>{tr("close")}</button>
-            </div>
-          </div>
-        </div>
+        <SiteDesigner lang={lang} lat={p.lat} lon={p.lon} address={p.address} siteDesign={p.siteDesign}
+          onChange={(sd) => update({ siteDesign: sd })}
+          onApply={applySiteDesignLayout} applying={siteDesignApplying}
+          projectInputs={p} onComputeQuote={computeSiteDesignQuote} money={fmt}
+          onClose={() => setSiteDesignerOpen(false)} />
       )}
 
       {/* proforma modal: pick a deposit, then open the document */}
@@ -1181,7 +1257,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       {legalDocsOpen && (
         <LegalDocsModal lang={lang} onClose={() => setLegalDocsOpen(false)} initialTab={legalTab}
           company={{ name: companyName, ...companyLegal }}
-          project={{ id: initial.id, clientName: p.client, address: p.address, kw: p.kw, price: q.e.cost, currency: "EUR", batt: p.batt, battKwh: p.battKwh, market: p.market, bom: p.bom }} />
+          project={{ id: initial.id, clientName: p.client, address: p.address, kw: p.kw, price: q.e.cost, currency: "EUR", batt: p.batt, battKwh: p.battKwh, market: p.market, bom: p.bom, gridOperator: initial.install_progress?.gridFile?.operator, title: p.title }} />
       )}
 
       {/* proposal modal */}
@@ -1210,13 +1286,15 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 {refreshMsg && <span className={"email-msg " + (refreshMsg.ok ? "ok" : "bad")} style={{ margin: 0 }}>{refreshMsg.text}</span>}
               </div>
             )}
-            {/* WhatsApp is how solar sells in RO/MD — pre-write the message + link */}
-            <a className="btn wapp" style={{ width: "100%", marginBottom: 10 }}
-              href={`https://wa.me/?text=${encodeURIComponent(tr("wa_message", { client: p.client || tr("your_client"), company: companyName, url: propUrl }))}`}
-              target="_blank" rel="noopener noreferrer">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.38a9.9 9.9 0 0 0 4.73 1.2h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.64-1.03-5.13-2.9-7A9.82 9.82 0 0 0 12.04 2Zm0 18.15h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.1.81.83-3.02-.2-.31a8.22 8.22 0 0 1-1.26-4.4c0-4.54 3.7-8.23 8.24-8.23 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.69 8.24-8.22 8.24Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.4-.42-.56-.43h-.48c-.16 0-.42.06-.64.31-.22.25-.84.83-.84 2.02 0 1.19.86 2.34.98 2.5.12.16 1.69 2.58 4.1 3.62.57.25 1.02.4 1.37.5.57.19 1.1.16 1.51.1.46-.07 1.47-.6 1.68-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.28Z" /></svg>
-              {tr("wa_share")}
-            </a>
+            {/* Where Moldovan clients actually read messages: Viber first, then
+                WhatsApp and Telegram. Each opens the app with the message and the
+                tracked link already written. */}
+            <div className="share-lbl">{tr("share_on")}</div>
+            <div className="share-row">
+              <a className="btn viber" href={`viber://forward?text=${encodeURIComponent(shareMsg)}`}>Viber</a>
+              <a className="btn wapp" href={`https://wa.me/?text=${encodeURIComponent(shareMsg)}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+              <a className="btn tg" href={`https://t.me/share/url?url=${encodeURIComponent(propUrl)}&text=${encodeURIComponent(tr("share_msg_nolink", { client: p.client || tr("your_client"), company: companyName }))}`} target="_blank" rel="noopener noreferrer">Telegram</a>
+            </div>
             {/* Email the PDF. Rendering happens server-side, so this takes a
                 couple of seconds — the button states say so rather than looking
                 dead. */}
@@ -1235,14 +1313,14 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
 
             <ShareCard lang={lang} companyName={companyName} companyLogo={companyLogo}
               client={p.client || tr("your_client")}
-              systemLabel={`${p.kw.toFixed(1)} kW${p.batt ? " + " + (p.battKwh || 10) + " kWh" : ""}`}
+              systemLabel={`${nf(p.kw, 1)} kW${p.batt ? " + " + nf(p.battKwh || 10, Number.isInteger(+(p.battKwh || 10)) ? 0 : 1) + " kWh" : ""}`}
               bands={[
                 { label: tr("pessimistic"), years: yrs(q.p.payback) + " " + tr("yrs") },
                 { label: tr("expected"), years: yrs(q.e.payback) + " " + tr("yrs") },
                 { label: tr("optimistic"), years: yrs(q.o.payback) + " " + tr("yrs") },
               ]}
               savings={fmt(q.e.rows[q.e.rows.length - 1])}
-              waText={tr("wa_message", { client: p.client || tr("your_client"), company: companyName, url: propUrl })} />
+              waText={shareMsg} />
             <div className="modal-acts">
               <button className="btn ghost" onClick={() => setPropUrl(null)}>{tr("close")}</button>
               <a className="btn primary" href={propUrl} target="_blank" rel="noopener noreferrer">{tr("open_as_client")}</a>

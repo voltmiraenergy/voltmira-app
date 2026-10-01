@@ -3,7 +3,7 @@
   Each language is its own URL, and every entry lists the full alternate set —
   itself included, which is what hreflang requires to be read as one cluster.
   These used to be ?lang= query params that all served identical English HTML,
-  so the annotation was describing three copies of the same page.
+  so the annotation was describing identical copies of the same page.
 
   /demo is deliberately absent: it is served noindex (every visit provisions
   a real workspace), and a sitemap should only list pages meant to be indexed.
@@ -18,6 +18,7 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://voltmira.com/"/>
     <xhtml:link rel="alternate" hreflang="ro" href="https://voltmira.com/ro"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://voltmira.com/ru"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://voltmira.com/uk"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://voltmira.com/"/>
   </url>
   <url>
@@ -28,6 +29,7 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://voltmira.com/"/>
     <xhtml:link rel="alternate" hreflang="ro" href="https://voltmira.com/ro"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://voltmira.com/ru"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://voltmira.com/uk"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://voltmira.com/"/>
   </url>
   <url>
@@ -38,6 +40,18 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://voltmira.com/"/>
     <xhtml:link rel="alternate" hreflang="ro" href="https://voltmira.com/ro"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://voltmira.com/ru"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://voltmira.com/uk"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://voltmira.com/"/>
+  </url>
+  <url>
+    <loc>https://voltmira.com/uk</loc>
+    <lastmod>2026-09-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://voltmira.com/"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://voltmira.com/ro"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://voltmira.com/ru"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://voltmira.com/uk"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://voltmira.com/"/>
   </url>
   <url>

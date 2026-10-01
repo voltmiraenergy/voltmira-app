@@ -13,51 +13,53 @@ import {
 import { FX } from "../_engine.js";
 
 const TX = {
-  title: { en: "Payments & cashflow", ro: "Încasări & flux de numerar", ru: "Оплаты и денежный поток" },
+  title: { en: "Payments & cashflow", ro: "Încasări & flux de numerar", ru: "Оплаты и денежный поток", uk: "Оплати й грошовий потік" },
   sub: {
     en: "Deposit, balance, due dates and overdue flags per job, plus the month's in / owed / committed, and the fiscal invoice generated from the quote.",
     ro: "Avans, rest, termene și marcaje de întârziere per lucrare, plus încasat / de încasat / angajat pe lună, și factura fiscală generată din ofertă.",
     ru: "Аванс, остаток, сроки и флаги просрочки по объекту, плюс за месяц получено / к получению / законтрактовано и налоговая накладная из расчёта.",
+    uk: "Аванс, залишок, строки й позначки прострочення за об’єктом, а також за місяць отримано / до отримання / законтрактовано і податкова накладна з розрахунку.",
   },
   note: {
     en: "Every job from the Studio hub, with its real deposit/balance worked out from the quote. Mark a deposit paid or a job settled here, and the hub's money badge updates too. The month's cashflow adds them all up live.",
     ro: "Toate lucrările din hub-ul Studio, cu avans/rest calculate real din ofertă. Marchează aici avansul plătit sau lucrarea achitată, și eticheta de bani din hub se actualizează la fel. Fluxul lunii le însumează live.",
     ru: "Все объекты из хаба Studio, с реальным авансом/остатком по расчёту. Отметьте здесь оплату аванса или закрытие объекта, и денежный значок в хабе обновится так же. Денежный поток месяца суммирует их вживую.",
+    uk: "Усі об’єкти з хабу Studio, з реальним авансом/залишком за розрахунком. Позначте тут оплату авансу або закриття об’єкта, і грошовий значок у хабі оновиться так само. Грошовий потік місяця підсумовує їх наживо.",
   },
-  addJobLink: { en: "Add a job from the Studio hub →", ro: "Adaugă o lucrare din hub-ul Studio →", ru: "Добавить объект в хабе Studio →" },
-  markPaidDep: { en: "deposit paid", ro: "avans plătit", ru: "аванс оплачен" },
-  markDone: { en: "settled", ro: "achitat", ru: "закрыт" },
-  month: { en: "This month", ro: "Luna aceasta", ru: "Этот месяц" },
-  received: { en: "Received", ro: "Încasat", ru: "Получено" },
-  owed: { en: "Owed to you", ro: "De încasat", ru: "К получению" },
-  committed: { en: "Committed to suppliers", ro: "Angajat la furnizori", ru: "Законтрактовано" },
-  net: { en: "Net position", ro: "Poziție netă", ru: "Чистая позиция" },
-  jobs: { en: "Jobs", ro: "Lucrări", ru: "Объекты" },
-  c_client: { en: "Client", ro: "Client", ru: "Клиент" },
-  c_value: { en: "Contract", ro: "Contract", ru: "Контракт" },
-  c_dep: { en: "Deposit", ro: "Avans", ru: "Аванс" },
-  c_bal: { en: "Balance", ro: "Rest", ru: "Остаток" },
-  c_state: { en: "State", ro: "Stare", ru: "Статус" },
-  paid: { en: "paid", ro: "plătit", ru: "оплачен" },
-  due: { en: "due", ro: "scadent", ru: "к оплате" },
-  overdue: { en: "overdue", ro: "întârziat", ru: "просрочен" },
-  awaiting: { en: "awaiting deposit", ro: "așteaptă avansul", ru: "ждём аванс" },
-  done: { en: "settled", ro: "achitat", ru: "закрыт" },
-  invoice: { en: "Fiscal invoice", ro: "Factură fiscală", ru: "Налоговая накладная" },
-  invNo: { en: "Invoice no.", ro: "Nr. factură", ru: "№ накладной" },
-  invClient: { en: "Buyer", ro: "Cumpărător", ru: "Покупатель" },
-  invLine: { en: "PV system, turnkey", ro: "Sistem fotovoltaic, la cheie", ru: "ФЭ-система, под ключ" },
-  invNet: { en: "Net", ro: "Fără TVA", ru: "Без НДС" },
-  invVat: { en: "VAT 20%", ro: "TVA 20%", ru: "НДС 20%" },
-  invTot: { en: "Total", ro: "Total", ru: "Итого" },
-  print: { en: "Print / PDF", ro: "Printează / PDF", ru: "Печать / PDF" },
-  t_added: { en: "Job added", ro: "Lucrare adăugată", ru: "Объект добавлен" },
-  t_removed: { en: "Job removed", ro: "Lucrare ștearsă", ru: "Объект удалён" },
-  t_depOn: { en: "Marked deposit paid", ro: "Marcat avans plătit", ru: "Отмечен аванс оплачен" },
-  t_depOff: { en: "Marked deposit unpaid", ro: "Marcat avans neplătit", ru: "Отмечено: аванс не оплачен" },
-  t_doneOn: { en: "Marked settled", ro: "Marcat achitat", ru: "Отмечено: закрыт" },
-  t_doneOff: { en: "Marked not settled", ro: "Marcat neachitat", ru: "Отмечено: не закрыт" },
-  t_sample: { en: "Sample jobs loaded", ro: "Lucrări exemplu încărcate", ru: "Примеры загружены" },
+  addJobLink: { en: "Add a job from the Studio hub →", ro: "Adaugă o lucrare din hub-ul Studio →", ru: "Добавить объект в хабе Studio →", uk: "Додати об’єкт у хабі Studio →" },
+  markPaidDep: { en: "deposit paid", ro: "avans plătit", ru: "аванс оплачен", uk: "аванс оплачено" },
+  markDone: { en: "settled", ro: "achitat", ru: "закрыт", uk: "закрито" },
+  month: { en: "This month", ro: "Luna aceasta", ru: "Этот месяц", uk: "Цей місяць" },
+  received: { en: "Received", ro: "Încasat", ru: "Получено", uk: "Отримано" },
+  owed: { en: "Owed to you", ro: "De încasat", ru: "К получению", uk: "До отримання" },
+  committed: { en: "Committed to suppliers", ro: "Angajat la furnizori", ru: "Законтрактовано", uk: "Законтрактовано" },
+  net: { en: "Net position", ro: "Poziție netă", ru: "Чистая позиция", uk: "Чиста позиція" },
+  jobs: { en: "Jobs", ro: "Lucrări", ru: "Объекты", uk: "Об’єкти" },
+  c_client: { en: "Client", ro: "Client", ru: "Клиент", uk: "Клієнт" },
+  c_value: { en: "Contract", ro: "Contract", ru: "Контракт", uk: "Контракт" },
+  c_dep: { en: "Deposit", ro: "Avans", ru: "Аванс", uk: "Аванс" },
+  c_bal: { en: "Balance", ro: "Rest", ru: "Остаток", uk: "Залишок" },
+  c_state: { en: "State", ro: "Stare", ru: "Статус", uk: "Статус" },
+  paid: { en: "paid", ro: "plătit", ru: "оплачен", uk: "оплачено" },
+  due: { en: "due", ro: "scadent", ru: "к оплате", uk: "до оплати" },
+  overdue: { en: "overdue", ro: "întârziat", ru: "просрочен", uk: "прострочено" },
+  awaiting: { en: "awaiting deposit", ro: "așteaptă avansul", ru: "ждём аванс", uk: "чекаємо аванс" },
+  done: { en: "settled", ro: "achitat", ru: "закрыт", uk: "закрито" },
+  invoice: { en: "Fiscal invoice", ro: "Factură fiscală", ru: "Налоговая накладная", uk: "Податкова накладна" },
+  invNo: { en: "Invoice no.", ro: "Nr. factură", ru: "№ накладной", uk: "№ накладної" },
+  invClient: { en: "Buyer", ro: "Cumpărător", ru: "Покупатель", uk: "Покупець" },
+  invLine: { en: "PV system, turnkey", ro: "Sistem fotovoltaic, la cheie", ru: "ФЭ-система, под ключ", uk: "ФЕ-система, під ключ" },
+  invNet: { en: "Net", ro: "Fără TVA", ru: "Без НДС", uk: "Без ПДВ" },
+  invVat: { en: "VAT 20%", ro: "TVA 20%", ru: "НДС 20%", uk: "ПДВ 20%" },
+  invTot: { en: "Total", ro: "Total", ru: "Итого", uk: "Разом" },
+  print: { en: "Print / PDF", ro: "Printează / PDF", ru: "Печать / PDF", uk: "Друк / PDF" },
+  t_added: { en: "Job added", ro: "Lucrare adăugată", ru: "Объект добавлен", uk: "Об’єкт додано" },
+  t_removed: { en: "Job removed", ro: "Lucrare ștearsă", ru: "Объект удалён", uk: "Об’єкт видалено" },
+  t_depOn: { en: "Marked deposit paid", ro: "Marcat avans plătit", ru: "Отмечен аванс оплачен", uk: "Позначено: аванс оплачено" },
+  t_depOff: { en: "Marked deposit unpaid", ro: "Marcat avans neplătit", ru: "Отмечено: аванс не оплачен", uk: "Позначено: аванс не оплачено" },
+  t_doneOn: { en: "Marked settled", ro: "Marcat achitat", ru: "Отмечено: закрыт", uk: "Позначено: закрито" },
+  t_doneOff: { en: "Marked not settled", ro: "Marcat neachitat", ru: "Отмечено: не закрыт", uk: "Позначено: не закрито" },
+  t_sample: { en: "Sample jobs loaded", ro: "Lucrări exemplu încărcate", ru: "Примеры загружены", uk: "Приклади завантажено" },
 };
 
 export default function PaymentsPreview() {
@@ -71,7 +73,7 @@ export default function PaymentsPreview() {
   // `tick` is a real, read dependency (not just the setter, which never
   // changes reference and would silently never invalidate the memo below).
   const [tick, bump] = useState(0);
-  useEffect(() => { document.title = "Payments & cashflow · VoltMira"; }, []);
+  useEffect(() => { document.title = "Payments & cashflow | VoltMira"; }, []);
 
   const activeEur = useMemo(() => jobMoneySummary(client).eur, [client]);
   const rows = useMemo(
@@ -162,16 +164,16 @@ export default function PaymentsPreview() {
       {/* fiscal invoice */}
       <DocReveal lang={lang}>
         <div className="pv-doc">
-          <div className="doc-co">VoltMira · {new Date().toLocaleDateString(lang === "ru" ? "ru-RU" : "ro-RO")} · {tx({ ro: "factură, verificați cu contabilul", en: "invoice, verify with your accountant", ru: "проверьте с бухгалтером" }, lang)}</div>
+          <div className="doc-co">VoltMira, {new Date().toLocaleDateString(({ ru: "ru-RU", uk: "uk-UA", en: "en-GB" }[lang] || "ro-RO"))}, {tx({ ro: "factură, verificați cu contabilul", en: "invoice, verify with your accountant", ru: "проверьте с бухгалтером", uk: "перевірте з бухгалтером" }, lang)}</div>
           <h1>{T(TX.invoice).toUpperCase()}</h1>
           <div className="doc-grid">
             <div className="doc-kv"><span>{T(TX.invNo)}</span><b>FF-2026-0148</b></div>
             <div className="doc-kv"><span>{T(TX.invClient)}</span><b>{client.name}</b></div>
-            <div className="doc-kv"><span>{tx({ ro: "Adresă", en: "Address", ru: "Адрес" }, lang)}</span><b>{client.address}</b></div>
-            <div className="doc-kv"><span>{tx({ ro: "Nr. contract", en: "Contract no.", ru: "№ договора" }, lang)}</span><b>{client.contractNo}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Adresă", en: "Address", ru: "Адрес", uk: "Адреса" }, lang)}</span><b>{client.address}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Nr. contract", en: "Contract no.", ru: "№ договора", uk: "№ договору" }, lang)}</span><b>{client.contractNo}</b></div>
           </div>
           <table>
-            <thead><tr><th>{tx({ ro: "Denumire", en: "Description", ru: "Наименование" }, lang)}</th><th style={{ width: 60 }}>{tx({ ro: "Cant.", en: "Qty", ru: "Кол." }, lang)}</th><th style={{ width: 150 }}>{tx({ ro: "Valoare", en: "Amount", ru: "Сумма" }, lang)}</th></tr></thead>
+            <thead><tr><th>{tx({ ro: "Denumire", en: "Description", ru: "Наименование", uk: "Найменування" }, lang)}</th><th style={{ width: 60 }}>{tx({ ro: "Cant.", en: "Qty", ru: "Кол.", uk: "К-сть" }, lang)}</th><th style={{ width: 150 }}>{tx({ ro: "Valoare", en: "Amount", ru: "Сумма", uk: "Сума" }, lang)}</th></tr></thead>
             <tbody>
               <tr><td>{T(TX.invLine)}, {(+client.kw || 0).toFixed(1)} kW{+client.batteryKwh > 0 ? ` + ${client.batteryKwh} kWh` : ""}</td><td>1</td><td>{NUM(netMdl)} lei</td></tr>
             </tbody>
@@ -181,7 +183,7 @@ export default function PaymentsPreview() {
             <div className="doc-kv"><span>{T(TX.invVat)}</span><b>{NUM(vatMdl)} lei</b></div>
             <div className="doc-kv"><span>{T(TX.invTot)}</span><b>{NUM(gross)} lei</b></div>
           </div>
-          <p className="doc-note">{tx({ ro: `Echivalent €${NUM(activeEur)} la cursul BNM. Plata prin transfer în contul din antet, ref. FF-2026-0148.`, en: `€${NUM(activeEur)} equivalent at the BNM rate. Payment by transfer to the account in the header, ref. FF-2026-0148.`, ru: `Эквивалент €${NUM(activeEur)} по курсу BNM. Оплата переводом на счёт в шапке, реф. FF-2026-0148.` }, lang)}</p>
+          <p className="doc-note">{tx({ ro: `Echivalent €${NUM(activeEur)} la cursul BNM. Plata prin transfer în contul din antet, ref. FF-2026-0148.`, en: `€${NUM(activeEur)} equivalent at the BNM rate. Payment by transfer to the account in the header, ref. FF-2026-0148.`, ru: `Эквивалент €${NUM(activeEur)} по курсу BNM. Оплата переводом на счёт в шапке, реф. FF-2026-0148.`, uk: `Еквівалент €${NUM(activeEur)} за курсом BNM. Оплата переказом на рахунок у шапці, реф. FF-2026-0148.` }, lang)}</p>
         </div>
       </DocReveal>
 

@@ -24,16 +24,18 @@ import PrintNow from "./PrintNow.jsx";
 import BackLink from "../../../../../components/BackLink.jsx";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Invoice · VoltMira" };
+export const metadata = { title: "Invoice | VoltMira" };
 
-export default async function InvoicePage({ params, searchParams }) {
-  const sb = supabaseServer();
+export default async function InvoicePage(props) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+  const sb = await supabaseServer();
   const co = await currentCompany();
   const { data: p } = await sb.from("projects").select("*").eq("id", params.id).maybeSingle();
   if (!p || !co) notFound();
 
   const lang = normLang(co.lang);
-  const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB";
+  const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB";
   const cur = co.currency || "EUR";
   // CONVERT, don't just relabel. The engine works entirely in EUR ("All money in
   // EUR. Display conversion happens in the UI layer only." — engine.js) and
@@ -75,7 +77,7 @@ export default async function InvoicePage({ params, searchParams }) {
   // link can't burn a number. Falls back to the old id-derived string when the
   // migration hasn't been run yet, so nothing breaks in the meantime.
   let invNo = p.invoice_no || null;
-  if (!invNo && headers().get("next-router-prefetch") !== "1") {
+  if (!invNo && (await headers()).get("next-router-prefetch") !== "1") {
     const { data: seq } = await sb.rpc("next_invoice_no", { p_company: co.id });
     if (seq) {
       const candidate = `${prefix}-${today.getFullYear()}-${String(seq).padStart(4, "0")}`;
@@ -272,7 +274,7 @@ export default async function InvoicePage({ params, searchParams }) {
 
       {/* The PDF route drives printing via CDP and passes pdf=1; window.print()
             inside headless Chromium blocks rather than returning. */}
-        {searchParams?.pdf !== "1" && <PrintNow />}
+      {searchParams?.pdf !== "1" && <PrintNow />}
     </div>
   );
 }

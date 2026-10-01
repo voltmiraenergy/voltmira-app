@@ -5,6 +5,7 @@
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { normLang, LANGS } from "../../lib/i18n.js";
 import WidgetForm from "./WidgetForm.jsx";
+import HtmlLang from "../../lib/HtmlLang.jsx";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,8 @@ async function companyInfo(companyId) {
   }
 }
 
-export default async function WidgetPage({ searchParams }) {
+export default async function WidgetPage(props) {
+  const searchParams = await props.searchParams;
   const companyId = String(searchParams?.c || "");
   const override = String(searchParams?.lang || "");
   const co = await companyInfo(companyId);
@@ -33,6 +35,7 @@ export default async function WidgetPage({ searchParams }) {
     // itself uses (WidgetForm.jsx) assumes a light background.
     <main lang={lang} style={{ maxWidth: 380, margin: "0 auto", padding: 18, minHeight: "100vh",
       fontFamily: "Inter, system-ui, sans-serif", color: "#142A21", background: "#fff", colorScheme: "light" }}>
+      <HtmlLang lang={lang} />
       <WidgetForm companyId={companyId} lang={lang} market={co.market} />
     </main>
   );

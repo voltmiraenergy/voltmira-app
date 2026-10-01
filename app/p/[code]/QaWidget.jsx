@@ -59,7 +59,8 @@ export default function QaWidget({ code, lang = "en", preparedBy = null }) {
     <div style={wrap}>
       <div style={head} onClick={() => setOpen((v) => !v)}>
         <div style={{ fontWeight: 700, fontSize: 14.5, color: "#142A21" }}>{t("qa_title", lang)}</div>
-        <span style={{ fontSize: 18, color: "#66756C", transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}>⌄</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#66756C" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+          style={{ flex: "none", transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}><path d="m6 9 6 6 6-6" /></svg>
       </div>
       {open && (
         <div style={{ padding: "0 16px 16px" }}>

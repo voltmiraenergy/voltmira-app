@@ -10,6 +10,9 @@ import { MonthlySVG, CashflowSVG } from "./charts.jsx";
 import FinanceToggle from "./FinanceToggle.jsx";
 import { notFound } from "next/navigation";
 import OfferBanner from "./OfferBanner.jsx";
+import UaSection from "./UaSection.jsx";
+import HtmlLang from "../../../lib/HtmlLang.jsx";
+import { moneyFormatter, numFor } from "../../../lib/money.js";
 import { t, normLang } from "../../../lib/i18n.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { kindLabel, bomLineText } from "../../../lib/quoteAnalysis.js";
@@ -50,7 +53,9 @@ function SecHead({ n, children }) {
   );
 }
 
-export default async function ProposalPage({ params, searchParams }) {
+export default async function ProposalPage(props) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   // ?print=1 = the INSTALLER exporting a PDF: no tracking (would inflate their
   // own open counts), no accept/request buttons, auto print dialog.
   const printMode = searchParams?.print === "1";
@@ -62,13 +67,13 @@ export default async function ProposalPage({ params, searchParams }) {
     return <main style={S.wrap}><h1 style={S.h1}>{t("pp_not_found", "en")}</h1>
       <p style={S.muted}>{t("pp_expired", "en")}</p></main>;
   }
-  const { company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null,
+  const { company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
     offer = null, chosenOption = null,
     roofAreaM2 = null, roofOrientation = null, roofPlanes = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
   const signedDate = signedAt
-    ? fmtDate(signedAt, { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB", { day: "numeric", month: "short", year: "numeric" })
+    ? fmtDate(signedAt, { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB", { day: "numeric", month: "short", year: "numeric" })
     : null;
 
   // ?print=1 → the branded PDF document (same layout as the demo's printProposal),
@@ -80,17 +85,22 @@ export default async function ProposalPage({ params, searchParams }) {
     // which is the rarer case, so it was cost with no payoff on the common one.
     return (
       <main lang={lang} style={{ background: "#fff", minHeight: "100vh" }}>
+        <HtmlLang lang={lang} />
         <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom}
-          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} />
+          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes}
+          acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} />
         {/* The PDF route drives printing through CDP and passes auto=0:
             window.print() inside headless Chromium blocks rather than returns. */}
         {searchParams?.auto !== "0" && <AutoPrint />}
       </main>
     );
   }
-  const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-IE";
-  const fmt = (n) => "€" + Math.round(n).toLocaleString(loc);
-  const yrs = (n) => n === null ? "25+" : n === 0 ? t("pp_immediate", lang) : n.toFixed(1);
+  const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
+  // Money in the installer's currency (lei in Moldova) at the rate frozen
+  // with this proposal; decimals with the reader's comma (lib/money.js).
+  const fmt = moneyFormatter({ currency: company.currency, lang, fx });
+  const nf = numFor(lang);
+  const yrs = (n) => n === null ? "25+" : n === 0 ? t("pp_immediate", lang) : nf(n, 1);
   const mSave = q.year1 / 12, net = mSave - (inputs.loan || 0);
 
   // Same derivation PrintSheet.jsx uses, so the mobile view gets the real
@@ -115,7 +125,7 @@ export default async function ProposalPage({ params, searchParams }) {
   const hasFinance = financeRate >= 0 && financeTerm > 0;
   const monthlyPayment = hasFinance ? amortizedMonthlyPayment(q.cost, financeRate, financeTerm) : 0;
   const placeholderTitle = !inputs.title || /^\s*new quote\s*$/i.test(inputs.title);
-  const headline = placeholderTitle ? t("pdf_auto_title", lang, { kw: Number(inputs.kw).toFixed(1) }) : inputs.title;
+  const headline = placeholderTitle ? t("pdf_auto_title", lang, { kw: nf(inputs.kw, 1) }) : inputs.title;
   // Same real, verified-only lookup PrintSheet.jsx uses — a custom/hand-typed
   // BOM line that matches no real catalog SKU gets no warranty cell, never a
   // guess (see lib/supplierCatalog.js's findWarrantyInfo).
@@ -126,19 +136,22 @@ export default async function ProposalPage({ params, searchParams }) {
 
   return (
     <main style={S.wrap} lang={lang}>
+      <HtmlLang lang={lang} />
       {/* Masthead — the same device as the PDF's: a kicker line, a bold
           display headline, a rule underneath. The phone link and the PDF are
           the same document; they should read as the same document. */}
       <div style={S.kicker}>
-        {company.shortName || company.name} · {t("pp_tag", lang)} · {fmtDate(new Date(), loc)}
+        {[company.shortName || company.name, t("pp_tag", lang), fmtDate(new Date(), loc)].filter(Boolean).join(", ")}
       </div>
       <h1 style={S.h1}>{headline}</h1>
-      <p style={{ ...S.muted, margin: "0 0 20px" }}>{inputs.address} · {t("pp_prepared", lang)} {inputs.client || t("pp_you", lang)}</p>
+      <p style={{ ...S.muted, margin: "0 0 20px" }}>
+        {[`${t("pp_prepared", lang).replace(/^./, (c) => c.toUpperCase())} ${inputs.client || t("pp_you", lang)}`, inputs.address].filter(Boolean).join(", ")}
+      </p>
 
       {/* Hero: the opening statement, not just another card in the stack. */}
       <section style={S.hero}>
         <div style={S.kpis}>
-          <div><b style={S.big}>{inputs.kw.toFixed(1)} kW</b><span style={S.kpiLbl}>
+          <div><b style={S.big}>{nf(inputs.kw, 1)} kW</b><span style={S.kpiLbl}>
             {t("pp_solar", lang)}{inputs.batt ? t("pp_plus_batt", lang) : ""}</span></div>
           {hasFinance ? (
             <FinanceToggle cash={fmt(q.cost)} monthly={`${fmt(monthlyPayment)}${t("pp_mo", lang)}`} lang={lang} />
@@ -149,22 +162,25 @@ export default async function ProposalPage({ params, searchParams }) {
         </div>
       </section>
 
+      {/* Ukraine: outages first, the way a Ukrainian household decides. */}
+      {inputs.market === "UA" && <UaSection inputs={inputs} quote={q} assumptions={q.assumptions} fx={fx} money={fmt} lang={lang} />}
+
       {options.length > 0 && (
         <section style={{ margin: "22px 0" }}>
           <SecHead>{t("pp_compare_h", lang)}</SecHead>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(148px,1fr))", gap: 12 }}>
             <div style={{ ...S.optCard, borderColor: "#1E6B4E" }}>
               <div style={{ ...S.optBadge, background: "#E4EFE9", color: "#1E6B4E" }}>{t("pp_recommended", lang)}</div>
-              <div style={S.optSys}>{inputs.kw.toFixed(1)} kW{inputs.batt ? t("pp_plus_batt", lang) : ""}</div>
+              <div style={S.optSys}>{nf(inputs.kw, 1)} kW{inputs.batt ? t("pp_plus_batt", lang) : ""}</div>
               <div style={S.optPay}>{yrs(q.bands.expc.payback)} <small style={S.muted}>{t("pp_years", lang)}</small></div>
-              <div style={S.kpiLbl}>{fmt(q.cost)} · {fmt(q.year1 / 12)}{t("pp_mo", lang)}</div>
+              <div style={S.kpiLbl}>{fmt(q.cost)}, {fmt(q.year1 / 12)}{t("pp_mo", lang)}</div>
             </div>
             {options.map((o, i) => (
               <div key={i} style={S.optCard}>
                 <div style={S.optBadge}>{o.label || `${t("pp_option", lang)} ${i + 2}`}</div>
-                <div style={S.optSys}>{o.kw.toFixed(1)} kW{o.battKwh > 0 ? t("pp_plus_batt", lang) : ""}</div>
+                <div style={S.optSys}>{nf(o.kw, 1)} kW{o.battKwh > 0 ? t("pp_plus_batt", lang) : ""}</div>
                 <div style={S.optPay}>{yrs(o.payback)} <small style={S.muted}>{t("pp_years", lang)}</small></div>
-                <div style={S.kpiLbl}>{fmt(o.cost)} · {fmt(o.year1 / 12)}{t("pp_mo", lang)}</div>
+                <div style={S.kpiLbl}>{fmt(o.cost)}, {fmt(o.year1 / 12)}{t("pp_mo", lang)}</div>
               </div>
             ))}
           </div>
@@ -187,12 +203,12 @@ export default async function ProposalPage({ params, searchParams }) {
                   <td style={{ ...S.atK, color: "#142A21", fontWeight: 600 }}>
                     {w?.productUrl ? (
                       <a href={w.productUrl} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline", textDecorationColor: "#D9D5C6" }}>
-                        {bomLineText(l)}
+                        {bomLineText(l, lang)}
                       </a>
-                    ) : bomLineText(l)}
+                    ) : bomLineText(l, lang)}
                     <span style={{ display: "block", color: "#66756C", fontWeight: 400, fontSize: 11.5 }}>
                       {kindLabel(l.kind, lang)}
-                      {anyBomWarranty && w ? ` · ${t("pdf_warranty_v", lang, { n: w.warrantyYears })}` : ""}
+                      {anyBomWarranty && w ? `, ${t("pp_warr_short", lang, { n: w.warrantyYears })}` : ""}
                     </span>
                   </td>
                   <td style={{ ...S.atV, textAlign: "right", whiteSpace: "nowrap", verticalAlign: "top" }}>× {Number(l.qty)}</td>
@@ -244,9 +260,9 @@ export default async function ProposalPage({ params, searchParams }) {
           {/* readable, not a JSON dump — a homeowner must be able to check these */}
           <table style={S.atbl}><tbody>
             <tr><td style={S.atK}>{t("pa_yield", lang)}</td>
-              <td style={S.atV}>{Math.round(q.yieldPerKwp || q.assumptions.baseYield)} kWh/kWp·yr</td></tr>
+              <td style={S.atV}>{t("pp_yield_v", lang, { n: Math.round(q.yieldPerKwp || q.assumptions.baseYield) })}</td></tr>
             <tr><td style={S.atK}>{t("pa_cost", lang)}</td>
-              <td style={S.atV}>€{q.assumptions.costPerKw}/kW + €{q.assumptions.batteryCost} {t("pa_battery", lang)}</td></tr>
+              <td style={S.atV}>{fmt(q.assumptions.costPerKw)}/kW + {fmt(q.assumptions.batteryCost)} {t("pa_battery", lang)}</td></tr>
             <tr><td style={S.atK}>{t("pa_opex", lang)}</td>
               <td style={S.atV}>{t("pa_opex_v", lang, { n: q.assumptions.opexPct })}</td></tr>
             <tr><td style={S.atK}>{t("pa_horizon", lang)}</td>
@@ -261,7 +277,7 @@ export default async function ProposalPage({ params, searchParams }) {
           </tbody></table>
         </details>
 
-        <div style={{ marginTop: 18 }}><ClientAudit inputs={inputs} assumptions={q.assumptions} lang={lang} /></div>
+        <div style={{ marginTop: 18 }}><ClientAudit inputs={inputs} assumptions={q.assumptions} lang={lang} currency={fmt.currency} rate={fmt.rate} /></div>
 
         <div style={{ ...S.fin, marginTop: 18 }}>
           <div style={S.finBox}><div style={S.kpiLbl}>{t("pp_loan", lang)}</div>
@@ -285,10 +301,10 @@ export default async function ProposalPage({ params, searchParams }) {
           <div style={S.ctaContact}>
             <span style={{ color: "#66756C", fontSize: 13 }}>{t("pp_prepared_by", lang)}</span>{" "}
             <b style={{ color: "#142A21" }}>{preparedBy.name}</b>
-            {preparedBy.phone ? <> · <a className="pp-tel" href={`tel:${preparedBy.phone}`} style={{ color: "#1E6B4E", fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>{preparedBy.phone}</a></> : null}
+            {preparedBy.phone ? <>, <a className="pp-tel" href={`tel:${preparedBy.phone}`} style={{ color: "#1E6B4E", fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>{preparedBy.phone}</a></> : null}
           </div>
         )}
-        <OfferBanner lang={lang} accepted={accepted} offer={offer} chosenOption={chosenOption}
+        <OfferBanner lang={lang} accepted={accepted} offer={offer} chosenOption={chosenOption} currency={fmt.currency} rate={fmt.rate}
           optionLabels={Object.fromEntries(options.map((o, i) => [i + 2, o.label || `${t("pp_option", lang)} ${i + 2}`]))} />
         <Tracker code={params.code} accepted={accepted} lang={lang} signedName={signedName} signedDate={signedDate} />
       </section>
@@ -402,7 +418,7 @@ const S = {
   finBox: { background: "#fff", border: "1px solid #E3E1D6", borderRadius: 10, padding: 16, textAlign: "center" },
   verdict: { textAlign: "center", fontWeight: 600, padding: "12px 14px", borderRadius: 10, fontSize: 15 },
   good: { background: "#E4EFE9", color: "#1E6B4E" },
-  bad: { background: "#F7E6E1", color: "#C4543B" },
+  bad: { background: "#FBF0DD", color: "#8A5A0F" },
   link: { color: "#1E6B4E", cursor: "pointer", fontWeight: 600, fontSize: 13.5 },
   atbl: { width: "100%", marginTop: 10, borderCollapse: "collapse", fontSize: 13 },
   atK: { padding: "6px 10px 6px 0", color: "#66756C", verticalAlign: "top" },

@@ -7,13 +7,14 @@
 // visitor into it, so the demo IS the product — it can't drift.
 //
 // Three cases, in order:
-//   already in a demo   -> reuse it (refreshing /demo must not spawn tenants)
+//   already in a demo   -> reuse it (refreshing /demo must not spawn tenants),
+//                          unless it was seeded before DEMO_SEED_DATE
 //   signed in for real  -> interstitial; starting the demo would sign them out
 //   signed out          -> seed a workspace and drop them on the dashboard
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { supabaseAdmin } from "../../lib/supabase.js";
-import { createDemoWorkspace, resolvePdfDemoDest, resolveProposalDemoDest, resolveEditorDemoDest, resolveWidgetDemoDest } from "../../lib/demoSeed.js";
+import { createDemoWorkspace, DEMO_SEED_DATE, resolvePdfDemoDest, resolveProposalDemoDest, resolveEditorDemoDest, resolveWidgetDemoDest } from "../../lib/demoSeed.js";
 import { isDemoEmail, isNonHumanAgent } from "../../lib/demo.js";
 import { isRateLimited, clientIp } from "../../lib/ratelimit.js";
 import { safeNext } from "../../lib/safeRedirect.js";
@@ -28,7 +29,7 @@ const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 // it, same as it always was.
 const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 400;
 
-const LANGS = new Set(["en", "ro", "ru"]);
+const LANGS = new Set(["en", "ro", "ru", "uk"]);
 
 // One-hop deep links to specific, hard-to-address states — not real paths
 // (safeNext() rejects each of these like any other non-"/" value, so they're
@@ -110,17 +111,21 @@ export async function GET(req) {
   });
   const { data: { user } } = await probe.auth.getUser();
 
-  if (user) {
+  if (user && isDemoEmail(user.email)) {
     // Already inside a demo tenant — reuse it. This is what stops a refresh (or
     // a second click on the demo link) from provisioning another workspace.
-    if (isDemoEmail(user.email)) {
+    // A demo from before the seed data last changed is not reused: the visitor
+    // would keep seeing the old sample (a demo in euros from before the Moldova
+    // launch, say). They get a fresh one below; the old tenant is left to the
+    // nightly clean-up (api/cron/reap-demo).
+    if (Date.parse(user.created_at || 0) >= Date.parse(DEMO_SEED_DATE)) {
       if (NEXT_RESOLVERS[nextParam]) {
         const resolved = await NEXT_RESOLVERS[nextParam](user.id);
         if (resolved) dest = new URL(resolved, req.url);
       }
       return NextResponse.redirect(dest);
     }
-
+  } else if (user) {
     // A real account. Signing in as the demo owner would replace their session
     // and quietly log them out of their own workspace, so make it a choice.
     if (!url.searchParams.get("confirm")) {

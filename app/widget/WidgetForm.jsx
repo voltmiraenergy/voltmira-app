@@ -18,13 +18,14 @@
 import { useState } from "react";
 import { t } from "../../lib/i18n.js";
 import { formatMoney } from "@voltmira/engine";
+import { Check } from "lucide-react";
 
 const CURRENCY_BY_MARKET = { RO: "RON", MD: "MDL" };
 const ERROR_KEY = { no_address: "wg_err_no_address", not_found: "wg_err_not_found", rate: "wg_err_rate", upstream: "wg_err_upstream" };
 
 export default function WidgetForm({ companyId, lang, market = "MD" }) {
   const currency = CURRENCY_BY_MARKET[market] || "EUR";
-  const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-IE";
+  const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
 
   const [address, setAddress] = useState("");
   const [bill, setBill] = useState("");
@@ -80,7 +81,7 @@ export default function WidgetForm({ companyId, lang, market = "MD" }) {
   if (sent) return (
     <div style={{ textAlign: "center", padding: "30px 10px" }}>
       <div style={{ width: 54, height: 54, borderRadius: "50%", background: "#E4EFE9", color: "#1E6B4E",
-        display: "grid", placeItems: "center", margin: "0 auto 14px", fontSize: 26 }}>✓</div>
+        display: "grid", placeItems: "center", margin: "0 auto 14px" }}><Check size={28} strokeWidth={2.6} aria-hidden="true" /></div>
       <h2 style={{ fontFamily: "Inter", margin: "0 0 6px" }}>{t("wg_thanks", lang)}</h2>
       <p style={{ color: "#66756C", fontSize: 14 }}>{t("wg_thanks_sub", lang)}</p>
     </div>

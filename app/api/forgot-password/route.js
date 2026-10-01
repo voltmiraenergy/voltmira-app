@@ -39,7 +39,7 @@ export async function POST(req) {
   // skips the captcha; a logged-out request from /login must pass Turnstile.
   let selfService = false;
   try {
-    const { data: { user } } = await supabaseServer().auth.getUser();
+    const { data: { user } } = await (await supabaseServer()).auth.getUser();
     if (user?.email && user.email.toLowerCase() === email) selfService = true;
   } catch { /* no session — treat as anonymous */ }
 

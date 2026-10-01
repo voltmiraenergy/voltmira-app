@@ -12,12 +12,13 @@ import { companyEngine } from "../../../lib/engineSettings.js";
 import { rowToQuoteInput } from "../../../lib/quoteInput.js";
 import { canViewTeamPerformance } from "../../../lib/rbac.js";
 import TeamActions from "./TeamActions.jsx";
+import { moneyFormatter } from "../../../lib/money.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Team · VoltMira" };
+export const metadata = { title: "Team | VoltMira" };
 
 export default async function Team() {
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
   const [co, { data: { user } }] = await Promise.all([currentCompany(), sb.auth.getUser()]);
   const lang = normLang(co?.lang);
   // Members + project owner counts via the service role, scoped to the caller's
@@ -93,7 +94,7 @@ export default async function Team() {
   // (blank for a restricted viewer — see visibleStats above; the header tile
   // itself is hidden in that case, not shown with someone else's total).
   const teamWonEur = Object.values(visibleStats).reduce((s, x) => s + (x.wonEur || 0), 0);
-  const fmt = (n) => "€" + Math.round(n || 0).toLocaleString("en-IE");
+  const fmt = moneyFormatter({ currency: co?.currency, lang, fx: E?.fx });
 
   // Who leads on won value, named only when this viewer may see teammates'
   // numbers and someone has actually closed something.

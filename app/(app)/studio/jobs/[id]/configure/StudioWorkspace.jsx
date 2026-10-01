@@ -34,7 +34,6 @@ export default function StudioWorkspace({ jobId }) {
   useEffect(() => {
     const n = +searchParams.get("step");
     if (Number.isInteger(n) && n >= 0 && n <= 6) setStep(n);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // Only updateJob on THIS page changes the engine inputs, so [job] is the
@@ -68,8 +67,8 @@ export default function StudioWorkspace({ jobId }) {
       <div className="dx ws">
         <div className="ws-card" style={{ maxWidth: 460, margin: "40px auto", textAlign: "center" }}>
           <AlertTriangle size={26} style={{ color: "var(--amber-ink)", margin: "0 auto 10px", display: "block" }} />
-          <p style={{ color: "var(--muted)", marginBottom: 16 }}>{t({ en: "Job not found.", ro: "Lucrarea nu a fost găsită.", ru: "Объект не найден." })}</p>
-          <Link href={PREVIEW_BASE} className="btn primary sm">{t({ en: "Back to Studio", ro: "Înapoi la Studio", ru: "Назад в Studio" })}</Link>
+          <p style={{ color: "var(--muted)", marginBottom: 16 }}>{t({ en: "Job not found.", ro: "Lucrarea nu a fost găsită.", ru: "Объект не найден.", uk: "Об’єкт не знайдено." })}</p>
+          <Link href={PREVIEW_BASE} className="btn primary sm">{t({ en: "Back to Studio", ro: "Înapoi la Studio", ru: "Назад в Studio", uk: "Назад до Studio" })}</Link>
         </div>
       </div>
     );
@@ -81,7 +80,7 @@ export default function StudioWorkspace({ jobId }) {
       <div>
         <Link href={`${PREVIEW_BASE}/jobs/${job.id}`} className="pv-back">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-          {t({ en: "Job overview", ro: "Rezumatul lucrării", ru: "Обзор объекта" })}
+          {t({ en: "Job overview", ro: "Rezumatul lucrării", ru: "Обзор объекта", uk: "Огляд об’єкта" })}
         </Link>
         <header className="ws-head">
           <div className="ws-head-tx">
@@ -89,7 +88,7 @@ export default function StudioWorkspace({ jobId }) {
             <div className="ws-head-sub">
               {place && <span><MapPin size={14} aria-hidden="true" />{place}</span>}
               <span><Zap size={14} aria-hidden="true" /><b>{(+job.kw || 0).toFixed(1)} kWp</b>{(+job.batteryKwh || 0) > 0 ? ` + ${job.batteryKwh} kWh` : ""}</span>
-              <span><Sun size={14} aria-hidden="true" /><b>{NUM(derived?.annualKwh || 0)} kWh</b>{t({ en: "a year", ro: "pe an", ru: "в год" })}</span>
+              <span><Sun size={14} aria-hidden="true" /><b>{NUM(derived?.annualKwh || 0)} kWh</b>{t({ en: "a year", ro: "pe an", ru: "в год", uk: "на рік" })}</span>
             </div>
           </div>
         </header>

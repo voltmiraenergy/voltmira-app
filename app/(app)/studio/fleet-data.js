@@ -3,6 +3,7 @@
 // sees it. Nothing here stores readings of its own: every number comes from
 // the same per-job localStorage keys the job workspace's Monitoring step
 // writes, so the fleet view and a job's own page can never disagree.
+import { useEffect, useState } from "react";
 import { simulate, effectiveYield, SOLAR_SEASON, MARKETS, FX } from "./_engine.js";
 import { defaultEngineSettings } from "./_engine.js";
 import { DEFAULT_IDS } from "./catalog-data.js";
@@ -36,8 +37,10 @@ export function valuePerKwh(job) {
   return sim.self * price + (1 - sim.self) * (mkt.oneToOne ? price : mkt.feed);
 }
 
-// Clients think in lei: MDL in Moldova, RON in Romania.
-export const localLei = (eur, market) => eur * (market === "RO" ? FX.RON : FX.MDL);
+// Clients think in their own money: MDL in Moldova, RON in Romania, UAH in Ukraine.
+export const localLei = (eur, market) => eur * (market === "RO" ? FX.RON : market === "UA" ? FX.UAH : FX.MDL);
+// What follows that amount: lei, or hryvnia for a Ukrainian job.
+export const localUnit = (market, lang) => (market === "UA" ? (lang === "ru" || lang === "uk" ? "грн" : "UAH") : lang === "ru" || lang === "uk" ? "лей" : "lei");
 
 // The last month that is fully over — the newest one a reading can exist for.
 export function asOfMonth(now = new Date()) {
@@ -57,8 +60,10 @@ export function firstMonthFor(job, now = new Date()) {
 }
 
 // A job joins the fleet once its handover certificate is signed (or, for a
-// job whose readings predate that, once it has any).
-export function fleetRows(jobs, now = new Date()) {
+// job whose readings predate that, once it has any). `sunByJob` carries this
+// year's sunshine factors per job (lib/sunshine.js via /api/weather/sun);
+// without them each month is measured against the plain P50.
+export function fleetRows(jobs, now = new Date(), sunByJob = {}) {
   const asOf = asOfMonth(now);
   return jobs.flatMap((job) => {
     const ctx = jobStageContext(job.id);
@@ -66,7 +71,7 @@ export function fleetRows(jobs, now = new Date()) {
     const saved = readJSON(actualsKey(job.id), null);
     const actual = Array.isArray(saved) && saved.length === 12 ? saved : Array(12).fill("");
     const p50 = p50Row(job);
-    const a = assessSystem({ p50, actual, market: job.market, asOf, firstMonth: firstMonthFor(job, now) });
+    const a = assessSystem({ p50, actual, market: job.market, asOf, firstMonth: firstMonthFor(job, now), weather: sunByJob[job.id] || null });
     const eurPerKwh = valuePerKwh(job);
     const monthActual = (i) => {
       const v = Number(actual[i]);
@@ -80,6 +85,50 @@ export function fleetRows(jobs, now = new Date()) {
       monthActual,
     }];
   });
+}
+
+/* -------------------------------------------------------------- sunshine --- */
+// This year's sunshine at each site against a typical year (lib/sunshine.js,
+// NASA POWER data via /api/weather/sun), so a cloudy month is judged against
+// the sky it actually had. The fleet tab and a job's own Monitoring step both
+// read it from here, so they always measure against the same target.
+const coord = (v) => (v === "" || v == null ? NaN : Number(v));
+const sitePoints = (jobs) => jobs
+  .filter((j) => j && Number.isFinite(coord(j.lat)) && Number.isFinite(coord(j.lng)))
+  .map((j) => ({ id: j.id, lat: coord(j.lat), lon: coord(j.lng) }));
+
+export async function fetchSunFactors(points, year = new Date().getFullYear(), timeoutMs = 20000) {
+  if (!points.length) return {};
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const r = await fetch("/api/weather/sun", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ year, points }), signal: ctl.signal,
+    });
+    const d = r.ok ? await r.json() : null;
+    return d?.factors || {};
+  } catch {
+    return {};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// { [jobId]: (number|null)[12] }. Empty until the lookup answers, and stays
+// empty if it fails: everything then reads against the plain P50, as before.
+export function useSunFactors(jobs, year = new Date().getFullYear()) {
+  const points = sitePoints(jobs);
+  const key = points.map((p) => `${p.id}@${p.lat.toFixed(2)},${p.lon.toFixed(2)}`).join("|");
+  const [factors, setFactors] = useState({});
+  useEffect(() => {
+    if (!key) return;
+    let alive = true;
+    fetchSunFactors(points, year).then((f) => { if (alive) setFactors(f); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, year]);
+  return factors;
 }
 
 /* ---------------------------------------------------------- sample fleet --- */
@@ -136,7 +185,10 @@ function seededNoise(seed) {
 // sudden-drop, soiling and missing-reading stories are placed relative to
 // that month so the demo tells the same story whenever it is loaded; the
 // overvoltage story is seasonal by nature and stays on the calendar.
-function sampleReadings(spec, job, now) {
+// `sun` is this year's sunshine at the sample's site: the readings are made
+// against the real sky, as a real system's would be, so each story reads the
+// same once the monitor adjusts for the weather.
+function sampleReadings(spec, job, now, sun) {
   const asOf = asOfMonth(now);
   const start = firstMonthFor(job, now) ?? 0;
   const p50 = p50Row(job);
@@ -147,11 +199,15 @@ function sampleReadings(spec, job, now) {
   return p50.map((p, i) => {
     if (i < start || i > asOf) return "";
     if (spec.event === "nodata" && i === asOf) return "";
-    return String(Math.round(p * ratios[i] * (1 + (rnd() - 0.5) * 0.02)));
+    return String(Math.round(p * (sun?.[i] ?? 1) * ratios[i] * (1 + (rnd() - 0.5) * 0.02)));
   });
 }
 
-export function buildSampleFleet(existingIds, now = new Date()) {
+// Where the sample systems stand, to look up their sunshine before building.
+export const sampleSitePoints = (existingIds) =>
+  SAMPLE_FLEET.filter((s) => !existingIds.has(s.id)).map((s) => ({ id: s.id, lat: s.lat, lon: s.lng }));
+
+export function buildSampleFleet(existingIds, now = new Date(), sunById = {}) {
   return SAMPLE_FLEET.filter((s) => !existingIds.has(s.id)).map((spec) => {
     const { profile, event, ...rest } = spec;
     const job = {
@@ -163,7 +219,7 @@ export function buildSampleFleet(existingIds, now = new Date()) {
       signed: true, signatureDataUrl: SIGNATURE,
       steps: { fld_arrive: true, fld_mount: true, fld_dc: true, fld_ac: true, fld_test: true },
     });
-    writeJSON(actualsKey(job.id), sampleReadings(spec, job, now));
+    writeJSON(actualsKey(job.id), sampleReadings(spec, job, now, sunById[job.id]));
     writeJSON(payKey(job.id), { depPct: 30, depPaid: true, done: true });
     return job;
   });

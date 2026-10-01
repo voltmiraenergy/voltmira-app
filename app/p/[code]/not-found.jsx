@@ -20,7 +20,7 @@ export default function ProposalNotFound() {
           <path d="M14.5 26 L20.5 8" stroke="#E89B2D" strokeWidth="3.2" strokeLinecap="round" />
           <path d="M21 26 L27 5.5" stroke="#3FAE6A" strokeWidth="3.2" strokeLinecap="round" />
         </svg>
-        {["ro", "ru", "en"].map((l, i) => {
+        {["ro", "uk", "ru", "en"].map((l, i) => {
           const H = i ? "h2" : "h1";
           return (
           <div key={l} lang={l} style={{ marginTop: i ? 18 : 0, opacity: i ? 0.72 : 1 }}>

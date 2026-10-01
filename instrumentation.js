@@ -1,10 +1,7 @@
-// instrumentation.js — Next.js's own hook (register(), enabled via
-// experimental.instrumentationHook in next.config.mjs — required on Next
-// 14.x, stable-by-default only from Next 15) that loads Sentry's per-runtime
-// init file. NEXT_RUNTIME distinguishes the two server runtimes this app
-// actually uses (Node for pages/API routes, Edge for middleware.js); no
-// "browser" case here — sentry.client.config.js is loaded by Sentry's own
-// webpack plugin (see next.config.mjs) into the client bundle directly.
+// instrumentation.js — Next.js's own server hook: register() loads Sentry's
+// init file for the runtime it runs in (Node for pages, API routes and
+// proxy.js; Edge only if a route opts into it). The browser side is
+// instrumentation-client.js.
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("./sentry.server.config.js");
@@ -13,3 +10,6 @@ export async function register() {
     await import("./sentry.edge.config.js");
   }
 }
+
+// Server-side errors in pages and route handlers, reported with the request.
+export { captureRequestError as onRequestError } from "@sentry/nextjs";

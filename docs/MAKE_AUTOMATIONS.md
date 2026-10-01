@@ -178,6 +178,13 @@ one, writes ONE short phrased sentence per proposal from those numbers
 (never inventing anything), and hands that back to your app, which sends the
 actual branded email itself.
 
+**Optional since 2026-09.** The app now sends these follow-ups on its own,
+every morning at 07:00 UTC (`app/api/cron/nudges`, scheduled in
+`vercel.json`, guarded by `CRON_SECRET`), with the same numbers and no
+opening sentence. Build this scenario only if you want the AI-phrased opening
+line. If both run, each email still goes out once: whichever claims the
+proposal first sends it, and the other gets `skipped`.
+
 ### Module chain
 
 1. **Scheduler** (trigger). Daily, pick a time (e.g. 09:00 in your timezone).

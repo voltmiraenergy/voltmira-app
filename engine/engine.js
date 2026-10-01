@@ -26,14 +26,38 @@
 // is 2.51 lei/kWh ≈ €0.127, which is what ships here. Pass `feedOverride` to
 // price a specific contract instead.
 // RO stays 1:1 net metering. All values are editable per company in Settings.
+//
+// UA: Ukrainian households on the "green tariff" (checked 2026-09-29).
+//   - Consumption and export are netted over each calendar month. A month's net
+//     surplus is bought at the green tariff: 613.31 kop/kWh excl. VAT for
+//     household solar up to 30 kW built in 2026–2029 (NEURC, from 2026-07-01).
+//     A net deficit is billed at retail: 4.32 UAH/kWh, fixed for households
+//     through the 2026–27 winter.
+//   - The tariff is paid for exports between 4:00–23:00 (Apr–Oct) and
+//     6:00–21:00 (Nov–Mar). Every hour a panel produces in Ukraine falls
+//     inside those windows, so the limit only stops a battery selling at night.
+//   - The green tariff ends on 1 January 2030 (`fitEnds`). After that the
+//     surplus is valued at `feedAfter`, an active consumer's market price
+//     (~2.5 UAH/kWh, an assumption the installer can change), and
+//     self-consumption at retail, as in MD.
+//   - The household green tariff stops at 30 kW (`maxKw`). Above that, the
+//     surplus is valued at `feedAfter` from year 1, as after 2030.
+//   - Under monthly netting a battery earns nothing: when inside the month a
+//     kWh is used doesn't change the bill. Its value in Ukraine is power through
+//     a blackout, which the proposal shows as hours, not as a saving.
+//   - EUR values here are at the static rate; the UAH figures sit in engine
+//     settings (uaFitUah, uaFeedAfterUah) and convert at the live NBU rate.
 export const MARKETS = {
   MD: { name: "Moldova", scheme: "Net billing",      feed: 0.127, oneToOne: false, defaultPrice: 0.18, subsidyKey: "subsidyAmountMdl", subsidyFx: "MDL", prosumer: true },
   RO: { name: "Romania", scheme: "Net metering 1:1", feed: 0.036, oneToOne: true,  defaultPrice: 0.21, subsidyKey: "subsidyAmountRon", subsidyFx: "RON", prosumer: true },
+  UA: { name: "Ukraine", scheme: "Green tariff",     feed: 0.1203, oneToOne: false, defaultPrice: 0.0847, subsidyKey: null, subsidyFx: "UAH", prosumer: false,
+        monthlyNet: true, fitEnds: 2030, feedAfter: 0.049, maxKw: 30 },
 };
 
 export const SOLAR_SEASON = [0.30,0.40,0.60,0.80,1.00,1.10,1.10,1.00,0.80,0.60,0.40,0.25];
 
-export const FX = { EUR: 1, RON: 4.97, MDL: 19.8 };
+// Per 1 EUR. UAH: NBU 50.97 on 2026-09-29.
+export const FX = { EUR: 1, RON: 4.97, MDL: 19.8, UAH: 51.0 };
 
 export function defaultEngineSettings() {
   return {
@@ -63,6 +87,11 @@ export function defaultEngineSettings() {
     // comment for why only the day rate feeds the payback math.
     mdDayRateMdl: 3.75,
     mdNightRateMdl: 2.94,
+    // Ukraine (market UA), UAH/kWh excl. VAT. The green tariff for household
+    // solar up to 30 kW built 2026–2029 (NEURC, from 2026-07-01), and the price
+    // assumed for surplus once the green tariff ends in 2030.
+    uaFitUah: 6.1331,
+    uaFeedAfterUah: 2.5,
     bands: {
       pess: { ym: 0.92, degr: 0.8, infl: 0 },
       expc: { ym: 1.00, degr: 0.5, infl: 3 },
@@ -89,13 +118,26 @@ export function effectiveConsumption(p) {
  *   feedOverride?   — EUR/kWh paid for exported surplus, replacing the market default.
  *                     Use it to price a specific supply contract, or the operator's
  *                     published monthly buy-back weighted by this site's export shape.
+ *   startYear?      — when the system starts producing, as a fractional year
+ *                     (2026.75 = October 2026). Only UA uses it: the green tariff
+ *                     stops on 1 January 2030, so it decides how many years of
+ *                     the horizon still earn it. Freeze it with the proposal.
  * @param {object} E engine settings (defaultEngineSettings shape)
  * @param {'pess'|'expc'|'opti'} bandKey
  */
 export function simulate(p, E, bandKey) {
   const b = E.bands[bandKey] || E.bands.expc;
   const mkt = MARKETS[p.market] || MARKETS.MD;
-  const feed = Number(p.feedOverride) > 0 ? Number(p.feedOverride) : mkt.feed;
+  let feed = Number(p.feedOverride) > 0 ? Number(p.feedOverride) : mkt.feed;
+  let feedAfter = mkt.feedAfter || feed;
+  if (mkt.monthlyNet) {
+    // The Ukrainian tariffs are published in UAH; price them at the frozen or
+    // live NBU rate when one is given.
+    const liveUah = Number(E.fx && E.fx.UAH);
+    const fxUah = liveUah > 0 ? liveUah : FX.UAH;
+    if (!(Number(p.feedOverride) > 0) && Number(E.uaFitUah) > 0) feed = Number(E.uaFitUah) / fxUah;
+    if (Number(E.uaFeedAfterUah) > 0) feedAfter = Number(E.uaFeedAfterUah) / fxUah;
+  }
   // Sanitize numeric inputs: a blank editor field, a stale DB value or a missing
   // param must never leak NaN into a proposal or PDF. Clamp to non-negative — a
   // negative system size or price is meaningless, not a discount.
@@ -210,6 +252,16 @@ export function simulate(p, E, bandKey) {
     if (dayRateMdl > 0) selfPriceBase = dayRateMdl / fxMdl;
   }
 
+  // UA monthly netting: each month's production and consumption, as shares.
+  const seasonTotal = season.reduce((a, x) => a + x, 0) || 1;
+  const monthShare = season.map((x) => x / seasonTotal);
+  const consByMonth = (p.useMonthly && Array.isArray(p.consMonthly) && p.consMonthly.length === 12)
+    ? p.consMonthly.map((v) => Math.max(0, Number(v) || 0))
+    : Array(12).fill(cons / 12);
+  // A missing start date only happens for a UA quote built before this field
+  // existed; October 2026 is when the first of those were made.
+  const startYear = Number(p.startYear) > 0 ? Number(p.startYear) : 2026.75;
+
   let cum = -cost, payback = null, total = 0, year1 = 0;
   const rows = [];
   for (let y = 1; y <= horizon; y++) {
@@ -223,6 +275,25 @@ export function simulate(p, E, bandKey) {
       const imports = Math.max(0, cons - selfK);
       const credited = Math.min(expK, imports);
       val = selfK * priceY + credited * priceY + (expK - credited) * feed;
+    } else if (mkt.monthlyNet) {
+      // Green tariff: per month, production first cancels consumption (worth
+      // retail), and what is left over is sold at the tariff. After the tariff
+      // ends, the year is valued like net billing. A year that straddles the
+      // end date is split by the share of it still inside the tariff.
+      // The household green tariff covers systems up to maxKw (30 kW). A larger
+      // plant sells its surplus at the market price from day one, so it gets no
+      // share of the tariff at all, however early it starts.
+      const fitEligible = !(mkt.maxKw > 0) || kw <= mkt.maxKw;
+      const fitShare = fitEligible ? Math.max(0, Math.min(1, (mkt.fitEnds || 0) - (startYear + y - 1))) : 0;
+      let offset = 0, surplus = 0;
+      for (let m = 0; m < 12; m++) {
+        const prodM = prod * monthShare[m];
+        offset += Math.min(prodM, consByMonth[m]);
+        surplus += Math.max(0, prodM - consByMonth[m]);
+      }
+      const valFit = offset * priceY + surplus * feed;
+      const valAfter = selfK * selfPriceY + expK * feedAfter;
+      val = fitShare * valFit + (1 - fitShare) * valAfter;
     } else {
       val = selfK * selfPriceY + expK * feed;
     }
@@ -289,5 +360,6 @@ export function amortizedMonthlyPayment(principal, annualRatePct, termYears) {
 export function formatMoney(amountEur, currency = "EUR") {
   if (currency === "RON") return "lei " + Math.round(amountEur * FX.RON).toLocaleString("ro-RO");
   if (currency === "MDL") return "lei " + Math.round(amountEur * FX.MDL).toLocaleString("ro-MD");
+  if (currency === "UAH") return Math.round(amountEur * FX.UAH).toLocaleString("uk-UA") + " грн";
   return "\u20AC" + Math.round(amountEur).toLocaleString("en-IE");
 }

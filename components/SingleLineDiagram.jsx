@@ -22,7 +22,7 @@ import { useMemo, useState } from "react";
 import { designCheck, stringInputs } from "../lib/designCheck.js";
 import { dcBreakerA, acBreakerA, spdCount, dcCableSize } from "../lib/bosEstimate.js";
 
-const t3 = (lang, ro, en, ru) => (lang === "en" ? en : lang === "ru" ? ru : ro);
+const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
 // Fixed document colors, NOT the app's live --ink/--muted theme variables:
 // .sld-wrap is always a white "printed page" background regardless of the
 // app's own light/dark mode, and in dark mode --ink resolves to a near-white
@@ -148,10 +148,10 @@ export default function SingleLineDiagram({ lang, bom, kw, battKwh, hasBattery, 
     <div className="sld-wrap">
       <div className="sld-title">
         <div>
-          <b>{projectTitle || t3(lang, "Proiect", "Project", "Проект")}</b>
+          <b>{projectTitle || t3(lang, "Proiect", "Project", "Проект", "Проєкт")}</b>
           {projectAddress && <div className="sld-addr">{projectAddress}</div>}
         </div>
-        <span>{t3(lang, "Schiță monofilară", "Single-line diagram", "Однолинейная схема")} · {new Date().toLocaleDateString(lang === "ru" ? "ru-RU" : "ro-RO")}</span>
+        <span>{t3(lang, "Schiță monofilară", "Single-line diagram", "Однолинейная схема", "Однолінійна схема")}, {new Date().toLocaleDateString(({ ru: "ru-RU", uk: "uk-UA", en: "en-GB" }[lang] || "ro-RO"))}</span>
       </div>
 
       {/* No height attribute: SVG's own height attribute requires a real
@@ -165,8 +165,8 @@ export default function SingleLineDiagram({ lang, bom, kw, battKwh, hasBattery, 
             {row.stringYs.map((sy, si) => (
               <g key={si}>
                 <Box x={stringX} y={sy - rowH / 2} w={stringW} h={rowH} small
-                  sub={`${row.modulesPerString}× · Voc ${d.panel.voc}V`}>
-                  {t3(lang, "Șir", "String", "Строка")} {row.label}{row.strings > 1 ? si + 1 : ""}
+                  sub={`${row.modulesPerString}×, Voc ${d.panel.voc}V`}>
+                  {t3(lang, "Șir", "String", "Строка", "Стрінг")} {row.label}{row.strings > 1 ? si + 1 : ""}
                 </Box>
                 {row.needsFuse
                   ? <><Wire x1={stringX + stringW} y1={sy} x2={fuseX - 6} y2={sy} /><Fuse x={fuseX} y={sy} /><Wire x1={fuseX + 6} y1={sy} x2={inBrkX - 8} y2={sy} /></>
@@ -181,12 +181,12 @@ export default function SingleLineDiagram({ lang, bom, kw, battKwh, hasBattery, 
         ))}
         <Wire x1={busX} y1={busYtop} x2={busX} y2={busYbot} />
         <Wire x1={busX} y1={invMidY} x2={dcDiscX - 9} y2={invMidY} />
-        <Disconnect x={dcDiscX} y={invMidY} label={t3(lang, "sep. CC", "DC disc.", "разъед. DC")} />
+        <Disconnect x={dcDiscX} y={invMidY} label={t3(lang, "sep. CC", "DC disc.", "разъед. DC", "роз’єдн. DC")} />
         <Wire x1={dcDiscX + 8} y1={invMidY} x2={invX} y2={invMidY} />
 
         <Box x={invX} y={invY} w={invW} h={invH} small={!!d.inverter}
-          sub={d.inverter ? `${d.acKw.toFixed(1)} kW · ${d.ph === 3 ? "3~" : "1~"} · MPPT×${d.mppt}` : t3(lang, "reprezentativ", "representative", "условный")}>
-          {d.inverter ? `${d.inverter.brand} ${d.inverter.model}` : t3(lang, "Invertor", "Inverter", "Инвертор")}
+          sub={d.inverter ? `${d.acKw.toFixed(1)} kW, ${d.ph === 3 ? "3~" : "1~"}, MPPT×${d.mppt}` : t3(lang, "reprezentativ", "representative", "условный", "умовний")}>
+          {d.inverter ? `${d.inverter.brand} ${d.inverter.model}` : t3(lang, "Invertor", "Inverter", "Инвертор", "Інвертор")}
         </Box>
 
         {hasBatt && (
@@ -194,13 +194,13 @@ export default function SingleLineDiagram({ lang, bom, kw, battKwh, hasBattery, 
             <Wire x1={invX + invW / 2} y1={invY + invH} x2={invX + invW / 2} y2={battY - 9} />
             <Breaker x={invX + invW / 2} y={battY - 17} label="" />
             <Box x={battX} y={battY} w={battW} h={battH} small sub={`${Number(battKwh || 0).toFixed(1)} kWh`}>
-              {t3(lang, "Baterie", "Battery", "Батарея")}
+              {t3(lang, "Baterie", "Battery", "Батарея", "Батарея")}
             </Box>
           </g>
         )}
 
         <Wire x1={invX + invW} y1={invMidY} x2={acDiscX - 9} y2={invMidY} />
-        <Disconnect x={acDiscX} y={invMidY} label={t3(lang, "sep. CA", "AC disc.", "разъед. AC")} />
+        <Disconnect x={acDiscX} y={invMidY} label={t3(lang, "sep. CA", "AC disc.", "разъед. AC", "роз’єдн. AC")} />
         <Wire x1={acDiscX + 8} y1={invMidY} x2={acBrkX - 8} y2={invMidY} />
         <Breaker x={acBrkX} y={invMidY} label={acA != null ? `${acA}A×${d.nInv}` : "—"} />
         <Wire x1={acBrkX + 7} y1={invMidY} x2={rcdX - 9} y2={invMidY} />
@@ -211,8 +211,8 @@ export default function SingleLineDiagram({ lang, bom, kw, battKwh, hasBattery, 
         <text x={spdX + spdW / 2} y={invMidY + 28} textAnchor="middle" fontSize="9" fill={MUTED}>{spd.dc}DC+{spd.ac}AC</text>
         <Wire x1={spdX + spdW} y1={invMidY} x2={meterX} y2={invMidY} />
 
-        <Box x={meterX} y={invMidY - 20} w={meterW} h={40} sub={t3(lang, "bidirecțional", "bidirectional", "двунаправленный")}>
-          {t3(lang, "Contor", "Meter", "Счётчик")}
+        <Box x={meterX} y={invMidY - 20} w={meterW} h={40} sub={t3(lang, "bidirecțional", "bidirectional", "двунаправленный", "двонаправлений")}>
+          {t3(lang, "Contor", "Meter", "Счётчик", "Лічильник")}
         </Box>
         <Wire x1={meterX + meterW} y1={invMidY} x2={panelX} y2={invMidY} />
 
@@ -221,7 +221,7 @@ export default function SingleLineDiagram({ lang, bom, kw, battKwh, hasBattery, 
         <Wire x1={panelX + panelW / 2} y1={invMidY + panelH / 2} x2={panelX + panelW / 2} y2={invMidY + panelH / 2 + 14} />
         <Earth x={panelX + panelW / 2} y={invMidY + panelH / 2 + 14} />
         <text x={panelX + panelW / 2} y={invMidY - panelH / 2 - 8} textAnchor="middle" fontSize="9.5" fontWeight="700" fill={INK}>
-          {t3(lang, "Tablou", "Panel", "Щит")}
+          {t3(lang, "Tablou", "Panel", "Щит", "Щит")}
         </text>
         <Wire x1={panelX + panelW} y1={invMidY} x2={gridX} y2={invMidY} />
 
@@ -230,33 +230,33 @@ export default function SingleLineDiagram({ lang, bom, kw, battKwh, hasBattery, 
           <line key={dy} x1={gridX} y1={invMidY + dy} x2={gridX + 14} y2={invMidY + dy + 7} stroke={INK} strokeWidth="1.5" />
         ))}
         <text x={gridX + 4} y={invMidY + 38} textAnchor="middle" fontSize="10.5" fontWeight="700" fill={INK}>
-          {t3(lang, "Rețea", "Grid", "Сеть")}
+          {t3(lang, "Rețea", "Grid", "Сеть", "Мережа")}
         </text>
       </svg>
 
       <div className="sld-legend">
-        <div><span>{t3(lang, "Panou", "Panel", "Панель")}</span><b>{d.panel.brand} {d.panel.model} ({d.panel.watt} W, Voc {d.panel.voc}V, Isc {d.panel.isc}A)</b></div>
-        <div><span>{t3(lang, "Total module", "Total modules", "Всего модулей")}</span><b>{d.modules} ({d.dcKw.toFixed(1)} kWp)</b></div>
-        <div><span>{t3(lang, "Raport DC/AC", "DC/AC ratio", "Соотношение DC/AC")}</span><b>{d.dcac.toFixed(2)}</b></div>
+        <div><span>{t3(lang, "Panou", "Panel", "Панель", "Панель")}</span><b>{d.panel.brand} {d.panel.model} ({d.panel.watt} W, Voc {d.panel.voc}V, Isc {d.panel.isc}A)</b></div>
+        <div><span>{t3(lang, "Total module", "Total modules", "Всего модулей", "Усього модулів")}</span><b>{d.modules} ({d.dcKw.toFixed(1)} kWp)</b></div>
+        <div><span>{t3(lang, "Raport DC/AC", "DC/AC ratio", "Соотношение DC/AC", "Співвідношення DC/AC")}</span><b>{d.dcac.toFixed(2)}</b></div>
       </div>
 
       <div className="sld-cable-row">
-        <label>{t3(lang, "Traseu cablu CC (m)", "DC cable run (m)", "Трасса кабеля DC (м)")}</label>
+        <label>{t3(lang, "Traseu cablu CC (m)", "DC cable run (m)", "Трасса кабеля DC (м)", "Траса кабелю DC (м)")}</label>
         <input className="input" type="number" min="1" step="1" value={runM} onChange={(e) => setRunM(e.target.value)} />
         {cable && (
           <span className="sld-cable-out">
-            {t3(lang, "Secțiune recomandată", "Recommended section", "Рекомендуемое сечение")}: <b>{cable.crossSectionMm2} mm²</b>
-            {" "}({t3(lang, "cădere", "drop", "падение")} {cable.voltageDropPct.toFixed(2)}%{cable.overThreshold ? `, ${t3(lang, "peste 1%!", "over 1%!", "выше 1%!")}` : ""})
+            {t3(lang, "Secțiune recomandată", "Recommended section", "Рекомендуемое сечение", "Рекомендований переріз")}: <b>{cable.crossSectionMm2} mm²</b>
+            {" "}({t3(lang, "cădere", "drop", "падение", "спад")} {cable.voltageDropPct.toFixed(2)}%{cable.overThreshold ? `, ${t3(lang, "peste 1%!", "over 1%!", "выше 1%!", "понад 1%!")}` : ""})
           </span>
         )}
       </div>
 
       <div className="sld-key">
-        <b>{t3(lang, "Legendă", "Legend", "Легенда")}:</b>{" "}
+        <b>{t3(lang, "Legendă", "Legend", "Легенда", "Легенда")}:</b>{" "}
         {t3(lang,
-          "cerc tăiat = întrerupător · dreptunghi mic = siguranță fuzibilă · balama = separator local · Id = protecție diferențială (RCD) · casetă punctată = descărcător supratensiune (SPD) · bare descrescătoare = împământare de protecție.",
-          "slashed circle = breaker · small rectangle = fuse · hinge = local disconnect switch · Id = residual-current device (RCD) · dashed box = surge protection (SPD) · descending bars = protective earth.",
-          "перечёркнутый круг = автомат · маленький прямоугольник = предохранитель · шарнир = местный разъединитель · Id = УЗО · пунктирная рамка = защита от перенапряжения (SPD) · убывающие полосы = защитное заземление.")}
+          "cerc tăiat = întrerupător, dreptunghi mic = siguranță fuzibilă, balama = separator local, Id = protecție diferențială (RCD), casetă punctată = descărcător supratensiune (SPD), bare descrescătoare = împământare de protecție.",
+          "slashed circle = breaker, small rectangle = fuse, hinge = local disconnect switch, Id = residual-current device (RCD), dashed box = surge protection (SPD), descending bars = protective earth.",
+          "перечёркнутый круг = автомат, маленький прямоугольник = предохранитель, шарнир = местный разъединитель, Id = УЗО, пунктирная рамка = защита от перенапряжения (SPD), убывающие полосы = защитное заземление.", "перекреслене коло = автомат, маленький прямокутник = запобіжник, шарнір = місцевий роз’єднувач, Id = ПЗВ, пунктирна рамка = захист від перенапруги (SPD), спадні смуги = захисне заземлення.")}
       </div>
 
       {!d.fromBom.inverter && (
@@ -264,7 +264,7 @@ export default function SingleLineDiagram({ lang, bom, kw, battKwh, hasBattery, 
           {t3(lang,
             "Niciun invertor real în deviz încă, schița folosește un model reprezentativ. Adaugă invertorul real în Echipament & Deviz pentru o schiță exactă.",
             "No real inverter in the BOM yet, this diagram uses a representative model. Add the real inverter in Equipment & BOM for an accurate diagram.",
-            "В смете пока нет реального инвертора, схема использует условную модель. Добавьте реальный инвертор в разделе Оборудование и смета для точной схемы.")}
+            "В смете пока нет реального инвертора, схема использует условную модель. Добавьте реальный инвертор в разделе Оборудование и смета для точной схемы.", "У специфікації поки немає реального інвертора, схема використовує умовну модель. Додайте реальний інвертор у розділі «Обладнання та специфікація» для точної схеми.")}
         </p>
       )}
 

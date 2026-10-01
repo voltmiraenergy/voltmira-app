@@ -31,8 +31,8 @@ const P = {
   phone: <path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384" />,
 };
 const KIND_ICON = {
-  live: "eye", hot: "flame", followup: "cal", lead: "userPlus", won_start: "play", install: "wrench",
-  invoice: "receipt", unopened: "mail", quiet: "clock", draft: "pen", health: "down", nodata: "pulse",
+  live: "eye", hot: "flame", followup: "cal", lead: "userPlus", visit: "cal", visit_done: "pen", won_start: "play", install: "wrench",
+  invoice: "receipt", unopened: "mail", quiet: "clock", draft: "pen", health: "down", nodata: "pulse", grid: "phone",
 };
 const Svg = ({ d, size = 17, w = 2 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{P[d]}</svg>
@@ -122,7 +122,6 @@ export default function NextMoves({ moves, labels, todayKey }) {
             <li key={m.key} className={"dx-move k-" + m.kind}>
               <span className="dx-move-ic" aria-hidden="true">
                 <Svg d={KIND_ICON[m.kind] || "pulse"} />
-                {m.kind === "live" && <i className="dx-ping" />}
               </span>
               <div className="dx-move-body">
                 <div className="dx-move-meta">

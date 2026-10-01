@@ -1,11 +1,12 @@
 // app/(app)/dashboard/page.jsx — the installer's command centre. Server
 // component: real data, RLS-scoped.
 //
-// Reads top to bottom as a working day: who needs me now (next moves, the
-// proposal pulse), where every job stands (the lead-to-live line), the book
-// itself (recent quotes, leads, installs, activity), and how the business is
-// doing (vitals, funnel, trend, installed base). Every number is computed
-// from rows the app already stores; nothing on this page is illustrative.
+// Reads top to bottom, simplest first: where every job stands (seven stage
+// tiles, each a link to that list), what to do next beside who is reading
+// your proposals and the few numbers that matter, then the book itself in one
+// tabbed card (recent quotes, new leads, installs, paperwork, activity), and
+// the installed base. Every number is computed from rows the app already
+// stores; nothing on this page is illustrative.
 import "../dx.css";
 import "./dashboard.css";
 import { Fragment } from "react";
@@ -21,7 +22,7 @@ import { t, normLang } from "../../../lib/i18n.js";
 import { proposalStatsByProject } from "../../../lib/proposalStats.js";
 import { rowToQuoteInput } from "../../../lib/quoteInput.js";
 import { activityHtml } from "../../../lib/activity.js";
-import { mdDayKey, fmtDate, APP_TZ } from "../../../lib/tz.js";
+import { mdDayKey, fmtDate, fmtTime, APP_TZ } from "../../../lib/tz.js";
 import { leadChannel, CHANNEL_DOT } from "../../../lib/leadChannels.js";
 import { systemRatio } from "../../../lib/yieldCalibration.js";
 import { relTime } from "../../../lib/relTime.js";
@@ -30,12 +31,14 @@ import { buildMoves, flowStages, INSTALL_STEPS, LIVE_WINDOW_MIN } from "../../..
 import NextMoves from "./NextMoves.jsx";
 import CommandPalette from "./CommandPalette.jsx";
 import InstallBoard from "./InstallBoard.jsx";
+import DashTabs from "./DashTabs.jsx";
 import AutoRefresh from "./AutoRefresh.jsx";
 import LeadActions from "../leads/LeadActions.jsx";
 import Avatar from "../../../lib/Avatar.jsx";
+import { moneyFormatter } from "../../../lib/money.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Dashboard · VoltMira" };
+export const metadata = { title: "Dashboard | VoltMira" };
 
 async function newQuote() {
   "use server";
@@ -54,7 +57,7 @@ async function cycleStatus(formData) {
 // Coarse "time ago" for list rows (matches the rest of the app's feeds).
 function ago(iso, lang) {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
-  const L = { en: ["just now", "m", "h", "d"], ro: ["acum", "m", "h", "z"], ru: ["сейчас", "м", "ч", "д"] }[lang] || ["just now", "m", "h", "d"];
+  const L = { en: ["just now", "m", "h", "d"], ro: ["acum", "m", "h", "z"], ru: ["сейчас", "м", "ч", "д"], uk: ["щойно", "хв", "год", "д"] }[lang] || ["just now", "m", "h", "d"];
   if (s < 60) return L[0];
   if (s < 3600) return Math.floor(s / 60) + L[1];
   if (s < 86400) return Math.floor(s / 3600) + L[2];
@@ -85,7 +88,7 @@ function localHour() {
 }
 
 export default async function Dashboard() {
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
   const since24h = new Date(Date.now() - 864e5).toISOString();
   const [co, actor, { data: projects }, { data: leads }, { data: acts }, stats, { data: events }, readingsRes] = await Promise.all([
     currentCompany(),
@@ -107,8 +110,9 @@ export default async function Dashboard() {
 
   const E = await companyEngine(co);
   const lang = normLang(co?.lang);
-  const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB";
-  const fmt = (n) => "€" + Math.round(n).toLocaleString("en-IE");
+  const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB";
+  // In the workspace's currency (lei in Moldova) at today's rate (lib/money.js).
+  const fmt = moneyFormatter({ currency: co?.currency, lang: normLang(co?.lang), fx: E?.fx });
   const list = projects || [];
   const leadList = leads || [];
   const openLeads = leadList.filter((l) => !l.status || l.status === "new" || l.status === "contacted");
@@ -121,13 +125,12 @@ export default async function Dashboard() {
   const gross = new Map([...Q].map(([id, q]) => [id, q.grossCost]));
 
   // ---------- vitals (the six KPIs) ----------
-  let pipeline = 0, sentN = 0, won = 0, lost = 0, pbSum = 0, pbN = 0, wonValueSum = 0, drafts = 0;
+  let pipeline = 0, sentN = 0, won = 0, lost = 0, pbSum = 0, pbN = 0, wonValueSum = 0;
   for (const r of list) {
     const q = Q.get(r.id);
     // Pipeline = contract value you invoice (full system price), not the
     // client's post-grant out-of-pocket.
     if (r.status === "sent") { pipeline += q.grossCost; sentN++; }
-    if (r.status === "draft") drafts++;
     if (r.status === "won") { won++; wonValueSum += q.grossCost; }
     if (r.status === "lost") lost++;
     // Only quotes that went out; a quote that never pays back counts at the horizon.
@@ -135,27 +138,9 @@ export default async function Dashboard() {
   }
   const winRate = (won + lost) ? Math.round(won / (won + lost) * 100) + "%" : "—";
   const avgPbVal = pbN ? pbSum / pbN : null;
-  const avgPb = avgPbVal === null ? "—" : (avgPbVal >= E.horizon ? `${E.horizon}+` : avgPbVal.toFixed(1)) + " " + t("yrs", lang);
+  const avgPb = avgPbVal === null ? "—" : (avgPbVal >= E.horizon ? `${E.horizon}+` : avgPbVal.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })) + " " + t("yrs", lang);
   const yrsF = (p) => p === null ? "25+" : p === 0 ? "now" : p.toFixed(1);
   const avgDeal = won ? wonValueSum / won : null;
-
-  // ---------- funnel: Sent → Opened → Engaged → Won ----------
-  // "Sent" = left draft, so Won (a subset) can never outgrow it.
-  let nSent = 0, nOpened = 0, nEngaged = 0, eurSent = 0, eurOpened = 0, eurEngaged = 0;
-  for (const r of list) {
-    const st = stats.get(r.id);
-    const gc = Q.get(r.id).grossCost;
-    if (r.status !== "draft" || (st && st.sentAt)) { nSent++; eurSent += gc; }
-    if (st && st.opens >= 1) { nOpened++; eurOpened += gc; }
-    if (st && st.opens >= 3) { nEngaged++; eurEngaged += gc; }
-  }
-  const funnel = [
-    ["sent", t("pf_sent", lang), nSent, "var(--blue)", eurSent],
-    ["opened", t("pf_opened", lang), nOpened, "var(--amber)", eurOpened],
-    ["engaged", t("pf_engaged", lang), nEngaged, "#B4700F", eurEngaged],
-    ["won", t("pf_won", lang), won, "var(--green)", wonValueSum],
-  ];
-  const fmax = Math.max(1, nSent, nOpened, nEngaged, won);
 
   // ---------- time to close ----------
   let closeSum = 0, closeN = 0;
@@ -228,13 +213,22 @@ export default async function Dashboard() {
       date: (iso) => fmtDate(iso, locale, { day: "numeric", month: "long" }),
       month: (d) => d.toLocaleDateString(locale, { month: "long", year: "numeric", timeZone: "UTC" }),
       step: (k) => t("inst_" + k, lang),
+      grid: (k) => t("gf_stage_" + k, lang),
       channel: (l) => t("lead_ch_" + leadChannel(l), lang),
+      day: mdDayKey,
+      // "today, 15:00" / "tomorrow, 10:00" / "Thursday, 2 October, 10:00"
+      visit: (iso) => {
+        const dk = mdDayKey(iso), tm = fmtTime(iso, locale);
+        if (dk === todayKey) return t("vis_today", lang, { t: tm });
+        if (dk === mdDayKey(now + 864e5)) return t("vis_tomorrow", lang, { t: tm });
+        return fmtDate(iso, locale, { weekday: "long", day: "numeric", month: "long" }) + ", " + tm;
+      },
     },
   }).map((m) => ({ ...m, ago: m.at ? ago(m.at, lang) : "" }));
 
   // ---------- lead-to-live line ----------
   const { stages, openRate } = flowStages({ projects: list, stats, leads: leadList, gross });
-  const kfmt = (n) => (n >= 1000 ? "€" + (n / 1000).toFixed(n >= 100000 ? 0 : 1).replace(/\.0$/, "") + "k" : n > 0 ? fmt(n) : "");
+  const kfmt = (n) => (n > 0 ? fmt.compact(n) : "");
   const flow = [
     { k: "leads", href: "/leads", n: stages.leads.n, sub: stages.leads.hot ? t("dx_st_hot", lang, { n: stages.leads.hot }) : "" },
     { k: "drafts", href: "/projects?status=draft", n: stages.drafts.n, eur: stages.drafts.eur },
@@ -244,8 +238,6 @@ export default async function Dashboard() {
     { k: "installing", href: "/projects?status=won", n: stages.installing.n, eur: stages.installing.eur, sub: stages.installing.stepsLeft ? t("dx_st_steps", lang, { n: stages.installing.stepsLeft }) : "" },
     { k: "live", href: "/projects?status=won", n: stages.live.n, sub: stages.live.kw ? t("dx_st_kwp", lang, { kw: +stages.live.kw.toFixed(1) }) : "" },
   ];
-  // Conversion shown on the joins where the app can actually measure it.
-  const joinTag = { sent: openRate != null ? t("dx_rate_open", lang, { r: openRate + "%" }) : "", opened: winRate !== "—" ? t("dx_rate_win", lang, { r: winRate }) : "" };
 
   // ---------- header ----------
   // currentActor falls back to the e-mail when no name is set; greet without one then.
@@ -323,30 +315,26 @@ export default async function Dashboard() {
 
       {/* A new account lands on this same page: every card below has its own
           empty state (the first-run overlay was retired on purpose). */}
-      {/* ---------------- the lead-to-live line ---------------- */}
-      <section className="dx-flow" aria-labelledby="dx-flow-h">
-        <div className="dx-flow-head">
-          <h2 id="dx-flow-h">{t("dx_flow_title", lang)}</h2>
-          <p>{t("dx_flow_sub", lang)}</p>
-        </div>
-        <ol className="dx-flow-line">
-          {flow.map((s, i) => (
-            <li key={s.k} className={"dx-stage s-" + s.k + (s.n ? "" : " zero")}>
-              <Link href={s.href} className="dx-stage-in">
-                <span className="dx-stage-lbl">{t("dx_st_" + s.k, lang)}</span>
-                <b className="dx-stage-n">{s.n}</b>
-                <span className="dx-stage-eur">{s.eur ? kfmt(s.eur) : " "}</span>
-                <span className="dx-stage-sub">{s.n ? s.sub || " " : t("dx_st_idle", lang)}</span>
+      {/* ---------------- where every job stands: one tile per stage ---------------- */}
+      <section className="dx-card dx-flow" aria-labelledby="dx-flow-h">
+        <header className="dx-card-head">
+          <div><h2 id="dx-flow-h">{t("dx_flow_title", lang)}</h2><p>{t("dx_flow_sub", lang)}</p></div>
+        </header>
+        <ol className="dx-stages">
+          {flow.map((s) => (
+            <li key={s.k} className={"dx-st s-" + s.k + (s.n ? "" : " zero")}>
+              <Link href={s.href}>
+                <span className="dx-st-lbl">{t("dx_st_" + s.k, lang)}</span>
+                <b className="dx-st-n">{s.n}</b>
+                <span className="dx-st-eur">{s.eur ? kfmt(s.eur) : "\u00a0"}</span>
+                <span className="dx-st-sub">{s.n ? s.sub || "\u00a0" : t("dx_st_idle", lang)}</span>
               </Link>
-              {i < flow.length - 1 && (
-                <span className="dx-join" aria-hidden="true">{joinTag[s.k] ? <em>{joinTag[s.k]}</em> : null}</span>
-              )}
             </li>
           ))}
         </ol>
       </section>
 
-      {/* ---------------- work: next moves, beside the pulse, vitals and funnel ---------------- */}
+      {/* ---------------- what to do next, beside who is reading and the numbers ---------------- */}
       <div className="dx-grid dx-grid-main">
         <NextMoves
           moves={moves}
@@ -354,7 +342,7 @@ export default async function Dashboard() {
           labels={{
             title: t("dx_moves_title", lang), sub: t("dx_moves_sub", lang),
             tabs: { all: t("dx_tab_all", lang), sales: t("dx_tab_sales", lang), leads: t("dx_tab_leads", lang), jobs: t("dx_tab_jobs", lang), systems: t("dx_tab_systems", lang) },
-            kinds: Object.fromEntries(["live", "hot", "followup", "lead", "won_start", "install", "invoice", "unopened", "quiet", "draft", "health", "nodata"].map((k) => [k, t("dx_kind_" + k, lang)])),
+            kinds: Object.fromEntries(["live", "hot", "followup", "lead", "visit", "visit_done", "won_start", "install", "invoice", "grid", "unopened", "quiet", "draft", "health", "nodata"].map((k) => [k, t("dx_kind_" + k, lang)])),
             hot: t("hot", lang), done: t("dx_act_done", lang),
             more: t("dx_moves_more", lang), less: t("dx_moves_less", lang),
             hidden: t("dx_moves_hidden", lang), restore: t("dx_moves_restore", lang),
@@ -365,7 +353,7 @@ export default async function Dashboard() {
           <section className="dx-card dx-pulse" aria-labelledby="dx-pulse-h">
             <header className="dx-card-head">
               <div>
-                <h2 id="dx-pulse-h"><i className={"dx-live-dot" + (pulse.some((p) => p.live) ? " on" : "")} aria-hidden="true" />{t("dx_pulse_title", lang)}</h2>
+                <h2 id="dx-pulse-h">{t("dx_pulse_title", lang)}</h2>
                 <p>{t("dx_pulse_sub", lang)}{opened24h ? `. ${t("dx_pulse_24h", lang, { n: opened24h })}` : ""}</p>
               </div>
             </header>
@@ -391,98 +379,70 @@ export default async function Dashboard() {
 
           <section className="dx-card dx-vitals" aria-labelledby="dx-vitals-h">
             <header className="dx-card-head"><div><h2 id="dx-vitals-h">{t("dx_vitals", lang)}</h2></div></header>
-            <dl className="dx-vital-grid">
-              <div><dt>{t("kpi_pipeline", lang)}</dt><dd>{fmt(pipeline)}</dd><dd className="dx-v-sub">{t("dx_v_out", lang, { n: sentN })}</dd></div>
-              <div><dt>{t("kpi_winrate", lang)}</dt><dd>{winRate}</dd><dd className="dx-v-sub">{t("dx_v_record", lang, { w: won, l: lost })}</dd></div>
-              <div><dt>{t("kpi_payback", lang)}</dt><dd>{avgPb}</dd><dd className="dx-v-sub">{t("dx_v_pb", lang)}</dd></div>
-              <div><dt>{t("kpi_projects", lang)}</dt><dd>{list.length}</dd><dd className="dx-v-sub">{t("dx_v_drafts", lang, { n: drafts })}</dd></div>
-              <div><dt>{t("kpi_avgdeal", lang)}</dt><dd>{avgDeal === null ? "—" : fmt(avgDeal)}</dd><dd className="dx-v-sub">{t("dx_v_deals", lang)}</dd></div>
-              <div><dt>{t("kpi_avgclose", lang)}</dt><dd>{avgClose === null ? "—" : avgClose + " " + t("days", lang)}</dd><dd className="dx-v-sub">{t("dx_v_close", lang)}</dd></div>
+            <dl className="dx-vlist">
+              <div><dt>{t("dx_k_out", lang)}<small>{t("dx_v_out", lang, { n: sentN })}</small></dt><dd>{fmt(pipeline)}</dd></div>
+              <div><dt>{t("dx_k_open", lang)}<small>{t("dx_k_open_s", lang)}</small></dt><dd>{openRate != null ? openRate + "%" : "—"}</dd></div>
+              <div><dt>{t("kpi_winrate", lang)}<small>{t("dx_v_record", lang, { w: won, l: lost })}</small></dt><dd>{winRate}</dd></div>
+              <div><dt>{t("kpi_avgclose", lang)}<small>{t("dx_v_close", lang)}</small></dt><dd>{avgClose === null ? "—" : avgClose + " " + t("days", lang)}</dd></div>
+              <div><dt>{t("kpi_payback", lang)}<small>{t("dx_v_pb", lang)}</small></dt><dd>{avgPb}</dd></div>
+              <div><dt>{t("kpi_avgdeal", lang)}<small>{t("dx_v_deals", lang)}</small></dt><dd>{avgDeal === null ? "—" : fmt(avgDeal)}</dd></div>
             </dl>
-          </section>
-
-          <section className="dx-card" aria-labelledby="dx-funnel-h">
-            <header className="dx-card-head">
-              <div><h2 id="dx-funnel-h">{t("pipe_title", lang)}</h2><p>{t("pipe_count", lang, { n: list.length })}{winRate !== "—" ? `, ${t("pipe_winrate", lang, { r: winRate })}` : ""}</p></div>
-            </header>
-            {list.length ? (
-              <div className="pipe-funnel">
-                {funnel.map(([k, label, val, color, eur]) => (
-                  <div className="pf-row" key={k}>
-                    <span className="pf-lbl">{label}</span>
-                    <div className="pf-track"><i style={{ width: Math.round(val / fmax * 100) + "%", background: color }} /></div>
-                    <b className="pf-val" style={{ color }}>{val}</b>
-                    <span className="pf-eur">{eur > 0 ? fmt(eur) : ""}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty"><b>{t("empty_noproj_t", lang)}</b>{t("empty_noproj_s", lang)}</div>
-            )}
           </section>
         </div>
       </div>
 
-      {/* ---------------- the book: every recent quote, with how the client is reading it ---------------- */}
-      <section className="dx-card" aria-labelledby="dx-recent-h">
-        <header className="dx-card-head">
-          <div><h2 id="dx-recent-h">{t("recent_projects", lang)}</h2></div>
-          <Link className="dx-link" href="/projects">{t("dx_all_quotes", lang)}</Link>
-        </header>
-        {recent.length ? (
-          <div className="tbl-wrap"><table className="tbl dx-tbl">
-            <thead><tr>
-              <th>{t("col_project", lang)}</th><th>{t("col_system", lang)}</th><th>{t("dx_col_opens", lang)}</th>
-              <th>{t("col_payback", lang)}</th><th>{t("col_value", lang)}</th><th>{t("col_status", lang)}</th>
-            </tr></thead>
-            <tbody>
-              {recent.map((p) => {
-                const q = Q.get(p.id);
-                const st = stats.get(p.id);
-                const eng = !st?.sentAt ? t("dx_eng_notsent", lang)
-                  : st.opens ? t("dx_eng_opens", lang, { n: st.opens, when: ago(st.lastOpen || st.sentAt, lang) })
-                  : t("dx_eng_none", lang);
-                return (
-                  <tr key={p.id}>
-                    <td>
-                      <div className="row-id">
-                        <Avatar name={p.title || p.client_name} size={34} title={p.title || t("untitled", lang)} />
-                        <div className="row-id-tx">
-                          <Link className="t-title" href={`/projects/${p.id}`}>{p.title || t("untitled", lang)}</Link>
-                          <div className="t-sub">{p.client_name || "—"}</div>
+      {/* ---------------- the book, one tab at a time ---------------- */}
+      <DashTabs label={t("dx_book", lang)} tabs={[
+        {
+          id: "quotes", label: t("recent_projects", lang), href: "/projects", linkLabel: t("dx_all_quotes", lang),
+          content: recent.length ? (
+            <div className="tbl-wrap"><table className="tbl dx-tbl">
+              <thead><tr>
+                <th>{t("col_project", lang)}</th><th>{t("col_system", lang)}</th><th>{t("dx_col_opens", lang)}</th>
+                <th>{t("col_payback", lang)}</th><th>{t("col_value", lang)}</th><th>{t("col_status", lang)}</th>
+              </tr></thead>
+              <tbody>
+                {recent.map((p) => {
+                  const q = Q.get(p.id);
+                  const st = stats.get(p.id);
+                  const eng = !st?.sentAt ? t("dx_eng_notsent", lang)
+                    : st.opens ? t("dx_eng_opens", lang, { n: st.opens, when: ago(st.lastOpen || st.sentAt, lang) })
+                    : t("dx_eng_none", lang);
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        <div className="row-id">
+                          <Avatar name={p.title || p.client_name} size={34} title={p.title || t("untitled", lang)} />
+                          <div className="row-id-tx">
+                            <Link className="t-title" href={`/projects/${p.id}`}>{p.title || t("untitled", lang)}</Link>
+                            <div className="t-sub">{p.client_name || "—"}</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="dx-num">{Number(p.kw).toFixed(1)} kW{p.batt ? t("pp_plus_batt", lang) : ""}</td>
-                    <td className={"dx-eng" + (st?.opens >= 3 ? " hot" : "")}>{eng}</td>
-                    <td className="dx-num">{yrsF(q.payback)} {t("yrs", lang)}</td>
-                    <td className="dx-num">{fmt(q.cost)}</td>
-                    <td>
-                      <form action={cycleStatus} style={{ display: "inline" }}>
-                        <input type="hidden" name="id" value={p.id} />
-                        <button className={`chip ${p.status}`} type="submit">{t("st_" + p.status, lang)}</button>
-                      </form>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table></div>
-        ) : (
-          <div className="empty"><b>{t("empty_noproj_t", lang)}</b>{t("empty_noproj_s", lang)}</div>
-        )}
-      </section>
-
-      {/* ---------------- who is new, and what just happened ---------------- */}
-      <div className="dx-grid dx-grid-half">
-        <section className="dx-card" aria-labelledby="dx-leads-h">
-          <header className="dx-card-head">
-            <div><h2 id="dx-leads-h">{t("incoming_leads", lang)}<span className="dx-count">{openLeads.length}</span></h2></div>
-            <Link className="dx-link" href="/leads">{t("dx_all_leads", lang)}</Link>
-          </header>
-          {openLeads.length ? (
+                      </td>
+                      <td className="dx-num">{Number(p.kw).toFixed(1)} kW{p.batt ? t("pp_plus_batt", lang) : ""}</td>
+                      <td className={"dx-eng" + (st?.opens >= 3 ? " hot" : "")}>{eng}</td>
+                      <td className="dx-num">{yrsF(q.payback)} {t("yrs", lang)}</td>
+                      <td className="dx-num">{fmt(q.cost)}</td>
+                      <td>
+                        <form action={cycleStatus} style={{ display: "inline" }}>
+                          <input type="hidden" name="id" value={p.id} />
+                          <button className={`chip ${p.status}`} type="submit">{t("st_" + p.status, lang)}</button>
+                        </form>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table></div>
+          ) : (
+            <div className="empty"><b>{t("empty_noproj_t", lang)}</b>{t("empty_noproj_s", lang)}</div>
+          ),
+        },
+        {
+          id: "leads", label: t("incoming_leads", lang), count: openLeads.length, href: "/leads", linkLabel: t("dx_all_leads", lang),
+          content: openLeads.length ? (
             <ul className="dx-leads">
-              {openLeads.slice(0, 5).map((l) => {
+              {openLeads.slice(0, 6).map((l) => {
                 const ch = leadChannel(l);
                 return (
                   <li key={l.id}>
@@ -504,15 +464,43 @@ export default async function Dashboard() {
             </ul>
           ) : (
             <div className="empty"><b>{t("empty_noleads_t", lang)}</b>{t("empty_noleads_s", lang)}</div>
-          )}
-        </section>
-
-        <section className="dx-card" aria-labelledby="dx-act-h">
-          <header className="dx-card-head">
-            <div><h2 id="dx-act-h">{t("activity", lang)}</h2></div>
-            <Link className="dx-link" href="/activity">{t("act_view_all", lang)}</Link>
-          </header>
-          {(acts || []).length ? (
+          ),
+        },
+        {
+          id: "installs", label: t("dash_installing", lang), count: installs.length, note: installs.length ? t("dx_inst_sub", lang) : "",
+          content: installs.length ? (
+            <div className="dx-inst">
+              <InstallBoard jobs={installs} stepLabels={stepLabels}
+                labels={{ waiting: t("dx_inst_waiting", lang), next: t("dash_next", lang), mark: t("fu_done", lang) }} />
+            </div>
+          ) : (
+            <div className="empty"><b>{t("empty_noinstall_t", lang)}</b>{t("empty_noinstall_s", lang)}</div>
+          ),
+        },
+        {
+          id: "papers", label: t("doc_dash_title", lang), count: papers.length, href: "/documents", linkLabel: t("doc_dash_open", lang),
+          note: papers.length ? t("doc_dash_sub", lang) : "",
+          content: papers.length ? (
+            <ul className="dx-paper-list">
+              {papers.slice(0, 8).map(({ r, missing }) => (
+                <li key={r.id}>
+                  <Link href={`/projects/${r.id}`} className="dx-paper-who">
+                    <b>{r.title || t("untitled", lang)}</b>
+                    <small>{r.client_name || ""}</small>
+                  </Link>
+                  <span className="dx-paper-tags">
+                    {missing.map((k) => <i key={k}>{t("doc_short_" + k, lang)}</i>)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="dx-empty"><b>{t("doc_dash_clear", lang)}</b></div>
+          ),
+        },
+        {
+          id: "activity", label: t("activity", lang), href: "/activity", linkLabel: t("act_view_all", lang),
+          content: (acts || []).length ? (
             <div className="feed-scroll dx-feed"><ul className="feed">
               {(acts || []).map((a) => {
                 const ic = feedIcon(a.kind);
@@ -534,59 +522,9 @@ export default async function Dashboard() {
             </ul></div>
           ) : (
             <div className="empty"><b>{t("empty_nofeed_t", lang)}</b>{t("empty_nofeed_s", lang)}</div>
-          )}
-        </section>
-      </div>
-
-      {/* ---------------- jobs on site, and the paperwork they still owe ---------------- */}
-      <div className="dx-grid dx-grid-half">
-        <section className="dx-card dx-inst" aria-labelledby="dx-inst-h">
-          <header className="dx-card-head">
-            <div>
-              <h2 id="dx-inst-h">{t("dash_installing", lang)}<span className="dx-count">{installs.length}</span></h2>
-              <p>{t("dx_inst_sub", lang)}</p>
-            </div>
-          </header>
-          {installs.length ? (
-            <InstallBoard jobs={installs} stepLabels={stepLabels}
-              labels={{ waiting: t("dx_inst_waiting", lang), next: t("dash_next", lang), mark: t("fu_done", lang) }} />
-          ) : (
-            <div className="empty"><b>{t("empty_noinstall_t", lang)}</b>{t("empty_noinstall_s", lang)}</div>
-          )}
-        </section>
-
-        <section className="dx-card dx-paper" aria-labelledby="dx-paper-h">
-          <header className="dx-card-head">
-            <div>
-              <h2 id="dx-paper-h">{t("doc_dash_title", lang)}<span className="dx-count">{papers.length}</span></h2>
-              <p>{t("doc_dash_sub", lang)}</p>
-            </div>
-            <Link className="dx-link" href="/documents">{t("doc_dash_open", lang)}</Link>
-          </header>
-          {papers.length ? (
-            <ul className="dx-paper-list">
-              {papers.slice(0, 6).map(({ r, missing }) => (
-                <li key={r.id}>
-                  <Link href={`/projects/${r.id}`} className="dx-paper-who">
-                    <b>{r.title || t("untitled", lang)}</b>
-                    <small>{r.client_name || ""}</small>
-                  </Link>
-                  <span className="dx-paper-tags">
-                    {missing.map((k) => <i key={k}>{t("doc_short_" + k, lang)}</i>)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="dx-empty">
-              <span className="dx-empty-ic" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-              </span>
-              <b>{t("doc_dash_clear", lang)}</b>
-            </div>
-          )}
-        </section>
-      </div>
+          ),
+        },
+      ]} />
 
       <section className="dx-base" aria-labelledby="dx-base-h">
         <div className="dx-base-in">
