@@ -92,7 +92,20 @@ export async function getSolarYield(lat, lon, opts = {}) {
   // Normalize to weights that sum to 12 (same scale as SOLAR_SEASON)
   const monthlyShape = monthly.map(m => (m.E_m / mSum) * 12);
 
-  const value = { yieldPerKwp, monthlyShape };
+  // What PVGIS also says about this site, kept for the bank documents: how much
+  // the yearly yield varies from year to year (its standard deviation over the
+  // years of its radiation database), which database and years, and where the
+  // loss comes from.
+  const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
+  const sdY = num(totals.SD_y);
+  const meteo = json?.inputs?.meteo_data || {};
+  const variability = sdY != null && yieldPerKwp > 0 && meteo.year_min && meteo.year_max ? {
+    sdPct: Math.round((sdY / yieldPerKwp) * 1000) / 10,
+    db: String(meteo.radiation_db || "").slice(0, 40),
+    years: `${meteo.year_min}-${meteo.year_max}`,
+  } : null;
+  const losses = { aoi: num(totals.l_aoi), spectral: num(totals.l_spec), tempIrr: num(totals.l_tg), total: num(totals.l_total), system: loss };
+  const value = { yieldPerKwp, monthlyShape, variability, losses };
   if (cache) await cache.set(key, value);
   return { ...value, source: "pvgis" };
 }

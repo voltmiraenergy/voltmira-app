@@ -7,6 +7,7 @@
 // and the display currency they chose. The PDF route captures this page with
 // scripts blocked, so every chart here is plain SVG or HTML.
 import { pt } from "../../../../../lib/portfolioText.js";
+import { bt } from "../../../../../lib/bankText.js";
 import { pct, dscr, num, mwhUnit, kwpUnit, dscrTone, capacity } from "../../../../../lib/portfolioFormat.js";
 import { caseLabel, riskRows, documentRows, esRows, presetSources } from "../../../../../lib/portfolioExport.js";
 import { keyMessages, fxNote, structureName, termsLine, taxLine } from "../../../../../lib/portfolioDisplay.js";
@@ -50,7 +51,7 @@ function sectionsFor(market, { map = false, plants = false } = {}) {
 const sectionName = (id, lang) => (id === "r_market" ? et("mk_title", lang) : id === "r_map" ? plt("r_map", lang) : id === "r_plants" ? plt("r_plants", lang) : pt(id, lang));
 const H2 = ({ id, lang, sections }) => <h2><span className="rp-num">{sections.indexOf(id) + 1}</span>{sectionName(id, lang)}</h2>;
 
-export default function Report({ model, lang, company, date, money, fx }) {
+export default function Report({ model, lang, company, date, money, fx, rid = "" }) {
   const { agg, fin, scenario, suite, risks, assets, sizing } = model;
   const market = model.portfolio?.market || "MD";
   const hasPlants = model.assets.some((a) => a.kind === "plant");
@@ -86,7 +87,7 @@ export default function Report({ model, lang, company, date, money, fx }) {
         <div className="rp-cover-top">
           <p className="rp-kicker">{pt("r_title", lang)}</p>
           <h1>{model.portfolio?.name || ""}</h1>
-          <p className="rp-meta">{[pt("r_prepared", lang, { co: company || "VoltMira" }), date].filter(Boolean).join(", ")}</p>
+          <p className="rp-meta">{[pt("r_prepared", lang, { co: company || "VoltMira" }), date, rid && bt("rid", lang, { x: rid })].filter(Boolean).join(", ")}</p>
         </div>
         <div className="rp-facts">
           <div><span>{pt("k_assets", lang)}</span><b>{agg.count}</b><small>{capacity(agg.kwp, lang)}, {pt(market === "UA" ? "market_ua" : "market_md", lang)}</small></div>

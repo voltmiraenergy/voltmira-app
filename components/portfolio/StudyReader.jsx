@@ -14,12 +14,13 @@ import { num as fnum, mwhUnit } from "../../lib/portfolioFormat.js";
 
 const ROWS = {
   wind: ["p50", "p90_1y", "p90_10y", "capacity", "turbines", "hub", "meanWind", "losses", "uncertainty", "model", "measurement", "by", "date"],
-  solar: ["p50", "p90_1y", "p90_10y", "capacity", "losses", "uncertainty", "measurement", "by", "date"],
+  solar: ["p50", "p90_1y", "p90_10y", "capacity", "losses", "uncertainty", "degrFirst", "degrAnnual", "measurement", "by", "date"],
 };
 const LABEL = { p50: "rf_p50", p90_1y: "rf_p90_1y", p90_10y: "rf_p90_10y", capacity: "rf_capacity", turbines: "w_turbines", hub: "w_hub",
-  meanWind: "rf_meanWind", losses: "rf_losses", uncertainty: "rf_uncertainty", model: "rf_model", measurement: "rf_measurement", by: "s_by", date: "s_date" };
+  meanWind: "rf_meanWind", losses: "rf_losses", uncertainty: "rf_uncertainty", model: "rf_model", measurement: "rf_measurement", by: "s_by", date: "s_date",
+  degrFirst: "rf_degrFirst", degrAnnual: "rf_degrAnnual" };
 /** The values that go into the plant; the rest is shown for information. */
-const USABLE = ["p50", "by", "date", "hub", "turbines"];
+const USABLE = ["p50", "by", "date", "hub", "turbines", "degrFirst", "degrAnnual"];
 const CHECK = { verified: "rd_ok", quote_only: "rd_quote_only", unverified: "rd_unverified", scan: "rd_scan_src" };
 
 function toBase64(bytes) {
@@ -57,7 +58,11 @@ export default function StudyReader({ kind, id, lang = "en", plantMw = null, onA
     if (!res || !res.ok || !j?.ok) { setStage("idle"); setErr(j?.error || "failed"); return; }
     const st = j.study;
     const capWarn = st.warnings.some((w) => w.id === "cap");
-    setTicks({ p50: true, by: !!st.fields.by, date: !!st.isoDate, hub: !!st.fields.hub && !capWarn, turbines: !!st.fields.turbines && !capWarn });
+    // a lifetime-average P50 is not offered pre-ticked (it would be aged twice); the first year's extra loss is only
+    // pre-ticked when the P50 is the figure before ageing (otherwise it would count twice)
+    const life = st.p50Basis === "lifetime_average";
+    setTicks({ p50: !life, by: !!st.fields.by, date: !!st.isoDate, hub: !!st.fields.hub && !capWarn, turbines: !!st.fields.turbines && !capWarn,
+      degrFirst: !!st.fields.degrFirst && st.p50Basis === "before_ageing", degrAnnual: !!st.fields.degrAnnual });
     setP90(st.fields.p90_1y ? "1y" : st.fields.p90_10y ? "10y" : "");
     setStudy(st); setStage("review");
   }
@@ -112,6 +117,8 @@ export default function StudyReader({ kind, id, lang = "en", plantMw = null, onA
     const extra = {};
     if (kind === "wind" && ticks.hub && f.hub) extra.hubM = f.hub.value;
     if (kind === "wind" && ticks.turbines && f.turbines) extra.turbines = f.turbines.value;
+    if (kind === "solar" && ticks.degrFirst && f.degrFirst) extra.degrFirstPct = f.degrFirst.value;
+    if (kind === "solar" && ticks.degrAnnual && f.degrAnnual) extra.degrPctYr = f.degrAnnual.value;
     onApply({ study: s, extra });
     setStudy(null); setStage("applied");
     if (inputRef.current) inputRef.current.value = "";
@@ -120,7 +127,7 @@ export default function StudyReader({ kind, id, lang = "en", plantMw = null, onA
   const show = (key, v) => {
     if (key === "p50" || key === "p90_1y" || key === "p90_10y") return `${fnum(v, lang, 0)} ${mwhUnit(lang)}`;
     if (key === "capacity") return `${fnum(v, lang, 2)} ${kind === "solar" ? "MWp" : "MW"}`;
-    if (key === "losses" || key === "uncertainty") return `${fnum(v, lang, 1)}%`;
+    if (key === "losses" || key === "uncertainty" || key === "degrFirst" || key === "degrAnnual") return `${fnum(v, lang, key.startsWith("degr") ? 2 : 1)}%`;
     if (typeof v === "number") return fnum(v, lang, 2);
     return v;
   };

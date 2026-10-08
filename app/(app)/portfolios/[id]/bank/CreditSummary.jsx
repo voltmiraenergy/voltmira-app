@@ -19,6 +19,7 @@ import { WIND_SOURCE } from "../../../../../lib/windData.js";
 import DscrChart from "../../../../../components/portfolio/DscrChart.jsx";
 import GridAnnex from "../../../../../components/portfolio/GridAnnex.jsx";
 import { dt } from "../../../../../lib/dealText.js";
+import { basisLine, dataSourceLines } from "../../../../../lib/energyBasis.js";
 
 const Row = ({ k, v }) => <tr><th scope="row">{k}</th><td>{v}</td></tr>;
 const LEVEL = { high: 0, medium: 1, low: 2, unknown: 3 };
@@ -36,7 +37,7 @@ export function mixLine(pl, lang) {
 
 // docCounts: the documents on file per checklist item (lib/dealRoom.js), or
 // null where the deal room is not set up; the checklist then shows no column
-export default function CreditSummary({ model, lang, company, date, money, fx, todayKey, docCounts = null }) {
+export default function CreditSummary({ model, lang, company, date, money, fx, todayKey, docCounts = null, rid = "" }) {
   const a = model.assets[0];
   const pl = normalizePlant(a.plant);
   const { agg, fin, sizing } = model;
@@ -82,6 +83,7 @@ export default function CreditSummary({ model, lang, company, date, money, fx, t
   const r = pl.revenue;
   const su = model.sourcesUses;
   const grid = gridText(pl, lang, m);
+  const dataSources = dataSourceLines(pl, lang);
   // the construction terms in one line: "18 months to build, 1 year of grace, reserve 6 months"
   const build = [fin.constructionMonths > 0 && pt("build_short", lang, { n: fin.constructionMonths }),
     hasDebt && fin.graceYears > 0 && pt("grace_short", lang, { n: fin.graceYears }),
@@ -96,7 +98,7 @@ export default function CreditSummary({ model, lang, company, date, money, fx, t
         <div className="rp-cover-top">
           <p className="rp-kicker">{bt("title", lang)}</p>
           <h1>{pl.name}</h1>
-          <p className="rp-meta">{[pt("r_prepared", lang, { co: company || "VoltMira" }), date].filter(Boolean).join(", ")}</p>
+          <p className="rp-meta">{[pt("r_prepared", lang, { co: company || "VoltMira" }), date, rid && bt("rid", lang, { x: rid })].filter(Boolean).join(", ")}</p>
         </div>
         {pl.sample && <p className="rp-sample-note"><b>{plt("sample_badge", lang)}.</b> {plt("sample_note", lang)}</p>}
         <p className="rp-lead">{lead}{pl.sponsor ? ` ${bt("sponsor_line", lang, { x: pl.sponsor })}` : ""}</p>
@@ -170,6 +172,7 @@ export default function CreditSummary({ model, lang, company, date, money, fx, t
               {pl.bess && r.bessEurPerMwYr > 0 && <Row k={plt("b_rev", lang)} v={`${num(r.bessEurPerMwYr, lang, 0)}, ${plt("b_years_v", lang, { n: r.bessYears })}`} />}
             </tbody></table>
             <p className="rp-small">{hasDebt ? (cy.years > 0 ? bt("cover_years", lang, { n: cy.years, t: cy.tenor }) : bt("cover_none", lang)) : ""}</p>
+            <p className="rp-small"><b>{bt("p_p90basis", lang)}:</b> {basisLine(en, lang, pl.solar)}.</p>
           </div>
           <div>
             <h3>{bt("headroom_h", lang)}</h3>
@@ -241,6 +244,7 @@ export default function CreditSummary({ model, lang, company, date, money, fx, t
         )}
         <h3>{bt("basis_h", lang)}</h3>
         <p className="rp-small">{bt("basis_p", lang, { src: srcLine || none })}{en.wind?.source === "screening" ? ` ${plt("w_screen_doc", lang)} ${plt("r_wind_src", lang, { src: WIND_SOURCE })}` : ""}</p>
+        {dataSources.length > 0 && <p className="rp-small"><b>{bt("ds_h", lang)}:</b> {dataSources.join("; ")}.</p>}
         <p className="rp-small">{bt("tax_basis", lang, { x: taxLine(fin, lang) })} {bt("llcr_note", lang)} {pt("su_h", lang)} {grid ? `${bt("g_note", lang)} ` : ""}{fxNote(lang, money.cur, fx)}</p>
         <p className="rp-small rp-foot">{bt("disclaimer", lang)}</p>
       </section>

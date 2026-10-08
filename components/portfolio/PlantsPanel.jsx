@@ -26,6 +26,10 @@ import { bt } from "../../lib/bankText.js";
 import { stillMissing, PACK_LANGS } from "../../lib/bankPack.js";
 import { namesList } from "../../lib/portfolioDisplay.js";
 import StudyReader from "./StudyReader.jsx";
+import { P90Basis } from "./EnergyBasis.jsx";
+import { preflight } from "../../lib/preflight.js";
+import { checkText } from "../../lib/preflightText.js";
+import { basisLine } from "../../lib/energyBasis.js";
 import SitePicker from "./SitePicker.jsx";
 import GridPanel from "./GridPanel.jsx";
 import { siteDrift } from "../../lib/sitePick.js";
@@ -36,13 +40,14 @@ import { dt } from "../../lib/dealText.js";
 import { docCounts, isAnswered } from "../../lib/dealRoom.js";
 import { num as fnum, mwhUnit, dscr, dscrTone } from "../../lib/portfolioFormat.js";
 
-function Field({ id, label, value, onChange, step = "any", min, max, type = "number", wide = false, placeholder }) {
+function Field({ id, label, value, onChange, step = "any", min, max, type = "number", wide = false, placeholder, hint }) {
   return (
     <div className={"field" + (wide ? " pl-wide" : "")}>
       <label htmlFor={id}>{label}</label>
       {type === "number"
         ? <input id={id} className="input" type="number" inputMode="decimal" step={step} min={min} max={max} value={value ?? ""} onChange={(e) => onChange(e.target.value === "" ? "" : +e.target.value)} />
         : <input id={id} className="input" type={type} value={value ?? ""} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />}
+      {hint && <small className="pf-hint">{hint}</small>}
     </div>
   );
 }
@@ -94,7 +99,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
     setBusy("solar"); setMsg(null);
     const r = await solarYieldAt(at.lat, at.lon).catch(() => null);
     setBusy(null);
-    if (r && r.ok) setLive("solar", { yieldKwhKwp: r.yieldKwhKwp, yieldSource: "pvgis", yieldAt: { lat: at.lat, lon: at.lon } });
+    if (r && r.ok) setLive("solar", { yieldKwhKwp: r.yieldKwhKwp, yieldSource: "pvgis", yieldAt: { lat: at.lat, lon: at.lon }, ...r.site });
     else setMsg({ k: "solar", t: plt("sol_failed", lang) });
   }
 
@@ -126,6 +131,8 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
   const packOff = !!saving || !portfolioId || !id;
   const offProps = packOff ? { "aria-disabled": true, tabIndex: -1 } : {};
   const packLang = PACK_LANGS.includes(lang) ? lang : "ro";
+  // what a careful reader would catch before the bank does (lib/preflight.js)
+  const checks = preflight({ plant: raw, docs: showFiles ? deal.docs : null, todayKey });
 
   return (
     <article id={"plant-" + id} className="card pl" aria-labelledby={"pl-h-" + id}>
@@ -212,7 +219,10 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
               <div className="pl-grid">
                 <Field id={`sm-${id}`} label={plt("sol_mwp", lang)} value={raw.solar.mwp} onChange={(v) => setIn("solar", { mwp: v })} min="0" />
                 <Field id={`sy-${id}`} label={plt("sol_yield", lang)} value={raw.solar.yieldKwhKwp} onChange={(v) => setIn("solar", { yieldKwhKwp: v, yieldSource: "manual" })} min="0" max="2500" />
+                <Field id={`sf-${id}`} label={plt("sol_degr_first", lang)} hint={plt("sol_degr_first_h", lang)} value={raw.solar.degrFirstPct ?? ""} onChange={(v) => setIn("solar", { degrFirstPct: v })} min="0" max="10" step="0.1" />
+                <Field id={`sa-${id}`} label={plt("sol_avail", lang)} hint={plt("sol_avail_h", lang)} value={raw.solar.availabilityPct ?? ""} onChange={(v) => setIn("solar", { availabilityPct: v })} min="0" max="20" step="0.1" />
               </div>
+              {pl.solar.variabilityPct != null && <p className="pl-line ok">{plt("sol_pvgis_got", lang, { sd: fnum(pl.solar.variabilityPct, lang, 1), db: pl.solar.variabilityDb, years: pl.solar.variabilityYears })}</p>}
               <div className="pl-row">
                 <button type="button" className="btn sm" disabled={!hasSite || busy === "solar"} aria-busy={busy === "solar"} onClick={() => pvgis()}>{plt("sol_lookup", lang)}{busy === "solar" ? "..." : ""}</button>
                 {!hasSite && <small className="pf-hint">{plt("f_need_site", lang)}</small>}
@@ -221,7 +231,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
               {drift.solar != null && <p className="pf-warn">{plt("moved_solar", lang, { km: fnum(drift.solar, lang, 1) })}</p>}
               <h5>{plt("study_h", lang)}</h5>
               <StudyReader kind="solar" id={id} lang={lang} plantMw={pl.solar.mwp}
-                onApply={({ study }) => setIn("solar", { study: { ...(raw.solar.study || {}), ...study } })} />
+                onApply={({ study, extra }) => setIn("solar", { ...extra, study: { ...(raw.solar.study || {}), ...study } })} />
               <div className="pl-grid">
                 <Field id={`sp5-${id}`} label={plt("s_p50", lang)} value={raw.solar.study?.p50Mwh} onChange={(v) => setIn("solar", { study: { ...(raw.solar.study || {}), p50Mwh: v } })} min="0" />
                 <Field id={`sp9-${id}`} label={plt("s_p90", lang)} value={raw.solar.study?.p90Mwh} onChange={(v) => setIn("solar", { study: { ...(raw.solar.study || {}), p90Mwh: v } })} min="0" />
@@ -310,6 +320,12 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
             {hr.capexHeadroomPct != null && <li>{plt(hr.capexHeadroomPct >= 0 ? "hr_capex_pos" : "hr_capex_neg", lang, { x: pc(Math.abs(hr.capexHeadroomPct)), t })}</li>}
           </ul>
         )}
+        {en.solar && en.solar.p50Mwh > 0 && (
+          <details className="pl-p90">
+            <summary>{plt("p90_h", lang)}: {basisLine(en, lang, pl.solar)}</summary>
+            <P90Basis solar={en.solar} lang={lang} className="pf-t" heading={false} />
+          </details>
+        )}
       </section>
 
       {/* ---- the grid around the site, and the connection */}
@@ -386,6 +402,16 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
       <section className="pl-pack" aria-label={bt("pack_h", lang)}>
         <h4>{bt("pack_h", lang)}</h4>
         <p className="pf-hint">{bt("pack_p", lang)}</p>
+        <div className="pl-checks">
+          <h5>{bt("pf_h", lang)}</h5>
+          {checks.length === 0 ? <p className="pl-line ok">{bt("pf_none", lang)}</p> : (
+            <ul>
+              {checks.map((c, i) => (
+                <li key={c.id + i} className={"lv-" + c.level}><b>{bt(c.level === "stop" ? "pf_stop" : "pf_check", lang)}</b> {checkText(c, lang)}</li>
+              ))}
+            </ul>
+          )}
+        </div>
         <p className="pl-line">{miss.count === 0 ? bt("pack_missing_0", lang) : bt("pack_missing", lang, { n: missNames.length, x: namesList(missNames, lang, 4) })}</p>
         <div className="pl-row">
           <a className={"btn primary sm" + (packOff ? " off" : "")} {...offProps} href={`/api/portfolios/${portfolioId}/bankpack?plant=${encodeURIComponent(id)}&lang=${packLang}`}>{bt("pack_dl", lang)}</a>

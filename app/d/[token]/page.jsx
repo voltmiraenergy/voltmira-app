@@ -26,6 +26,7 @@ import { plt } from "../../../lib/plantText.js";
 import { dt } from "../../../lib/dealText.js";
 import { LINK_LANGS, docsByItem, docCounts, sizeText, isAnswered } from "../../../lib/dealRoom.js";
 import { fmtDate, mdDayKey } from "../../../lib/tz.js";
+import { reportId } from "../../../lib/reportId.js";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Deal room | VoltMira", robots: { index: false, follow: false, nocache: true }, referrer: "no-referrer" };
@@ -150,7 +151,7 @@ export default async function DealPage(props) {
 
         <section id="summary" className="dl-summary" aria-label={dt("b_nav_summary", lang)}>
           <div className="rp-wrap">
-            <CreditSummary model={model} lang={lang} company={co.name || ""} date={date} money={money} fx={d.fx} todayKey={today} docCounts={counts} />
+            <CreditSummary model={model} lang={lang} company={co.name || ""} date={date} money={money} fx={d.fx} todayKey={today} docCounts={counts} rid={reportId(model, today)} />
           </div>
         </section>
 

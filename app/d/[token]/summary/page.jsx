@@ -18,6 +18,7 @@ import { bt } from "../../../../lib/bankText.js";
 import { pt } from "../../../../lib/portfolioText.js";
 import { LINK_LANGS, docCounts } from "../../../../lib/dealRoom.js";
 import { mdDayKey } from "../../../../lib/tz.js";
+import { reportId } from "../../../../lib/reportId.js";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Credit summary | VoltMira", robots: { index: false, follow: false, nocache: true }, referrer: "no-referrer" };
@@ -34,6 +35,7 @@ export default async function DealSummary(props) {
   // the pack's own render is logged as the pack; a person reading it here is logged as such
   if (!pdf) await logView(d.link, "summary", "", await headers());
   const name = normalizePlant(d.model.assets[0].plant).name;
+  const rid = reportId(d.model, todayKey());
   return (
     <div className="app dl-app dl-print">
       <AppTheme />
@@ -41,8 +43,8 @@ export default async function DealSummary(props) {
       <main className="main"><div className="view dl-view">
         <div className={"rp-wrap" + (pdf ? " is-pdf" : "")}>
           {!pdf && <div className="rp-bar"><PrintButton label={pt("r_print", lang)} /></div>}
-          <CreditSummary model={d.model} lang={lang} company={d.co?.name || ""} date={date} money={money} fx={d.fx} todayKey={todayKey()} docCounts={docCounts(d.docs)} />
-          <style>{printCss({ lang, title: `${name}, ${bt("title", lang)}` })}</style>
+          <CreditSummary model={d.model} lang={lang} company={d.co?.name || ""} date={date} money={money} fx={d.fx} todayKey={todayKey()} docCounts={docCounts(d.docs)} rid={rid} />
+          <style>{printCss({ lang, title: `${name}, ${bt("title", lang)}, ${bt("rid", lang, { x: rid })}` })}</style>
         </div>
       </div></main>
     </div>

@@ -636,3 +636,18 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 .app .dd-t tr.dd-late td { background: color-mix(in srgb, var(--pf-bad) 6%, transparent); }
 .app .dd-t tr.dd-late .dd-when { color: var(--pf-bad); font-weight: 700; }
 .app .dd-t .btn.ghost { border-style: solid; border-width: 1px; }
+
+/* how the P90 is built, under a plant's results */
+.app .pl-p90 { margin-top: 8px; font-size: 13px; }
+.app .pl-p90 summary { cursor: pointer; font-weight: 600; color: var(--ink); line-height: 1.5; }
+.app .pl-p90 .pf-t { margin: 8px 0; }
+.app .pl-p90 .rp-small { margin: 4px 0; }
+
+/* what to check before the pack goes to the bank */
+.app .pl-checks { display: flex; flex-direction: column; gap: 4px; }
+.app .pl-checks h5 { margin: 0; font-size: 13px; }
+.app .pl-checks ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.app .pl-checks li { font-size: 13px; line-height: 1.5; padding: 7px 10px; border-radius: 9px; background: var(--paper); }
+.app .pl-checks li b { margin-right: 6px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--pf-warn); }
+.app .pl-checks li.lv-stop { background: color-mix(in srgb, var(--pf-bad) 9%, transparent); }
+.app .pl-checks li.lv-stop b { color: var(--pf-bad); }

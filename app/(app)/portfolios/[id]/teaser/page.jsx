@@ -12,6 +12,12 @@ import { pt } from "../../../../../lib/portfolioText.js";
 import { docSetup, printCss } from "../../../../../lib/portfolioPrint.js";
 import Teaser from "./Teaser.jsx";
 import PrintButton from "../report/PrintButton.jsx";
+import { mdDayKey } from "../../../../../lib/tz.js";
+import { bt } from "../../../../../lib/bankText.js";
+import { reportId } from "../../../../../lib/reportId.js";
+
+/** Today in Moldova, for the report ID. */
+const todayKey = () => mdDayKey(Date.now());
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Investor teaser | VoltMira" };
@@ -25,12 +31,13 @@ export default async function TeaserPage(props) {
   const { lang, pdf, money, date } = docSetup(sp, d);
   // the teaser shows no sensitivity or structure tables: skip those runs
   const model = buildModel({ portfolio: d.portfolio, projects: d.quotes, E: d.E, schemeLimitKw: d.schemeLimitKw, include: { sensitivity: false, structures: false } });
+  const rid = reportId(model, todayKey());
   return (
     <div className={"rp-wrap" + (pdf ? " is-pdf" : "")}>
       {!pdf && sp?.fallback === "1" && <p className="rp-fallback" role="status">{pt("r_pdf_fallback", lang)}</p>}
       {!pdf && <div className="rp-bar"><PrintButton label={pt("r_print", lang)} /></div>}
-      <Teaser model={model} lang={lang} company={d.co?.name || ""} date={date} money={money} fx={d.fx} />
-      <style>{printCss({ lang, title: `${d.portfolio?.name || ""}, ${pt("t_title", lang)}` })}</style>
+      <Teaser model={model} lang={lang} company={d.co?.name || ""} date={date} money={money} fx={d.fx} rid={rid} />
+      <style>{printCss({ lang, title: `${d.portfolio?.name || ""}, ${pt("t_title", lang)}, ${bt("rid", lang, { x: rid })}` })}</style>
     </div>
   );
 }

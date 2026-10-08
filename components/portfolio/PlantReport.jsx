@@ -13,6 +13,7 @@ import { gridText } from "../../lib/bankPack.js";
 import { bt } from "../../lib/bankText.js";
 import { connectionGroups } from "../../lib/gridOptions.js";
 import GridAnnex from "./GridAnnex.jsx";
+import { P90Basis, YieldLosses } from "./EnergyBasis.jsx";
 
 const Row = ({ k, v }) => <tr><th scope="row">{k}</th><td>{v}</td></tr>;
 
@@ -50,6 +51,8 @@ export default function PlantReport({ assets, lang, money, E, fin, scenario, tar
               {pl.bess && <tr><td>{plt("c_bess", lang)}</td><td className="r">{num(pl.bess.mw, lang, 1)}</td><td className="r" colSpan={2}>{mwh(pl.bess.mwh)}</td><td>{r.bessEurPerMwYr > 0 ? `${money.full(r.bessEurPerMwYr)} ${money.cur}/MW, ${plt("b_years_v", lang, { n: r.bessYears })}` : plt("b_note", lang)}</td></tr>}
             </tbody></table>
             {en.wind?.source === "screening" && <p className="rp-small">{plt("w_screen_doc", lang)}</p>}
+            {en.solar && <P90Basis solar={en.solar} lang={lang} />}
+            {pl.solar?.yieldSource === "pvgis" && <YieldLosses losses={pl.solar.yieldLosses} lang={lang} />}
             {grid && <p className="rp-small"><b>{plt("grid_h", lang)}:</b> {grid}. {bt("g_note", lang)}</p>}
             <div className="rp-two">
               <table className="rp-kv"><tbody>

@@ -3,6 +3,7 @@
 // assets and where they are, the main risks, and what is ready to share.
 // Server-rendered; every chart is plain SVG or HTML (the PDF blocks scripts).
 import { pt } from "../../../../../lib/portfolioText.js";
+import { bt } from "../../../../../lib/bankText.js";
 import { plt } from "../../../../../lib/plantText.js";
 import { pct, dscr, num, mwhUnit, kwpUnit, capacity } from "../../../../../lib/portfolioFormat.js";
 import { riskRows } from "../../../../../lib/portfolioExport.js";
@@ -14,7 +15,7 @@ import StaticMap from "../../../../../components/portfolio/StaticMap.jsx";
 const MAX_ROWS = 10;
 const LEVEL = { high: 0, medium: 1, low: 2, unknown: 3 };
 
-export default function Teaser({ model, lang, company, date, money, fx }) {
+export default function Teaser({ model, lang, company, date, money, fx, rid = "" }) {
   const { agg, fin, sizing, assets } = model;
   const market = model.portfolio?.market || "MD";
   const none = pt("na", lang);
@@ -46,7 +47,7 @@ export default function Teaser({ model, lang, company, date, money, fx }) {
         <div className="rp-cover-top">
           <p className="rp-kicker">{pt("t_title", lang)}</p>
           <h1>{model.portfolio?.name || ""}</h1>
-          <p className="rp-meta">{[pt("r_prepared", lang, { co: company || "VoltMira" }), date].filter(Boolean).join(", ")}</p>
+          <p className="rp-meta">{[pt("r_prepared", lang, { co: company || "VoltMira" }), date, rid && bt("rid", lang, { x: rid })].filter(Boolean).join(", ")}</p>
         </div>
         <p className="rp-lead">{ask}</p>
         <h3>{pt("t_highlights", lang)}</h3>

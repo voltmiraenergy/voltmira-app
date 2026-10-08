@@ -15,6 +15,7 @@ import { bt } from "../../../../../lib/bankText.js";
 import { pt } from "../../../../../lib/portfolioText.js";
 import { docSetup, printCss } from "../../../../../lib/portfolioPrint.js";
 import { mdDayKey } from "../../../../../lib/tz.js";
+import { reportId } from "../../../../../lib/reportId.js";
 import { supabaseServer } from "../../../../../lib/supabase.js";
 import { docCounts, ITEM_IDS } from "../../../../../lib/dealRoom.js";
 import CreditSummary from "./CreditSummary.jsx";
@@ -39,6 +40,7 @@ export default async function BankPage(props) {
   const model = buildModel({ portfolio: one, projects: [], E: d.E, schemeLimitKw: d.schemeLimitKw, include: { sensitivity: false, structures: false } });
   if (!model.assets.length) notFound();
   const name = normalizePlant(model.assets[0].plant).name;
+  const rid = reportId(model, todayKey());
   // the documents on file, to mark the checklist; none where the deal room is not set up
   const sb = await supabaseServer();
   const { data: docs, error: docErr } = await sb.from("deal_documents").select("item_id").eq("portfolio_id", id).eq("plant_id", String(sp?.plant || ""));
@@ -47,8 +49,8 @@ export default async function BankPage(props) {
     <div className={"rp-wrap" + (pdf ? " is-pdf" : "")}>
       {!pdf && sp?.fallback === "1" && <p className="rp-fallback" role="status">{pt("r_pdf_fallback", lang)}</p>}
       {!pdf && <div className="rp-bar"><PrintButton label={pt("r_print", lang)} /></div>}
-      <CreditSummary model={model} lang={lang} company={d.co?.name || ""} date={date} money={money} fx={d.fx} todayKey={todayKey()} docCounts={counts} />
-      <style>{printCss({ lang, title: `${name}, ${bt("title", lang)}` })}</style>
+      <CreditSummary model={model} lang={lang} company={d.co?.name || ""} date={date} money={money} fx={d.fx} todayKey={todayKey()} docCounts={counts} rid={rid} />
+      <style>{printCss({ lang, title: `${name}, ${bt("title", lang)}, ${bt("rid", lang, { x: rid })}` })}</style>
     </div>
   );
 }

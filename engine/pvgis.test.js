@@ -174,3 +174,18 @@ test("end-to-end: PVGIS yield flows into the engine as yieldOverride", async () 
   assert.equal(r.prod0, 6 * 1287); // real Bucharest yield, not the 1100 default
   assert.ok(r.payback > 4 && r.payback < 6);
 });
+
+test("keeps the site's year-to-year variability, the database and years, and the losses PVGIS reports", async () => {
+  const payload = pvgisResponse(1250.85);
+  payload.outputs.totals.fixed = { E_y: 1250.85, SD_y: 46.42, l_aoi: -2.79, l_spec: "1.19", l_tg: -6.98, l_total: -21.31 };
+  payload.inputs = { meteo_data: { radiation_db: "PVGIS-SARAH2", year_min: 2005, year_max: 2020 } };
+  const r = await getSolarYield(46, 28.5, { loss: 14, fetchImpl: mockFetch(payload) });
+  assert.deepEqual(r.variability, { sdPct: 3.7, db: "PVGIS-SARAH2", years: "2005-2020" });
+  assert.deepEqual(r.losses, { aoi: -2.79, spectral: 1.19, tempIrr: -6.98, total: -21.31, system: 14 });
+});
+
+test("a PVGIS answer without those fields still gives the yield, with no variability claimed", async () => {
+  const r = await getSolarYield(44.43, 26.10, { fetchImpl: mockFetch(pvgisResponse(1287)) });
+  assert.equal(r.variability, null);
+  assert.equal(r.losses.total, null);
+});
