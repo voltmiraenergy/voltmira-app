@@ -1,0 +1,70 @@
+/* app/d/[token]/deal.css — the bank's deal room page. The app's tokens and
+   components (AppTheme), without the sidebar. Classes are dl-. */
+.app.dl-app { display: block; }
+.app.dl-app .main { min-height: 100vh; }
+.app .dl-view { max-width: 980px; display: flex; flex-direction: column; gap: 18px; }
+
+.app .dl-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.app .dl-title { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.app .dl-kicker { margin: 0; font-size: 11.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--green); }
+.app .dl-head h1 { margin: 0; font-size: 30px; line-height: 1.12; letter-spacing: -.02em; text-wrap: balance; }
+.app .dl-sub { margin: 0; color: var(--muted); max-width: 62ch; }
+.app .dl-langs { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-2); }
+.app .dl-langs a { padding: 5px 10px; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: var(--muted); text-decoration: none; }
+.app .dl-langs a[aria-current] { background: var(--green-tint); color: var(--green); }
+
+.app .dl-pack { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper-2); }
+.app .dl-pack p { margin: 0; flex: 1 1 320px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+.app .dl-nav { display: flex; gap: 18px; border-bottom: 1px solid var(--line); }
+.app .dl-nav a { padding: 8px 0; font-weight: 600; font-size: 13.5px; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.app .dl-nav a:hover { color: var(--ink); border-bottom-color: var(--line); }
+
+.app .dl-card { display: flex; flex-direction: column; gap: 10px; }
+.app .dl-card h2 { margin: 0; font-size: 18px; letter-spacing: -.01em; }
+.app .dl-hint { margin: 0; color: var(--muted); font-size: 13px; max-width: 70ch; }
+.app .dl-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.app .dl-item { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2); min-width: 0; }
+.app .dl-item.has-docs { border-color: color-mix(in srgb, var(--green) 35%, var(--line)); }
+.app .dl-item-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.app .dl-item h3 { margin: 0; font-size: 14px; line-height: 1.35; }
+/* the status as plain words in a tint, no dot */
+.app .dl-st { flex: none; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--paper); color: var(--muted); }
+.app .dl-st.st-done { background: var(--green-tint); color: var(--green); }
+.app .dl-st.st-in_progress { background: var(--amber-tint); color: #8A5A0F; }
+.app .dl-files { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.app .dl-files li { display: flex; flex-direction: column; min-width: 0; }
+.app .dl-files a { color: var(--green); font-weight: 600; overflow-wrap: anywhere; }
+.app .dl-files small, .app .dl-q small, .app .dl-a small { color: var(--muted); font-size: 11.5px; }
+.app .dl-none { margin: 0; color: var(--muted); font-size: 13px; }
+.app .dl-qs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.app .dl-qs li { border-top: 1px solid var(--line); padding-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.app .dl-q { margin: 0; display: flex; flex-direction: column; gap: 2px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.app .dl-a { padding: 8px 10px; border-radius: 9px; background: var(--green-tint); display: flex; flex-direction: column; gap: 3px; }
+.app .dl-a p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.app .dl-a a { color: var(--green); font-weight: 600; }
+.app .dl-wait { margin: 0; font-size: 12.5px; color: #8A5A0F; }
+.app .dl-ask { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: auto; }
+.app .dl-ask-form { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+.app .dl-ask-form .field { margin: 0; }
+.app .dl-ask-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.app .dl-ok { font-size: 12.5px; color: var(--green); }
+/* the app resets <button> borders; on a card the ghost buttons need their outline */
+.app.dl-app .btn.ghost { border-style: solid; border-width: 1px; }
+.app .dl-err { font-size: 12.5px; color: var(--red); }
+
+.app .dl-summary .rp-wrap { max-width: none; }
+.app .dl-foot { margin: 0 0 8px; color: var(--muted); font-size: 12px; }
+.app .dl-closed { max-width: 560px; margin: 12vh auto 0; display: flex; flex-direction: column; gap: 10px; }
+.app .dl-closed h1 { margin: 0; font-size: 26px; }
+.app .dl-closed p { margin: 0; color: var(--muted); }
+
+@media (max-width: 760px) {
+  .app .dl-items { grid-template-columns: 1fr; }
+  .app .dl-head h1 { font-size: 24px; }
+  .app .dl-view { padding: 18px 16px 32px; }
+}
+@media print {
+  .app.dl-app .main { min-height: 0; }
+  .app .dl-head, .app .dl-pack, .app .dl-nav, .app .dl-card, .app .dl-foot { display: none !important; }
+}
