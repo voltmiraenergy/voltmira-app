@@ -228,6 +228,10 @@ p{text-wrap:pretty}
   .lang-menu{left:auto;right:0}
   .nav-cta{padding:0 13px}
 }
+/* the full CTA ("Почати безкоштовно") does not fit beside the logo, language and
+   theme buttons on a phone, so there it switches to its short form */
+.nav-cta .cta-short{display:none}
+@media(max-width:480px){.nav-cta .cta-long{display:none}.nav-cta .cta-short{display:inline}}
 @media(max-width:380px){.logo .wm{display:none}.logo{padding-right:5px}}
 
 /* ================= HERO ================= */
@@ -677,7 +681,7 @@ footer > .wrap::before{content:"";position:absolute;top:-65px;left:clamp(16px,4v
         <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
         <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
       </button>
-      <a href="/login" class="btn btn-amber btn-sm nav-cta" data-i18n="v6_nav_cta">Start free</a>
+      <a href="/login" class="btn btn-amber btn-sm nav-cta"><span class="cta-long" data-i18n="v6_nav_cta">Start free</span><span class="cta-short" data-i18n="v6_nav_cta_short">Start free</span></a>
     </div>
   </div>
 </nav>

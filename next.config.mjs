@@ -1,4 +1,5 @@
 import { withSentryConfig } from "@sentry/nextjs/config";
+import { CHROMIUM_ROUTES, traceKey } from "./lib/pdfRoutes.mjs";
 
 /** @type {import('next').NextConfig} */
 
@@ -74,11 +75,20 @@ const nextConfig = {
     "/ro": ["./app/_landing/**"],
     "/ru": ["./app/_landing/**"],
     "/uk": ["./app/_landing/**"],
-    // The PDF route shells out to a real Chromium binary that ships brotli-
+    // Every route that launches Chromium needs its binary, which ships brotli-
     // compressed inside the package's bin/ directory. Nothing imports those
-    // files, so the tracer has no reason to keep them and the function
-    // deployed without them ("The input directory .../bin does not exist").
-    "/api/proposal/[code]/pdf": ["./node_modules/@sparticuz/chromium/bin/**"],
+    // files, so the tracer has no reason to keep them and a function deploys
+    // without them ("The input directory .../bin does not exist"): on Vercel
+    // that route then answers {"error":"pdf_failed"}, while a local run works
+    // (it uses the installed browser). The list is in lib/pdfRoutes.mjs;
+    // lib/pdfRoutes.test.js fails if a route that renders a PDF is missing.
+    //
+    // The keys are globs, and the Turbopack build does not match a dynamic
+    // segment written as "[code]": the old key "/api/proposal/[code]/pdf"
+    // silently matched nothing, so even the proposal PDF shipped without the
+    // binary. Each dynamic segment is written as "*" instead (checked against
+    // .next/server/app/**/route.js.nft.json after a build).
+    ...Object.fromEntries(CHROMIUM_ROUTES.map((r) => [traceKey(r), ["./node_modules/@sparticuz/chromium/bin/**"]])),
   },
   // Leave these two unbundled: the bundler relocates the package and then
   // chromium can no longer find its own binary relative to __dirname.
@@ -95,6 +105,9 @@ const nextConfig = {
       // any crawler. Indexing one is a GDPR exposure and the exact opposite of
       // what a trust-based product should do with a client's data.
       { source: "/p/:path*", headers: noIndexHeaders },
+      // a bank's deal room link: a private plant's figures and documents (its
+      // pages also send no referrer, so the link never leaves in a Referer header)
+      { source: "/d/:path*", headers: noIndexHeaders },
 
       // Auth surfaces and the signed-in app: thin, duplicate, or private.
       { source: "/login", headers: noIndexHeaders },
@@ -112,6 +125,7 @@ const nextConfig = {
       { source: "/documents/:path*", headers: noIndexHeaders },
       { source: "/traction/:path*", headers: noIndexHeaders },
       { source: "/portfolios/:path*", headers: noIndexHeaders },
+      { source: "/energy/:path*", headers: noIndexHeaders },
       { source: "/auth/:path*", headers: noIndexHeaders },
       // /demo used to be a robots.txt Disallow, which Search Console reports as
       // "Blocked by robots.txt" for every page that links to it. It is now

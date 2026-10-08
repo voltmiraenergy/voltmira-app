@@ -10,9 +10,10 @@
 //
 // Exports the drawing as a PNG data URL. Empty strokes are reported as empty so
 // the caller can require an actual signature before accepting.
+// Styles: proposal.css (.pp-pad).
 import { useEffect, useRef, useState } from "react";
 
-export default function SignaturePad({ onChange, label, clearLabel, height = 170 }) {
+export default function SignaturePad({ onChange, label, clearLabel, hint = "", height = 170 }) {
   const canvasRef = useRef(null);
   const drawing = useRef(false);
   const dirty = useRef(false);
@@ -74,7 +75,7 @@ export default function SignaturePad({ onChange, label, clearLabel, height = 170
     ctx.lineTo(x, y);
     ctx.stroke();
   }
-  function end(e) {
+  function end() {
     if (!drawing.current) return;
     drawing.current = false;
     emit();
@@ -94,24 +95,23 @@ export default function SignaturePad({ onChange, label, clearLabel, height = 170
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
-        <span style={{ fontSize: 12.5, color: "#66756C" }}>{label}</span>
+      <div className="pp-field-l">
+        <span>{label}</span>
         {hasInk && (
-          <button type="button" onClick={clear}
-            style={{ marginLeft: "auto", border: "none", background: "transparent", color: "#1E6B4E",
-              fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0 }}>
+          <button type="button" className="pp-btn pp-btn-text" style={{ minHeight: 32, color: "var(--green)", fontWeight: 600 }} onClick={clear}>
             {clearLabel}
           </button>
         )}
       </div>
-      <canvas
-        ref={canvasRef}
-        onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={end}
-        style={{
-          width: "100%", height, display: "block", touchAction: "none", cursor: "crosshair",
-          background: "#fff", border: "1.5px dashed #CBC7B6", borderRadius: 12,
-        }}
-      />
+      <div className="pp-pad">
+        <canvas
+          ref={canvasRef}
+          aria-label={label}
+          onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={end}
+          style={{ height }}
+        />
+        {!hasInk && hint && <span className="pp-pad-hint" aria-hidden="true">{hint}</span>}
+      </div>
     </div>
   );
 }

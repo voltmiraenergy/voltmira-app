@@ -15,9 +15,10 @@ import { LOCALE } from "../../../lib/relTime.js";
 import LeadCard from "./LeadCard.jsx";
 import LeadAttribution from "./LeadAttribution.jsx";
 import AddLead from "./AddLead.jsx";
+import { appTitle } from "../../../lib/pageTitle.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Leads | VoltMira" };
+export const generateMetadata = appTitle("nav_leads");
 
 const STATUSES = ["new", "contacted", "converted", "archived"];
 

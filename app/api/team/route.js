@@ -50,8 +50,8 @@ async function joinLink(admin, email, kinds) {
 /** Deliver the link ourselves (Resend). Returns what actually happened. */
 async function deliver(admin, companyId, email, inviteLink) {
   if (!emailConfigured()) return { emailed: false, emailError: "not_configured" };
-  const { data: co } = await admin.from("companies").select("name").eq("id", companyId).single();
-  const r = await sendEmail({ to: email, ...teamInviteEmail({ inviteLink, companyName: co?.name }) });
+  const { data: co } = await admin.from("companies").select("name, lang").eq("id", companyId).single();
+  const r = await sendEmail({ to: email, ...teamInviteEmail({ inviteLink, companyName: co?.name, lang: co?.lang }) });
   return { emailed: !!r.sent, emailError: r.sent ? null : (r.error || "send_failed") };
 }
 

@@ -8,6 +8,7 @@ import { moneyFormatter } from "../../../lib/money.js";
 import { useEffect, useState } from "react";
 import { t } from "../../../lib/i18n.js";
 import { fmtDate } from "../../../lib/tz.js";
+import { ppt } from "./text.js";
 
 const VALID_DAYS = 14;   // lib/negotiation.js OFFER_VALID_DAYS
 
@@ -26,28 +27,25 @@ export default function OfferBanner({ lang, accepted, offer: initialOffer, chose
 
   if (!offer && !option) return null;
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
-  const eur = moneyFormatter({ currency, lang, fx: rate ? { [currency]: rate } : null });
+  const money = moneyFormatter({ currency, lang, fx: rate ? { [currency]: rate } : null });
   const until = offer?.since
     ? fmtDate(new Date(new Date(offer.since).getTime() + VALID_DAYS * 864e5).toISOString(), loc, { day: "numeric", month: "long" })
     : "";
-  const label = option ? (optionLabels?.[option] || `${t("pp_option", lang)} ${option}`) : "";
+  const label = option ? (optionLabels?.[option] || ppt("opt_n", lang, { n: option })) : "";
 
   return (
-    <div role="status" style={box}>
+    <div role="status" className="pp-offer">
       {offer && (
-        <p style={line}>
-          <b style={{ color: "#142A21" }}>
-            {accepted ? t("pp_offer_signed", lang, { pct: offer.pct, price: eur(offer.priceEur) }) : t("pp_offer_agreed", lang, { price: eur(offer.priceEur) })}
+        <p>
+          <b>
+            {accepted ? t("pp_offer_signed", lang, { pct: offer.pct, price: money(offer.priceEur) }) : t("pp_offer_agreed", lang, { price: money(offer.priceEur) })}
           </b>
-          {!accepted && <> {t("pp_offer_detail", lang, { pct: offer.pct, save: eur(offer.discountEur), date: until })}</>}
+          {!accepted && <> {ppt("offer_detail", lang, { pct: offer.pct, save: money(offer.discountEur), date: until })}</>}
         </p>
       )}
       {option && (
-        <p style={line}>{accepted ? t("pp_option_signed", lang, { label }) : t("pp_option_chosen", lang, { label })}</p>
+        <p>{accepted ? t("pp_option_signed", lang, { label }) : ppt("option_chosen", lang, { label })}</p>
       )}
     </div>
   );
 }
-
-const box = { margin: "4px 0 14px", padding: "12px 14px", borderRadius: 12, background: "#E4EFE9", border: "1px solid #CFE3D7", display: "grid", gap: 6 };
-const line = { margin: 0, fontSize: 14, lineHeight: 1.5, color: "#2C3E34" };

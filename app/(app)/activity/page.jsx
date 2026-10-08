@@ -8,7 +8,7 @@
 import "../dx.css";
 import "./activity.css";
 import Link from "next/link";
-import { FileText, Send, Eye, UserPlus, Trophy, Settings2, Link2, ChevronRight, ChevronLeft, Search } from "lucide-react";
+import { FileText, Send, Eye, UserPlus, Trophy, Settings2, Link2, Landmark, ChevronRight, ChevronLeft, Search } from "lucide-react";
 import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
 import { t, normLang } from "../../../lib/i18n.js";
@@ -16,27 +16,30 @@ import { activityHtml } from "../../../lib/activity.js";
 import { mdDayKey, fmtDate, fmtTime } from "../../../lib/tz.js";
 import { initials } from "../../../lib/Avatar.jsx";
 import ActivityFilters from "./ActivityFilters.jsx";
+import { appTitle } from "../../../lib/pageTitle.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Activity | VoltMira" };
+export const generateMetadata = appTitle("nav_activity");
 
 const PAGE = 25;
-const TYPES = ["all", "quote", "proposal", "lead", "won", "sys"];
+const TYPES = ["all", "quote", "proposal", "bank", "lead", "won", "sys"];
 // "sent" and "open" are proposal lifecycle events: they belong under Proposals,
 // or they vanish the moment a filter is applied.
-const TYPE_KINDS = { quote: ["quote"], proposal: ["proposal", "open", "sent"], lead: ["lead"], sys: ["sys"], won: ["won"] };
-const TYPE_LABEL = { all: "act_type_all", quote: "act_type_quote", proposal: "act_type_proposal", lead: "act_type_lead", sys: "act_type_settings", won: "act_type_won" };
+const TYPE_KINDS = { quote: ["quote"], proposal: ["proposal", "open", "sent"], bank: ["bank"], lead: ["lead"], sys: ["sys"], won: ["won"] };
+const TYPE_LABEL = { all: "act_type_all", quote: "act_type_quote", proposal: "act_type_proposal", bank: "act_type_bank", lead: "act_type_lead", sys: "act_type_settings", won: "act_type_won" };
 // One icon and one colour per kind of row; the side panel groups them by type.
 const KIND = {
   quote: { Icon: FileText, c: "blue", type: "quote" },
   proposal: { Icon: Link2, c: "blue", type: "proposal" },
   sent: { Icon: Send, c: "blue", type: "proposal" },
   open: { Icon: Eye, c: "amber", type: "proposal" },
+  // a bank on its deal room link (lib/dealNotify.js)
+  bank: { Icon: Landmark, c: "green", type: "bank" },
   lead: { Icon: UserPlus, c: "amber", type: "lead" },
   won: { Icon: Trophy, c: "green", type: "won" },
   sys: { Icon: Settings2, c: "muted", type: "sys" },
 };
-const TYPE_COLOR = { quote: "blue", proposal: "blue", lead: "amber", won: "green", sys: "muted" };
+const TYPE_COLOR = { quote: "blue", proposal: "blue", bank: "green", lead: "amber", won: "green", sys: "muted" };
 
 export default async function ActivityPage(props) {
   const searchParams = await props.searchParams;
@@ -87,7 +90,7 @@ export default async function ActivityPage(props) {
     byPerson.set(r.actor_id, cur);
   }
   const people = [...byPerson.values()].sort((a, b) => b.n - a.n);
-  const byType = { quote: 0, proposal: 0, lead: 0, won: 0, sys: 0 };
+  const byType = { quote: 0, proposal: 0, bank: 0, lead: 0, won: 0, sys: 0 };
   for (const r of weekRows) byType[(KIND[r.kind] || KIND.quote).type]++;
   const typeMax = Math.max(1, ...Object.values(byType));
   const nPeople = Math.max(1, people.length);
@@ -233,7 +236,7 @@ export default async function ActivityPage(props) {
           <section className="dx-card">
             <div className="dx-card-head"><div><h2>{t("act_kinds_h", lang)}</h2><p>{t("act_kinds_p", lang)}</p></div></div>
             <ul className="ax-kinds">
-              {["quote", "proposal", "lead", "won", "sys"].map((ty) => (
+              {["quote", "proposal", "bank", "lead", "won", "sys"].map((ty) => (
                 <li key={ty}>
                   <Link href={href({ type: type === ty ? "all" : ty })} className={type === ty ? "on" : ""}>
                     <span className="ax-kinds-l">{t(TYPE_LABEL[ty], lang)}</span>

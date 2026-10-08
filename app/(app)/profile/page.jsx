@@ -6,9 +6,10 @@ import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
 import { normLang } from "../../../lib/i18n.js";
 import ProfileForm from "./ProfileForm.jsx";
+import { appTitle } from "../../../lib/pageTitle.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Profile | VoltMira" };
+export const generateMetadata = appTitle("pf_title");
 
 export default async function ProfilePage() {
   const sb = await supabaseServer();

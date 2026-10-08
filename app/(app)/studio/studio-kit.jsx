@@ -76,8 +76,8 @@ export const NUM = (n, dp = 0) =>
   Number(n || 0).toLocaleString("en-IE", { maximumFractionDigits: dp, minimumFractionDigits: dp });
 export const PCT = (n, dp = 1) => (n >= 0 ? "" : "−") + Math.abs(Number(n || 0)).toFixed(dp) + "%";
 
-// Deterministic PRNG so charts / sparklines / mock keys never reshuffle between
-// renders (mulberry32).
+// Deterministic PRNG (mulberry32), for the sample readings a user asks to load,
+// so they do not reshuffle between renders.
 export function seeded(seed) {
   let a = seed >>> 0;
   return () => {
@@ -86,18 +86,6 @@ export function seeded(seed) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-// A believable price/PR history: `points` values ending at `end`, wandering by
-// ~`vol` fraction, seeded so it's stable.
-export function walk(seed, end, points = 12, vol = 0.04) {
-  const r = seeded(seed);
-  const out = [end];
-  for (let i = 1; i < points; i++) {
-    const prev = out[0];
-    out.unshift(Math.max(0.01, prev * (1 + (r() - 0.5) * 2 * vol)));
-  }
-  return out;
 }
 
 export function engineSettings() {
@@ -688,7 +676,7 @@ export const PREVIEW_CSS = `
    everything else in Studio (no new palette). */
 .pv-stage{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
   border-radius:99px;padding:4px 11px;white-space:nowrap}
-.pv-stage::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+/* no leading status dot: the tinted pill already carries the stage (same as .chip) */
 .pv-stage.blue{background:var(--blue-tint);color:var(--blue)}
 .pv-stage.amber{background:var(--amber-tint);color:#B4700F}
 .pv-stage.green-soft{background:var(--green-tint);color:var(--green-soft)}

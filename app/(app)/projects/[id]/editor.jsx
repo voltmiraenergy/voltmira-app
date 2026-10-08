@@ -11,7 +11,7 @@ import "../../dx.css";
 import "./builder.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
-import { createProposal, regenerateProposal, saveQuoteTemplate } from "../../../../lib/actions.js";
+import { createProposal, regenerateProposal, saveQuoteTemplate, markProjectWon } from "../../../../lib/actions.js";
 import AddressField from "../../../../components/AddressField.jsx";
 import SiteDesigner from "../../../../components/SiteDesigner.jsx";
 import BackLink from "../../../../components/BackLink.jsx";
@@ -26,6 +26,10 @@ import SurplusPanel, { useBuyback } from "../../../../components/SurplusPanel.js
 import UaPanel from "../../../../components/UaPanel.jsx";
 import InstallChecklist from "./InstallChecklist.jsx";
 import GridFile from "./GridFile.jsx";
+import WorkflowRail from "../../../../components/WorkflowRail.jsx";
+import AddToPortfolio from "../../../../components/AddToPortfolio.jsx";
+import SupportCard from "../../../../components/SupportCard.jsx";
+import { batteryEur } from "../../../../lib/greenSupport.js";
 import SignedContract from "./SignedContract.jsx";
 import ShareCard from "./ShareCard.jsx";
 import LegalDocsModal from "./LegalDocsModal.jsx";
@@ -39,6 +43,7 @@ import { fmtDate } from "../../../../lib/tz.js";
 import { designCheck } from "../../../../lib/designCheck.js";
 import { fitPanels, fitOptions } from "../../../../lib/roofLayout.js";
 import { moneyFormatter, numFor } from "../../../../lib/money.js";
+import { effectiveOfferCurrency, currencyOnMarketChange, betterCurrencyFor, normCurrency } from "../../../../lib/offerCurrency.js";
 import { saveOutbox, readOutbox, clearOutbox, isNetworkError } from "../../../../lib/offline.js";
 
 // System-size slider range — raised to 500 kW: Site Designer's own real,
@@ -123,22 +128,56 @@ function Donut({ self, prod0, cons, lang }) {
   );
 }
 
+/* ---------- the offer's currency ---------- */
+// Copy for the currency choice, in the four languages, kept beside the one
+// place that uses it rather than in lib/i18n.js (same helper as UaPanel).
+const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
+// Each currency as an option, as the object of "switch the offer to ...", and
+// the client it suits ("for a client in Ukraine").
+const CUR_TXT = {
+  MDL: { opt: ["Lei moldovenești (MDL)", "Moldovan lei (MDL)", "Молдавские леи (MDL)", "Молдовські леї (MDL)"],
+    short: ["lei, MDL", "lei, MDL", "леи, MDL", "леї, MDL"],
+    acc: ["lei moldovenești (MDL)", "Moldovan lei (MDL)", "молдавские леи (MDL)", "молдовські леї (MDL)"],
+    who: ["un client din Moldova", "a client in Moldova", "клиента из Молдовы", "клієнта з Молдови"] },
+  UAH: { opt: ["Grivne ucrainene (UAH)", "Ukrainian hryvnia (UAH)", "Украинские гривны (UAH)", "Українські гривні (UAH)"],
+    short: ["grivne, UAH", "hryvnia, UAH", "гривны, UAH", "гривні, UAH"],
+    acc: ["grivne (UAH)", "hryvnia (UAH)", "гривны (UAH)", "гривні (UAH)"],
+    who: ["un client din Ucraina", "a client in Ukraine", "клиента из Украины", "клієнта з України"] },
+  EUR: { opt: ["Euro (EUR)", "Euro (EUR)", "Евро (EUR)", "Євро (EUR)"],
+    short: ["euro, EUR", "euro, EUR", "евро, EUR", "євро, EUR"],
+    acc: ["euro (EUR)", "euro (EUR)", "евро (EUR)", "євро (EUR)"],
+    who: ["", "", "", ""] },
+  RON: { opt: ["Lei românești (RON)", "Romanian lei (RON)", "Румынские леи (RON)", "Румунські леї (RON)"],
+    short: ["lei, RON", "lei, RON", "леи, RON", "леї, RON"],
+    acc: ["lei românești (RON)", "Romanian lei (RON)", "румынские леи (RON)", "румунські леї (RON)"],
+    who: ["un client din România", "a client in Romania", "клиента из Румынии", "клієнта з Румунії"] },
+};
+const curTxt = (lang, cur, k) => t3(lang, ...(CUR_TXT[cur] || CUR_TXT.EUR)[k]);
+
 /* ---------- editor ---------- */
-// The electricity price typed in lei for a Moldovan or Romanian workspace.
-// The quote stores EUR, so the field keeps the text being typed ("3," then
-// "3,4") and only converts what it hands on; it shows the stored price, in
-// lei, again once it loses focus.
-function LocalPriceInput({ eur, fmt, onEur }) {
+// A money field typed in the offer's own currency (lei, hryvnia), for the
+// electricity price and the monthly loan payment. The quote stores EUR, so the
+// field keeps the text being typed ("3," then "3,4") and only converts what it
+// hands on; it shows the stored amount, in the offer's currency, again once it
+// loses focus. allowZero: an empty or 0 field means 0 (a loan), not "ignore".
+function LocalMoneyInput({ eur, fmt, onEur, dec = 2, allowZero = false, className = "input" }) {
   const [draft, setDraft] = useState(null);
-  const shown = draft ?? String(Math.round(fmt.toLocal(eur) * 100) / 100);
+  const f = 10 ** dec;
+  const shown = draft ?? String(Math.round(fmt.toLocal(eur) * f) / f);
   return (
-    <input className="input" type="number" step="0.01" min="0" value={shown}
+    <input className={className} type="number" step={dec > 0 ? 1 / f : 1} min="0" value={shown}
       onFocus={() => setDraft(shown)} onBlur={() => setDraft(null)}
-      onChange={(e) => { setDraft(e.target.value); const v = +e.target.value; if (v > 0) onEur(fmt.fromLocal(v)); }} />
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const v = e.target.value === "" ? 0 : +e.target.value;
+        if (allowZero ? v >= 0 : v > 0) onEur(fmt.fromLocal(v));
+      }} />
   );
 }
 
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, calibration = null, canEditTechnical = true }) {
+// `currency` is the WORKSPACE's (companies.currency); the offer may name its
+// own (p.offerCurrency, null = follow the workspace), see lib/offerCurrency.js.
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, calibration = null, canEditTechnical = true, vatRatePct = 0 }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
@@ -163,7 +202,15 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     notes: initial.notes || "",
     // Ukraine: outage length, what stays on, generator, Energy Credit term (UaPanel)
     uaPlan: initial.ua_plan && typeof initial.ua_plan === "object" ? initial.ua_plan : {},
+    // The currency this offer is written in; null follows the workspace.
+    offerCurrency: normCurrency(initial.offer_currency),
   });
+  // What the database holds for offer_currency, so the autosave writes it only
+  // when it changes (it is stored best-effort, see persist).
+  const storedOfferCur = useRef(normCurrency(initial.offer_currency));
+  // What a market change did to the offer's currency, said once under the
+  // selects: { kind: "switched" | "suggest", currency } (lib/offerCurrency.js).
+  const [curNote, setCurNote] = useState(null);
   const [saved, setSaved] = useState("saved");     // saved | saving | error
   const [pvgisBusy, setPvgisBusy] = useState(false);
   const [billBusy, setBillBusy] = useState(false);   // AI bill extractor
@@ -181,6 +228,9 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // of a proforma (asking for money up front) was reachable only by hand-editing
   // the URL. 0 = invoice the full amount.
   const [invOpen, setInvOpen] = useState(false);
+  // what the workflow rail last saved (a ticked step, a grid-file stage), so the
+  // checklist and grid-file cards below show it without a reload
+  const [railProg, setRailProg] = useState(null);
   const [legalDocsOpen, setLegalDocsOpen] = useState(false);
   const [legalTab, setLegalTab] = useState("contract");
   const [siteDesignerOpen, setSiteDesignerOpen] = useState(false);
@@ -228,14 +278,18 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const q = useMemo(
     () => quote({ ...p, startYear, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) }, E),
     [p, E, feedOverride, startYear]);
-  // Money in the workspace's currency (lei in Moldova) at today's rate; the
-  // engine and the stored quote stay in EUR (lib/money.js).
-  const fmt = moneyFormatter({ currency, lang, fx: E?.fx });
+  // Money in the OFFER's currency (by default the workspace's: lei in Moldova)
+  // at today's rate; the engine and the stored quote stay in EUR
+  // (lib/money.js). Every figure below, and every panel handed `fmt`, follows it.
+  const offerCur = effectiveOfferCurrency(p.offerCurrency, workspaceCurrency, p.market);
+  const fmt = moneyFormatter({ currency: offerCur, lang, fx: E?.fx });
   const nf = numFor(lang);
   const num = n => Math.round(Number(n) || 0).toLocaleString({ en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB");
   const yrs = n => n === null ? "25+" : n === 0 ? tr("pp_immediate") : nf(n, 1);
   // per-kWh prices need decimals, and 0.036 must not print as "0.04"
   const eurKwh = v => fmt.local ? fmt.perKwh(v) : "€" + Number(v).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+  // the system price per watt, in the offer's currency: "1,10 €/W", "21,78 lei/W"
+  const perW = v => fmt.local ? `${nf(fmt.toLocal(v), 2)} ${fmt.unit}/W` : `${nf(v, 2)} €/W`;
   // The message that goes with the proposal link on Viber, WhatsApp and the share image.
   const shareMsg = tr("wa_message", { client: p.client || tr("your_client"), company: companyName, url: propUrl || "" });
 
@@ -324,6 +378,16 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           .then(({ error: e8 }) => { if (e8) console.warn("tariff mode not stored (run add-tariff-mode.sql?):", e8.message); });
         if (next.market === "UA") sb.from("projects").update({ ua_plan: next.uaPlan || {} }).eq("id", initial.id)
           .then(({ error: e9 }) => { if (e9) console.warn("Ukraine plan not stored (run add-ukrainian.sql?):", e9.message); });
+        // The offer's currency, only when it changed. Until add-offer-currency.sql
+        // has run, the choice still drives this screen; the warning then shows
+        // once per change rather than on every later save (a missing column
+        // will not appear by retrying; any other failure is retried next save).
+        const cur = normCurrency(next.offerCurrency);
+        if (cur !== storedOfferCur.current) sb.from("projects").update({ offer_currency: cur }).eq("id", initial.id)
+          .then(({ error: e10 }) => {
+            if (e10) console.warn("offer currency not stored (run add-offer-currency.sql?):", e10.message);
+            if (!e10 || /offer_currency/i.test(e10.message || "")) storedOfferCur.current = cur;
+          });
       }
     } catch (e) {
       if (isNetworkError(e) && saveOutbox(initial.id, next)) { setSaved("device"); return; }
@@ -616,12 +680,29 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // Switching market pre-fills the electricity price with the new market's
   // regional default — but only when the user hasn't typed a custom price yet
   // (i.e. it still equals the old market's default).
+  // The offer's currency follows the market by the same rule
+  // (lib/offerCurrency.js): only while it is still on the default or on the old
+  // market's own currency. Lei for a client in Ukraine is never right, so a lei
+  // workspace switches the offer to hryvnia and says so; a euro workspace keeps
+  // euro (a fair choice anywhere) and is offered the local currency in one click.
   function changeMarket(m) {
     const patch = { market: m };
     const oldDef = (MARKETS[p.market] || {}).defaultPrice;
     if (MARKETS[m] && Math.abs((p.price || 0) - (oldDef || 0)) < 0.0015) patch.price = MARKETS[m].defaultPrice;
+    const c = currencyOnMarketChange({ offerCurrency: p.offerCurrency, workspaceCurrency, from: p.market, to: m });
+    patch.offerCurrency = c.offerCurrency;
+    setCurNote(c.note);
     update(patch);
   }
+  function changeOfferCurrency(c) {
+    setCurNote(null);
+    update({ offerCurrency: normCurrency(c) });
+  }
+  // Under the selects: what a market change just did, or, for a quote still on
+  // the default, a workspace currency that belongs to another country than the
+  // client's (an older Ukrainian quote in a lei workspace).
+  const curHint = curNote || (p.offerCurrency == null && betterCurrencyFor(offerCur, p.market)
+    ? { kind: "mismatch", currency: betterCurrencyFor(offerCur, p.market) } : null);
 
   // A demo-style .check toggle row.
   const check = (on, l, sub, fn) => (
@@ -694,7 +775,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       {/* What the client will see, and what it leaves you, pinned while you edit. */}
       <dl className="qb-bar" aria-live="polite">
         <div><dt>{tr("qb_pays")}</dt><dd>{fmt(q.e.cost)}</dd>
-          <dd className="qb-bar-sub">{grants > 0 ? tr("qb_pays_grant", { v: fmt(grants) }) : costPerW > 0 ? nf(costPerW, 2) + " €/W" : ""}</dd></div>
+          <dd className="qb-bar-sub">{grants > 0 ? tr("qb_pays_grant", { v: fmt(grants) }) : costPerW > 0 ? perW(costPerW) : ""}</dd></div>
         <div className="hi"><dt>{tr("qb_payback")}</dt><dd>{yrs(q.e.payback)} <small>{tr("yrs")}</small></dd>
           <dd className="qb-bar-sub">{tr("qb_range", { a: yrs(q.o.payback), b: yrs(q.p.payback) })}</dd></div>
         <div><dt>{tr("savings_y1")}</dt><dd>{fmt(q.e.year1)}</dd>
@@ -709,6 +790,33 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             ? tr("qb_margin_sub", { p: q.e.grossCost > 0 ? Math.round((margin / q.e.grossCost) * 100) : 0, v: fmt(q.e.grossCost) })
             : tr("qb_margin_none")}</dd></div>
       </dl>
+
+      {/* Where this job is in the workflow, and the one next thing to do
+          (lib/workflow.js). The dashboard and the quotes list link here (#workflow). */}
+      <WorkflowRail projectId={initial.id} lang={lang} status={p.status}
+        onAction={async (a) => {
+          if (a.type === "send" || a.type === "copy_link") { makeProposal(); return true; }
+          if (a.type === "invoice") { setInvOpen(true); return true; }
+          if (a.type === "won") {
+            // Signed from the rail: record it (activity, CRM hook), then save the
+            // status through this editor's own autosave, so a pending edit still
+            // waiting on its timer cannot write the old status back.
+            clearTimeout(timer.current);
+            await markProjectWon(initial.id);
+            const next = { ...p, status: "won" };
+            setP(next);
+            await persist(next);
+            return true;
+          }
+          return false;
+        }}
+        onChange={({ installProgress, gridFile }) => {
+          if (installProgress || gridFile) setRailProg((cur) => ({
+            ...(cur || initial.install_progress || {}),
+            ...(installProgress || {}),
+            ...(gridFile ? { gridFile } : {}),
+          }));
+        }} />
 
       <div className="editor">
         {/* left: inputs */}
@@ -797,17 +905,57 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             {team.length >= 1 && (
               <div className="field" style={{ marginTop: 15 }}><label>{tr("proj_owner")}</label>
                 <select className="input" value={p.ownerId || ""} onChange={e => update({ ownerId: e.target.value || null })}>
-                  <option value="">—</option>
+                  <option value="">{tr("proj_owner_none")}</option>
                   {team.map(m => <option key={m.id} value={m.id}>{m.name || m.email}</option>)}
                 </select>
               </div>
             )}
-            <div className="field"><label>{tr("market")}</label>
-              <select className="input" value={p.market} onChange={e => changeMarket(e.target.value)}>
-                <option value="MD">{tr("market_md")}</option>
-                <option value="UA">{tr("market_ua")}</option>
-                <option value="RO">{tr("market_ro")}</option>
-              </select></div>
+            {/* The market and the currency the offer is written in, side by side:
+                the second is what the client reads every amount in (proposal,
+                PDF, proforma). They wrap one under the other on a phone. */}
+            <div style={{ display: "flex", flexWrap: "wrap", columnGap: 12 }}>
+              <div className="field" style={{ flex: "1 1 190px", minWidth: 0 }}><label>{tr("market")}</label>
+                <select className="input" value={p.market} onChange={e => changeMarket(e.target.value)}>
+                  <option value="MD">{tr("market_md")}</option>
+                  <option value="UA">{tr("market_ua")}</option>
+                  <option value="RO">{tr("market_ro")}</option>
+                </select></div>
+              {/* explicit margin: as the wrapper's last child, .field:last-child would drop it */}
+              <div className="field" style={{ flex: "1 1 190px", minWidth: 0, marginBottom: 15 }}>
+                <label htmlFor="offer-currency">{t3(lang, "Moneda ofertei", "Currency of the offer", "Валюта оферты", "Валюта пропозиції")}</label>
+                <select id="offer-currency" className="input" value={p.offerCurrency || ""} onChange={e => changeOfferCurrency(e.target.value)}>
+                  <option value="">{t3(lang, "Ca în setări", "Workspace default", "Как в настройках", "Як у налаштуваннях")} ({curTxt(lang, normCurrency(workspaceCurrency) || "EUR", "short")})</option>
+                  {["MDL", "UAH", "EUR", "RON"].map(c => <option key={c} value={c}>{curTxt(lang, c, "opt")}</option>)}
+                </select></div>
+            </div>
+            {curHint && (
+              <div className="cal-note" style={{ marginTop: -4, marginBottom: 15 }} role="status">
+                <div className="cal-h" style={{ fontWeight: 500 }}>
+                  {curHint.kind === "switched"
+                    ? t3(lang,
+                      `Am trecut oferta pe ${curTxt(lang, curHint.currency, "acc")}, pentru ${curTxt(lang, curHint.currency, "who")}. Poți alege altă monedă oricând.`,
+                      `Switched the offer to ${curTxt(lang, curHint.currency, "acc")} for ${curTxt(lang, curHint.currency, "who")}. You can pick another currency any time.`,
+                      `Оферта переведена в ${curTxt(lang, curHint.currency, "acc")} для ${curTxt(lang, curHint.currency, "who")}. Валюту можно сменить в любой момент.`,
+                      `Пропозицію переведено в ${curTxt(lang, curHint.currency, "acc")} для ${curTxt(lang, curHint.currency, "who")}. Валюту можна змінити будь-коли.`)
+                    : curHint.kind === "suggest"
+                      ? t3(lang,
+                        `Oferta e în euro, ca în setări. Pentru ${curTxt(lang, curHint.currency, "who")} o poți trece pe ${curTxt(lang, curHint.currency, "acc")}.`,
+                        `The offer is in euro, as in your settings. For ${curTxt(lang, curHint.currency, "who")} you can switch it to ${curTxt(lang, curHint.currency, "acc")}.`,
+                        `Оферта в евро, как в настройках. Для ${curTxt(lang, curHint.currency, "who")} её можно перевести в ${curTxt(lang, curHint.currency, "acc")}.`,
+                        `Пропозиція в євро, як у налаштуваннях. Для ${curTxt(lang, curHint.currency, "who")} її можна перевести в ${curTxt(lang, curHint.currency, "acc")}.`)
+                      : t3(lang,
+                        `Oferta e în ${offerCur}, pentru ${curTxt(lang, curHint.currency, "who")}.`,
+                        `This offer is in ${offerCur}, for ${curTxt(lang, curHint.currency, "who")}.`,
+                        `Оферта в ${offerCur} для ${curTxt(lang, curHint.currency, "who")}.`,
+                        `Пропозиція в ${offerCur} для ${curTxt(lang, curHint.currency, "who")}.`)}
+                </div>
+                {curHint.kind !== "switched" && (
+                  <button type="button" className="btn ghost sm" style={{ marginTop: 8 }} onClick={() => changeOfferCurrency(curHint.currency)}>
+                    {t3(lang, `Treci pe ${curHint.currency}`, `Switch to ${curHint.currency}`, `Перевести в ${curHint.currency}`, `Перевести в ${curHint.currency}`)}
+                  </button>
+                )}
+              </div>
+            )}
             <div className="field"><label>{tr("next_followup")}</label>
               <input className="input" type="date" value={p.nextFollowUp || ""}
                 onChange={e => update({ nextFollowUp: e.target.value })} /></div>
@@ -839,9 +987,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                   onChange={e => update({ kw: +e.target.value || KW_MIN })} />
               </div>
             </div>
+            {/* Typed in the offer's currency (lei, hryvnia or euro); stored in EUR. */}
             <div className="field"><label>{fmt.local ? tr("elec_price_local", { u: fmt.unit }) : tr("elec_price")}</label>
               {fmt.local
-                ? <LocalPriceInput eur={p.price} fmt={fmt} onEur={(v) => update({ price: v })} />
+                ? <LocalMoneyInput eur={p.price} fmt={fmt} onEur={(v) => update({ price: v })} />
                 : <input className="input" type="number" step="0.01" value={p.price}
                     onChange={e => update({ price: +e.target.value || 0.21 })} />}</div>
             {/* Only Moldova has this plan (Premier Energy/RED Nord, ANRE-
@@ -1004,10 +1153,11 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               <div className="k"><b>{fmt(q.e.year1)}</b><span>{tr("savings_y1")}</span></div>
             </div>
             {/* Cost per watt is how installers sanity-check a price against the
-                market in one glance — €/W here, not the demo's lei/W, because
-                this installer-side view is EUR throughout (see fmt above). */}
+                market in one glance. In the offer's currency, like every other
+                figure on this screen (see fmt above): €/W for a euro offer,
+                lei/W or грн/W otherwise. */}
             {costPerW > 0 && (
-              <div className="cost-spec">{tr("cost_per_w")}: <b>{nf(costPerW, 2)} €/W</b></div>
+              <div className="cost-spec">{tr("cost_per_w")}: <b>{perW(costPerW)}</b></div>
             )}
             {/* Ring + legend side by side. Previously a spacer shoved the ring to
                 the far right of the number row, leaving a dead gap across the
@@ -1172,9 +1322,14 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           <section className="card">
             <h3>{tr("financing")}</h3>
             <div className="fin-split">
+              {/* The repayment is typed in the offer's currency too, so it sits
+                  beside the savings it is compared with in the same unit. */}
               <div className="fin-box">
-                <div className="lbl">{tr("monthly_loan")}</div>
-                <input type="number" value={p.loan} onChange={e => update({ loan: +e.target.value || 0 })} />
+                <div className="lbl">{tr("monthly_loan")} ({fmt.local ? fmt.unit : "€"})</div>
+                {fmt.local
+                  ? <LocalMoneyInput eur={p.loan || 0} fmt={fmt} dec={0} allowZero className=""
+                      onEur={(v) => update({ loan: v })} />
+                  : <input type="number" value={p.loan} onChange={e => update({ loan: +e.target.value || 0 })} />}
               </div>
               <div className="fin-box">
                 <div className="lbl">{tr("est_savings")}</div>
@@ -1186,18 +1341,33 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             </div>
           </section>
 
+          {/* What programmes may pay for part of this job (Moldova). For the
+              installer only: none of it reaches the client's offer. */}
+          {isMD && (
+            <SupportCard projectId={initial.id} lang={lang} market={p.market} costEur={q.e.grossCost}
+              batteryEur={batteryEur({ batt: p.batt, battKwh: p.battKwh, batteryCostPerKwh: E.batteryCostPerKwh })}
+              vatRatePct={vatRatePct} fx={E.fx} initialKind={initial.client_kind ?? null} />
+          )}
+
           {signed && <SignedContract signed={signed} lang={lang} />}
 
           {p.status === "won" && (
-            <InstallChecklist projectId={initial.id} initial={initial.install_progress} lang={lang} />
+            <InstallChecklist key={railProg ? JSON.stringify(railProg) : "init"} projectId={initial.id}
+              initial={railProg || initial.install_progress} lang={lang} />
           )}
 
           {/* The grid-connection file, Moldova's or Ukraine's: from the moment
               the offer is out (some installers apply for the approval before
               the client signs). */}
           {(isMD || isUA) && (p.status !== "draft" || initial.install_progress?.gridFile) && (
-            <GridFile key={p.market} projectId={initial.id} market={p.market} address={[p.address, p.title].filter(Boolean).join(", ")} initial={initial.install_progress?.gridFile} lang={lang} />
+            <GridFile key={p.market + (railProg?.gridFile ? JSON.stringify(railProg.gridFile) : "")} projectId={initial.id}
+              market={p.market} address={[p.address, p.title].filter(Boolean).join(", ")}
+              initial={(railProg || initial.install_progress)?.gridFile} lang={lang} />
           )}
+
+          {/* A signed job in Moldova or Ukraine goes into a portfolio for a
+              lender (renders nothing otherwise). */}
+          <AddToPortfolio projectId={initial.id} lang={lang} status={p.status} market={p.market} />
         </div>
       </div>
 
@@ -1254,10 +1424,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         </div>
       )}
 
+      {/* The contract states the price in the offer's currency, the same
+          amount the client read on the proposal (it used to say EUR always). */}
       {legalDocsOpen && (
         <LegalDocsModal lang={lang} onClose={() => setLegalDocsOpen(false)} initialTab={legalTab}
           company={{ name: companyName, ...companyLegal }}
-          project={{ id: initial.id, clientName: p.client, address: p.address, kw: p.kw, price: q.e.cost, currency: "EUR", batt: p.batt, battKwh: p.battKwh, market: p.market, bom: p.bom, gridOperator: initial.install_progress?.gridFile?.operator, title: p.title }} />
+          project={{ id: initial.id, clientName: p.client, address: p.address, kw: p.kw, price: fmt.toLocal(q.e.cost), currency: fmt.currency, batt: p.batt, battKwh: p.battKwh, market: p.market, bom: p.bom, gridOperator: initial.install_progress?.gridFile?.operator, title: p.title }} />
       )}
 
       {/* proposal modal */}

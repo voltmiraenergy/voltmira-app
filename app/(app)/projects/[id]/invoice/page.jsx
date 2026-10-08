@@ -16,15 +16,17 @@ import { quote } from "@voltmira/engine";
 import { companyEngine } from "../../../../../lib/engineSettings.js";
 import { getRate } from "../../../../../lib/fx.js";
 import { rowToQuoteInput } from "../../../../../lib/quoteInput.js";
-import { vatBreakdown } from "../../../../../lib/invoiceMath.js";
+import { invoiceAmounts } from "../../../../../lib/invoiceMath.js";
+import { effectiveOfferCurrency } from "../../../../../lib/offerCurrency.js";
 import { sendCrmWebhook } from "../../../../../lib/crmWebhook.js";
 import { t, normLang } from "../../../../../lib/i18n.js";
 import { fmtDate } from "../../../../../lib/tz.js";
 import PrintNow from "./PrintNow.jsx";
 import BackLink from "../../../../../components/BackLink.jsx";
+import { appTitle } from "../../../../../lib/pageTitle.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Invoice | VoltMira" };
+export const generateMetadata = appTitle("inv_button");
 
 export default async function InvoicePage(props) {
   const searchParams = await props.searchParams;
@@ -36,35 +38,42 @@ export default async function InvoicePage(props) {
 
   const lang = normLang(co.lang);
   const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB";
-  const cur = co.currency || "EUR";
+  // Issued in the QUOTE's currency (lib/offerCurrency.js): the offer's own
+  // when the installer chose one (hryvnia for a client in Ukraine), else the
+  // workspace's. Same resolution as the editor and the proposal snapshot, so
+  // the proforma is in the currency the client was quoted in.
+  const cur = effectiveOfferCurrency(p.offer_currency, co.currency, p.market);
   // CONVERT, don't just relabel. The engine works entirely in EUR ("All money in
   // EUR. Display conversion happens in the UI layer only." — engine.js) and
   // exports FX for this. Formatting a EUR figure with currency:"MDL" printed a
   // €23,375 system as "23.375 MDL" — roughly €1,180, a ~20x understatement on a
   // document a client can pay against. RON was the same bug at ~5x.
-  // Live rate (ECB for RON, BNM for MDL), falling back to the engine constant
-  // if either is unreachable. getRate never throws — an invoice must render.
+  // Live rate (ECB for RON, BNM for MDL, NBU for UAH), falling back to the
+  // engine constant if one is unreachable. getRate never throws — an invoice
+  // must render.
   const fxInfo = await getRate(cur);
   const fx = Number(fxInfo.rate) > 0 ? Number(fxInfo.rate) : 1;
+  // Every amount below is ALREADY in `cur` (invoiceAmounts converts), so this
+  // only formats it.
   const money = (n) => new Intl.NumberFormat(locale, { style: "currency", currency: cur, maximumFractionDigits: 0 })
-    .format(Math.round((n || 0) * fx));
+    .format(Math.round(n || 0));
 
   const E = await companyEngine(co);
   const q = quote(rowToQuoteInput(p), E).e;
-  const gross = Math.max(0, Math.round(q.cost || 0));
 
   // Prices shown to homeowners are VAT-inclusive, so back out the net + VAT.
   // A rate of 0 means NOT CONFIGURED (Settings shows it blank-as-zero), and
   // printing "VAT (0%)" on a document a client keeps asserts a zero rating that
   // is very likely false for a RO/MD installer. So below we show a single Total
   // instead of inventing a breakdown — and nudge, on screen only, to set it.
-  // Shared with the fiscal CSV export (app/api/export-invoices/route.js) so
-  // the two can never disagree on a client's actual invoiced amount.
-  const { net, vat, rate, showVat } = vatBreakdown(gross, co.vat_rate);
-
+  // invoiceAmounts converts the total to the invoice's currency FIRST and splits
+  // VAT, deposit and balance from it there, so every printed line adds up to
+  // the printed total; its total is the fiscal CSV export's
+  // (app/api/export-invoices/route.js) for the same currency and rate.
   // Optional deposit: ?deposit=30 → a 30% deposit line + balance.
-  const depPct = Math.min(100, Math.max(0, Number(searchParams?.deposit) || 0));
-  const deposit = depPct > 0 ? Math.round(gross * depPct / 100) : 0;
+  const { gross, net, vat, rate, showVat, depositPct: depPct, deposit, balance } = invoiceAmounts({
+    grossEur: q.cost, fx, vatRatePct: co.vat_rate, depositPct: searchParams?.deposit,
+  });
 
   const today = new Date();
   const prefix = (co.invoice_prefix || "PF").toString().slice(0, 6);
@@ -98,6 +107,8 @@ export default async function InvoicePage(props) {
         // against, so this generic webhook (lib/crmWebhook.js) is what an
         // installer's own Make/Zapier/n8n scenario reads from to push a real
         // fiscal event across, same reasoning as export-invoices/route.js.
+        // net/vat/gross are the printed amounts, in `currency` (they used to
+        // be EUR figures labelled with the workspace currency).
         await sendCrmWebhook(co.id, "invoice.created", {
           project_id: p.id, invoice_no: candidate, client_name: p.client_name || p.title,
           net, vat, gross, currency: cur, deposit_pct: depPct || undefined,
@@ -106,8 +117,11 @@ export default async function InvoicePage(props) {
     }
   }
   if (!invNo) invNo = `${prefix}-${today.getFullYear()}-${String(params.id).replace(/-/g, "").slice(0, 6).toUpperCase()}`;
-  const kw = Number(p.kw).toFixed(1);
-  const lineDesc = t("inv_line", lang, { kw }) + (p.batt ? t("inv_line_batt", lang, { n: p.batt_kwh || 10 }) : "");
+  // Decimals the way the client writes them ("6,0 kW" in Romanian), like the
+  // amounts below: toFixed() printed "6.0" on a Romanian invoice.
+  const dec = (n, d) => Number(n).toLocaleString(locale, { minimumFractionDigits: d, maximumFractionDigits: d });
+  const kw = dec(p.kw, 1);
+  const lineDesc = t("inv_line", lang, { kw }) + (p.batt ? t("inv_line_batt", lang, { n: Number(p.batt_kwh || 10).toLocaleString(locale, { maximumFractionDigits: 1 }) }) : "");
   const legalName = co.legal_name || co.name || "—";
 
   const S = {
@@ -125,8 +139,12 @@ export default async function InvoicePage(props) {
     <div className="invoice-doc">
       <style>{`
         @media print {
-          .sidebar, .skip-link { display: none !important; }
-          .app .main { margin: 0 !important; padding: 0 !important; }
+          .sidebar, .skip-link, .demo-bar, .offline-bar { display: none !important; }
+          /* the app shell is a 236px + 1fr grid: with the sidebar hidden the
+             invoice would fall into the narrow first column */
+          .app { display: block !important; }
+          html, body, .app, .app .main { background: #fff !important; }
+          .app .main { margin: 0 !important; padding: 0 !important; width: auto !important; max-width: none !important; }
           @page { size: A4; margin: 14mm; }
           .no-print { display: none !important; }
           body { background: #fff !important; }
@@ -236,7 +254,7 @@ export default async function InvoicePage(props) {
                 {/* State the remainder explicitly. A deposit line on its own
                     leaves the client working out what is still owed. */}
                 <div style={{ ...S.tot, fontSize: 13 }}>
-                  <span style={S.muted}>{t("inv_balance", lang)}</span><span>{money(gross - deposit)}</span>
+                  <span style={S.muted}>{t("inv_balance", lang)}</span><span>{money(balance)}</span>
                 </div>
               </>
             )}
@@ -254,14 +272,15 @@ export default async function InvoicePage(props) {
 
         {/* honesty footer */}
         <div style={{ ...S.muted, marginTop: 34, paddingTop: 16, borderTop: "1px solid #E3E1D6", fontSize: 11.5 }}>
-          {t("inv_proforma_note", lang)}
+          {t("inv_proforma_note", lang)}{" "}
+          {t("inv_fiscal_" + (["MD", "RO", "UA"].includes(p.market) ? p.market : "MD"), lang)}
           {/* Disclose the conversion. Quoting is done in EUR, so a client
               holding an MDL/RON total cannot reconcile it against the proposal
               without the rate — and an undisclosed rate is exactly the kind of
               thing this product exists to not do. */}
           {fx !== 1 && (
             <div style={{ marginTop: 6 }}>
-              {t("inv_fx_note", lang, { r: fx.toFixed(4), c: cur })}
+              {t("inv_fx_note", lang, { r: dec(fx, 4), c: cur })}
               {/* Name the source and the day. A rate without provenance is just
                   another number the client has to take on trust. */}
               {fxInfo.live && fxInfo.source

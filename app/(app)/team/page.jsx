@@ -13,9 +13,10 @@ import { rowToQuoteInput } from "../../../lib/quoteInput.js";
 import { canViewTeamPerformance } from "../../../lib/rbac.js";
 import TeamActions from "./TeamActions.jsx";
 import { moneyFormatter } from "../../../lib/money.js";
+import { appTitle } from "../../../lib/pageTitle.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Team | VoltMira" };
+export const generateMetadata = appTitle("nav_team");
 
 export default async function Team() {
   const sb = await supabaseServer();

@@ -23,8 +23,10 @@ const PROVIDERS = [
   ["Upstash", "Rate limiting, to stop abuse of public forms and the demo"],
   ["Sentry", "Error reports: what broke and on which page, when enabled"],
   ["Google", "Sign in with Google, if you choose it, and map imagery in the roof designer when enabled"],
-  ["Esri (ArcGIS)", "Satellite imagery in the roof designer (map requests only)"],
-  ["OpenStreetMap Nominatim", "Turning an address into map coordinates (the address text only)"],
+  ["Esri (ArcGIS)", "Map tiles and satellite imagery in the roof designer and the portfolio maps (map requests only)"],
+  ["OpenStreetMap Nominatim", "Turning an address or a place name into map coordinates, and a point into a village name (the text or the coordinates only)"],
+  ["OpenStreetMap Overpass API", "Where the power grid is around a plant's site (coordinates only): overpass-api.de, or the kumi.systems mirror when it is busy"],
+  ["NASA POWER", "Wind data for a plant's site, for the wind screening (coordinates only)"],
   ["European Commission JRC (PVGIS)", "Solar irradiance data for a location (coordinates only)"],
 ];
 
@@ -36,7 +38,7 @@ const OPTIONAL = [
 
 export default function Privacy() {
   return (
-    <LegalShell title="Privacy Policy" updated="26 September 2026">
+    <LegalShell title="Privacy Policy" updated="4 October 2026">
       <p className="note">
         This policy explains what personal data VoltMira processes, why, who helps us process it and
         what you can do about it. Our database and application servers are in the EU, we use no
@@ -83,6 +85,14 @@ export default function Privacy() {
           the installer who sent the proposal and is never used for advertising.
         </li>
         <li>
+          <b>Deal room documents and bank links</b>: documents an installer files on a plant&rsquo;s
+          permit checklist are kept in private storage that only their company can read. When they
+          share a read-only link with a bank, we record when it was opened, what was opened or
+          downloaded, the questions asked through it, the browser type, and a keyed hash that tells
+          one visitor from another. The IP address itself is not stored. This is shown only to the
+          installer who shared the link.
+        </li>
+        <li>
           <b>Connected inverter accounts</b>: if an installer connects a Huawei FusionSolar, Solarman
           or Growatt account, we store its login credentials encrypted with AES-256-GCM and use them
           only to fetch production readings for that installer&rsquo;s systems.
@@ -126,6 +136,12 @@ export default function Privacy() {
           <b>Bill reading</b>: a photo or PDF of an electricity bill is sent to Anthropic to read the
           consumption, meter number and supplier. VoltMira does not store the file, and the installer
           reviews the result before it is applied.
+        </li>
+        <li>
+          <b>Energy yield studies</b>: when a user reads a wind or solar study from its PDF, the
+          browser picks the pages with the energy results and only their text is sent to Anthropic to
+          read the figures (for a scanned study, only the pages the user chose). VoltMira does not
+          store the file, and the user reviews every value before it is applied.
         </li>
         <li>
           <b>Parts list</b>: the installer&rsquo;s description of a system and their own catalog are

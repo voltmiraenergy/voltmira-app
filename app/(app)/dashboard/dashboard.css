@@ -1,6 +1,6 @@
 /* app/(app)/dashboard/dashboard.css — the parts only the dashboard has: the
- * stage tiles, next moves, pulse, the numbers list, the tabbed book, the
- * install board and the installed-base band. The shared header, cards, buttons and palette live in
+ * four numbers on top, the to-do list and its fix buttons, the jobs by phase, pulse, the numbers tab,
+ * the tabbed book, the install board and the installed-base band. The shared header, cards, buttons and palette live in
  * app/(app)/dx.css. Same `.app` prefix rule as there.
  */
 
@@ -12,30 +12,92 @@
 }
 html[data-theme="dark"] .app .dx { --dx-base-bg: #0B1510; }
 
-/* ---------------------------------------------------------------- stage tiles */
-/* Seven plain tiles, left to right in the order a job moves: each one a link
-   to that list. A thin coloured edge on top says which stage it is. */
-.app .dx-stages { list-style: none; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
-.app .dx-st a {
-  display: flex; flex-direction: column; gap: 2px; height: 100%; padding: 14px 14px 13px;
-  border: 1px solid var(--line); border-radius: 14px; background: var(--paper);
-  box-shadow: inset 0 3px 0 var(--c); text-decoration: none; color: inherit;
-  transition: border-color .16s, background .16s, box-shadow .16s;
+/* ---------------------------------------------------------------- the four numbers */
+/* Each tile is a link to the list behind its number. */
+.app .dx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.app .dx-kpi {
+  display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 16px 18px;
+  border-radius: var(--dx-radius); background: var(--paper-2); border: 1px solid var(--line); box-shadow: var(--shadow);
+  text-decoration: none; color: inherit; transition: border-color .16s, background .16s;
 }
-.app .dx-st a:hover { border-color: var(--c); background: var(--paper-2); box-shadow: inset 0 3px 0 var(--c), var(--shadow); }
-.app .dx-st-lbl { font-size: 11.5px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.app .dx-st-n { font-family: var(--dx-d); font-size: 30px; font-weight: 700; line-height: 1.15; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 4px; }
-.app .dx-st-eur { font-size: 13px; font-weight: 650; color: var(--c); font-variant-numeric: tabular-nums; min-height: 18px; }
-.app .dx-st-sub { font-size: 12px; color: var(--muted); line-height: 1.35; }
-.app .dx-st.zero a { box-shadow: inset 0 3px 0 var(--line); }
-.app .dx-st.zero .dx-st-n { color: color-mix(in srgb, var(--muted) 60%, transparent); }
-.app .s-leads { --c: var(--amber-ink); }
-.app .s-drafts { --c: var(--muted); }
-.app .s-sent { --c: var(--blue); }
-.app .s-opened { --c: var(--amber); }
-.app .s-won { --c: var(--green); }
-.app .s-installing { --c: var(--green-soft); }
-.app .s-live { --c: var(--green); }
+.app .dx-kpi:hover { border-color: color-mix(in srgb, var(--green) 50%, var(--line)); }
+.app .dx-kpi:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.app .dx-kpi-l { font-size: 12.5px; font-weight: 600; color: var(--muted); line-height: 1.35; }
+.app .dx-kpi-v {
+  font-family: var(--dx-d); font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15;
+  font-variant-numeric: tabular-nums; color: var(--ink); overflow-wrap: anywhere; margin-top: 2px;
+}
+.app .dx-kpi-s { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+/* ---------------------------------------------------------------- jobs by phase */
+.app .ph-sell { --c: var(--blue); }
+.app .ph-close { --c: var(--amber); }
+.app .ph-build { --c: var(--green-soft); }
+.app .ph-run { --c: var(--green); }
+/* how the active jobs split across the four phases, at a glance */
+.app .dx-ph-bar { display: flex; gap: 3px; height: 8px; margin: -2px 0 8px; }
+.app .dx-ph-bar span { min-width: 6px; border-radius: 99px; background: var(--c); }
+.app .dx-ph-list { list-style: none; display: flex; flex-direction: column; }
+.app .dx-ph + .dx-ph { border-top: 1px solid var(--line); }
+.app .dx-ph-row {
+  display: grid; grid-template-columns: 10px minmax(0, 1fr) auto auto auto 16px; align-items: center; gap: 10px;
+  width: calc(100% + 16px); margin: 0 -8px; padding: 12px 8px; border-radius: 10px; text-align: left; color: var(--muted);
+  transition: background .15s;
+}
+.app .dx-ph-row:hover:not(:disabled) { background: var(--dx-hover); }
+.app .dx-ph-row:focus-visible { outline: 2px solid var(--green); outline-offset: -2px; }
+.app .dx-ph-row:disabled { cursor: default; }
+.app .dx-ph-row > svg { grid-column: -2 / -1; }
+.app .dx-ph-row:disabled svg { visibility: hidden; }
+.app .dx-ph-sw { width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
+.app .dx-ph-name { font-size: 14px; font-weight: 650; color: var(--ink); min-width: 0; }
+.app .dx-ph-n { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app .dx-ph-v {
+  min-width: 4.6em; text-align: right; white-space: nowrap;
+  font-family: var(--dx-d); font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink);
+}
+.app .dx-ph-stuck {
+  font-size: 11.5px; font-weight: 650; white-space: nowrap; padding: 2px 8px; border-radius: 99px;
+  background: var(--amber-tint); color: var(--amber-ink);
+}
+.app .dx-ph.zero .dx-ph-name { color: var(--muted); font-weight: 600; }
+.app .dx-ph.zero .dx-ph-sw { opacity: .4; }
+.app .dx-ph-jobs { padding: 2px 0 14px 20px; }
+.app .dx-ph-jobs ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.app .dx-ph-jobs li { padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); min-width: 0; }
+.app .dx-ph-jobs li.stuck { border-color: color-mix(in srgb, var(--amber) 50%, var(--line)); }
+.app .dx-ph-job-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.app .dx-ph-job-t { font-size: 13.5px; font-weight: 650; color: var(--ink); text-decoration: none; overflow-wrap: anywhere; min-width: 0; }
+.app .dx-ph-job-t:hover { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+.app .dx-ph-stage {
+  flex: none; font-size: 11px; font-weight: 650; color: var(--muted); white-space: nowrap;
+  padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); background: var(--paper-2);
+}
+.app .dx-ph-job-s { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.app .dx-ph-job-s .late { color: var(--amber-ink); font-weight: 650; }
+.app .dx-ph-more { display: inline-block; margin-top: 10px; }
+.app .dx-lender {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px 14px; flex-wrap: wrap;
+  margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--green-tint);
+}
+.app .dx-lender p { flex: 1 1 220px; font-size: 13px; line-height: 1.5; color: var(--ink); }
+
+/* ---------------------------------------------------------------- fix buttons (to-do rows and phase jobs) */
+.app .dx-acts { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.app .dx-acts.sm { margin-top: 8px; }
+.app .dx-acts-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.app .dx-acts .dx-btn svg { flex: none; }
+.app .dx-inv { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.app .dx-inv span { font-weight: 600; color: var(--ink); margin-right: 2px; }
+.app .dx-acts-msg { font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
+.app .dx-acts-msg.ok { color: var(--green); }
+.app .dx-acts-msg.bad { color: var(--red); }
+.app .dx-stuck-link { color: var(--amber-ink) !important; font-weight: 650; }
+
+/* ---------------------------------------------------------------- the numbers tab */
+.app .dx-numbers { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 36px; }
+.app .dx-numbers h3 { font-family: var(--dx-d); font-size: 14.5px; font-weight: 700; color: var(--ink); }
+.app .dx-numbers-sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
 
 /* ---------------------------------------------------------------- next moves */
 .app .dx-move-list { list-style: none; display: flex; flex-direction: column; }
@@ -61,12 +123,18 @@ html[data-theme="dark"] .app .dx { --dx-base-bg: #0B1510; }
 .app .k-health { --k: var(--red); --kt: var(--red-tint); }
 .app .k-unopened, .app .k-quiet, .app .k-draft, .app .k-nodata { --k: var(--muted); --kt: var(--paper); }
 .app .k-unopened .dx-move-ic, .app .k-quiet .dx-move-ic, .app .k-draft .dx-move-ic, .app .k-nodata .dx-move-ic { border: 1px solid var(--line); }
+.app .dx-move.k-unmonitored { --k: var(--muted); --kt: var(--paper); }
+.app .k-gap { --k: var(--red); --kt: var(--red-tint); }
+.app .k-grid { --k: var(--blue); --kt: var(--blue-tint); }
+.app .k-unmonitored .dx-move-ic { border: 1px solid var(--line); }
 
 .app .dx-move-body { min-width: 0; }
-.app .dx-move-meta { display: flex; align-items: center; gap: 8px; min-height: 18px; }
-.app .dx-kind { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--k); }
-.app .dx-move-meta time { margin-left: auto; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.app .dx-move-who { display: flex; align-items: baseline; gap: 4px 9px; flex-wrap: wrap; margin-top: 3px; min-width: 0; }
+.app .dx-kind {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--k);
+  margin-right: 7px;
+}
+.app .dx-move-who { display: flex; align-items: baseline; gap: 4px 9px; flex-wrap: wrap; min-width: 0; padding-top: 1px; }
+.app .dx-move-who time { margin-left: auto; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .app .dx-move-title {
   font-family: var(--dx-d); font-size: 15px; font-weight: 650; letter-spacing: -.005em; color: var(--ink);
   text-decoration: none; overflow-wrap: anywhere;
@@ -80,7 +148,6 @@ html[data-theme="dark"] .app .dx { --dx-base-bg: #0B1510; }
   border-left: 2px solid var(--line);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.app .dx-move-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .app .dx-done {
   width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
   border: 1px solid var(--line) !important; color: var(--muted) !important; opacity: .7;
@@ -212,7 +279,6 @@ html[data-theme="dark"] .app .dx-base { border-color: var(--line); }
   .app .dx-base-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 768px) {
-  .app .dx-st-n { font-size: 26px; }
   /* The table scrolls sideways on a phone; give the quote name room first. */
   .app .dx-tbl td:first-child { min-width: 216px; }
   .app .dx-move { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 11px; padding: 14px 10px; margin: 0 -10px; }
@@ -222,14 +288,20 @@ html[data-theme="dark"] .app .dx-base { border-color: var(--line); }
   .app .dx-base-stats dd { font-size: 25px; }
   .app .dx-base-mark { width: 150px; height: 150px; right: -18px; bottom: auto; top: -26px; opacity: .2; }
 }
-/* Tablet: two rows of tiles. Phone: two columns, the last stage full width. */
-@media (max-width: 1180px) {
-  .app .dx-stages { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1080px) {
+  .app .dx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+}
+@media (max-width: 760px) {
+  .app .dx-numbers { grid-template-columns: minmax(0, 1fr); gap: 18px; }
 }
 @media (max-width: 560px) {
-  .app .dx-stages { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .app .dx-st:last-child { grid-column: 1 / -1; }
-  .app .dx-st a { padding: 12px; }
+  .app .dx-kpi { padding: 13px 14px; }
+  .app .dx-kpi-v { font-size: 21px; }
+  .app .dx-ph-row { grid-template-columns: 10px minmax(0, 1fr) auto 16px; }
+  .app .dx-ph-n { display: none; }
+  .app .dx-ph-stuck { grid-column: 2 / 4; grid-row: 2; justify-self: start; }
+  .app .dx-ph-row > svg { grid-column: 4; grid-row: 1; }
+  .app .dx-ph-jobs { padding-left: 0; }
   .app .dx-book .dx-tabs button { padding: 8px 11px; font-size: 13px; }
 }
 @media (max-width: 560px) {

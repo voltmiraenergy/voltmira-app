@@ -85,7 +85,7 @@ const MDL = (eur) => NUM(Math.round(eur * FX.MDL)) + " MDL";
 export default function LeadWidgetPreview() {
   const lang = useLang();
   const T = (o) => tx(o, lang);
-  useEffect(() => { document.title = "Public calculator widget | VoltMira"; }, []);
+  useEffect(() => { document.title = `${tx(TX.title, lang)} | VoltMira`; }, [lang]);
 
   const pickWl = (l) => (l === "ru" || l === "uk" ? l : "ro");
   const [wl, setWl] = useState(pickWl(lang));

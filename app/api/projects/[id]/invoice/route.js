@@ -15,7 +15,7 @@
 // The caller must be signed in and own the project, and the headless browser
 // replays THEIR session cookies so it can never render more than they may see.
 import { NextResponse } from "next/server";
-import { renderPdf } from "../../../../../lib/renderProposalPdf.js";
+import { renderPdf, requestOrigin } from "../../../../../lib/renderProposalPdf.js";
 import { supabaseServer } from "../../../../../lib/supabase.js";
 import { currentUser, currentCompany, currentActor } from "../../../../../lib/session.js";
 import { sendEmail, proformaEmail, emailConfigured } from "../../../../../lib/email.js";
@@ -56,7 +56,9 @@ function depositOf(v) {
 }
 
 function targetUrl(req, id, dep) {
-  const base = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+  // the caller's own host: the render replays THEIR session cookies, which
+  // mean nothing on another host NEXT_PUBLIC_APP_URL might name
+  const base = requestOrigin(req);
   // pdf=1 tells the page to skip PrintNow: window.print() inside headless
   // Chromium blocks rather than returning, and we drive printing via CDP.
   return `${base}/projects/${id}/invoice?pdf=1${dep > 0 ? `&deposit=${dep}` : ""}`;
@@ -72,7 +74,7 @@ export async function GET(req, props) {
 
   const dep = depositOf(new URL(req.url).searchParams.get("deposit"));
   try {
-    const { pdf, timings } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req) });
+    const { pdf, timings } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page" });
     const name = `${auth.project.invoice_no || "proforma"}.pdf`.replace(/[^\w.-]+/g, "-");
     return new NextResponse(pdf, {
       headers: {
@@ -84,7 +86,8 @@ export async function GET(req, props) {
     });
   } catch (e) {
     console.error("[invoice-pdf] failed:", e?.message || e);
-    return NextResponse.json({ error: "pdf_failed" }, { status: 500 });
+    // The invoice page prints itself (PrintNow): a usable fallback, not raw JSON.
+    return NextResponse.redirect(`${requestOrigin(req)}/projects/${params.id}/invoice${dep > 0 ? `?deposit=${dep}` : ""}`, 303);
   }
 }
 
@@ -105,7 +108,7 @@ export async function POST(req, props) {
 
   let pdf;
   try {
-    ({ pdf } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req) }));
+    ({ pdf } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page" }));
   } catch (e) {
     console.error("[invoice-mail] render failed:", e?.message || e);
     return NextResponse.json({ error: "pdf_failed" }, { status: 500 });
@@ -116,6 +119,7 @@ export async function POST(req, props) {
     companyName: auth.co.name,
     depositPct: dep,
     note: String(body?.note || "").slice(0, 1000),
+    lang: auth.co.lang,
   });
   const res = await sendEmail({
     to, subject, html,

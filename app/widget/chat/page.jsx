@@ -30,6 +30,9 @@ export default async function WidgetChatPage(props) {
     // site and must look right there, whatever the visitor's OS theme is.
     <main lang={lang} style={{ maxWidth: 420, margin: "0 auto", height: "100dvh", display: "flex", flexDirection: "column",
       fontFamily: "Inter, system-ui, sans-serif", color: "#142A21", background: "#fff", colorScheme: "light" }}>
+      {/* the page around the 420px column too, or a dark-OS visitor sees dark
+          bands either side of the chat in a wide iframe */}
+      <style>{"html,body{background:#fff !important}"}</style>
       <HtmlLang lang={lang} />
       <ChatBox companyId={companyId} lang={lang} companyName={co.name} />
     </main>

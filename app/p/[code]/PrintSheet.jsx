@@ -22,7 +22,9 @@ import { findWarrantyInfo } from "../../../lib/supplierCatalog.js";
 import { backupHours } from "../../../lib/batteryBackup.js";
 import { compassLabel } from "../../../lib/roofLayout.js";
 import { weightedExportPriceMdl } from "../../../lib/prosumerPrice.js";
-import { CashflowSVG, MonthlySVG } from "./charts.jsx";
+import { CashflowSVG, MonthlySVG, CHART } from "./charts.jsx";
+import { ppt, yearsN } from "./text.js";
+import { Moon, Scale, Snowflake, ThermometerSun, TriangleAlert } from "lucide-react";
 import UaSection from "./UaSection.jsx";
 
 // Per-market export data (same table as the demo's MARKETS).
@@ -48,7 +50,8 @@ function co2(text) {
 // real outline, the real fitted panel rectangles and any obstacles skipped.
 // `planes[].outline/obstacles/panels` arrive projected to local meters
 // (createProposal, at send time), so this only scales and flips an axis.
-function RoofSnapshotSVG({ planes }) {
+// Exported: the live page (page.jsx) shows the same drawing.
+export function RoofSnapshotSVG({ planes }) {
   const W = 680, PAD = 18;
   const allPts = [];
   planes.forEach((pl) => {
@@ -117,12 +120,12 @@ const CSS = `
   .p-offer .p-o-net b{color:#1E6B4E}
 
   /* sections */
-  .print-sheet section{margin-top:18px}
+  .print-sheet section{margin-top:15px}
   .print-sheet h2{display:flex;align-items:center;gap:9px;font-family:${D};font-weight:700;font-size:15px;
     margin:0 0 8px;color:#142A21;break-after:avoid;page-break-after:avoid}
   .p-n{flex:none;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#1E6B4E;
     color:#fff;font-family:${D};font-size:10.5px;font-weight:700}
-  .p-lead{margin:0 0 9px;font-size:12px;color:#3B5046;max-width:78ch}
+  .p-lead{margin:0 0 7px;font-size:12px;color:#3B5046;max-width:92ch}
   .p-note{margin:6px 0 0;font-size:11px;color:#66756C;line-height:1.45}
 
   /* what you are buying */
@@ -151,13 +154,16 @@ const CSS = `
   /* charts */
   .p-chart{width:100%;height:auto;display:block;border:1px solid #EDEAE0;border-radius:9px;background:#FCFBF7}
   .p-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:9.5px;color:#66756C;margin:5px 0 0}
-  .p-legend i{display:inline-block;width:14px;height:0;border-top:2px solid #1E6B4E;margin-right:5px;vertical-align:middle}
+  .p-legend i{display:inline-block;width:14px;height:0;border-top:2px solid ${CHART.expc};margin-right:5px;vertical-align:middle}
+  .p-legend i.dot{width:7px;height:7px;border:0;border-radius:50%;background:${CHART.ink}}
 
   /* money */
   .p-scen{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
   .p-scen > div{border:1px solid #E3E1D6;border-radius:9px;padding:8px 11px;display:flex;align-items:baseline;justify-content:space-between;gap:8px}
   .p-scen > div.on{background:#F1F6F2;border-color:#C9D9CD}
-  .p-scen .s-t{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+  .p-scen .s-t{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#142A21}
+  .p-scen .s-t i{display:inline-block;width:12px;height:0;border-top:2px solid;margin-right:5px;vertical-align:middle}
+  .p-scen .s-t i.d{border-top-style:dashed}
   .p-scen .s-t small{display:block;font-size:9.5px;font-weight:500;color:#66756C;letter-spacing:0;text-transform:none;margin-top:1px}
   .p-scen .s-y{font-family:${D};font-size:19px;font-weight:800;letter-spacing:-.02em;white-space:nowrap}
   .p-scen .s-y small{font-size:10px;font-weight:500;color:#66756C;letter-spacing:0;margin-left:2px}
@@ -171,18 +177,18 @@ const CSS = `
   .p-mo .pos b{color:#1E6B4E}
   .p-vs{display:grid;gap:5px}
   .p-vs-r{display:grid;grid-template-columns:86px 1fr auto;gap:8px;align-items:center;font-size:10.5px}
-  .p-vs-t{height:14px;background:#F0EEE6;border-radius:4px;overflow:hidden}
-  .p-vs-t i{display:block;height:100%}
+  .p-vs-t{height:12px}
+  .p-vs-t i{display:block;height:100%;min-width:3px;border-radius:0 4px 4px 0}
   .p-vs-r b{font-family:${D};font-weight:700;font-size:12px;white-space:nowrap}
-  .p-vs .bad i{background:#C4543B;opacity:.75}.p-vs .bad b{color:#C4543B}
-  .p-vs .good i{background:#1E6B4E}.p-vs .good b{color:#1E6B4E}
+  .p-vs .bad i{background:${CHART.cons}}
+  .p-vs .good i{background:${CHART.prod}}
 
   /* designed for your home */
-  .p-fit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .p-fit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
   .p-fit-i{position:relative;border:1px solid #E3E1D6;border-radius:9px;padding:8px 11px 8px 30px}
-  .p-fit-i i{position:absolute;left:11px;top:12px;width:9px;height:9px;border-radius:50%;background:#1E6B4E;box-shadow:0 0 0 3px #E4EFE9}
+  .p-fit-ic{position:absolute;left:9px;top:9px;width:14px;height:14px;color:#1E6B4E;stroke-width:2}
   .p-fit-i.warn{border-color:#E8B4A6;background:#FDF5F2}
-  .p-fit-i.warn i{background:#C4543B;box-shadow:0 0 0 3px #F6DDD6}
+  .p-fit-i.warn .p-fit-ic{color:#C4543B}
   .p-fit-i b{display:block;font-size:11.5px}
   .p-fit-i span{display:block;font-size:10.5px;color:#66756C;margin-top:1px}
   .p-fit-i em{display:block;font-style:normal;font-size:10px;color:#A8432E;margin-top:3px}
@@ -191,20 +197,20 @@ const CSS = `
 
   /* next steps */
   .p-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;counter-reset:s}
-  .p-steps li{counter-increment:s;border-top:2px solid #1E6B4E;padding-top:7px;font-size:10.5px;color:#3B5046;line-height:1.4}
+  .p-steps li{counter-increment:s;border-top:2px solid #1E6B4E;padding-top:5px;font-size:10.5px;color:#3B5046;line-height:1.4}
   .p-steps li::before{content:counter(s);display:block;font-family:${D};font-weight:800;font-size:15px;color:#1E6B4E;margin-bottom:2px}
-  .p-cta{margin-top:12px;padding:10px 14px;border-radius:10px;background:#142A21;color:#fff;font-size:12px;line-height:1.5}
+  .p-cta{margin-top:10px;padding:10px 14px;border-radius:10px;background:#142A21;color:#fff;font-size:12px;line-height:1.5}
   .p-cta b{color:#F2B85F;font-weight:700}
   .p-proof{display:inline-block;margin-top:8px;font-size:10.5px;font-weight:600;color:#1E6B4E;background:#E4EFE9;border-radius:99px;padding:3px 10px}
 
   /* assumptions, in small print */
-  .p-annex{margin-top:16px;padding-top:9px;border-top:1px solid #E3E1D6}
+  .p-annex{margin-top:10px;padding-top:7px;border-top:1px solid #E3E1D6}
   .p-annex-h{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#66756C;margin-bottom:5px}
   .p-annex-h span{font-weight:500;letter-spacing:0;text-transform:none}
   .p-assump{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px 14px;margin:0;font-size:9.5px;color:#66756C}
   .p-assump div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted #E3E1D6;padding:2px 0}
   .p-assump dt{margin:0}.p-assump dd{margin:0;color:#3B5046;text-align:right}
-  .p-foot{margin-top:10px;font-size:9.5px;color:#8A948E;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .p-foot{margin-top:6px;font-size:9.5px;color:#8A948E;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 
   /* pagination: page 2 starts at the money; keep units whole */
   .p-money{break-before:page;page-break-before:always}
@@ -278,10 +284,10 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   // designCheckRows order: DC/AC, cold voltage, [string length], [battery], [medium voltage].
   const battIdx = 2 + (dc.stringRangeInfo ? 1 : 0);
   const fit = realGear ? [
-    { ok: rows[0].ok, warn: rows[0].warn, title: tr("pdf2_fit_match"), line: tr("pdf2_fit_match_l", { dc: nf(dc.dcKw, 1), ac: nf(dc.acKw, 1) }) },
-    { ok: rows[1].ok, warn: rows[1].warn, title: tr("pdf2_fit_cold"), line: tr("pdf2_fit_cold_l", { v: Math.round(dc.vString), t: dc.coldT, max: dc.maxDcV }) },
-    ...(dc.stringRangeInfo ? [{ ok: rows[2].ok, warn: rows[2].warn, title: tr("pdf2_fit_hot"), line: tr("pdf2_fit_hot_l", { n: dc.perString, t: dc.hotT }) }] : []),
-    ...(battKwh > 0 ? [{ ok: rows[battIdx].ok, warn: rows[battIdx].warn, title: tr("pdf2_fit_batt"), line: tr("pdf2_fit_batt_l", { b: nf(battKwh, 1), e: nf(dc.eveningKwh, 1) }) }] : []),
+    { icon: Scale, ok: rows[0].ok, warn: rows[0].warn, title: tr("pdf2_fit_match"), line: tr("pdf2_fit_match_l", { dc: nf(dc.dcKw, 1), ac: nf(dc.acKw, 1) }) },
+    { icon: Snowflake, ok: rows[1].ok, warn: rows[1].warn, title: tr("pdf2_fit_cold"), line: tr("pdf2_fit_cold_l", { v: Math.round(dc.vString), t: dc.coldT, max: dc.maxDcV }) },
+    ...(dc.stringRangeInfo ? [{ icon: ThermometerSun, ok: rows[2].ok, warn: rows[2].warn, title: tr("pdf2_fit_hot"), line: tr("pdf2_fit_hot_l", { n: dc.perString, t: dc.hotT }) }] : []),
+    ...(battKwh > 0 ? [{ icon: Moon, ok: rows[battIdx].ok, warn: rows[battIdx].warn, title: tr("pdf2_fit_batt"), line: tr("pdf2_fit_batt_l", { b: nf(battKwh, 1), e: nf(dc.eveningKwh, 1) }) }] : []),
   ] : [];
 
   // ---- what the exported surplus earns (Moldova's net billing only; Romania
@@ -371,10 +377,10 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
 
       {/* What they are buying: a serious buyer compares equipment first. */}
       <section>
-        <h2><span className="p-n">{num()}</span>{tr("pdf2_buy_h")}</h2>
-        <p className="p-lead">{tr("pdf2_sys_line", {
+        <h2><span className="p-n">{num()}</span>{ppt("buy_h", lang)}</h2>
+        <p className="p-lead">{ppt("buy_lead", lang, {
           kw: nf(inputs.kw, 1),
-          b: battKwh > 0 ? tr("pdf2_with_batt", { b: battKwh }) : "",
+          b: battKwh > 0 ? ppt("with_batt", lang, { b: battKwh }) : "",
           p: Math.round(q.prod0).toLocaleString(loc),
         })}</p>
         <div className={"p-buy" + (hasRoof ? " has-roof" : "")}>
@@ -390,7 +396,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
                 <tr key={i}>
                   <td className="k">{kindLabel(l.kind, lang)}</td>
                   <td className="g">{w?.productUrl ? <a href={w.productUrl} target="_blank" rel="noopener noreferrer">{bomLineText(l, lang)}</a> : bomLineText(l, lang)}</td>
-                  {anyWarranty && <td className="w">{w ? tr("pdf_warranty_v", { n: w.warrantyYears }) : "—"}</td>}
+                  {anyWarranty && <td className="w">{w ? tr("pdf_warranty_v", { n: w.warrantyYears }) : ""}</td>}
                   <td className="q">× {Number(l.qty)}</td>
                 </tr>
               );
@@ -420,26 +426,26 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         {backupHrs != null && (
           <div className="p-backup">
             <b>~{Math.round(backupHrs)} {tr("pdf_backup_hunit")}</b>
-            <span>{tr("pdf_backup_body", { kwh: battKwh })}</span>
+            <span>{ppt("backup_p", lang, { b: battKwh })}</span>
           </div>
         )}
       </section>
 
       <section>
-        <h2><span className="p-n">{num()}</span>{tr("pdf_energy_h")}</h2>
+        <h2><span className="p-n">{num()}</span>{ppt("energy_h", lang)}</h2>
         <MonthlySVG prod={prodMonthly} cons={consMonthly} lang={lang} loc={loc} compact />
-        {consEff > 0 && <p className="p-note">{tr("pdf2_energy_line", { s: selfPct, c: coverPct })}</p>}
+        {consEff > 0 && <p className="p-note">{ppt("e_line", lang, { s: selfPct, c: coverPct })}</p>}
       </section>
 
       {/* Page 2: the money, as one argument. */}
       <section className="p-money">
-        <h2><span className="p-n">{num()}</span>{tr("pdf_money_h", { n: hz })}</h2>
+        <h2><span className="p-n">{num()}</span>{ppt("money_h", lang, { y: yearsN(hz, lang) })}</h2>
         <div className="p-scen">
-          {[["pess", tr("pessimistic"), bands.pess, "#C4543B"],
-            ["expc", tr("expected"), bands.expc, "#1E6B4E"],
-            ["opti", tr("optimistic"), bands.opti, "#2A8563"]].map(([k, label, b, c]) => (
+          {[["pess", tr("pessimistic"), bands.pess, CHART.pess],
+            ["expc", tr("expected"), bands.expc, CHART.expc],
+            ["opti", tr("optimistic"), bands.opti, CHART.opti]].map(([k, label, b, c]) => (
             <div key={k} className={k === "expc" ? "on" : ""}>
-              <span className="s-t" style={{ color: c }}>{label}<small>{hz}{tr("yr_roi")}, {pct(b.roi)}</small></span>
+              <span className="s-t"><i className={k === "expc" ? "" : "d"} style={{ color: c }} />{label}<small>{hz}{tr("yr_roi")}, {pct(b.roi)}</small></span>
               <span className="s-y">{yrsF(b.payback)}<small>{tr("years_w")}</small></span>
             </div>
           ))}
@@ -447,9 +453,9 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         <CashflowSVG bands={bands} cost={q.cost} horizon={hz} lang={lang} money={fmt} compact />
         <div className="p-legend">
           <span><i />{tr("expected")}</span>
-          <span><i style={{ borderColor: "#C4543B", borderTopStyle: "dashed" }} />{tr("pessimistic")}</span>
-          <span><i style={{ borderColor: "#1E6B4E", borderTopStyle: "dashed", opacity: .6 }} />{tr("optimistic")}</span>
-          <span><i style={{ borderColor: "#E89B2D", borderTopStyle: "dashed" }} />{tr("lg_break")}</span>
+          <span><i style={{ borderColor: CHART.pess, borderTopStyle: "dashed" }} />{tr("pessimistic")}</span>
+          <span><i style={{ borderColor: CHART.opti, borderTopStyle: "dashed" }} />{tr("optimistic")}</span>
+          <span><i className="dot" />{tr("lg_break")}</span>
         </div>
         {(loan > 0 || doNothing > 0) && (
           <div className={"p-duo" + (loan > 0 && doNothing > 0 ? "" : " one")}>
@@ -465,7 +471,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
             )}
             {doNothing > 0 && (
               <div className="p-box">
-                <h3>{tr("pdf_vs_h", { n: hz })}</h3>
+                <h3>{ppt("vs_h", lang, { y: yearsN(hz, lang) })}</h3>
                 <div className="p-vs">
                   <div className="p-vs-r bad"><span>{tr("pdf_vs_without")}</span><span className="p-vs-t"><i style={{ width: `${(doNothing / vsMax) * 100}%` }} /></span><b>{fmt(doNothing)}</b></div>
                   <div className="p-vs-r good"><span>{tr("pdf_vs_with")}</span><span className="p-vs-t"><i style={{ width: `${(withSolar / vsMax) * 100}%` }} /></span><b>{fmt(withSolar)}</b></div>
@@ -486,17 +492,20 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
 
       {fit.length > 0 && (
         <section>
-          <h2><span className="p-n">{num()}</span>{tr("pdf2_fit_h")}</h2>
+          <h2><span className="p-n">{num()}</span>{ppt("fit_h", lang)}</h2>
           <p className="p-lead">{tr("pdf2_fit_p")}</p>
           <div className="p-fit">
-            {fit.map((f, i) => (
+            {fit.map((f, i) => {
+              const Icon = f.ok ? f.icon : TriangleAlert;
+              return (
               <div key={i} className={"p-fit-i" + (f.ok ? "" : " warn")}>
-                <i aria-hidden="true" />
+                <Icon className="p-fit-ic" aria-hidden="true" />
                 <b>{f.title}</b>
                 <span>{f.line}</span>
                 {!f.ok && f.warn ? <em>{f.warn}</em> : null}
               </div>
-            ))}
+              );
+            })}
           </div>
           <p className="p-eco">{co2(tr("pdf2_eco", { kg: Math.round(co2Year).toLocaleString(loc), t: trees }))}</p>
         </section>
@@ -505,15 +514,15 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
       <section>
         <h2><span className="p-n">{num()}</span>{tr("pdf_next_h")}</h2>
         <ol className="p-steps">
-          <li>{tr("pdf_step1")}</li>
-          <li>{tr("pdf_step2")}</li>
-          <li>{tr("pdf_step3")}</li>
-          <li>{tr("pdf_step4")}</li>
+          <li>{ppt("step1", lang)}</li>
+          <li>{ppt("step2", lang)}</li>
+          <li>{ppt("step3", lang)}</li>
+          <li>{ppt("step4", lang)}</li>
         </ol>
         {acceptShort && (
           <div className="p-cta">
-            {tr("pdf2_go", { url: "" })}<b>{acceptShort}</b>
-            {preparedBy?.name && preparedBy?.phone ? <> {tr("pdf2_call", { who: preparedBy.name, phone: preparedBy.phone })}</> : "."}
+            {ppt("pdf_go", lang, { url: "" })}<b>{acceptShort}</b>
+            {preparedBy?.name && preparedBy?.phone ? <> {ppt("pdf_call", lang, { who: preparedBy.name, phone: preparedBy.phone })}</> : "."}
           </div>
         )}
         {/* From 3 up: "1 system installed" undersells a new installer. */}

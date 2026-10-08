@@ -22,7 +22,7 @@ import {
   ALL_SUPPLIER_PRODUCTS, recommendInverter, recommendBattery, recommendPanel,
   findMount, findSupplier, DEFAULT_IDS, autoBom,
 } from "../lib/supplierCatalog.js";
-import { bomTotal, kindLabel } from "../lib/quoteAnalysis.js";
+import { bomTotal, kindLabel, localSpec } from "../lib/quoteAnalysis.js";
 
 const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
 
@@ -120,7 +120,7 @@ export default function BomCard({
                   grid row with the number inputs in the narrow inputs column. */}
               <div className="bom-desc">
                 <b>{l.brand} {l.model}</b>
-                <span>{kindLabel(l.kind, lang)}{l.spec ? `, ${l.spec}` : ""}</span>
+                <span>{kindLabel(l.kind, lang)}{l.spec ? `, ${localSpec(l.spec, lang)}` : ""}</span>
               </div>
               <div className="bom-nums">
                 <input className="input bom-qty" type="number" min="0" step="0.1" value={l.qty}
@@ -163,7 +163,7 @@ export default function BomCard({
             {filtered.map((r) => (
               <button type="button" key={r.key} className="bom-pick" onClick={() => addLine(r)}>
                 <span className="bp-main">{r.brand} {r.model}</span>
-                <span className="bp-spec">{kindLabel(r.kind, lang)}{r.spec ? `, ${r.spec}` : ""}</span>
+                <span className="bp-spec">{kindLabel(r.kind, lang)}{r.spec ? `, ${localSpec(r.spec, lang)}` : ""}</span>
                 <span className="bp-meta">{r.meta}</span>
                 <b className="bp-price">{money(r.unit_price)}</b>
               </button>

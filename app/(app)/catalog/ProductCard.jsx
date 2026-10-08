@@ -9,10 +9,14 @@ import { compatibleInverters, compatiblePanels } from "../../../lib/stringDesign
 import { PANELS, INVERTERS } from "../../../lib/supplierCatalog.js";
 import { t } from "../../../lib/i18n.js";
 
-function specLine(p) {
+// The battery spec said "cicluri" in every language, with English digit grouping.
+const LOC = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
+const CYCLES = { en: "cycles", ro: "cicluri", ru: "циклов", uk: "циклів" };
+
+function specLine(p, lang) {
   if (p.kind === "panel") return `${p.watt} Wp, Voc ${p.voc} V, ${p.eff}%`;
   if (p.kind === "inverter") return `${p.kw} kW, ${p.type}, ${p.phases === 3 ? "3~" : "1~"}, ${p.mppt} MPPT`;
-  if (p.kind === "battery") return `${p.kwh} kWh, ${p.chem}, ${p.cycles.toLocaleString("en-IE")} cicluri`;
+  if (p.kind === "battery") return `${p.kwh} kWh, ${p.chem}, ${p.cycles.toLocaleString(LOC[lang] || LOC.en)} ${CYCLES[lang] || CYCLES.en}`;
   return p.type;
 }
 
@@ -57,7 +61,7 @@ export default function ProductCard({
           <span className="cat-brand">{p.brand}</span>
           <span className="cat-name">{p.model}</span>
         </button>
-        <span className="cat-spec">{specLine(p)}</span>
+        <span className="cat-spec">{specLine(p, lang)}</span>
         {compat && (
           <span className={"supbrowser-compat" + (compat.n === 0 ? " none" : "")}>
             {compat.n === 0
@@ -73,7 +77,7 @@ export default function ProductCard({
         </div>
         <span className="supbrowser-supname">{supplierName}</span>
         <div className="cat-foot">
-          <span className="cat-price">€{Math.round(p.price ?? p.eurPerKw)}<small>{t("cat_price_each", lang)}</small></span>
+          <span className="cat-price">€{Math.round(p.price ?? p.eurPerKw).toLocaleString(LOC[lang] || LOC.en)}<small>{t("cat_price_each", lang)}</small></span>
           <button type="button" className={"btn sm " + (isAdded ? "ghost" : "primary")} style={{ marginLeft: "auto" }}
             disabled={isAdded || addPending} onClick={() => onAdd(p)}>
             {isAdded ? t("cat_sup_added", lang) : t("cat_sup_add", lang)}

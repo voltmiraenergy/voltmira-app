@@ -21,6 +21,8 @@ import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
 import { quote, amortizedMonthlyPayment } from "@voltmira/engine";
 import { snapshotEngine } from "../../../../../lib/engineSettings.js";
 import { bomHasBattery } from "../../../../../lib/quoteInput.js";
+import { rateFor } from "../../../../../lib/money.js";
+import { effectiveOfferCurrency } from "../../../../../lib/offerCurrency.js";
 import { findWarrantyInfo } from "../../../../../lib/supplierCatalog.js";
 import { t, normLang } from "../../../../../lib/i18n.js";
 import { logActivity } from "../../../../../lib/activity.js";
@@ -117,6 +119,12 @@ export async function POST(req, props) {
   const financeTerm = Number(E.financeTermYears);
   const hasFinance = financeRate >= 0 && financeTerm > 0;
   const monthlyPayment = hasFinance ? amortizedMonthlyPayment(cost, financeRate, financeTerm) : null;
+  // The page shows money in the OFFER's currency at the rate frozen with it.
+  // The model gets those same figures, already converted: handing it euro
+  // amounts labelled "MDL" made it quote euro numbers as lei.
+  const cur = effectiveOfferCurrency(snap.offerCurrency, co?.currency, snap.market);
+  const fxRate = rateFor(cur, E.fx);
+  const inCur = (eur) => (eur == null ? null : Math.round((Number(eur) || 0) * fxRate));
 
   // Real BOM lines only. NEVER unit_price/cost_price: the installer's purchase
   // cost and margin must not reach the client on any surface.
@@ -141,6 +149,9 @@ export async function POST(req, props) {
       return { number: i + 2, label: String(o.label || "").slice(0, 40), kw, batteryKwh: battKwh,
         priceEur: round(oq.cost), contractValueEur: round(oq.grossCost), year1SavingsEur: round(oq.year1), paybackYears: oq.payback };
     });
+  // what the model reads: the page's own currency, no euro figures to misread
+  const optionShown = (o) => ({ number: o.number, label: o.label, kw: o.kw, batteryKwh: o.batteryKwh,
+    price: inCur(o.priceEur), contractValue: inCur(o.contractValueEur), year1Savings: inCur(o.year1SavingsEur), paybackYears: o.paybackYears });
 
   const context = {
     companyName: co?.name || "",
@@ -155,13 +166,14 @@ export async function POST(req, props) {
       batteryKwh: snap.batt ? (Number(snap.battKwh) || 10) : 0,
     },
     money: {
-      totalCost: cost,
-      contractValue: q.e.grossCost,
-      currency: co?.currency || "EUR",
-      year1Savings: q.e.year1,
+      currency: cur,
+      note: `Every amount in this proposal is in ${cur}, exactly as the page shows it.`,
+      totalCost: inCur(cost),
+      contractValue: inCur(q.e.grossCost),
+      year1Savings: inCur(q.e.year1),
       hasFinance, financeRatePct: hasFinance ? financeRate : null,
       financeTermYears: hasFinance ? financeTerm : null,
-      monthlyPayment,
+      monthlyPayment: inCur(monthlyPayment),
     },
     scenarios: {
       pessimistic: { paybackYears: q.p.payback, roiPct: q.p.roi },
@@ -173,13 +185,13 @@ export async function POST(req, props) {
       yieldPerKwp: snap.yieldOverride || E.baseYield,
       opexPct: E.opexPct, degradationBands: E.bands, inflationBands: E.bands,
     },
-    options,
+    options: options.map(optionShown),
     bom,
   };
 
   if (native) {
     try {
-      return NextResponse.json(await answerNatively({ db, prop, co, lang, preparedBy, ownerId, q, options, context, question, priorTurns }));
+      return NextResponse.json(await answerNatively({ db, prop, co, lang, preparedBy, ownerId, q, options, context, question, priorTurns, cur, inCur, optionShown }));
     } catch (err) {
       console.error("qa assistant failed", err?.status || "", err?.message);
       return NextResponse.json({ answer: fallbackAnswer(lang, preparedBy) });
@@ -189,7 +201,7 @@ export async function POST(req, props) {
 }
 
 /* ------------------------------------------------------------ native ---- */
-async function answerNatively({ db, prop, co, lang, preparedBy, ownerId, q, options, context, question, priorTurns }) {
+async function answerNatively({ db, prop, co, lang, preparedBy, ownerId, q, options, context, question, priorTurns, cur, inCur, optionShown }) {
   const code = prop.code;
   const state = await loadOffers(db, code);
   // Nothing may be agreed that can't be recorded, and nothing after signing.
@@ -201,7 +213,7 @@ async function answerNatively({ db, prop, co, lang, preparedBy, ownerId, q, opti
   const recordedLine = () => {
     const d = current();
     const line = describeRecorded(state, options);
-    return d ? `${line}. With it the client pays €${round(d.costEur)} (contract value €${round(d.grossEur)})` : line;
+    return d ? `${line}. With it the client pays ${inCur(d.costEur)} ${cur} (contract value ${inCur(d.grossEur)} ${cur})` : line;
   };
 
   const { data: proj } = prop.project_id
@@ -227,7 +239,7 @@ async function answerNatively({ db, prop, co, lang, preparedBy, ownerId, q, opti
         text: `The proposal assistant offered <b>${escapeHtml(who)}</b> a ${r.pct}% discount`,
         link,
       });
-      return { ok: true, percent: r.pct, discountEur: fig.discountEur, newPriceEur: fig.costEur, newContractValueEur: fig.grossEur,
+      return { ok: true, percent: r.pct, currency: cur, discount: inCur(fig.discountEur), newPrice: inCur(fig.costEur), newContractValue: inCur(fig.grossEur),
         validDays: OFFER_VALID_DAYS, appliesWhen: "the client accepts the proposal on this page" };
     },
 
@@ -243,7 +255,7 @@ async function answerNatively({ db, prop, co, lang, preparedBy, ownerId, q, opti
         text: `<b>${escapeHtml(who)}</b> chose option ${escapeHtml(o.label || String(o.number))} through the proposal assistant`,
         link,
       });
-      return { ok: true, option: o, appliesWhen: "the client accepts the proposal on this page" };
+      return { ok: true, option: { ...optionShown(o), currency: cur }, appliesWhen: "the client accepts the proposal on this page" };
     },
 
     async escalate_to_human({ reason, summary }) {

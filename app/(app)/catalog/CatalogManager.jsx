@@ -11,6 +11,7 @@ import { useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { addProduct, updateProduct, deleteProduct, seedStarterCatalog } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
+import { localSpec } from "../../../lib/quoteAnalysis.js";
 import SupplierCatalogBrowser from "./SupplierCatalogBrowser.jsx";
 import MyProductDetailModal from "./MyProductDetailModal.jsx";
 import CsvImportPanel from "./CsvImportPanel.jsx";
@@ -110,7 +111,7 @@ const CSS = `
 .cat-inv-qty .input{width:96px}
 .cat-stock{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;font-size:11.5px;font-weight:700;
   border-radius:99px;padding:3px 10px;margin-top:5px;letter-spacing:.01em}
-.cat-stock::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+/* no leading status dot: the tint and the words carry the stock level (same as .chip) */
 .cat-stock.ok{color:#1E6B4E;background:rgba(30,107,78,.10)}
 .cat-stock.low{color:#B26A00;background:rgba(232,155,45,.14)}
 .cat-stock.out{color:#B23B2A;background:rgba(196,84,59,.13)}
@@ -219,7 +220,9 @@ export default function CatalogManager({ initial, lang, market = "MD", committed
   const [reorder, setReorder] = useState(false);
   const [pending, start] = useTransition();
 
-  const fmt = (n) => "€" + (Math.round(Number(n) || 0)).toLocaleString("en-IE");
+  // EUR, grouped the way the installer reads numbers ("€73.760" in Romanian).
+  const fmtLoc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
+  const fmt = (n) => "€" + (Math.round(Number(n) || 0)).toLocaleString(fmtLoc);
 
   // Margin between what you pay and what you list it at. Null when either side
   // is unset — a product with no purchase price yet must not claim 100% margin.
@@ -482,7 +485,7 @@ export default function CatalogManager({ initial, lang, market = "MD", committed
                       <div className="cat-body">
                         {p.brand && <span className="cat-brand">{p.brand}</span>}
                         <span className="cat-name">{p.model || p.brand || t("cat_untitled", lang)}</span>
-                        {p.spec && <span className="cat-spec">{p.spec}</span>}
+                        {p.spec && <span className="cat-spec">{localSpec(p.spec, lang)}</span>}
                         {stockBadge(p)}
                         {/* What you sell and what it leaves you — stock says
                             what's in the warehouse, this says what it earns. */}

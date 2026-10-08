@@ -7,9 +7,10 @@ import { supabaseServer } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
 import { normLang } from "../../../lib/i18n.js";
 import CatalogManager from "./CatalogManager.jsx";
+import { appTitle } from "../../../lib/pageTitle.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Catalog | VoltMira" };
+export const generateMetadata = appTitle("nav_catalog");
 
 export default async function CatalogPage() {
   const sb = await supabaseServer();

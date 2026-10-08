@@ -73,7 +73,7 @@ export default function PaymentsPreview() {
   // `tick` is a real, read dependency (not just the setter, which never
   // changes reference and would silently never invalidate the memo below).
   const [tick, bump] = useState(0);
-  useEffect(() => { document.title = "Payments & cashflow | VoltMira"; }, []);
+  useEffect(() => { document.title = `${tx(TX.title, lang)} | VoltMira`; }, [lang]);
 
   const activeEur = useMemo(() => jobMoneySummary(client).eur, [client]);
   const rows = useMemo(

@@ -262,7 +262,6 @@ const CSS = `
     font-size:12px;font-weight:600;padding:5px 11px;border-radius:99px;
     border:1px solid transparent;cursor:pointer;transition:filter .15s;user-select:none;
   }
-  .chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
   .chip:hover{filter:brightness(.94)}
   .chip.draft{background:var(--paper);border-color:var(--line);color:var(--muted)}
   .chip.sent{background:var(--blue-tint);color:var(--blue)}

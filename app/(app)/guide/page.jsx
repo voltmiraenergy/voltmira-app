@@ -9,9 +9,10 @@ import "../dx.css";
 import { currentCompany } from "../../../lib/session.js";
 import { normLang, t } from "../../../lib/i18n.js";
 import GuideToc from "./GuideToc.jsx";
+import { appTitle } from "../../../lib/pageTitle.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Guide | VoltMira" };
+export const generateMetadata = appTitle("nav_guide");
 
 const CSS = `
 .gx-layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:40px;align-items:start}

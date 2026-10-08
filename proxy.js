@@ -42,7 +42,8 @@ export async function proxy(req) {
     || path.startsWith("/settings") || path.startsWith("/team") || path.startsWith("/leads")
     || path.startsWith("/guide") || path.startsWith("/catalog") || path.startsWith("/profile")
     || path.startsWith("/activity") || path.startsWith("/documents")
-    || path.startsWith("/studio") || path.startsWith("/traction") || path.startsWith("/portfolios");
+    || path.startsWith("/studio") || path.startsWith("/traction") || path.startsWith("/portfolios")
+    || path.startsWith("/energy");
 
   if (!isProtected) return res;
 

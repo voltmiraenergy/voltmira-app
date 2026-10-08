@@ -51,6 +51,8 @@ export async function GET(req, props) {
     });
   } catch (e) {
     console.error("[pdf] generation failed:", e?.message || e);
-    return NextResponse.json({ error: "pdf_failed" }, { status: 500 });
+    // Fall back to the browser's own print view of the same proposal (it opens
+    // the save-as-PDF dialog) rather than a raw JSON error.
+    return NextResponse.redirect(`${new URL(req.url).origin}/p/${code}?print=1`, 303);
   }
 }

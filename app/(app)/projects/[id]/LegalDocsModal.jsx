@@ -31,7 +31,7 @@
 // PDF (lib/racordarePdf.js) and never had this problem.
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { buildServiceContract, buildCommissioningAct } from "../../../../lib/legalDocs.js";
+import { buildServiceContract, buildCommissioningAct, docLocale } from "../../../../lib/legalDocs.js";
 import { t } from "../../../../lib/i18n.js";
 import SingleLineDiagram from "../../../../components/SingleLineDiagram.jsx";
 import { OPERATORS, suggestOperator } from "../../../../lib/mdGrid.js";
@@ -88,6 +88,9 @@ async function downloadCleanPdf(nodeRef, filename, title) {
 
 export default function LegalDocsModal({ lang, onClose, company, project, initialTab = "contract" }) {
   const isMd = project.market === "MD";
+  // the body is written in the language of the market's law (lib/legalDocs.js)
+  const locale = docLocale(project.market);
+  const uk = locale === "uk";
   // initialTab lets the Documents page deep-link straight to one document.
   const [docType, setDocType] = useState(() =>
     ["contract", "commissioning", "diagram"].includes(initialTab) || (initialTab === "racordare" && isMd) ? initialTab : "contract"); // "contract" | "racordare" | "commissioning" | "diagram"
@@ -96,14 +99,14 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
     companyAddress: company.legal_address, companyIban: company.iban,
     clientName: project.clientName, clientAddress: project.address,
     systemKw: project.kw, price: project.price, currency: project.currency || "EUR",
-    templateOverride: company.contract_template_override,
+    templateOverride: company.contract_template_override, locale,
   }));
   const [commissioningText, setCommissioningText] = useState(() => buildCommissioningAct({
     companyLegalName: company.legal_name || company.name, companyRegNo: company.reg_no,
     clientName: project.clientName, clientAddress: project.address,
     systemKw: project.kw, hasBattery: !!project.batt, battKwh: project.battKwh,
     warrantyYears: company.install_warranty_years,
-    templateOverride: company.commissioning_template_override,
+    templateOverride: company.commissioning_template_override, locale,
   }));
 
   // Two operators, two real forms: RED Nord for Bălți and the north, Premier
@@ -152,7 +155,7 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
             <div className="ld-foot">
               <button type="button" className="btn ghost" onClick={onClose}>{t("cat_det_close", lang)}</button>
               <button type="button" className="btn primary" disabled={exporting}
-                onClick={() => handleExport(`contract-servicii-${clientSlug}`, t("ld_tab_contract", lang))}>
+                onClick={() => handleExport(`${uk ? "dogovir-poslug" : "contract-servicii"}-${clientSlug}`, t("ld_tab_contract", lang))}>
                 {exporting ? t("ld_exporting", lang) : t("ld_export", lang)}
               </button>
             </div>
@@ -195,7 +198,7 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
             <div className="ld-foot">
               <button type="button" className="btn ghost" onClick={onClose}>{t("cat_det_close", lang)}</button>
               <button type="button" className="btn primary" disabled={exporting}
-                onClick={() => handleExport(`act-dare-exploatare-${clientSlug}`, t("ld_tab_commissioning", lang))}>
+                onClick={() => handleExport(`${uk ? "akt-vvedennia-v-ekspluatatsiiu" : "act-dare-exploatare"}-${clientSlug}`, t("ld_tab_commissioning", lang))}>
                 {exporting ? t("ld_exporting", lang) : t("ld_export", lang)}
               </button>
             </div>

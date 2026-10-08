@@ -1,12 +1,13 @@
 // app/(app)/dashboard/page.jsx — the installer's command centre. Server
 // component: real data, RLS-scoped.
 //
-// Reads top to bottom, simplest first: where every job stands (seven stage
-// tiles, each a link to that list), what to do next beside who is reading
-// your proposals and the few numbers that matter, then the book itself in one
-// tabbed card (recent quotes, new leads, installs, paperwork, activity), and
-// the installed base. Every number is computed from rows the app already
-// stores; nothing on this page is illustrative.
+// Reads top to bottom, simplest first: four numbers that matter (each a link
+// to its list), then what needs doing, most urgent first, every row with the
+// button that fixes it, beside the jobs by phase (tap a phase for its jobs and
+// their next steps) and who is reading your proposals; then the book in one
+// tabbed card (recent quotes, new leads, installs, paperwork, activity, and
+// the full numbers), and the installed base. Every number is computed from
+// rows the app already stores; nothing on this page is illustrative.
 import "../dx.css";
 import "./dashboard.css";
 import { Fragment } from "react";
@@ -28,7 +29,11 @@ import { systemRatio } from "../../../lib/yieldCalibration.js";
 import { relTime } from "../../../lib/relTime.js";
 import { paperworkFor } from "../../../lib/paperwork.js";
 import { buildMoves, flowStages, INSTALL_STEPS, LIVE_WINDOW_MIN } from "../../../lib/dashboardMoves.js";
+import { workflowsFor, pipelineSummary, periodCompare, PHASES, PHASE } from "../../../lib/workflow.js";
+import { wt, describe, stageName } from "../../../lib/workflowText.js";
 import NextMoves from "./NextMoves.jsx";
+import Phases from "./Phases.jsx";
+import Numbers from "./Numbers.jsx";
 import CommandPalette from "./CommandPalette.jsx";
 import InstallBoard from "./InstallBoard.jsx";
 import DashTabs from "./DashTabs.jsx";
@@ -75,9 +80,10 @@ const BOLT = <path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H13L13 2z" />;
 const FIRE = <path d="M12 22c4.4 0 7-2.8 7-6.6C19 10 14.5 7.6 13.6 2c-.3 3.4-2 5-3.8 6.8C8 10.6 5 12.4 5 15.7 5 19.3 7.6 22 12 22Z" />;
 const EYE = <><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></>;
 const LINK = <><path d="M10 14a5 5 0 0 0 7.1 0l3-3a5 5 0 0 0-7.1-7.1L11.5 5.4" /><path d="M14 10a5 5 0 0 0-7.1 0l-3 3a5 5 0 0 0 7.1 7.1l1.5-1.5" /></>;
+const BANK = <><path d="M3 10 12 4l9 6H3Z" /><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" /></>;
 const COG = <><circle cx="12" cy="12" r="3.2" /><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-1.7-1l-.4-2.5H9l-.4 2.5a7 7 0 0 0-1.7 1l-2.3-.9-2 3.4 2 1.5a7.6 7.6 0 0 0 0 2l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.3.9 2-3.4-2-1.5Z" /></>;
 function feedIcon(kind) {
-  const map = { won: ["", BOLT], lead: ["amber", FIRE], open: ["blue", EYE], quote: ["blue", LINK], proposal: ["blue", LINK], sys: ["", COG] };
+  const map = { won: ["", BOLT], lead: ["amber", FIRE], open: ["blue", EYE], quote: ["blue", LINK], proposal: ["blue", LINK], bank: ["", BANK], sys: ["", COG] };
   const [cls, path] = map[kind] || map.sys;
   return { cls, svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{path}</svg> };
 }
@@ -90,7 +96,9 @@ function localHour() {
 export default async function Dashboard() {
   const sb = await supabaseServer();
   const since24h = new Date(Date.now() - 864e5).toISOString();
-  const [co, actor, { data: projects }, { data: leads }, { data: acts }, stats, { data: events }, readingsRes] = await Promise.all([
+  const since48h = new Date(Date.now() - 2 * 864e5).toISOString();
+  const [co, actor, { data: projects }, { data: leads }, { data: acts }, stats, { data: events }, readingsRes,
+    linkedRes, portfoliosRes, opensRes] = await Promise.all([
     currentCompany(),
     currentActor(),
     // No limit: every KPI here is a whole-book figure (see /projects).
@@ -106,6 +114,16 @@ export default async function Dashboard() {
     sb.from("proposal_events").select("code, kind, created_at")
       .gte("created_at", since24h).order("created_at", { ascending: false }).limit(500),
     sb.from("production_readings").select("project_id, month, kwh"),
+    // The lead each quote came from (site visit, first contact, phone), for
+    // the workflow and the time-to-quote figure. select("*") so a workspace
+    // that has not added visit_at yet still reads.
+    sb.from("leads").select("*").not("project_id", "is", null).limit(1000),
+    // Which quotes already sit in a lender portfolio; absent table = none.
+    sb.from("portfolios").select("id, name, market, project_ids"),
+    // Opens only (heartbeats would crowd them out of the 24 h feed above):
+    // "opened 4 times in the last 2 days" is a call to make now.
+    sb.from("proposal_events").select("code, created_at").eq("kind", "open")
+      .gte("created_at", since48h).limit(1000),
   ]);
 
   const E = await companyEngine(co);
@@ -136,9 +154,10 @@ export default async function Dashboard() {
     // Only quotes that went out; a quote that never pays back counts at the horizon.
     if (r.status === "sent" || r.status === "won") { pbSum += (q.payback === null ? q.horizon : q.payback); pbN++; }
   }
-  const winRate = (won + lost) ? Math.round(won / (won + lost) * 100) + "%" : "—";
+  const NONE = "-";
+  const winRate = (won + lost) ? Math.round(won / (won + lost) * 100) + "%" : NONE;
   const avgPbVal = pbN ? pbSum / pbN : null;
-  const avgPb = avgPbVal === null ? "—" : (avgPbVal >= E.horizon ? `${E.horizon}+` : avgPbVal.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })) + " " + t("yrs", lang);
+  const avgPb = avgPbVal === null ? NONE : (avgPbVal >= E.horizon ? `${E.horizon}+` : avgPbVal.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })) + " " + t("yrs", lang);
   const yrsF = (p) => p === null ? "25+" : p === 0 ? "now" : p.toFixed(1);
   const avgDeal = won ? wonValueSum / won : null;
 
@@ -202,17 +221,70 @@ export default async function Dashboard() {
     ratio: baseExpected > 0 ? Math.round((baseActual / baseExpected) * 100) : null,
   };
 
+  // ---------- the planned line: every quote and open lead on it ----------
+  const recentOpens = new Map();
+  for (const e of opensRes?.error ? [] : (opensRes?.data || [])) {
+    const pid = codeToProject.get(e.code);
+    if (pid) recentOpens.set(pid, (recentOpens.get(pid) || 0) + 1);
+  }
+  const linkedLeads = linkedRes?.error ? [] : (linkedRes?.data || []);
+  const wfMap = workflowsFor({
+    projects: list, stats, leads: [...leadList, ...linkedLeads], readingsBy: new Set(readingsBy.keys()),
+    portfolios: portfoliosRes?.error ? [] : (portfoliosRes?.data || []), recentOpens, now, todayKey,
+  });
+  const pipe = pipelineSummary(wfMap.values(), gross);
+  const period = periodCompare({ projects: list, stats, leads: linkedLeads, value: gross, now });
+
+  // ---------- jobs by phase: each phase's jobs, most urgent first ----------
+  const PH_HREF = { sell: "/projects?status=sent", close: "/projects?stage=signed", build: "/projects?status=won", run: "/projects?stage=live" };
+  const PH_SHOW = 6;
+  const leadById = new Map(leadList.map((l) => [l.id, l]));
+  const onLine = [...wfMap.values()].filter((w) => w && !w.lost && PHASE[w.stage]);
+  const phaseData = PHASES.map((ph) => {
+    const items = onLine.filter((w) => PHASE[w.stage] === ph)
+      .sort((a, b) => (b.stuck - a.stuck) || (b.gap - a.gap) || ((b.idle ?? -1) - (a.idle ?? -1)));
+    const value = items.reduce((s, w) => s + (w.kind === "project" ? gross.get(w.id) || 0 : 0), 0);
+    const stuckN = items.filter((w) => w.stuck).length;
+    const jobs = items.slice(0, PH_SHOW).map((w) => {
+      const d = describe(w, lang, now);
+      const lead = w.kind === "lead" ? leadById.get(w.id) : null;
+      const r = w.kind === "project" ? byId.get(w.id) : null;
+      const actions = [];
+      if (w.next?.act) actions.push({ ...w.next.act, label: d.next });
+      if (w.next?.alt && d.alt) actions.push({ ...w.next.alt, label: d.alt });
+      return {
+        key: w.kind + ":" + w.id,
+        title: lead ? lead.name || t("untitled", lang) : r?.title || t("untitled", lang),
+        sub: lead ? lead.phone || lead.email || "" : r?.client_name || "",
+        href: lead ? w.next?.href || "/leads" : `/projects/${w.id}#workflow`,
+        stage: d.stage, stuck: !!w.stuck, when: w.stuck ? d.stuckShort : d.days,
+        actions,
+      };
+    });
+    return {
+      id: ph, label: wt("ph_" + ph, lang), n: items.length, nLabel: wt("pp_jobs", lang, { n: items.length }),
+      value: value > 0 ? fmt.compact(value) : "", stuck: stuckN, stuckLabel: wt("at_stuck", lang, { n: stuckN }), jobs,
+      more: items.length > PH_SHOW ? { href: PH_HREF[ph], label: wt("ph_more", lang, { n: items.length }) } : null,
+    };
+  });
+  const lenderLine = pipe.lender.packable.n > 0
+    ? { line: wt("pp_lender_line", lang, { n: pipe.lender.packable.n, v: fmt.compact(pipe.lender.packable.value) }), cta: wt("pp_lender_cta", lang) }
+    : null;
+  const actLabels = { copied: wt("rl_copied", lang), failed: wt("rl_failed", lang), invPick: wt("rl_inv_pick", lang), invFull: wt("rl_inv_full", lang) };
+
   // ---------- next moves ----------
   const when = (iso) => relTime(iso, locale, now);
   const dur = (n, unit = "day") => new Intl.NumberFormat(locale, { style: "unit", unit, unitDisplay: "long" }).format(n);
   const moves = buildMoves({
-    projects: list, stats, leads: leadList, lastEvent, health, now, todayKey,
+    projects: list, stats, leads: leadList, lastEvent, health, recentOpens, wf: wfMap, now, todayKey,
     f: {
-      tr: (k, v) => t(k, lang, v),
+      // "wf:" keys are the workflow's own words (lib/workflowText.js)
+      tr: (k, v) => (k.startsWith("wf:") ? wt(k.slice(3), lang, v) : t(k, lang, v)),
       when, dur,
       date: (iso) => fmtDate(iso, locale, { day: "numeric", month: "long" }),
       month: (d) => d.toLocaleDateString(locale, { month: "long", year: "numeric", timeZone: "UTC" }),
       step: (k) => t("inst_" + k, lang),
+      stage: (id, market) => stageName(id, lang, market, true),
       grid: (k) => t("gf_stage_" + k, lang),
       channel: (l) => t("lead_ch_" + leadChannel(l), lang),
       day: mdDayKey,
@@ -226,17 +298,26 @@ export default async function Dashboard() {
     },
   }).map((m) => ({ ...m, ago: m.at ? ago(m.at, lang) : "" }));
 
-  // ---------- lead-to-live line ----------
-  const { stages, openRate } = flowStages({ projects: list, stats, leads: leadList, gross });
-  const kfmt = (n) => (n > 0 ? fmt.compact(n) : "");
-  const flow = [
-    { k: "leads", href: "/leads", n: stages.leads.n, sub: stages.leads.hot ? t("dx_st_hot", lang, { n: stages.leads.hot }) : "" },
-    { k: "drafts", href: "/projects?status=draft", n: stages.drafts.n, eur: stages.drafts.eur },
-    { k: "sent", href: "/projects?status=sent", n: stages.sent.n, eur: stages.sent.eur, sub: stages.sent.n ? t("dx_st_unopened", lang) : "" },
-    { k: "opened", href: "/projects?status=sent", n: stages.opened.n, eur: stages.opened.eur, sub: stages.opened.engaged ? t("dx_st_engaged", lang, { n: stages.opened.engaged }) : "" },
-    { k: "won", href: "/projects?status=won", n: stages.won.n, eur: stages.won.eur, sub: stages.won.n ? t("dx_st_waiting", lang) : "" },
-    { k: "installing", href: "/projects?status=won", n: stages.installing.n, eur: stages.installing.eur, sub: stages.installing.stepsLeft ? t("dx_st_steps", lang, { n: stages.installing.stepsLeft }) : "" },
-    { k: "live", href: "/projects?status=won", n: stages.live.n, sub: stages.live.kw ? t("dx_st_kwp", lang, { kw: +stages.live.kw.toFixed(1) }) : "" },
+  // ---------- open rate (the stage counts now come from the planned line) ----------
+  const { openRate } = flowStages({ projects: list, stats, leads: leadList, gross });
+
+  // ---------- the four numbers on top ----------
+  const activeJobs = list.filter((r) => r.status === "won" && !isLive(r));
+  const activeValue = activeJobs.reduce((sum, r) => sum + (gross.get(r.id) || 0), 0);
+  const unbilled = pipe.money.unbilled;
+  const kpis = [
+    { id: "out", label: t("dx_k_out", lang), value: fmt(pipeline), sub: t("dx_v_out", lang, { n: sentN }), href: "/projects?status=sent" },
+    { id: "win", label: t("kpi_winrate", lang), value: winRate, sub: t("dx_v_record", lang, { w: won, l: lost }), href: "/projects?status=won" },
+    { id: "jobs", label: wt("k_active", lang), value: fmt(activeValue), sub: wt("k_active_s", lang, { n: activeJobs.length }), href: "/projects?status=won" },
+    { id: "bill", label: wt("k_unbilled", lang), value: fmt(unbilled.value), sub: unbilled.n ? wt("k_unbilled_s", lang, { n: unbilled.n }) : wt("k_unbilled_0", lang), href: "/projects?view=unbilled" },
+  ];
+  const vitals = [
+    { label: t("dx_k_out", lang), sub: t("dx_v_out", lang, { n: sentN }), value: fmt(pipeline) },
+    { label: t("dx_k_open", lang), sub: t("dx_k_open_s", lang), value: openRate != null ? openRate + "%" : NONE },
+    { label: t("kpi_winrate", lang), sub: t("dx_v_record", lang, { w: won, l: lost }), value: winRate },
+    { label: t("kpi_avgclose", lang), sub: t("dx_v_close", lang), value: avgClose === null ? NONE : avgClose + " " + t("days", lang) },
+    { label: t("kpi_payback", lang), sub: t("dx_v_pb", lang), value: avgPb },
+    { label: t("kpi_avgdeal", lang), sub: t("dx_v_deals", lang), value: avgDeal === null ? NONE : fmt(avgDeal) },
   ];
 
   // ---------- header ----------
@@ -315,41 +396,40 @@ export default async function Dashboard() {
 
       {/* A new account lands on this same page: every card below has its own
           empty state (the first-run overlay was retired on purpose). */}
-      {/* ---------------- where every job stands: one tile per stage ---------------- */}
-      <section className="dx-card dx-flow" aria-labelledby="dx-flow-h">
-        <header className="dx-card-head">
-          <div><h2 id="dx-flow-h">{t("dx_flow_title", lang)}</h2><p>{t("dx_flow_sub", lang)}</p></div>
-        </header>
-        <ol className="dx-stages">
-          {flow.map((s) => (
-            <li key={s.k} className={"dx-st s-" + s.k + (s.n ? "" : " zero")}>
-              <Link href={s.href}>
-                <span className="dx-st-lbl">{t("dx_st_" + s.k, lang)}</span>
-                <b className="dx-st-n">{s.n}</b>
-                <span className="dx-st-eur">{s.eur ? kfmt(s.eur) : "\u00a0"}</span>
-                <span className="dx-st-sub">{s.n ? s.sub || "\u00a0" : t("dx_st_idle", lang)}</span>
-              </Link>
-            </li>
-          ))}
-        </ol>
+      {/* ---------------- four numbers, each a link to its list ---------------- */}
+      <section className="dx-kpis" aria-label={t("dx_vitals", lang)}>
+        {kpis.map((k) => (
+          <Link key={k.id} href={k.href} className={"dx-kpi k-" + k.id}>
+            <span className="dx-kpi-l">{k.label}</span>
+            <b className="dx-kpi-v">{k.value}</b>
+            <small className="dx-kpi-s">{k.sub}</small>
+          </Link>
+        ))}
       </section>
 
-      {/* ---------------- what to do next, beside who is reading and the numbers ---------------- */}
+      {/* ---------------- what needs doing, beside the jobs by phase and who is reading ---------------- */}
       <div className="dx-grid dx-grid-main">
         <NextMoves
           moves={moves}
           todayKey={todayKey}
+          stuck={{ n: pipe.stuck.n, label: wt("at_stuck", lang, { n: pipe.stuck.n }) }}
           labels={{
-            title: t("dx_moves_title", lang), sub: t("dx_moves_sub", lang),
-            tabs: { all: t("dx_tab_all", lang), sales: t("dx_tab_sales", lang), leads: t("dx_tab_leads", lang), jobs: t("dx_tab_jobs", lang), systems: t("dx_tab_systems", lang) },
-            kinds: Object.fromEntries(["live", "hot", "followup", "lead", "visit", "visit_done", "won_start", "install", "invoice", "grid", "unopened", "quiet", "draft", "health", "nodata"].map((k) => [k, t("dx_kind_" + k, lang)])),
+            title: wt("at_title", lang), sub: wt("at_sub", lang),
+            kinds: {
+              ...Object.fromEntries(["live", "hot", "followup", "lead", "visit", "visit_done", "won_start", "install", "invoice", "grid", "unopened", "quiet", "draft", "health", "nodata"].map((k) => [k, t("dx_kind_" + k, lang)])),
+              unmonitored: wt("mv_kind_unmonitored", lang), gap: wt("mv_kind_gap", lang),
+            },
             hot: t("hot", lang), done: t("dx_act_done", lang),
-            more: t("dx_moves_more", lang), less: t("dx_moves_less", lang),
+            more: wt("at_all", lang), less: wt("at_less", lang),
             hidden: t("dx_moves_hidden", lang), restore: t("dx_moves_restore", lang),
             emptyT: t("dx_moves_empty_t", lang), emptyS: t("dx_moves_empty_s", lang),
+            acts: actLabels,
           }} />
 
         <div className="dx-stack">
+          <Phases phases={phaseData} lender={lenderLine}
+            labels={{ title: wt("ph_title", lang), sub: wt("ph_sub", lang), empty: wt("ph_empty", lang), acts: actLabels }} />
+
           <section className="dx-card dx-pulse" aria-labelledby="dx-pulse-h">
             <header className="dx-card-head">
               <div>
@@ -375,18 +455,6 @@ export default async function Dashboard() {
             ) : (
               <p className="dx-muted-note">{t("dx_pulse_empty", lang)}</p>
             )}
-          </section>
-
-          <section className="dx-card dx-vitals" aria-labelledby="dx-vitals-h">
-            <header className="dx-card-head"><div><h2 id="dx-vitals-h">{t("dx_vitals", lang)}</h2></div></header>
-            <dl className="dx-vlist">
-              <div><dt>{t("dx_k_out", lang)}<small>{t("dx_v_out", lang, { n: sentN })}</small></dt><dd>{fmt(pipeline)}</dd></div>
-              <div><dt>{t("dx_k_open", lang)}<small>{t("dx_k_open_s", lang)}</small></dt><dd>{openRate != null ? openRate + "%" : "—"}</dd></div>
-              <div><dt>{t("kpi_winrate", lang)}<small>{t("dx_v_record", lang, { w: won, l: lost })}</small></dt><dd>{winRate}</dd></div>
-              <div><dt>{t("kpi_avgclose", lang)}<small>{t("dx_v_close", lang)}</small></dt><dd>{avgClose === null ? "—" : avgClose + " " + t("days", lang)}</dd></div>
-              <div><dt>{t("kpi_payback", lang)}<small>{t("dx_v_pb", lang)}</small></dt><dd>{avgPb}</dd></div>
-              <div><dt>{t("kpi_avgdeal", lang)}<small>{t("dx_v_deals", lang)}</small></dt><dd>{avgDeal === null ? "—" : fmt(avgDeal)}</dd></div>
-            </dl>
           </section>
         </div>
       </div>
@@ -415,7 +483,7 @@ export default async function Dashboard() {
                           <Avatar name={p.title || p.client_name} size={34} title={p.title || t("untitled", lang)} />
                           <div className="row-id-tx">
                             <Link className="t-title" href={`/projects/${p.id}`}>{p.title || t("untitled", lang)}</Link>
-                            <div className="t-sub">{p.client_name || "—"}</div>
+                            <div className="t-sub">{p.client_name || ""}</div>
                           </div>
                         </div>
                       </td>
@@ -497,6 +565,10 @@ export default async function Dashboard() {
           ) : (
             <div className="dx-empty"><b>{t("doc_dash_clear", lang)}</b></div>
           ),
+        },
+        {
+          id: "numbers", label: wt("tab_numbers", lang),
+          content: <Numbers vitals={vitals} vitalsTitle={t("dx_vitals", lang)} period={period} lang={lang} fmt={fmt} />,
         },
         {
           id: "activity", label: t("activity", lang), href: "/activity", linkLabel: t("act_view_all", lang),

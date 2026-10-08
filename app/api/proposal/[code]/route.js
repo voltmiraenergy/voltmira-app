@@ -18,6 +18,7 @@ import { quote } from "@voltmira/engine";
 import { snapshotEngine } from "../../../../lib/engineSettings.js";
 import { bomHasBattery } from "../../../../lib/quoteInput.js";
 import { loadOffers, offerFigures, acceptOffers } from "../../../../lib/proposalOffers.js";
+import { effectiveOfferCurrency } from "../../../../lib/offerCurrency.js";
 
 /** One email per proposal per this window, no matter how many opens. */
 const NOTIFY_THROTTLE_MS = 4 * 60 * 60 * 1000;
@@ -41,7 +42,7 @@ async function notifyProposalOpened(db, prop) {
     if (!claimed) return; // someone was notified within the window already
 
     const [{ data: co }, { data: proj }, { data: owner }] = await Promise.all([
-      db.from("companies").select("notify_open").eq("id", prop.company_id).single(),
+      db.from("companies").select("notify_open, lang").eq("id", prop.company_id).single(),
       db.from("projects").select("title, client_name").eq("id", prop.project_id).single(),
       db.from("profiles").select("email").eq("company_id", prop.company_id)
         .eq("role", "owner").not("email", "eq", "").limit(1).single(),
@@ -55,6 +56,7 @@ async function notifyProposalOpened(db, prop) {
       opens: claimed.opens,
       seconds: claimed.seconds,
       appUrl: process.env.NEXT_PUBLIC_APP_URL,
+      lang: co.lang,
     });
     await sendEmail({ to: owner.email, subject, html });
   } catch (err) {
@@ -142,7 +144,11 @@ export async function GET(req, props) {
     sentAt: prop.created_at,   // when the link was created, drives "valid until"
     // lang drives the client-facing proposal copy — the client reads it in the
     // installer's chosen language, not always English.
-    company: { name: co?.name, shortName: co?.short_name, logoUrl: co?.logo_url, currency: co?.currency, lang: co?.lang, plan: co?.plan || "free", wonCount: wonCount || 0, installWarrantyYears: co?.install_warranty_years || null },
+    // currency is the OFFER's, frozen in the snapshot (hryvnia for a client in
+    // Ukraine even when the workspace is in lei); a proposal sent before the
+    // snapshot carried one keeps the workspace's, as it always showed. The
+    // page, its PDF and the emailed copy all format money with this.
+    company: { name: co?.name, shortName: co?.short_name, logoUrl: co?.logo_url, currency: effectiveOfferCurrency(prop.snapshot?.offerCurrency, co?.currency, prop.snapshot?.market), lang: co?.lang, plan: co?.plan || "free", wonCount: wonCount || 0, installWarrantyYears: co?.install_warranty_years || null },
     preparedBy,
     // the exchange rates frozen with the proposal, so a client in Moldova reads
     // the same lei figure on every visit (lib/money.js)

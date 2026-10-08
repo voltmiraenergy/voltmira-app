@@ -17,10 +17,14 @@
 // VoltMira's own app shell.
 import { useState } from "react";
 import { t } from "../../lib/i18n.js";
-import { formatMoney } from "@voltmira/engine";
+import { moneyFormatter, numFor } from "../../lib/money.js";
 import { Check } from "lucide-react";
 
 const CURRENCY_BY_MARKET = { RO: "RON", MD: "MDL" };
+// Same units the proposal uses (app/p/[code]/text.js), so the estimate and the
+// offer that follows it read alike.
+const KW_UNIT = { ru: "кВт", uk: "кВт" };
+const KWH_UNIT = { ru: "кВт·ч", uk: "кВт·год" };
 const ERROR_KEY = { no_address: "wg_err_no_address", not_found: "wg_err_not_found", rate: "wg_err_rate", upstream: "wg_err_upstream" };
 
 export default function WidgetForm({ companyId, lang, market = "MD" }) {
@@ -87,7 +91,10 @@ export default function WidgetForm({ companyId, lang, market = "MD" }) {
     </div>
   );
 
-  const pbYears = (n) => (n == null ? "25+" : n.toFixed(1));
+  // Numbers the way the homeowner writes them ("5,8 ani", "62.370 lei"), the
+  // same formatter the proposal uses, not the engine's English toFixed().
+  const num = numFor(lang);
+  const pbYears = (n) => (n == null ? "25+" : num(n, 1));
 
   return (
     <div>
@@ -96,9 +103,9 @@ export default function WidgetForm({ companyId, lang, market = "MD" }) {
 
       {!result ? (
         <form onSubmit={calculate}>
-          <input style={input} placeholder={t("wg_addr_ph", lang)} value={address}
+          <input style={input} placeholder={t("wg_addr_ph", lang)} aria-label={t("wg_addr", lang)} value={address}
             onChange={(e) => setAddress(e.target.value)} required />
-          <input style={input} placeholder={t("wg_bill", lang, { cur: currency })} type="number" min="0"
+          <input style={input} placeholder={t("wg_bill", lang, { cur: currency })} aria-label={t("wg_bill", lang, { cur: currency })} type="number" min="0"
             value={bill} onChange={(e) => setBill(e.target.value)} />
           {calcErr && <p style={{ color: "#C4543B", fontSize: 13 }}>{calcErr}</p>}
           <button type="submit" disabled={calcBusy} style={{ width: "100%", padding: 13, borderRadius: 10, border: "none",
@@ -119,9 +126,9 @@ export default function WidgetForm({ companyId, lang, market = "MD" }) {
           )}
 
           <div style={{ border: "1px solid #E3E1D6", borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
-            <Row label={t("wg_res_kw", lang)} value={`${result.recommendedKw.toFixed(1)} kW`} />
-            <Row label={t("wg_res_prod", lang)} value={`${Math.round(result.prodKwh).toLocaleString(loc)} kWh`} />
-            <Row label={t("wg_res_price", lang)} value={formatMoney(result.cost.eur, result.currency)} />
+            <Row label={t("wg_res_kw", lang)} value={`${num(result.recommendedKw, 1)} ${KW_UNIT[lang] || "kW"}`} />
+            <Row label={t("wg_res_prod", lang)} value={`${Math.round(result.prodKwh).toLocaleString(loc)} ${KWH_UNIT[lang] || "kWh"}`} />
+            <Row label={t("wg_res_price", lang)} value={moneyFormatter({ currency: result.currency, lang })(result.cost.eur)} />
             <Row label={t("wg_res_payback", lang)}
               value={`${pbYears(result.payback.opti)}–${pbYears(result.payback.pess)} ${t("years_w", lang)}`} />
           </div>
@@ -129,10 +136,10 @@ export default function WidgetForm({ companyId, lang, market = "MD" }) {
 
           <form onSubmit={send} style={{ background: "#E4EFE9", borderRadius: 12, padding: 16 }}>
             <div style={{ fontSize: 13.5, fontWeight: 700, color: "#142A21", marginBottom: 10 }}>{t("wg_cta_title", lang)}</div>
-            <input style={input} placeholder={t("wg_name", lang)} value={f.name} onChange={set("name")} required />
-            <input style={input} placeholder={t("wg_email", lang)} type="email" value={f.email} onChange={set("email")} />
-            <input style={input} placeholder={t("wg_phone", lang)} type="tel" value={f.phone} onChange={set("phone")} />
-            <textarea style={{ ...input, minHeight: 54 }} placeholder={t("wg_msg", lang)} value={f.message} onChange={set("message")} />
+            <input style={input} placeholder={t("wg_name", lang)} aria-label={t("wg_name", lang)} value={f.name} onChange={set("name")} required />
+            <input style={input} placeholder={t("wg_email", lang)} aria-label={t("wg_email", lang)} type="email" value={f.email} onChange={set("email")} />
+            <input style={input} placeholder={t("wg_phone", lang)} aria-label={t("wg_phone", lang)} type="tel" value={f.phone} onChange={set("phone")} />
+            <textarea style={{ ...input, minHeight: 54 }} placeholder={t("wg_msg", lang)} aria-label={t("wg_msg", lang)} value={f.message} onChange={set("message")} />
             {/* honeypot — bots fill it, humans never see it */}
             <input style={{ position: "absolute", left: -9999 }} tabIndex={-1} autoComplete="off"
                    value={f.website} onChange={set("website")} placeholder="website" />

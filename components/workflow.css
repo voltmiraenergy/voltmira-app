@@ -1,0 +1,123 @@
+/* components/workflow.css: the workflow rail and the add-to-portfolio card on
+ * a quote (components/WorkflowRail.jsx, components/AddToPortfolio.jsx). Uses
+ * the app tokens from app/(app)/AppTheme.jsx; the `.app` prefix keeps these
+ * rules above AppTheme's reset, which loads after this file. */
+
+.app .wfr, .app .wfp {
+  --wf-amber-ink: #B4700F;
+  --wf-soft: color-mix(in srgb, var(--ink) 78%, var(--paper-2));
+}
+html[data-theme="dark"] .app .wfr, html[data-theme="dark"] .app .wfp { --wf-amber-ink: #EBA542; }
+.app .wfr .sr, .app .wfp .sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ---------------------------------------------------------------- the rail */
+.app .wfr { display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 80px; }
+.app .wfr-head { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; }
+.app .wfr-head h3 { margin: 0; font-size: 16px; }
+.app .wfr-count { font-size: 12px; font-weight: 650; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app .wfr-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.app .wfr-badge {
+  display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 99px;
+  font-size: 11.5px; font-weight: 650; line-height: 1.4; white-space: nowrap; text-decoration: none;
+}
+.app .wfr-badge.ready { background: var(--green-tint); color: var(--green); }
+.app .wfr-badge.pf { background: var(--blue-tint); color: var(--blue); }
+.app a.wfr-badge.pf:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+/* the line: one tappable step per stage, its segment coloured by state and
+   its short name under it. The open step is underlined in ink. */
+.app .wfr-track { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.app .wfr-track > li { min-width: 0; display: flex; }
+.app .wfr-step {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; align-items: stretch;
+  padding: 6px 2px 7px; margin: -6px -2px -7px; border-radius: 8px; background: none; border: 0;
+  text-align: left; cursor: pointer; color: inherit; font: inherit;
+  transition: background .15s;
+}
+.app .wfr-step:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.app .wfr-step:focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
+.app .wfr-seg { display: block; height: 8px; border-radius: 99px; background: var(--line); transition: transform .15s; }
+.app .wfr-step.done .wfr-seg { background: var(--green); }
+.app .wfr-step.current .wfr-seg { background: var(--amber-tint); box-shadow: inset 0 0 0 1.5px var(--amber); }
+.app .wfr-step.gap .wfr-seg { background: var(--red-tint); box-shadow: inset 0 0 0 1.5px var(--red); }
+.app .wfr-step.skipped .wfr-seg { background: repeating-linear-gradient(90deg, var(--line) 0 4px, transparent 4px 7px); }
+.app .wfr-step.todo.opt .wfr-seg { opacity: .55; }
+.app .wfr-step.on .wfr-seg { transform: scaleY(1.35); }
+.app .wfr-lbl {
+  font-size: 10.5px; line-height: 1.25; color: var(--muted); min-width: 0; padding-bottom: 3px;
+  overflow: hidden; text-overflow: ellipsis; overflow-wrap: anywhere; border-bottom: 2px solid transparent;
+}
+.app .wfr-step.current .wfr-lbl, .app .wfr-step.gap .wfr-lbl { color: var(--ink); font-weight: 650; }
+.app .wfr-step.gap .wfr-lbl { color: var(--red); }
+.app .wfr-step.done .wfr-lbl { color: var(--wf-soft); }
+.app .wfr-step.on .wfr-lbl { color: var(--ink); font-weight: 700; border-bottom-color: var(--ink); }
+
+/* what to do now */
+.app .wfr-now {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px 18px; flex-wrap: wrap;
+  padding: 12px 14px; border-radius: 12px; background: var(--paper); border: 1px solid var(--line);
+}
+.app .wfr-now.stuck { border-color: color-mix(in srgb, var(--amber) 55%, var(--line)); }
+.app .wfr-now.gap { border-color: color-mix(in srgb, var(--red) 45%, var(--line)); background: color-mix(in srgb, var(--red-tint) 45%, var(--paper)); }
+.app .wfr-undo-h { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+.app .wfr-back {
+  background: none !important; border: 0 !important; color: var(--green) !important; font-weight: 600;
+  padding: 0 4px; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
+}
+.app .wfr-hint { margin: -2px 0 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
+.app .wfr-now-tx { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.app .wfr-stage { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.app .wfr-why { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink); }
+.app .wfr-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.app .wfr-meta span {
+  font-size: 11.5px; font-weight: 600; color: var(--muted); padding: 2px 8px; border-radius: 99px;
+  background: var(--paper-2); border: 1px solid var(--line); white-space: nowrap;
+}
+.app .wfr-meta span.w-client, .app .wfr-meta span.w-operator { color: var(--blue); border-color: color-mix(in srgb, var(--blue) 35%, var(--line)); }
+.app .wfr-stuck { margin: 4px 0 0; font-size: 12.5px; font-weight: 600; color: var(--wf-amber-ink); line-height: 1.45; }
+.app .wfr-acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.app .wfr-acts .btn { white-space: nowrap; }
+.app .wfr-acts .btn[aria-busy="true"] { cursor: progress; opacity: .7; }
+.app .wfr-done { margin: 0; font-size: 13.5px; color: var(--muted); }
+
+.app .wfr-inv { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.app .wfr-inv b { color: var(--ink); font-weight: 600; margin-right: 2px; }
+.app .wfr-msg { margin: 0; font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
+.app .wfr-msg.ok { color: var(--green); }
+.app .wfr-msg.bad { color: var(--red); }
+.app .wfr-skel { height: 64px; border-radius: 12px; background: var(--paper); border: 1px solid var(--line); }
+
+@media (max-width: 760px) {
+  /* twelve labels do not fit a phone: the panel names the step that is open,
+     and each step keeps a tall enough target to tap */
+  .app .wfr-lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .app .wfr-step { padding: 12px 1px; margin: -12px -1px; }
+  .app .wfr-step.on .wfr-seg { transform: scaleY(1.6); box-shadow: 0 0 0 2px var(--paper-2), 0 0 0 3.5px var(--ink); }
+  .app .wfr-now { padding: 11px 12px; }
+  .app .wfr-acts { width: 100%; }
+  .app .wfr-acts .btn { flex: 1 1 auto; justify-content: center; }
+}
+
+/* ---------------------------------------------------------------- add to a portfolio */
+.app .wfp { display: flex; flex-direction: column; gap: 10px; scroll-margin-top: 80px; }
+.app .wfp h3 { margin: 0; font-size: 16px; }
+.app .wfp-sub { margin: -4px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.app .wfp-note { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.app .wfp-in { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.app .wfp-in li {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap;
+  padding: 9px 12px; border-radius: 10px; background: var(--blue-tint); color: var(--ink); font-size: 13.5px;
+}
+.app .wfp-in li b { font-weight: 650; overflow-wrap: anywhere; }
+.app .wfp-in a { font-size: 12.5px; font-weight: 600; color: var(--blue); white-space: nowrap; }
+.app .wfp-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.app .wfp-row .field { flex: 1 1 200px; min-width: 0; margin: 0; }
+.app .wfp-row label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+.app .wfp-row .input { width: 100%; }
+.app .wfp-msg { margin: 0; font-size: 13px; line-height: 1.45; }
+.app .wfp-msg.ok { color: var(--green); }
+.app .wfp-msg.bad { color: var(--red); }
+.app .wfp-msg a { margin-left: 6px; font-weight: 600; color: inherit; text-decoration: underline; text-underline-offset: 2px; }

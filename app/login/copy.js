@@ -85,7 +85,7 @@ export const COPY = {
     company: "Numele firmei",
     company_ph: "SolarTech SRL",
     email: "E-mail de serviciu",
-    email_ph: "tu@firma.ro",
+    email_ph: "tu@firma.md",
     password: "Parolă",
     show: "Arată",
     hide: "Ascunde",

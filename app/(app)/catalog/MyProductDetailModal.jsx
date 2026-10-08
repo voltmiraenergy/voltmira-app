@@ -20,6 +20,7 @@ import { compareRows, formatRowValue } from "../../../lib/catalogCompare.js";
 import { findSupplierProduct } from "../../../lib/supplierCatalog.js";
 import { productImage, placeholderImage } from "../../../lib/catalogImages.js";
 import { t } from "../../../lib/i18n.js";
+import { localSpec } from "../../../lib/quoteAnalysis.js";
 
 export default function MyProductDetailModal({ p, lang, onClose, onEdit }) {
   if (!p) return null;
@@ -42,7 +43,7 @@ export default function MyProductDetailModal({ p, lang, onClose, onEdit }) {
           <div>
             {p.brand && <span className="cat-brand">{p.brand}</span>}
             <h4 style={{ margin: "2px 0 0" }}>{p.model || p.brand || t("cat_untitled", lang)}</h4>
-            {p.spec && <span className="cat-spec" style={{ marginTop: 5 }}>{p.spec}</span>}
+            {p.spec && <span className="cat-spec" style={{ marginTop: 5 }}>{localSpec(p.spec, lang)}</span>}
             <span className="cat-price" style={{ display: "block", marginTop: 6 }}>
               {fmt(p.unit_price)}<small>{t("cat_price_each", lang)}</small>
             </span>

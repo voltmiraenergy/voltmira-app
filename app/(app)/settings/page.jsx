@@ -18,6 +18,7 @@ import { openCheckout } from "../../../lib/paddle.js";
 import { saveCompany, seedSampleData, clearSampleData, getMyRole } from "../../../lib/actions.js";
 import { defaultEngineSettings } from "@voltmira/engine";
 import { t, normLang, LANGS, LANG_NAMES } from "../../../lib/i18n.js";
+import { dlt } from "../../../lib/deadlineText.js";
 import { hasFeature, planFor } from "../../../lib/features.js";
 import UpsellModal from "../../../components/UpsellModal.jsx";
 import { CONTRACT_TOKENS, COMMISSIONING_TOKENS } from "../../../lib/legalDocs.js";
@@ -108,6 +109,12 @@ export default function Settings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The tab title in the workspace language once the company row is in.
+  const coLang = co?.lang;
+  useEffect(() => {
+    if (coLang) document.title = `${t("nav_settings", normLang(coLang))} | VoltMira`;
+  }, [coLang]);
+
   // Leaving with unsaved edits asks first, like any form a person fills in.
   useEffect(() => {
     if (!dirty) return;
@@ -158,6 +165,7 @@ export default function Settings() {
         default_market: co.default_market, currency: co.currency, lang: normLang(co.lang),
         subsidy_amount_ron: co.subsidy_amount_ron, prosumer_limit_kw: co.prosumer_limit_kw,
         notify_open: co.notify_open !== false,
+        notify_deadlines: co.notify_deadlines !== false,
         nudge_enabled: co.nudge_enabled === true,
         crm_webhook_enabled: co.crm_webhook_enabled === true,
         crm_webhook_url: co.crm_webhook_url,
@@ -571,6 +579,8 @@ export default function Settings() {
           <div className="st-toggles">
             <Toggle checked={co.notify_open !== false} onChange={e => { setCo({ ...co, notify_open: e.target.checked }); touch(); }}
               title={t("s_notify", lang)} note={t("s_notify_note", lang)} />
+            <Toggle checked={co.notify_deadlines !== false} onChange={e => { setCo({ ...co, notify_deadlines: e.target.checked }); touch(); }}
+              title={dlt("st_toggle", lang)} note={dlt("st_note", lang)} />
             {/* Opt-in: emails a real client under this company's brand, so it
                 stays off until someone turns it on (add-proposal-nudges.sql). */}
             <Toggle checked={co.nudge_enabled === true} onChange={e => { setCo({ ...co, nudge_enabled: e.target.checked }); touch(); }}

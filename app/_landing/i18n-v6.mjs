@@ -49,6 +49,7 @@ export const I18N_V6 = {
     v6_nav_demo: "Demo live",
     v6_nav_signin: "Autentificare",
     v6_nav_cta: "Începe gratuit",
+    v6_nav_cta_short: "Începe",
     v6_sr_lang: "Schimbă limba",
     v6_sr_theme: "Comută între tema deschisă și cea întunecată",
 
@@ -320,6 +321,7 @@ export const I18N_V6 = {
     v6_nav_demo: "Демо",
     v6_nav_signin: "Войти",
     v6_nav_cta: "Начать бесплатно",
+    v6_nav_cta_short: "Начать",
     v6_sr_lang: "Сменить язык",
     v6_sr_theme: "Переключить светлую или тёмную тему",
 
@@ -591,6 +593,7 @@ export const I18N_V6 = {
     v6_nav_demo: "Демо",
     v6_nav_signin: "Увійти",
     v6_nav_cta: "Почати безкоштовно",
+    v6_nav_cta_short: "Почати",
     v6_sr_lang: "Змінити мову",
     v6_sr_theme: "Перемкнути світлу або темну тему",
 

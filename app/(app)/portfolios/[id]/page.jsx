@@ -12,6 +12,8 @@ import { pt } from "../../../../lib/portfolioText.js";
 import PortfolioView from "./PortfolioView.jsx";
 
 export const dynamic = "force-dynamic";
+// the public lookups behind this page's actions (wind, sun, grid) can take a while
+export const maxDuration = 60;
 export const metadata = { title: "Portfolio | VoltMira" };
 
 export default async function PortfolioPage(props) {
@@ -26,5 +28,5 @@ export default async function PortfolioPage(props) {
       </div>
     );
   }
-  return <PortfolioView portfolio={d.portfolio} quotes={d.quotes} E={d.E} lang={d.lang} schemeLimitKw={d.schemeLimitKw} company={d.co?.name || ""} />;
+  return <PortfolioView portfolio={d.portfolio} quotes={d.quotes} E={d.E} lang={d.lang} schemeLimitKw={d.schemeLimitKw} company={d.co?.name || ""} fx={d.fx} />;
 }

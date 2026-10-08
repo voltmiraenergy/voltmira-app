@@ -12,6 +12,7 @@ import Logo from "../../lib/Logo.jsx";
 import HtmlLang from "../../lib/HtmlLang.jsx";
 import { t, normLang } from "../../lib/i18n.js";
 import { pt } from "../../lib/portfolioText.js";
+import { et } from "../../lib/energyText.js";
 import { currentUser, currentCompany } from "../../lib/session.js";
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { isDemoEmail } from "../../lib/demo.js";
@@ -45,6 +46,7 @@ export default async function AppLayout({ children }) {
     { href: "/leads", label: t("nav_leads", lang) },
     { href: "/projects", label: t("nav_projects", lang) },
     { href: "/portfolios", label: pt("nav", lang) },
+    { href: "/energy", label: et("nav", lang) },
     { href: "/documents", label: t("nav_documents", lang) },
     { href: "/activity", label: t("nav_activity", lang) },
     { href: "/studio", label: t("nav_studio", lang) },
@@ -85,7 +87,13 @@ export default async function AppLayout({ children }) {
               : <div className="avatar">{initialsOf(who)}</div>}
             <div className="who"><b>{who}</b><span>{co?.name}</span></div>
           </Link>
-          <div className="side-plan">{(co?.plan || "free") + " " + t("plan_suffix", lang)}</div>
+          {/* "Plan Team", "План Team": the plan's brand name inside a phrase in
+              the workspace language (it read "team plan" in every language) */}
+          <div className="side-plan">
+            {!co?.plan || co.plan === "free"
+              ? t("side_plan_free", lang)
+              : t("side_plan", lang, { plan: co.plan.charAt(0).toUpperCase() + co.plan.slice(1) })}
+          </div>
           <ThemeToggle lang={lang} />
           <SignOut lang={lang} />
         </div>

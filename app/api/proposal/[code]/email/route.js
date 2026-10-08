@@ -75,8 +75,10 @@ export async function POST(req, props) {
     clientName: snap.client || "",
     companyName: co.name,
     liveUrl: `${base}/p/${code}`,
-    kw: snap.kw != null ? Number(snap.kw).toFixed(1) : "",
+    kw: snap.kw != null ? Number(snap.kw) : null,
     note,
+    // the client reads it in the workspace's language, formally addressed
+    lang: co.lang,
   });
 
   const res = await sendEmail({

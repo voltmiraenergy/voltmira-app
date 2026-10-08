@@ -8,11 +8,14 @@
 //
 // Colours are the validated chart pair (light #0F8A5F / #B46A00, dark #2BA170 /
 // #C4851A, see portfolio.css), distinct in shape as well as hue.
-import { useState } from "react";
+//
+// `rate` (display currency per EUR) shows the amounts in the display currency:
+// the series are converted first, so the axis ticks stay round.
+import { useEffect, useRef, useState } from "react";
 import { eur, eurCompact, dscr } from "../lib/portfolioFormat.js";
 import { pt } from "../lib/portfolioText.js";
 
-const W = 720, H = 240, PL = 52, PR = 12, PT = 14, PB = 28;
+const H = 240, PL = 52, PR = 12, PT = 14, PB = 28;
 
 function niceMax(v) {
   if (!(v > 0)) return 1;
@@ -21,8 +24,21 @@ function niceMax(v) {
   return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
 }
 
-export default function CashflowChart({ cfads = [], debtService = [], lang = "en", years = 25, bare = false }) {
+export default function CashflowChart({ cfads: cfEur = [], debtService: dsEur = [], lang = "en", years = 25, bare = false, rate: rateIn }) {
   const [hover, setHover] = useState(null);
+  // the drawing is as wide as its box (720 when there is no script, as in the PDF)
+  const [W, setW] = useState(720);
+  const box = useRef(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([e]) => setW(Math.max(300, Math.round(e.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const rate = rateIn > 0 ? rateIn : 1;
+  const cfads = cfEur.map((v) => v * rate);
+  const debtService = dsEur.map((v) => v * rate);
   const n = Math.min(years, cfads.length);
   if (!n) return null;
   const hasDebt = debtService.some((d) => d > 1e-9);
@@ -65,7 +81,7 @@ export default function CashflowChart({ cfads = [], debtService = [], lang = "en
         <span><i className="pf-k pf-k-a" />{pt("r_cfads", lang)}</span>
         {hasDebt && <span><i className="pf-k pf-k-b" />{pt("r_ds", lang)}</span>}
       </div>
-      <div className="pf-plot">
+      <div className="pf-plot" ref={box}>
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={pt("r_cashflow", lang)} onMouseLeave={() => setHover(null)}>
           {ticks.map((t) => (
             <g key={t}>
@@ -80,7 +96,7 @@ export default function CashflowChart({ cfads = [], debtService = [], lang = "en
           {cfads.slice(0, n).map((v, i) => { const d = col(i, v); return d ? <path key={i} d={d} className={"pf-col" + (h === i ? " on" : "")} /> : null; })}
           {hasDebt && <path d={step} className="pf-line" fill="none" />}
           {Array.from({ length: n }, (_, i) => (
-            <rect key={i} x={PL + slot * i} y={PT} width={slot} height={H - PT - PB} className="pf-hit" onMouseEnter={() => setHover(i)} onFocus={() => setHover(i)} tabIndex={0}
+            <rect key={i} x={PL + slot * i} y={PT} width={slot} height={H - PT - PB} className="pf-hit" onMouseEnter={() => setHover(i)} onFocus={() => setHover(i)} onBlur={() => setHover(null)} tabIndex={bare ? undefined : 0}
               aria-label={`${pt("r_year", lang)} ${i + 1}: ${eur(cfads[i], lang)}`} />
           ))}
         </svg>

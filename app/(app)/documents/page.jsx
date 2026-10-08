@@ -17,9 +17,10 @@ import { fmtDate } from "../../../lib/tz.js";
 import { LOCALE } from "../../../lib/relTime.js";
 import { paperworkFor, paperworkTotals } from "../../../lib/paperwork.js";
 import Avatar from "../../../lib/Avatar.jsx";
+import { appTitle } from "../../../lib/pageTitle.js";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Documents | VoltMira" };
+export const generateMetadata = appTitle("nav_documents");
 
 const VIEWS = ["all", "todo", "won", "signed"];
 

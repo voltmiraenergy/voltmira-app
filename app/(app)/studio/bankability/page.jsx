@@ -97,7 +97,7 @@ export default function BankabilityPreview() {
   const lang = useLang();
   const t = makeT(TX, lang);
   const { client } = useStudioClient();
-  useEffect(() => { document.title = "P50 / P90 export | VoltMira"; }, []);
+  useEffect(() => { document.title = `${TX.title[lang] || TX.title.en} | VoltMira`; }, [lang]);
 
   const [gearing, setGearing] = useState(70);
   const [rate, setRate] = useState(6.5);
