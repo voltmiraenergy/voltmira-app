@@ -6,7 +6,7 @@
 import { plt } from "../../lib/plantText.js";
 import { num, dscr } from "../../lib/portfolioFormat.js";
 import { weakest } from "../../lib/weatherReplay.js";
-import { replayLine } from "../../lib/energyBasis.js";
+import { replayLine, monthlyLine, monthName } from "../../lib/energyBasis.js";
 
 const PART_KEY = { ghi: "p90_ghi", weather: "p90_weather", model: "p90_model", soiling: "p90_soiling", availability: "p90_availability", shading: "p90_shading", lid: "p90_lid" };
 
@@ -64,6 +64,30 @@ export function WeatherReplay({ replay, lang = "en", className = "rp-t", heading
         </tbody>
       </table>
       <p className="rp-small">{plt("wr_note", lang)}</p>
+    </>
+  );
+}
+
+/** The loan's cover month by month in its leanest year. @param {{ mc: object|null, lang: string, money: object }} p  mc = monthlyCover() */
+export function SeasonalCover({ mc, lang = "en", money, className = "rp-t", heading = true }) {
+  if (!mc) return null;
+  const eur = (v) => `${money.full(v)} ${money.cur}`;
+  return (
+    <>
+      {heading && <h3 className="rp-sub">{plt("mc_h", lang)}</h3>}
+      <p className="rp-small">{monthlyLine(mc, lang, eur)}.</p>
+      <p className="rp-small">{plt("mc_p", lang)}</p>
+      <div className="pf-scroll">
+        <table className={className + " mc-t"}>
+          <thead><tr><th />{mc.months.map((x) => <th key={x.m} className="r">{monthName(x.m, lang, true)}</th>)}</tr></thead>
+          <tbody>
+            <tr><td>{plt("mc_row_cfads", lang)}</td>{mc.months.map((x) => <td key={x.m} className="r">{money.compact(x.cfads)}</td>)}</tr>
+            <tr><td>{plt("mc_row_ds", lang)}</td>{mc.months.map((x) => <td key={x.m} className="r">{money.compact(x.ds)}</td>)}</tr>
+            <tr><td><b>{plt("mc_row_cover", lang)}</b></td>{mc.months.map((x) => <td key={x.m} className={"r" + (x.cover != null && x.cover < 1 ? " mc-low" : "")}><b>{x.cover == null ? "-" : dscr(x.cover, lang)}</b></td>)}</tr>
+          </tbody>
+        </table>
+      </div>
+      <p className="rp-small">{plt("mc_note", lang)}</p>
     </>
   );
 }

@@ -19,7 +19,8 @@ import { WIND_SOURCE } from "../../../../../lib/windData.js";
 import DscrChart from "../../../../../components/portfolio/DscrChart.jsx";
 import GridAnnex from "../../../../../components/portfolio/GridAnnex.jsx";
 import { dt } from "../../../../../lib/dealText.js";
-import { basisLine, dataSourceLines, replayLine } from "../../../../../lib/energyBasis.js";
+import { basisLine, dataSourceLines, replayLine, monthlyLine } from "../../../../../lib/energyBasis.js";
+import { monthlyCover } from "../../../../../lib/monthlyCover.js";
 import { weatherReplay } from "../../../../../lib/weatherReplay.js";
 
 const Row = ({ k, v }) => <tr><th scope="row">{k}</th><td>{v}</td></tr>;
@@ -86,6 +87,7 @@ export default function CreditSummary({ model, lang, company, date, money, fx, t
   const grid = gridText(pl, lang, m);
   const dataSources = dataSourceLines(pl, lang);
   const replay = weatherReplay(a.plant, model.E, fin, model.scenario);
+  const seasonal = monthlyCover(a.plant, model.E, fin, model.scenario);
   // the construction terms in one line: "18 months to build, 1 year of grace, reserve 6 months"
   const build = [fin.constructionMonths > 0 && pt("build_short", lang, { n: fin.constructionMonths }),
     hasDebt && fin.graceYears > 0 && pt("grace_short", lang, { n: fin.graceYears }),
@@ -192,11 +194,12 @@ export default function CreditSummary({ model, lang, company, date, money, fx, t
         <div className="rp-basis">
           <p className="rp-small"><b>{bt("p_p90basis", lang)}:</b> {basisLine(en, lang, pl.solar)}.</p>
           {replay && <p className="rp-small"><b>{plt("wr_h", lang)}:</b> {replayLine(replay, lang)}.</p>}
+          {seasonal && <p className="rp-small"><b>{plt("mc_h", lang)}:</b> {monthlyLine(seasonal, lang, m)}.</p>}
         </div>
         {hasDebt && (
           <>
             <h3>{pt("ch_dscr", lang)}</h3>
-            <DscrChart p50={agg.dscrByYear} p90={model.p90.dscrByYear} targets={{ p50: sizing.p50Dscr, p90: sizing.p90Dscr }} lang={lang} bare />
+            <DscrChart p50={agg.dscrByYear} p90={model.p90.dscrByYear} targets={{ p50: sizing.p50Dscr, p90: sizing.p90Dscr }} lang={lang} bare height={185} />
           </>
         )}
         <h3>{pt("s_stress", lang)}</h3>

@@ -651,3 +651,8 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 .app .pl-checks li b { margin-right: 6px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--pf-warn); }
 .app .pl-checks li.lv-stop { background: color-mix(in srgb, var(--pf-bad) 9%, transparent); }
 .app .pl-checks li.lv-stop b { color: var(--pf-bad); }
+
+/* seasonal cover: twelve narrow columns, the short months marked */
+.app .mc-t th, .app .mc-t td { padding-left: 4px; padding-right: 4px; font-size: 10.5px; white-space: nowrap; }
+.app .mc-t td:first-child, .app .mc-t th:first-child { white-space: normal; min-width: 90px; padding-left: 0; }
+.app .mc-t td.mc-low { color: var(--pf-bad); }

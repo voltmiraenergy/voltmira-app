@@ -26,11 +26,12 @@ import { bt } from "../../lib/bankText.js";
 import { stillMissing, PACK_LANGS } from "../../lib/bankPack.js";
 import { namesList } from "../../lib/portfolioDisplay.js";
 import StudyReader from "./StudyReader.jsx";
-import { P90Basis, WeatherReplay } from "./EnergyBasis.jsx";
+import { P90Basis, WeatherReplay, SeasonalCover } from "./EnergyBasis.jsx";
+import { monthlyCover } from "../../lib/monthlyCover.js";
 import { weatherReplay } from "../../lib/weatherReplay.js";
 import { preflight } from "../../lib/preflight.js";
 import { checkText } from "../../lib/preflightText.js";
-import { basisLine, replayLine } from "../../lib/energyBasis.js";
+import { basisLine, replayLine, monthlyLine } from "../../lib/energyBasis.js";
 import SitePicker from "./SitePicker.jsx";
 import GridPanel from "./GridPanel.jsx";
 import { siteDrift } from "../../lib/sitePick.js";
@@ -136,6 +137,8 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
   const checks = preflight({ plant: raw, docs: showFiles ? deal.docs : null, todayKey });
   // the loan's cover on each weather year on record (lib/weatherReplay.js)
   const replay = weatherReplay(raw, E, fin, scenario);
+  // the cover month by month in the leanest loan year (lib/monthlyCover.js)
+  const seasonal = monthlyCover(raw, E, fin, scenario);
 
   return (
     <article id={"plant-" + id} className="card pl" aria-labelledby={"pl-h-" + id}>
@@ -327,6 +330,12 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
           <details className="pl-p90">
             <summary>{plt("p90_h", lang)}: {basisLine(en, lang, pl.solar)}</summary>
             <P90Basis solar={en.solar} lang={lang} className="pf-t" heading={false} />
+          </details>
+        )}
+        {seasonal && (
+          <details className="pl-p90">
+            <summary>{plt("mc_h", lang)}: {monthlyLine(seasonal, lang, (v) => `${money.full(v)} ${money.cur}`)}</summary>
+            <SeasonalCover mc={seasonal} lang={lang} money={money} className="pf-t" heading={false} />
           </details>
         )}
         {replay && (
