@@ -18,7 +18,7 @@ export async function GET(req, props) {
   if (auth instanceof NextResponse) return auth;
   let pdf = null;
   try {
-    ({ pdf } = await renderPdf(reportUrl(req, id, auth.lang), { cookies: authCookies(req) }));
+    ({ pdf } = await renderPdf(reportUrl(req, id, auth.lang), { cookies: authCookies(req), ready: "article.rp" }));
   } catch (e) {
     console.error("[portfolio-dataroom] report PDF failed:", e?.message || e);
   }
