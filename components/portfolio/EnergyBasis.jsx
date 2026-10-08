@@ -4,7 +4,9 @@
 // reports between the sun on the panels and the energy delivered. Plain
 // markup, no state: used in the report, and in the plant editor.
 import { plt } from "../../lib/plantText.js";
-import { num } from "../../lib/portfolioFormat.js";
+import { num, dscr } from "../../lib/portfolioFormat.js";
+import { weakest } from "../../lib/weatherReplay.js";
+import { replayLine } from "../../lib/energyBasis.js";
 
 const PART_KEY = { ghi: "p90_ghi", weather: "p90_weather", model: "p90_model", soiling: "p90_soiling", availability: "p90_availability", shading: "p90_shading", lid: "p90_lid" };
 
@@ -41,6 +43,27 @@ export function P90Basis({ solar, lang = "en", className = "rp-t", heading = tru
         </tbody>
       </table>
       <p className="rp-small">{site ? plt("p90_note_site", lang, { db: site.db, years: site.years }) : plt("p90_note_assumed", lang)}</p>
+    </>
+  );
+}
+
+/** The loan's cover on the weakest weather years on record. @param {{ replay: object|null, lang: string }} p  replay = weatherReplay() */
+export function WeatherReplay({ replay, lang = "en", className = "rp-t", heading = true }) {
+  if (!replay) return null;
+  return (
+    <>
+      {heading && <h3 className="rp-sub">{plt("wr_h", lang)}</h3>}
+      <p className="rp-small">{replayLine(replay, lang)}.</p>
+      <p className="rp-small">{plt("wr_p", lang)}</p>
+      <table className={className}>
+        <thead><tr><th>{plt("wr_col_year", lang)}</th><th className="r">{plt("wr_col_sun", lang)}</th><th className="r">{plt("wr_col_dscr", lang)}</th></tr></thead>
+        <tbody>
+          {weakest(replay, 5).map((x) => (
+            <tr key={x.y}><td>{x.y}</td><td className="r">{num(x.pct, lang, 1)}</td><td className="r">{x.dscrMin == null ? "-" : dscr(x.dscrMin, lang)}</td></tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="rp-small">{plt("wr_note", lang)}</p>
     </>
   );
 }

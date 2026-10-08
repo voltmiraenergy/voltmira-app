@@ -189,3 +189,39 @@ test("a PVGIS answer without those fields still gives the yield, with no variabi
   assert.equal(r.variability, null);
   assert.equal(r.losses.total, null);
 });
+
+import { getYearlyIrradiation } from "./pvgis.js";
+
+function monthly(years, perMonth) {
+  const rows = [];
+  for (const y of years) for (let m = 1; m <= 12; m++) rows.push({ year: y, month: m, "H(i)_m": perMonth(y, m) });
+  return { inputs: { meteo_data: { radiation_db: "PVGIS-SARAH2", year_min: years[0], year_max: years[years.length - 1] } }, outputs: { monthly: rows } };
+}
+
+test("each full year's in-plane radiation as a share of the average year", async () => {
+  const years = [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019];
+  // 2012 is 10% sunnier than 2011's 100, 2013 10% duller; the rest are 100
+  const f = { 2012: 110, 2013: 90 };
+  const r = await getYearlyIrradiation(46, 28.5, { fetchImpl: mockFetch(monthly(years, (y) => (f[y] ?? 100) / 12)) });
+  assert.equal(r.db, "PVGIS-SARAH2");
+  assert.equal(r.years, "2010-2019");
+  assert.equal(r.yearly.length, 10);
+  assert.equal(r.yearly.find((x) => x.y === 2012).pct, 110);
+  assert.equal(r.yearly.find((x) => x.y === 2013).pct, 90);
+  assert.equal(r.yearly.find((x) => x.y === 2015).pct, 100);
+  // the average of the shares is 100
+  assert.ok(Math.abs(r.yearly.reduce((a, x) => a + x.pct, 0) / 10 - 100) < 0.01);
+});
+
+test("a year with missing months is left out, and too short a record gives nothing", async () => {
+  const years = [2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013];
+  const p = monthly(years, () => 10);
+  p.outputs.monthly = p.outputs.monthly.filter((r) => !(r.year === 2007 && r.month === 5));
+  const r = await getYearlyIrradiation(46, 28.5, { fetchImpl: mockFetch(p) });
+  assert.equal(r.yearly.length, 8);
+  assert.ok(!r.yearly.some((x) => x.y === 2007));
+  assert.equal(await getYearlyIrradiation(46, 28.5, { fetchImpl: mockFetch(monthly([2018, 2019, 2020], () => 10)) }), null);
+  await assert.rejects(getYearlyIrradiation(95, 28.5, { fetchImpl: mockFetch(p) }), /Invalid coordinates/);
+  await assert.rejects(getYearlyIrradiation(46, 28.5, { fetchImpl: mockFetch({}) }), /Unexpected/);
+  await assert.rejects(getYearlyIrradiation(46, 28.5, { fetchImpl: mockFetch({}, { status: 500 }) }), /HTTP 500/);
+});

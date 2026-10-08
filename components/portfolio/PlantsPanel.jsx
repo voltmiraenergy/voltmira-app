@@ -26,10 +26,11 @@ import { bt } from "../../lib/bankText.js";
 import { stillMissing, PACK_LANGS } from "../../lib/bankPack.js";
 import { namesList } from "../../lib/portfolioDisplay.js";
 import StudyReader from "./StudyReader.jsx";
-import { P90Basis } from "./EnergyBasis.jsx";
+import { P90Basis, WeatherReplay } from "./EnergyBasis.jsx";
+import { weatherReplay } from "../../lib/weatherReplay.js";
 import { preflight } from "../../lib/preflight.js";
 import { checkText } from "../../lib/preflightText.js";
-import { basisLine } from "../../lib/energyBasis.js";
+import { basisLine, replayLine } from "../../lib/energyBasis.js";
 import SitePicker from "./SitePicker.jsx";
 import GridPanel from "./GridPanel.jsx";
 import { siteDrift } from "../../lib/sitePick.js";
@@ -133,6 +134,8 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
   const packLang = PACK_LANGS.includes(lang) ? lang : "ro";
   // what a careful reader would catch before the bank does (lib/preflight.js)
   const checks = preflight({ plant: raw, docs: showFiles ? deal.docs : null, todayKey });
+  // the loan's cover on each weather year on record (lib/weatherReplay.js)
+  const replay = weatherReplay(raw, E, fin, scenario);
 
   return (
     <article id={"plant-" + id} className="card pl" aria-labelledby={"pl-h-" + id}>
@@ -324,6 +327,12 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
           <details className="pl-p90">
             <summary>{plt("p90_h", lang)}: {basisLine(en, lang, pl.solar)}</summary>
             <P90Basis solar={en.solar} lang={lang} className="pf-t" heading={false} />
+          </details>
+        )}
+        {replay && (
+          <details className="pl-p90">
+            <summary>{plt("wr_h", lang)}: {replayLine(replay, lang)}</summary>
+            <WeatherReplay replay={replay} lang={lang} className="pf-t" heading={false} />
           </details>
         )}
       </section>

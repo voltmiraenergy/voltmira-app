@@ -15,6 +15,7 @@
 
 const PVGIS_BASE = "https://re.jrc.ec.europa.eu/api/v5_2/PVcalc";
 const PVGIS_SERIES_BASE = "https://re.jrc.ec.europa.eu/api/v5_2/seriescalc";
+const PVGIS_MONTHLY_BASE = "https://re.jrc.ec.europa.eu/api/v5_2/MRcalc";
 const CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 
 export function cacheKey(lat, lon, { angle = 35, aspect = 0 } = {}) {
@@ -108,6 +109,49 @@ export async function getSolarYield(lat, lon, opts = {}) {
   const value = { yieldPerKwp, monthlyShape, variability, losses };
   if (cache) await cache.set(key, value);
   return { ...value, source: "pvgis" };
+}
+
+/**
+ * How sunny each year on record was at this site: the radiation on a fixed
+ * south-facing plane (PVGIS MRcalc, monthly values per year, with the terrain
+ * horizon) summed for each full year, as a share of the average year. A small
+ * answer (one row per month), unlike the hourly series. Used to replay the
+ * plant's cover on every weather year; radiation stands in for the yield.
+ * @returns {Promise<{ db:string, years:string, yearly:{y:number, pct:number}[] }|null>} null when PVGIS gives fewer than 8 full years
+ */
+export async function getYearlyIrradiation(lat, lon, opts = {}) {
+  const { angle = 35, aspect = 0, fetchImpl = globalThis.fetch, timeoutMs = 15000 } = opts;
+  if (typeof lat !== "number" || typeof lon !== "number" || lat < -90 || lat > 90 || lon < -180 || lon > 180) throw new Error("Invalid coordinates");
+  const url = `${PVGIS_MONTHLY_BASE}?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}&selectrad=1&angle=${angle}&aspect=${aspect}&usehorizon=1&outputformat=json`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  let json;
+  try {
+    const res = await fetchImpl(url, { signal: ctrl.signal });
+    if (!res.ok) throw new Error(`PVGIS HTTP ${res.status}`);
+    json = await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+  const rows = json?.outputs?.monthly;
+  if (!Array.isArray(rows)) throw new Error("Unexpected PVGIS response shape");
+  const by = new Map();
+  for (const r of rows) {
+    const h = Number(r?.["H(i)_m"]);
+    if (!Number.isInteger(r?.year) || !Number.isInteger(r?.month) || !(h >= 0)) continue;
+    const e = by.get(r.year) || { sum: 0, months: new Set() };
+    if (!e.months.has(r.month)) { e.sum += h; e.months.add(r.month); }
+    by.set(r.year, e);
+  }
+  const full = [...by.entries()].filter(([, e]) => e.months.size === 12 && e.sum > 0).sort((a, b) => a[0] - b[0]);
+  if (full.length < 8) return null;
+  const mean = full.reduce((a, [, e]) => a + e.sum, 0) / full.length;
+  const m = json?.inputs?.meteo_data || {};
+  return {
+    db: String(m.radiation_db || "").slice(0, 40),
+    years: `${full[0][0]}-${full[full.length - 1][0]}`,
+    yearly: full.map(([y, e]) => ({ y, pct: Math.round((e.sum / mean) * 1000) / 10 })),
+  };
 }
 
 /**

@@ -19,7 +19,8 @@ import { WIND_SOURCE } from "../../../../../lib/windData.js";
 import DscrChart from "../../../../../components/portfolio/DscrChart.jsx";
 import GridAnnex from "../../../../../components/portfolio/GridAnnex.jsx";
 import { dt } from "../../../../../lib/dealText.js";
-import { basisLine, dataSourceLines } from "../../../../../lib/energyBasis.js";
+import { basisLine, dataSourceLines, replayLine } from "../../../../../lib/energyBasis.js";
+import { weatherReplay } from "../../../../../lib/weatherReplay.js";
 
 const Row = ({ k, v }) => <tr><th scope="row">{k}</th><td>{v}</td></tr>;
 const LEVEL = { high: 0, medium: 1, low: 2, unknown: 3 };
@@ -84,6 +85,7 @@ export default function CreditSummary({ model, lang, company, date, money, fx, t
   const su = model.sourcesUses;
   const grid = gridText(pl, lang, m);
   const dataSources = dataSourceLines(pl, lang);
+  const replay = weatherReplay(a.plant, model.E, fin, model.scenario);
   // the construction terms in one line: "18 months to build, 1 year of grace, reserve 6 months"
   const build = [fin.constructionMonths > 0 && pt("build_short", lang, { n: fin.constructionMonths }),
     hasDebt && fin.graceYears > 0 && pt("grace_short", lang, { n: fin.graceYears }),
@@ -172,7 +174,6 @@ export default function CreditSummary({ model, lang, company, date, money, fx, t
               {pl.bess && r.bessEurPerMwYr > 0 && <Row k={plt("b_rev", lang)} v={`${num(r.bessEurPerMwYr, lang, 0)}, ${plt("b_years_v", lang, { n: r.bessYears })}`} />}
             </tbody></table>
             <p className="rp-small">{hasDebt ? (cy.years > 0 ? bt("cover_years", lang, { n: cy.years, t: cy.tenor }) : bt("cover_none", lang)) : ""}</p>
-            <p className="rp-small"><b>{bt("p_p90basis", lang)}:</b> {basisLine(en, lang, pl.solar)}.</p>
           </div>
           <div>
             <h3>{bt("headroom_h", lang)}</h3>
@@ -187,6 +188,10 @@ export default function CreditSummary({ model, lang, company, date, money, fx, t
               <Row k={bt("k_avg", lang)} v={fd(agg.dscrAvg)} />
             </tbody></table>
           </div>
+        </div>
+        <div className="rp-basis">
+          <p className="rp-small"><b>{bt("p_p90basis", lang)}:</b> {basisLine(en, lang, pl.solar)}.</p>
+          {replay && <p className="rp-small"><b>{plt("wr_h", lang)}:</b> {replayLine(replay, lang)}.</p>}
         </div>
         {hasDebt && (
           <>

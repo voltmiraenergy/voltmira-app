@@ -13,7 +13,8 @@ import { gridText } from "../../lib/bankPack.js";
 import { bt } from "../../lib/bankText.js";
 import { connectionGroups } from "../../lib/gridOptions.js";
 import GridAnnex from "./GridAnnex.jsx";
-import { P90Basis, YieldLosses } from "./EnergyBasis.jsx";
+import { P90Basis, YieldLosses, WeatherReplay } from "./EnergyBasis.jsx";
+import { weatherReplay } from "../../lib/weatherReplay.js";
 
 const Row = ({ k, v }) => <tr><th scope="row">{k}</th><td>{v}</td></tr>;
 
@@ -52,6 +53,7 @@ export default function PlantReport({ assets, lang, money, E, fin, scenario, tar
             </tbody></table>
             {en.wind?.source === "screening" && <p className="rp-small">{plt("w_screen_doc", lang)}</p>}
             {en.solar && <P90Basis solar={en.solar} lang={lang} />}
+            <WeatherReplay replay={weatherReplay(pl, E, fin, scenario)} lang={lang} />
             {pl.solar?.yieldSource === "pvgis" && <YieldLosses losses={pl.solar.yieldLosses} lang={lang} />}
             {grid && <p className="rp-small"><b>{plt("grid_h", lang)}:</b> {grid}. {bt("g_note", lang)}</p>}
             <div className="rp-two">
