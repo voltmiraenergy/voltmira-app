@@ -11,11 +11,16 @@ doubt changes nothing.
 | File | What it does | Status |
 |---|---|---|
 | `run-pending-2026-09.sql` | Studio in the cloud, inverter portals, lead and proposal assistants, Moldova defaults | Already run |
-| `run-pending-2026-09-29.sql` | The four files below in one paste | **Not run yet** |
+| `run-pending-2026-09-29.sql` | The four files below in one paste | Already run (2026-10-01) |
 | `lock-down-2026-09-28.sql` | Fixes the Team page recursion error, and stops a user session from changing its own role or company, a workspace's plan, or a client's signature | in the file above |
 | `add-lead-visits.sql` | A site visit date and time on each lead | in the file above |
 | `add-ukrainian.sql` | Ukraine: the language, the UA market, the hryvnia and the outage plan (`projects.ua_plan`) | in the file above |
 | `add-portfolios.sql` | Portfolios: quotes grouped as one investment, with finance assumptions, stress scenario, document register and E&S screening (`portfolios` table) | in the file above |
+| `run-pending-2026-10-02.sql` | The files below in one paste | Already run (2026-10-04) |
+| `add-offer-currency.sql` | The currency each offer is written in (`projects.offer_currency`; null follows the workspace) | in the file above |
+| `add-client-kind.sql` | Who the client on a quote is (`projects.client_kind`: household, sme, company), for the support programmes | in the file above |
+| `add-deal-room.sql` | The deal room: a private `deal-docs` bucket, documents on the checklist, read-only bank links, the bank's questions and the access log (`deal_documents`, `deal_links`, `deal_questions`, `deal_views`) | Already run (2026-10-04), except the two alert columns on `deal_links` (`notify`, `notified_at`) added after |
+| `add-deadline-alerts.sql` | The weekly permits-and-deadlines email: a per-company switch (`companies.notify_deadlines`, on by default) | **Not run yet** |
 
 Do not run `fix-profiles-rls.sql` on its own. It removes the recursion but
 leaves out the guard; `lock-down-2026-09-28.sql` does both and replaces it.
@@ -43,6 +48,9 @@ leaves out the guard; `lock-down-2026-09-28.sql` does both and replaces it.
    `add-inverter-portals.sql`, `add-lead-agent.sql`, `add-proposal-agent.sql`
    and `md-launch-defaults.sql`, which replaces `md-default-market.sql`)
 5. `run-pending-2026-09-29.sql` (the lock-down, site visits, Ukraine and portfolios)
+6. `run-pending-2026-10-02.sql` (offer currency, client type)
+7. `add-deal-room.sql` (the deal room, with its alert columns)
+8. `add-deadline-alerts.sql` (the weekly deadlines email switch)
 
 ## Checking what a database already has
 
