@@ -589,7 +589,8 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 /* the site planner's own marks */
 .pd-st-wrap { background: none; border: 0; }
 .pd-st { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 6px; background: #D946EF; color: #fff; font: 700 11px/1 system-ui, sans-serif; border: 1.5px solid #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .4); }
-.pd-tb-wrap { background: none; border: 0; }
+.pd-tb-wrap { background: none; border: 0; cursor: grab; }
+.pd-tb-wrap:active { cursor: grabbing; }
 .pd-tb { display: inline-grid; place-items: center; min-width: 22px; height: 18px; padding: 0 4px; border-radius: 5px; background: #0EA5E9; color: #fff; font: 700 10px/1 system-ui, sans-serif; border: 1.5px solid #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .4); }
 .sd-row-ic.pd-plot { color: #2E9A5E; }
 .app .gr-sq.on { outline: 3px solid #0B1F17; outline-offset: 1px; }

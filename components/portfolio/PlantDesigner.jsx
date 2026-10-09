@@ -10,12 +10,16 @@
 // inverter stations, the cable and the grid connection point, and the result
 // stays in view below the tabs. Everything is saved on the plant as it
 // changes (plant.layout, and the tilt and facing on the equipment list).
+// A hybrid's wind turbines are drawn too; dragging one fixes every turbine
+// where it stands (plant.layout.turbines), and one button sets them back on
+// the automatic grid.
 // Leaflet and leaflet-geoman load inside an effect, as in SiteDesigner.
 import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import "../SiteDesigner.css";
 import { X, Undo2, Redo2, Pentagon, Ban, Ruler, Move, LocateFixed, Trash2, Check, Eye, ChevronRight, Sun, Info } from "lucide-react";
 import { layoutInputs, layoutPlots } from "../../lib/plantLayout.js";
+import { rotorDiameterM, turbineAt } from "../../lib/windLayout.js";
 import { plotHectares, EXCLUSION_KINDS, TABLE_FORMATS, TRACKER_GCR_DEFAULT, TRACKER_GCR_RANGE, tableGeometry } from "../../lib/siteLayout.js";
 
 /* --------------------------------------------------------------- words --- */
@@ -82,6 +86,8 @@ const TX = {
   need: { en: "The plant needs {need} MWp; the plots hold {fit} MWp on {ha} ha.", ro: "Centrala are nevoie de {need} MWp; parcelele cuprind {fit} MWp pe {ha} ha.", ru: "Станции нужно {need} МВтп; участки вмещают {fit} МВтп на {ha} га.", uk: "Станції потрібно {need} МВтп; ділянки вміщують {fit} МВтп на {ha} га." },
   short: { en: "The plots are too small: {miss} MWp does not fit. Add a plot, lower the tilt or the distance from the boundary.", ro: "Parcelele sunt prea mici: {miss} MWp nu încap. Adaugă o parcelă, micșorează înclinarea sau distanța față de limită.", ru: "Участки малы: {miss} МВтп не помещается. Добавьте участок, уменьшите наклон или отступ.", uk: "Ділянки замалі: {miss} МВтп не вміщується. Додайте ділянку, зменште нахил або відступ." },
   grid: { en: "{n} inverter stations, about {m} m of medium-voltage cable to the connection point.", ro: "{n} stații de invertoare, circa {m} m de cablu de medie tensiune până la punctul de racordare.", ru: "{n} инверторных станций, около {m} м кабеля среднего напряжения до точки присоединения.", uk: "{n} інверторних станцій, близько {m} м кабелю середньої напруги до точки приєднання." },
+  turbinesDrag: { en: "Drag a turbine to move it; the tables make way round its keep-out circle.", ro: "Trage o turbină ca s-o muți; mesele se retrag în jurul cercului ei de siguranță.", ru: "Перетащите турбину, чтобы передвинуть её; столы отступают от её защитного круга.", uk: "Перетягніть турбіну, щоб пересунути її; столи відступають від її захисного кола." },
+  turbinesAuto: { en: "Place the turbines automatically", ro: "Așază turbinele automat", ru: "Расставить турбины автоматически", uk: "Розставити турбіни автоматично" },
   turbinesFit: { en: "Wind: {n} of {need} turbines fit, rotor about {d} m, each with a {r} m keep-out circle.", ro: "Vânt: încap {n} din {need} turbine, rotor de circa {d} m, fiecare cu un cerc de siguranță de {r} m.", ru: "Ветер: помещается {n} из {need} турбин, ротор около {d} м, у каждой защитный круг {r} м.", uk: "Вітер: вміщується {n} з {need} турбін, ротор близько {d} м, у кожної захисне коло {r} м." },
   turbinesShort: { en: "Not every turbine fits: {n} of {need}. Add a plot or move the keep-out zones.", ro: "Nu încap toate turbinele: {n} din {need}. Adaugă o parcelă sau mută zonele excluse.", ru: "Не все турбины помещаются: {n} из {need}. Добавьте участок или передвиньте запретные зоны.", uk: "Не всі турбіни вміщуються: {n} з {need}. Додайте ділянку або пересуньте заборонені зони." },
   apply: { en: "Save the plan", ro: "Salvează planul", ru: "Сохранить план", uk: "Зберегти план" },
@@ -187,6 +193,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   const [selectedId, setSelectedId] = useState(null);
   const [step, setStep] = useState(saved.plots?.length ? 3 : 1);
   const [result, setResult] = useState(null);
+  const [tbFixed, setTbFixed] = useState(!!saved.turbines?.length);
 
   const shellRef = useRef(null);
   const stageRef = useRef(null);
@@ -205,6 +212,8 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   const showDimsRef = useRef(true);
   const timer = useRef(null);
   const api = useRef({});
+  // where the user (or the sample) put the wind turbines, [lat, lon] each; null sets them on the automatic grid
+  const turbinesRef = useRef(saved.turbines?.length ? saved.turbines.map((p) => [p[0], p[1]]) : null);
   // the mounting (tilt, facing, or tracker and its ground-cover target) goes on the equipment list only once the user has set it here
   const mountTouched = useRef(false);
   const settingsTouched = useRef(false);
@@ -285,11 +294,13 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       return {
         plots: [...plotLayers.current.entries()].map(([id, l]) => ({ id, ring: ringOf(l) })),
         exclusions: [...exclLayers.current.entries()].map(([id, l]) => ({ id, ring: ringOf(l), kind: l._pdExcl })),
+        turbines: turbinesRef.current ? turbinesRef.current.map((p) => [p[0], p[1]]) : null,
       };
     }
     function mirror() {
       const s = snapshot();
       setShapes({ plots: s.plots.map((p) => ({ id: p.id, ha: plotHectares(p.ring) })), exclusions: s.exclusions.map((e) => ({ id: e.id, kind: e.kind })) });
+      setTbFixed(!!s.turbines?.length);
     }
     function clearAll() {
       const map = mapRef.current;
@@ -299,6 +310,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
     function load(snap) {
       const L = Lref.current, map = mapRef.current;
       clearAll();
+      turbinesRef.current = snap?.turbines?.length ? snap.turbines.map((p) => [p[0], p[1]]) : null;
       (snap?.plots || []).forEach((p) => { if (p.ring?.length >= 3) attach(L.polygon(p.ring).addTo(map), p.id || uid(), "plot"); });
       (snap?.exclusions || []).forEach((e) => { if (e.ring?.length >= 3) attach(L.polygon(e.ring).addTo(map), e.id || uid(), "excl", e.kind); });
       if (selectedRef.current && !plotLayers.current.has(selectedRef.current) && !exclLayers.current.has(selectedRef.current)) setSelectedId(null);
@@ -308,7 +320,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
     // What is saved on the plant: the plots, the zones, the table format, the setback, the ground-cover target; the mounting goes on the equipment list.
     function save(snap) {
       const s = settingsRef.current, f = TABLE_FORMATS[s.fmt] || TABLE_FORMATS[0];
-      const layout = snap.plots.length ? { plots: snap.plots.map((p) => p.ring), exclusions: snap.exclusions.map((e) => ({ ring: e.ring, kind: e.kind })), high: f.high, wide: f.wide, setbackM: s.setback, trackerGcr: s.gcr } : null;
+      const layout = snap.plots.length ? { plots: snap.plots.map((p) => p.ring), exclusions: snap.exclusions.map((e) => ({ ring: e.ring, kind: e.kind })), high: f.high, wide: f.wide, setbackM: s.setback, trackerGcr: s.gcr, ...(snap.turbines?.length ? { turbines: snap.turbines } : {}) } : null;
       const mounting = mountTouched.current ? (s.mountKind === "tracker" ? { kind: "tracker" } : { kind: "fixed", tiltDeg: s.tilt, azimuthDeg: s.az }) : null;
       onSaveRef.current?.({ layout, mounting });
     }
@@ -384,12 +396,24 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       const l = plotLayers.current.get(id) || exclLayers.current.get(id);
       if (l && mapRef.current) mapRef.current.fitBounds(l.getBounds(), { padding: [60, 60], maxZoom: 19 });
     }
+    // the plots and every turbine's keep-out circle, so the whole plant is in view
+    function plantBounds() {
+      const L = Lref.current;
+      if (!L || !plotLayers.current.size) return null;
+      const b = L.featureGroup([...plotLayers.current.values()]).getBounds();
+      const wind = baseRef.current.inputs.wind;
+      const pts = turbinesRef.current || [];
+      if (wind) for (const p of pts) for (const q of turbineAt(p[0], p[1], rotorDiameterM(wind.mwPerTurbine), 0).exclusion) b.extend(q);
+      return b;
+    }
     function recenter() {
-      const map = mapRef.current, L = Lref.current;
-      if (!map || !L) return;
-      if (plotLayers.current.size) map.fitBounds(L.featureGroup([...plotLayers.current.values()]).getBounds(), { padding: [60, 60], maxZoom: 18 });
+      const map = mapRef.current;
+      if (!map) return;
+      const b = plantBounds();
+      if (b) map.fitBounds(b, { padding: [40, 40], maxZoom: 18 });
       else if (site) map.setView([site.lat, site.lon], 16);
     }
+    function autoTurbines() { turbinesRef.current = null; commit(); }
     function setExclKind(id, kind) {
       const l = exclLayers.current.get(id);
       if (!l) return;
@@ -408,24 +432,31 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       panelGroup.current.clearLayers();
       if (!snap.plots.length) { setResult(null); return; }
       const inputs = { ...baseRef.current.inputs, tiltDeg: s.tilt, azimuthDeg: s.az, tracker: s.mountKind === "tracker", trackerGcr: s.gcr, high: f.high, wide: f.wide, setbackM: s.setback };
-      const r = layoutPlots(snap.plots.map((p) => p.ring), snap.exclusions, inputs);
+      const r = layoutPlots(snap.plots.map((p) => p.ring), snap.exclusions, inputs, snap.turbines);
       setResult(r ? { ...r, inputs } : null);
       if (!r) return;
       ensureTablePattern(map, f.high, f.wide);
       // the wind turbines this plant also stands on, with their keep-out circle, drawn first so the tables sit visibly around them
+      // dragging one fixes every turbine where it stands, then the tables are laid out round it again
       for (const t of r.turbines) {
-        L.polygon(t.exclusion, { color: "#0EA5E9", weight: 1.5, dashArray: "4 4", fillColor: "#0EA5E9", fillOpacity: 0.08, interactive: false, pmIgnore: true }).addTo(panelGroup.current);
-        L.marker([t.lat, t.lon], { icon: L.divIcon({ className: "pd-tb-wrap", html: `<span class="pd-tb">T${t.n}</span>`, iconSize: [26, 22], iconAnchor: [13, 11] }), interactive: false, keyboard: false, pmIgnore: true }).addTo(panelGroup.current);
+        const ring = L.polygon(t.exclusion, { color: "#0EA5E9", weight: 1.5, dashArray: "4 4", fillColor: "#0EA5E9", fillOpacity: 0.08, interactive: false, pmIgnore: true }).addTo(panelGroup.current);
+        const m = L.marker([t.lat, t.lon], { icon: L.divIcon({ className: "pd-tb-wrap", html: `<span class="pd-tb">T${t.n}</span>`, iconSize: [26, 22], iconAnchor: [13, 11] }), draggable: true, autoPan: true, keyboard: false, pmIgnore: true, zIndexOffset: 500 }).addTo(panelGroup.current);
+        m.on("drag", () => { const ll = m.getLatLng(); ring.setLatLngs(turbineAt(ll.lat, ll.lng, r.stats.rotorM, t.n).exclusion); });
+        m.on("dragend", () => {
+          const ll = m.getLatLng();
+          turbinesRef.current = r.turbines.map((u) => (u.n === t.n ? [Math.round(ll.lat * 1e6) / 1e6, Math.round(ll.lng * 1e6) / 1e6] : [u.lat, u.lon]));
+          commit();
+        });
       }
       for (const t of r.tables) L.polygon(t.corners, { color: "#B9C4CE", weight: 0.6, fillColor: "url(#pdTableCells)", fillOpacity: 1, interactive: false, pmIgnore: true }).addTo(panelGroup.current);
-      for (const c of r.cables) L.polyline(c, { color: "#FF9F1C", weight: 2.5, dashArray: "6 4", interactive: false, pmIgnore: true }).addTo(panelGroup.current);
+      for (const c of [...r.cables, ...(r.windCables || [])]) L.polyline(c, { color: "#FF9F1C", weight: 2.5, dashArray: "6 4", interactive: false, pmIgnore: true }).addTo(panelGroup.current);
       for (const st of r.stations) {
         L.polygon(st.corners, { color: "#ffffff", weight: 1.5, fillColor: "#D946EF", fillOpacity: 1, interactive: false, pmIgnore: true }).addTo(panelGroup.current);
         L.marker(st.center, { icon: L.divIcon({ className: "pd-st-wrap", html: `<span class="pd-st">${st.n}</span>`, iconSize: [22, 22], iconAnchor: [-4, 24] }), interactive: false, keyboard: false, pmIgnore: true }).addTo(panelGroup.current);
       }
       L.circleMarker([r.connection.lat, r.connection.lon], { radius: 7, color: "#ffffff", weight: 2.5, fillColor: "#E11D48", fillOpacity: 1, interactive: false, pmIgnore: true }).addTo(panelGroup.current);
     }
-    api.current = { ...api.current, undo, redo, startTool, endTool, removeShape, focusShape, recenter, setExclKind, setDims, restyle, schedule, run, save: () => save(snapshot()) };
+    api.current = { ...api.current, undo, redo, startTool, endTool, removeShape, focusShape, recenter, setExclKind, setDims, restyle, schedule, run, autoTurbines, save: () => save(snapshot()) };
 
     async function init() {
       // leaflet-geoman expects a global L, as in SiteDesigner
@@ -436,7 +467,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       await import("@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css");
       if (cancelled || !mapEl.current) return;
       Lref.current = L;
-      const map = L.map(mapEl.current, { zoomControl: false, maxZoom: 20 });
+      const map = L.map(mapEl.current, { zoomControl: false, maxZoom: 20, zoomSnap: 0.25, zoomDelta: 0.5 });
       mapRef.current = map;
       L.control.zoom({ position: "bottomright" }).addTo(map);
       map.pm.setLang(lang === "ru" ? "ru" : lang === "uk" ? "ua" : lang === "ro" ? "ro" : "en");
@@ -446,9 +477,9 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
         map.setView([site.lat, site.lon], 16);
         L.marker([site.lat, site.lon], { icon: L.divIcon({ className: "sd-pin-wrap", html: PIN_SVG, iconSize: [32, 40], iconAnchor: [16, 39] }), interactive: false, keyboard: false, pmIgnore: true, zIndexOffset: -100 }).addTo(map);
       }
-      load({ plots: (saved.plots || []).map((ring) => ({ id: uid(), ring })), exclusions: (saved.exclusions || []).map((e) => ({ id: uid(), ring: e.ring, kind: e.kind })) });
+      load({ plots: (saved.plots || []).map((ring) => ({ id: uid(), ring })), exclusions: (saved.exclusions || []).map((e) => ({ id: uid(), ring: e.ring, kind: e.kind })), turbines: saved.turbines || null });
       history.list = [snapshot()]; history.index = 0;
-      if (plotLayers.current.size) map.fitBounds(L.featureGroup([...plotLayers.current.values()]).getBounds(), { padding: [60, 60], maxZoom: 18 });
+      { const b = plantBounds(); if (b) map.fitBounds(b, { padding: [40, 40], maxZoom: 18 }); }
 
       map.on("pm:create", (e) => {
         if (e.shape !== "Polygon") return;
@@ -782,7 +813,9 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                     : result.stations.length > 0 && <p className="sd-help">{tr("grid", { n: result.stations.length, m: nf(s.cableM, 0) })}</p>}
                   {hasWind && (s.turbinesShort
                     ? <p className="sd-warn" role="alert">{tr("turbinesShort", { n: s.turbineCount, need: s.needTurbines })}</p>
-                    : <p className="sd-help">{tr("turbinesFit", { n: s.turbineCount, need: s.needTurbines, d: nf(s.rotorM, 0), r: nf(s.rotorM ? (s.rotorM / 2 + base.inputs.wind.hubM) * 1.15 : 0, 0) })}</p>)}
+                    : <p className="sd-help">{tr("turbinesFit", { n: s.turbineCount, need: s.needTurbines, d: nf(s.rotorM, 0), r: nf(s.keepoutRadiusM || 0, 0) })}</p>)}
+                  {hasWind && s.turbineCount > 0 && <p className="sd-help">{tr("turbinesDrag")}</p>}
+                  {hasWind && tbFixed && <button type="button" className="sd-btn" onClick={() => api.current.autoTurbines?.()}>{tr("turbinesAuto")}</button>}
                   <button type="button" className="sd-btn primary big sd-apply" disabled={!fits} onClick={() => { api.current.save?.(); onClose?.(); }}>
                     <Check size={19} aria-hidden="true" />{tr("apply")}
                   </button>

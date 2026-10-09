@@ -37,7 +37,7 @@ export default function LayoutPanel({ lang = "en", pl, onSave }) {
             <p className="pl-line">{plt("ly_need", lang, { ha: f(lay.need.ha), tables: f(lay.need.tables, 0), mods: f(lay.need.modulesPerTable, 0), pitch: f(lay.need.pitchM), gcr: f(lay.need.gcr, 2) })}</p>
           )}
           {assumed.length > 0 && <p className="pf-hint">{plt("ly_assume", lang, { what: assumed.join(", ") })}</p>}
-          {lay.inputs?.wind && (() => { const D = rotorDiameterM(lay.inputs.wind.mwPerTurbine); const r = keepoutRadiusM(lay.inputs.wind.hubM, D);
+          {lay.inputs?.wind && (() => { const D = rotorDiameterM(lay.inputs.wind.mwPerTurbine); const r = keepoutRadiusM(D);
             return <p className="pl-line">{plt("ly_need_wind", lang, { n: f(lay.inputs.wind.count, 0), d: f(D, 0), r: f(r, 0) })}</p>; })()}
           <button type="button" className="ly-open" onClick={() => setOpen(true)}>
             <span className="ly-open-ic" aria-hidden="true">
