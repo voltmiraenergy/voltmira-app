@@ -206,6 +206,8 @@ body{margin:0;font-family:var(--f-b);color:var(--ink);background:var(--paper-2);
 export default async function LoginPage(props) {
   const searchParams = await props.searchParams;
   const lang = await langFor(searchParams);
+  // the "I'm developing a plant" path, from the Project pack on the pricing page
+  const dev = searchParams?.for === "developer";
   const c = COPY[lang];
 
   return (
@@ -228,12 +230,12 @@ export default async function LoginPage(props) {
           </div>
 
           <div className="lp-copy">
-            <h1 className="lp-h" dangerouslySetInnerHTML={{ __html: c.h1 }} />
-            <p className="lp-lead">{c.lead}</p>
+            <h1 className="lp-h" dangerouslySetInnerHTML={{ __html: dev ? c.dev_h1 : c.h1 }} />
+            <p className="lp-lead">{dev ? c.dev_lead : c.lead}</p>
           </div>
         </section>
 
-        <LoginForm lang={lang} c={c} error={searchParams?.error === "auth" ? "oauth" : ""} />
+        <LoginForm lang={lang} c={c} error={searchParams?.error === "auth" ? "oauth" : ""} dev={dev} />
       </main>
     </>
   );

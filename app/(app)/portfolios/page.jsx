@@ -9,7 +9,7 @@ import { currentCompany } from "../../../lib/session.js";
 import { normLang } from "../../../lib/i18n.js";
 import { pt } from "../../../lib/portfolioText.js";
 import { createPortfolio } from "../../../lib/actions.js";
-import { createSampleProject, createPlantProject } from "../../../lib/plantActions.js";
+import { createSampleProject } from "../../../lib/plantActions.js";
 import { plt } from "../../../lib/plantText.js";
 import { PLANTS_KEY } from "../../../lib/portfolioModel.js";
 import SubmitButton from "./SubmitButton.jsx";
@@ -72,13 +72,10 @@ export default async function PortfoliosPage(props) {
               </form>
             </div>
             <p className="pf-hint">{plt("sample_wait", lang)}</p>
-            <form action={createPlantProject} className="pf-new-form pf-plant-new">
-              <div className="field">
-                <label htmlFor="plName">{plt("new_plant", lang)}</label>
-                <input id="plName" name="name" className="input" maxLength={160} placeholder={plt("new_plant_ph", lang)} required />
-              </div>
-              <SubmitButton className="btn">{plt("new_plant", lang)}</SubmitButton>
-            </form>
+            {/* a developer's own plant: the guided start asks for the site, the parts, the sale and the loan */}
+            <div className="pl-row pf-plant-new">
+              <Link className="btn" href="/portfolios/start">{plt("st_cta", lang)}</Link>
+            </div>
           </section>
 
           <section className="card pf-new">

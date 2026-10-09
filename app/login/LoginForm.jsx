@@ -33,8 +33,11 @@ function rememberLang(l) {
   document.cookie = `voltmira_lang=${l}; path=/; max-age=31536000; samesite=lax`;
 }
 
-export default function LoginForm({ lang, c, error = "" }) {
-  const [mode, setMode] = useState("signin"); // signin | signup
+// dev: the "I'm developing a plant" path (/login?for=developer): it opens on
+// "Create account" and lands on the guided start of a plant, not the dashboard
+export default function LoginForm({ lang, c, error = "", dev = false }) {
+  const [mode, setMode] = useState(dev ? "signup" : "signin"); // signin | signup
+  const dest = dev ? "/portfolios/start" : "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [company, setCompany] = useState("");
@@ -126,13 +129,13 @@ export default function LoginForm({ lang, c, error = "" }) {
         // The workspace starts in the language this page is in.
         const { error: e2 } = await bootstrapWorkspace(sb, { company, lang });
         if (e2) return toast(M.setup);
-        location.href = "/dashboard";
+        location.href = dest;
       } else {
         const { error } = await sb.auth.signInWithPassword({
           email, password, options: { captchaToken },
         });
         if (error) { resetCaptcha(); return toast(M.signin); }
-        location.href = "/dashboard";
+        location.href = dest;
       }
     } finally {
       setBusy(false);
@@ -171,7 +174,7 @@ export default function LoginForm({ lang, c, error = "" }) {
     // hitting /dashboard (otherwise the OAuth round trip bounces to /login).
     await sb.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${location.origin}/auth/callback?next=/dashboard` },
+      options: { redirectTo: `${location.origin}/auth/callback?next=${dest}` },
     });
   }
 
@@ -205,7 +208,7 @@ export default function LoginForm({ lang, c, error = "" }) {
           </a>
           <nav className="langs" aria-label={c.lang}>
             {LOGIN_LANGS.map((l) => (
-              <a key={l} href={`/login?lang=${l}`} hrefLang={l} lang={l} aria-current={l === lang ? "true" : undefined}
+              <a key={l} href={`/login?lang=${l}${dev ? "&for=developer" : ""}`} hrefLang={l} lang={l} aria-current={l === lang ? "true" : undefined}
                  onClick={() => rememberLang(l)}>{l.toUpperCase()}</a>
             ))}
           </nav>
@@ -221,8 +224,8 @@ export default function LoginForm({ lang, c, error = "" }) {
 
         <div className="fp-main">
           <form className="form" onSubmit={submit}>
-            <h2 className="form-h">{isUp ? c.signup_h : c.signin_h}</h2>
-            <p className="form-sub">{isUp ? c.signup_sub : c.signin_sub}</p>
+            <h2 className="form-h">{isUp ? (dev ? c.dev_h : c.signup_h) : c.signin_h}</h2>
+            <p className="form-sub">{isUp ? (dev ? c.dev_sub : c.signup_sub) : c.signin_sub}</p>
 
             <div className={`seg ${isUp ? "up" : ""}`} role="tablist" aria-label={c.tabs_label}>
               <span className="seg-thumb" aria-hidden="true" />
