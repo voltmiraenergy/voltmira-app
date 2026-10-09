@@ -18,7 +18,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { normalizePlant, plantEnergy, plantCapex, plantHeadroom } from "../../lib/plantFinance.js";
 import { STATUSES, GRID_STEPS, permitProgress } from "../../lib/plantPermits.js";
 import { connectionGroups } from "../../lib/gridOptions.js";
-import { screenWindAt, solarYieldAt } from "../../lib/plantActions.js";
+import { screenWindAt, solarYieldAt, siteClimateAt } from "../../lib/plantActions.js";
 import { blankPlant } from "../../lib/plantSample.js";
 import { AUCTION_2 } from "../../lib/greenData.js";
 import { plt } from "../../lib/plantText.js";
@@ -31,7 +31,10 @@ import { monthlyCover } from "../../lib/monthlyCover.js";
 import { weatherReplay } from "../../lib/weatherReplay.js";
 import { preflight } from "../../lib/preflight.js";
 import { checkText } from "../../lib/preflightText.js";
-import { basisLine, replayLine, monthlyLine } from "../../lib/energyBasis.js";
+import { basisLine, replayLine, monthlyLine, equipmentLines } from "../../lib/energyBasis.js";
+import { designAngles, inverterMw } from "../../lib/equipment.js";
+import { climateDriftKm } from "../../lib/siteClimate.js";
+import { SiteClimateTable } from "./TechnicalAnnex.jsx";
 import SitePicker from "./SitePicker.jsx";
 import GridPanel from "./GridPanel.jsx";
 import { siteDrift } from "../../lib/sitePick.js";
@@ -82,6 +85,12 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
   const setIn = (key, patch) => onChange({ ...raw, [key]: { ...(raw[key] || {}), ...patch } });
   const setLive = (key, patch) => { const { raw: r, onChange: ch } = live.current; ch({ ...r, [key]: { ...(r[key] || {}), ...patch } }); };
   const drift = siteDrift(pl);
+  const climateDrift = climateDriftKm(pl);
+  // the equipment list: one part at a time, kept as typed
+  const setEq = (part, patch) => onChange({ ...raw, equipment: { ...(raw.equipment || {}), [part]: { ...((raw.equipment || {})[part] || {}), ...patch } } });
+  const eqf = (part, key, label, o = {}) => (
+    <Field id={`eq-${part}-${key}-${id}`} label={plt(label, lang)} value={(raw.equipment?.[part] || {})[key] ?? ""} onChange={(v) => setEq(part, { [key]: v })} {...o} />
+  );
   const en = plantEnergy(pl);
   const cap = plantCapex(pl);
   const hr = plantHeadroom(pl, E, fin, scenario, target);
@@ -99,10 +108,18 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
   }
   async function pvgis(at = pl) {
     setBusy("solar"); setMsg(null);
-    const r = await solarYieldAt(at.lat, at.lon).catch(() => null);
+    const r = await solarYieldAt(at.lat, at.lon, designAngles(pl)).catch(() => null);
     setBusy(null);
     if (r && r.ok) setLive("solar", { yieldKwhKwp: r.yieldKwhKwp, yieldSource: "pvgis", yieldAt: { lat: at.lat, lon: at.lon }, ...r.site });
     else setMsg({ k: "solar", t: plt("sol_failed", lang) });
+  }
+
+  async function loadClimate(at = pl) {
+    setBusy("climate"); setMsg(null);
+    const r = await siteClimateAt(at.lat, at.lon).catch(() => null);
+    setBusy(null);
+    if (r && r.ok) { const { raw: cur, onChange: ch } = live.current; ch({ ...cur, climate: r.climate }); }
+    else setMsg({ k: "climate", t: plt("cl_failed", lang) });
   }
 
   // a point chosen on the map: the site moves there, and the wind and the sun
@@ -119,6 +136,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
       else setMsg({ k: "wind", t: plt("w_failed", lang) });
     }
     if (raw.solar) await pvgis({ lat, lon });
+    if (raw.climate) await loadClimate({ lat, lon });
   }
 
   const p90Mwh = (en.wind ? en.wind.p50Mwh * Math.max(0, 1 - (1.2816 * en.wind.sigmaPct) / 100) : 0)
@@ -346,6 +364,93 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
             <summary>{plt("wr_h", lang)}: {replayLine(replay, lang)}</summary>
             <WeatherReplay replay={replay} lang={lang} className="pf-t" heading={false} />
           </details>
+        )}
+      </section>
+
+      {/* ---- what it is built from, and the loads the structure is designed for */}
+      <section className="pl-comp" aria-label={plt("eq_h", lang)}>
+        <div className="pl-comp-h"><h4>{plt("eq_h", lang)}</h4></div>
+        <p className="pf-hint">{plt("eq_p", lang)}</p>
+        {raw.solar && (
+          <>
+            <h5>{plt("eq_modules", lang)}</h5>
+            <div className="pl-grid">
+              {eqf("modules", "maker", "eq_maker", { type: "text" })}{eqf("modules", "model", "eq_model", { type: "text" })}
+              {eqf("modules", "count", "eq_count", { step: "1", min: "0" })}{eqf("modules", "wp", "eq_wp", { min: "0" })}
+              {eqf("modules", "productYears", "eq_prod_y", { step: "1", min: "0", max: "50" })}{eqf("modules", "perfYears", "eq_perf_y", { step: "1", min: "0", max: "50" })}
+            </div>
+            <h5>{plt("eq_inverters", lang)}</h5>
+            <div className="pl-grid">
+              {eqf("inverters", "maker", "eq_maker", { type: "text" })}{eqf("inverters", "model", "eq_model", { type: "text" })}
+              {eqf("inverters", "count", "eq_count", { step: "1", min: "0" })}{eqf("inverters", "kw", "eq_kw", { min: "0" })}
+              {eqf("inverters", "years", "eq_years", { step: "1", min: "0", max: "50" })}
+            </div>
+            {!(raw.solar.acMw > 0) && inverterMw(pl.equipment) != null && <p className="pf-hint">{plt("eq_ac_from", lang, { x: fnum(inverterMw(pl.equipment), lang, 2) })}</p>}
+            <h5>{plt("eq_mounting", lang)}</h5>
+            <div className="pl-grid">
+              <div className="field">
+                <label htmlFor={`eq-mounting-kind-${id}`}>{plt("eq_kind", lang)}</label>
+                <select id={`eq-mounting-kind-${id}`} className="input" value={raw.equipment?.mounting?.kind || "fixed"} onChange={(e) => setEq("mounting", { kind: e.target.value })}>
+                  <option value="fixed">{plt("eq_fixed", lang)}</option><option value="tracker">{plt("eq_tracker", lang)}</option>
+                </select>
+              </div>
+              {eqf("mounting", "maker", "eq_maker", { type: "text" })}
+              {(raw.equipment?.mounting?.kind || "fixed") === "fixed" && <>{eqf("mounting", "tiltDeg", "eq_tilt", { min: "0", max: "90" })}{eqf("mounting", "azimuthDeg", "eq_az", { min: "-180", max: "180" })}</>}
+              {eqf("mounting", "years", "eq_years", { step: "1", min: "0", max: "50" })}
+            </div>
+            <small className="pf-hint">{plt("eq_angles_h", lang)}</small>
+            <h5>{plt("eq_transformers", lang)}</h5>
+            <div className="pl-grid">
+              {eqf("transformers", "maker", "eq_maker", { type: "text" })}{eqf("transformers", "count", "eq_count", { step: "1", min: "0" })}
+              {eqf("transformers", "mva", "eq_mva", { min: "0" })}{eqf("transformers", "ratio", "eq_ratio", { type: "text", placeholder: "0.8/22" })}
+              {eqf("transformers", "years", "eq_years", { step: "1", min: "0", max: "50" })}
+            </div>
+          </>
+        )}
+        {raw.wind && (
+          <>
+            <h5>{plt("eq_turbines", lang)}</h5>
+            <div className="pl-grid">
+              {eqf("turbines", "maker", "eq_maker", { type: "text" })}{eqf("turbines", "model", "eq_model", { type: "text" })}
+              {eqf("turbines", "count", "eq_count", { step: "1", min: "0" })}{eqf("turbines", "mw", "eq_mw", { min: "0" })}
+              {eqf("turbines", "years", "eq_years", { step: "1", min: "0", max: "50" })}
+            </div>
+          </>
+        )}
+        {raw.bess && (
+          <>
+            <h5>{plt("eq_storage", lang)}</h5>
+            <div className="pl-grid">
+              {eqf("storage", "maker", "eq_maker", { type: "text" })}{eqf("storage", "model", "eq_model", { type: "text" })}
+              {eqf("storage", "chemistry", "eq_chem", { type: "text" })}{eqf("storage", "years", "eq_years", { step: "1", min: "0", max: "50" })}
+            </div>
+          </>
+        )}
+        {equipmentLines(pl, lang).map((l) => <p key={l} className="pl-line">{l}</p>)}
+        <h5>{plt("eq_design_h", lang)}</h5>
+        <div className="pl-grid">
+          {eqf("design", "windMs", "eq_wind_ms", { min: "0", max: "100" })}{eqf("design", "snowKnM2", "eq_snow", { min: "0", max: "20" })}
+          {eqf("design", "tMinC", "eq_tmin", { min: "-60", max: "30" })}{eqf("design", "tMaxC", "eq_tmax", { min: "0", max: "80" })}
+          {eqf("design", "standard", "eq_std", { type: "text", wide: true, hint: plt("eq_std_h", lang) })}
+        </div>
+      </section>
+
+      {/* ---- the site: elevation, horizon, and the weather extremes */}
+      <section className="pl-comp" aria-label={plt("cl_h", lang)}>
+        <div className="pl-comp-h"><h4>{plt("cl_h", lang)}</h4></div>
+        <div className="pl-row">
+          <button type="button" className="btn sm" disabled={!hasSite || busy === "climate"} aria-busy={busy === "climate"} onClick={() => loadClimate()}>
+            {plt(pl.climate ? "cl_reload" : "cl_load", lang)}{busy === "climate" ? "..." : ""}
+          </button>
+          {!hasSite && <small className="pf-hint">{plt("f_need_site", lang)}</small>}
+        </div>
+        {msg?.k === "climate" && <p className="pf-warn" role="alert">{msg.t}</p>}
+        {climateDrift != null && <p className="pf-warn">{plt("cl_moved", lang, { km: fnum(climateDrift, lang, 1) })}</p>}
+        {pl.climate && (
+          <>
+            {pl.climate.fetched && <p className="pl-line ok">{plt("cl_got", lang, { date: pl.climate.fetched })}</p>}
+            <SiteClimateTable pl={pl} lang={lang} className="pf-t" heading={false} />
+          </>
         )}
       </section>
 

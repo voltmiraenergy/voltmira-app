@@ -26,6 +26,7 @@ import MarketContext from "../../../../../components/portfolio/MarketContext.jsx
 import { et } from "../../../../../lib/energyText.js";
 import { plt } from "../../../../../lib/plantText.js";
 import PlantReport from "../../../../../components/portfolio/PlantReport.jsx";
+import MethodsAnnex from "../../../../../components/portfolio/MethodsAnnex.jsx";
 import { mdDayKey } from "../../../../../lib/tz.js";
 
 const Row = ({ k, v }) => <tr><th scope="row">{k}</th><td>{v}</td></tr>;
@@ -374,6 +375,11 @@ export default function Report({ model, lang, company, date, money, fx, rid = ""
         </tbody></table>
         <h3>{pt("r_limits", lang)}</h3>
         <p>{pt("r_limits_p", lang)}</p>
+      </section>
+
+      {/* ---- methods and glossary */}
+      <section className="rp-page">
+        <MethodsAnnex lang={lang} />
       </section>
     </article>
   );

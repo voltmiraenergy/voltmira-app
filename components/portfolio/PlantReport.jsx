@@ -14,6 +14,7 @@ import { bt } from "../../lib/bankText.js";
 import { connectionGroups } from "../../lib/gridOptions.js";
 import GridAnnex from "./GridAnnex.jsx";
 import { P90Basis, YieldLosses, WeatherReplay, SeasonalCover, ExportLimit } from "./EnergyBasis.jsx";
+import TechnicalAnnex from "./TechnicalAnnex.jsx";
 import { monthlyCover } from "../../lib/monthlyCover.js";
 import { weatherReplay } from "../../lib/weatherReplay.js";
 
@@ -55,6 +56,7 @@ export default function PlantReport({ assets, lang, money, E, fin, scenario, tar
             {en.wind?.source === "screening" && <p className="rp-small">{plt("w_screen_doc", lang)}</p>}
             {en.solar && <P90Basis solar={en.solar} lang={lang} />}
             <ExportLimit pl={pl} lang={lang} money={money} />
+            <TechnicalAnnex pl={pl} lang={lang} />
             <WeatherReplay replay={weatherReplay(pl, E, fin, scenario)} lang={lang} />
             <SeasonalCover mc={monthlyCover(pl, E, fin, scenario)} lang={lang} money={money} />
             {pl.solar?.yieldSource === "pvgis" && <YieldLosses losses={pl.solar.yieldLosses} lang={lang} />}

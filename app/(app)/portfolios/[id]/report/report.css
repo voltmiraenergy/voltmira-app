@@ -149,6 +149,18 @@
 .app .gr-annex-t tr.best td { background: var(--green-tint); }
 .app .gr-annex-t tr.on td:first-child { box-shadow: inset 3px 0 0 var(--green); }
 .app .rp-annex .rp-list li { font-size: 10.5px; }
+/* the equipment and site tables, and the methods page */
+.app .rp-eq small, .app .rp-site small { display: block; font-size: 9.5px; color: var(--muted); font-weight: 500; }
+.app .rp-eq td, .app .rp-site td { vertical-align: top; }
+.app .rp-annex .rp-eq th, .app .rp-annex .rp-eq td, .app .rp-annex .rp-site th, .app .rp-annex .rp-site td { padding: 3px 6px; font-size: 10.5px; }
+.app .rp-methods h3 { margin: 0 0 2px; }
+.app .rp-methods h4 { margin: 8px 0 3px; font-size: 11.5px; letter-spacing: .02em; }
+.app .rp-methods .rp-mp { margin: 0 0 4px; font-size: 10.5px; line-height: 1.4; }
+.app .rp-gl { margin: 0; column-count: 2; column-gap: 22px; font-size: 10px; line-height: 1.35; }
+.app .rp-gl > div { break-inside: avoid; display: block; margin-bottom: 3px; }
+.app .rp-gl dt { font-weight: 700; display: inline; }
+.app .rp-gl dt::after { content: ": "; font-weight: 700; }
+.app .rp-gl dd { margin: 0; display: inline; }
 .app .gr-annex-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; align-items: start; }
 .app .gr-annex-3 h3 { font-size: 12px; }
 @media print {

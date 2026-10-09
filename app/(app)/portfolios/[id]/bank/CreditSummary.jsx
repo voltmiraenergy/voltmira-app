@@ -18,6 +18,8 @@ import { llcr, contractYears, stillMissing, missingLine, gapText, gridText } fro
 import { WIND_SOURCE } from "../../../../../lib/windData.js";
 import DscrChart from "../../../../../components/portfolio/DscrChart.jsx";
 import GridAnnex from "../../../../../components/portfolio/GridAnnex.jsx";
+import TechnicalAnnex, { hasTechnicalAnnex } from "../../../../../components/portfolio/TechnicalAnnex.jsx";
+import MethodsAnnex from "../../../../../components/portfolio/MethodsAnnex.jsx";
 import { dt } from "../../../../../lib/dealText.js";
 import { basisLine, dataSourceLines, replayLine, monthlyLine, exportLines } from "../../../../../lib/energyBasis.js";
 import { monthlyCover } from "../../../../../lib/monthlyCover.js";
@@ -265,6 +267,18 @@ export default function CreditSummary({ model, lang, company, date, money, fx, t
           <GridAnnex plant={a.plant} lang={lang} money={money} E={model.E} fin={model.fin} scenario={model.scenario} todayKey={todayKey} />
         </section>
       )}
+
+      {/* ---- annex: the equipment and the site, when entered or loaded */}
+      {hasTechnicalAnnex(pl) && (
+        <section className="rp-page rp-annex">
+          <TechnicalAnnex pl={pl} lang={lang} />
+        </section>
+      )}
+
+      {/* ---- annex: how the figures are built, and the terms */}
+      <section className="rp-page rp-annex rp-annex-methods">
+        <MethodsAnnex lang={lang} />
+      </section>
     </article>
   );
 }
