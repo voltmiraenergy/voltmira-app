@@ -14,7 +14,9 @@ import { pct, dscr, num, mwhUnit } from "../../../../../lib/portfolioFormat.js";
 import { caseLabel, riskRows } from "../../../../../lib/portfolioExport.js";
 import { fxNote, taxLine } from "../../../../../lib/portfolioDisplay.js";
 import { normalizePlant, plantEnergy, plantHeadroom } from "../../../../../lib/plantFinance.js";
-import { llcr, contractYears, stillMissing, missingLine, gapText, gridText } from "../../../../../lib/bankPack.js";
+import { llcr, contractYears, stillMissing, missingLine, gapText, gridText, mixLine } from "../../../../../lib/bankPack.js";
+
+export { mixLine };
 import { WIND_SOURCE } from "../../../../../lib/windData.js";
 import DscrChart from "../../../../../components/portfolio/DscrChart.jsx";
 import GridAnnex from "../../../../../components/portfolio/GridAnnex.jsx";
@@ -31,14 +33,6 @@ const LEVEL = { high: 0, medium: 1, low: 2, unknown: 3 };
 const mwUnit = (lang) => (lang === "ru" || lang === "uk" ? "МВт" : "MW");
 const mwpUnit = (lang) => ({ ru: "МВт пик", uk: "МВт пік" }[lang] || "MWp");
 
-/** The plant's parts in a line: "wind 40 MW, solar 20 MWp, battery storage 10 MW / 20 MWh". */
-export function mixLine(pl, lang) {
-  const parts = [];
-  if (pl.wind) parts.push(`${plt("c_wind", lang).toLowerCase()} ${num(pl.wind.mw, lang, 1)} ${mwUnit(lang)}`);
-  if (pl.solar) parts.push(`${plt("c_solar", lang).toLowerCase()} ${num(pl.solar.mwp, lang, 1)} ${mwpUnit(lang)}`);
-  if (pl.bess) parts.push(`${plt("c_bess", lang).toLowerCase()} ${num(pl.bess.mw, lang, 1)} ${mwUnit(lang)} / ${num(pl.bess.mwh, lang, 0)} ${mwhUnit(lang)}`);
-  return parts.join(", ");
-}
 
 // docCounts: the documents on file per checklist item (lib/dealRoom.js), or
 // null where the deal room is not set up; the checklist then shows no column

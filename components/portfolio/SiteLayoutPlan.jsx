@@ -76,7 +76,8 @@ function TurbineMark({ x, y, n }) {
   );
 }
 
-export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 470, heading = true }) {
+// facts and note: the figures table and the long method note; the investor teaser drops the note
+export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 470, heading = true, facts = true, note = true }) {
   const lay = layoutFor(pl);
   if (!lay.result || !lay.result.tables.length) return null;
   const r = lay.result;
@@ -146,10 +147,10 @@ export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 
         <li><i className="ly-line" style={{ borderColor: COLOR.plot }} />{plt(s.turbinesPlaced ? "ly_leg_field" : "ly_leg_plot", lang)}</li>
         {pl.layout.exclusions.length > 0 && <li><i className="ly-excl" style={{ borderColor: COLOR.excl, background: "rgba(229,72,77,.3)" }} />{plt("ly_leg_excl", lang)}</li>}
       </ul>
-      <table className="rp-kv ly-facts"><tbody>
+      {facts && <table className="rp-kv ly-facts"><tbody>
         {layoutFacts(lay, lang, pl.solar?.mwp).map(([k, val]) => <tr key={k}><th scope="row">{k}</th><td>{val}</td></tr>)}
-      </tbody></table>
-      <p className="rp-small">{plt("ly_note", lang, { sb: num(s.setbackM, lang, 0), w: num(moduleSides(lay.inputs.wp).short, lang, 2), h: num(moduleSides(lay.inputs.wp).long, lang, 2) })}{r.turbines.length > 0 ? ` ${plt("ly_note_wind", lang)}` : ""}</p>
+      </tbody></table>}
+      {note && <p className="rp-small">{plt("ly_note", lang, { sb: num(s.setbackM, lang, 0), w: num(moduleSides(lay.inputs.wp).short, lang, 2), h: num(moduleSides(lay.inputs.wp).long, lang, 2) })}{r.turbines.length > 0 ? ` ${plt("ly_note_wind", lang)}` : ""}</p>}
     </>
   );
 }

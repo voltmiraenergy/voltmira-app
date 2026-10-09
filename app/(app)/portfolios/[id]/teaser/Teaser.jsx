@@ -1,6 +1,9 @@
 // app/(app)/portfolios/[id]/teaser/Teaser.jsx — the investor teaser: what the
 // opportunity is, the key figures, sources and uses, the debt cover, the
 // assets and where they are, the main risks, and what is ready to share.
+// When a plant has a site plan, the largest one gets a sheet of its own (the
+// aerial plan, its legend and figures) between the figures and the cover of
+// the debt: what an investor wants to see first is the plant itself.
 // Server-rendered; every chart is plain SVG or HTML (the PDF blocks scripts).
 import { pt } from "../../../../../lib/portfolioText.js";
 import { bt } from "../../../../../lib/bankText.js";
@@ -11,6 +14,8 @@ import { fxNote } from "../../../../../lib/portfolioDisplay.js";
 import DscrChart from "../../../../../components/portfolio/DscrChart.jsx";
 import SourcesUses from "../../../../../components/portfolio/SourcesUses.jsx";
 import StaticMap from "../../../../../components/portfolio/StaticMap.jsx";
+import SiteLayoutPlan, { hasLayout } from "../../../../../components/portfolio/SiteLayoutPlan.jsx";
+import { normalizePlant } from "../../../../../lib/plantFinance.js";
 
 const MAX_ROWS = 10;
 const LEVEL = { high: 0, medium: 1, low: 2, unknown: 3 };
@@ -25,6 +30,10 @@ export default function Teaser({ model, lang, company, date, money, fx, rid = ""
   const rr = riskRows(model, lang).map((r, i) => ({ r, level: model.risks[i].level }))
     .filter((x) => x.level === "high" || x.level === "medium").sort((a, b) => LEVEL[a.level] - LEVEL[b.level]).slice(0, 4);
   const located = assets.filter((a) => a.lat != null);
+  // the plants with a site plan, largest first: the first gets the site sheet
+  const planned = assets.filter((a) => a.kind === "plant").map((a) => ({ a, pl: normalizePlant(a.plant) }))
+    .filter((x) => hasLayout(x.pl)).sort((x, y) => (y.a.kw || 0) - (x.a.kw || 0));
+  const site = planned[0] || null;
   // the debt sought: what the model carries, never more than the cash flow supports
   const sought = hasDebt ? Math.min(sizing.capacityEur, sizing.currentLoanEur) : sizing.capacityEur;
   // what the assets are: rooftop quotes are solar; a plant names its sources
@@ -63,6 +72,14 @@ export default function Teaser({ model, lang, company, date, money, fx, rid = ""
         <SourcesUses su={model.sourcesUses} money={money} lang={lang} />
       </section>
 
+      {site && (
+        <section className="rp-page rp-site">
+          <h3>{plt("ly_h_doc", lang)}{assets.length > 1 ? `: ${site.a.name}` : ""}</h3>
+          <SiteLayoutPlan pl={site.pl} lang={lang} heading={false} note={false} width={720} height={500} />
+          {planned.length > 1 && <p className="rp-small">{plt("ly_teaser_more", lang, { n: planned.length - 1 })}</p>}
+        </section>
+      )}
+
       <section className="rp-page">
         {/* the cover of the debt opens the second page: the first is full with the figures and the sources */}
         {hasDebt && (
@@ -82,7 +99,7 @@ export default function Teaser({ model, lang, company, date, money, fx, rid = ""
           ))}
         </tbody></table>
         {assets.length > MAX_ROWS && <p className="rp-small">{pt("t_more", lang, { n: assets.length - MAX_ROWS })}</p>}
-        {located.length > 0 && <StaticMap assets={assets.slice(0, MAX_ROWS)} label={pt("map_label", lang)} width={700} height={170} />}
+        {located.length > 0 && (!site || located.length > 1) && <StaticMap assets={assets.slice(0, MAX_ROWS)} label={pt("map_label", lang)} width={700} height={170} />}
         {rr.length > 0 && (
           <>
             <h3>{pt("t_risks", lang)}</h3>
