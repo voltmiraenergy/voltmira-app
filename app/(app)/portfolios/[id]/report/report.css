@@ -149,6 +149,15 @@
 .app .gr-annex-t tr.best td { background: var(--green-tint); }
 .app .gr-annex-t tr.on td:first-child { box-shadow: inset 3px 0 0 var(--green); }
 .app .rp-annex .rp-list li { font-size: 10.5px; }
+/* the site layout plan */
+.app .ly-plan { margin: 2px 0; }
+.app .ly-legend { list-style: none; margin: 4px 0 2px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 10.5px; }
+.app .ly-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.app .ly-legend i { display: inline-block; width: 14px; height: 9px; border-radius: 1px; }
+.app .ly-legend i.ly-dash { background: none; border-top: 2px dashed; height: 0; }
+.app .ly-legend i.ly-line { background: none; border: 2px solid; height: 8px; }
+.app .ly-facts th, .app .ly-facts td { padding-top: 2px; padding-bottom: 2px; font-size: 10.5px; }
+.app .ly-facts th { width: 34%; }
 /* the equipment and site tables, and the methods page */
 .app .rp-eq small, .app .rp-site small { display: block; font-size: 9.5px; color: var(--muted); font-weight: 500; }
 .app .rp-eq td, .app .rp-site td { vertical-align: top; }

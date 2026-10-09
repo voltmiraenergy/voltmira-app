@@ -35,6 +35,7 @@ import { basisLine, replayLine, monthlyLine, equipmentLines } from "../../lib/en
 import { designAngles, inverterMw } from "../../lib/equipment.js";
 import { climateDriftKm } from "../../lib/siteClimate.js";
 import { SiteClimateTable } from "./TechnicalAnnex.jsx";
+import LayoutPanel from "./LayoutPanel.jsx";
 import SitePicker from "./SitePicker.jsx";
 import GridPanel from "./GridPanel.jsx";
 import { siteDrift } from "../../lib/sitePick.js";
@@ -453,6 +454,9 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
           </>
         )}
       </section>
+
+      {/* ---- the plot and the panels laid out on it */}
+      <LayoutPanel id={id} lang={lang} raw={raw} pl={pl} onChange={onChange} />
 
       {/* ---- the grid around the site, and the connection */}
       <GridPanel id={id} lang={lang} raw={raw} hasSite={hasSite} money={money} E={E} fin={fin} scenario={scenario} groups={groups}

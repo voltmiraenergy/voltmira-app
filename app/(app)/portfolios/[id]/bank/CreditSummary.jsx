@@ -20,6 +20,7 @@ import DscrChart from "../../../../../components/portfolio/DscrChart.jsx";
 import GridAnnex from "../../../../../components/portfolio/GridAnnex.jsx";
 import TechnicalAnnex, { hasTechnicalAnnex } from "../../../../../components/portfolio/TechnicalAnnex.jsx";
 import MethodsAnnex from "../../../../../components/portfolio/MethodsAnnex.jsx";
+import SiteLayoutPlan, { hasLayout } from "../../../../../components/portfolio/SiteLayoutPlan.jsx";
 import { dt } from "../../../../../lib/dealText.js";
 import { basisLine, dataSourceLines, replayLine, monthlyLine, exportLines } from "../../../../../lib/energyBasis.js";
 import { monthlyCover } from "../../../../../lib/monthlyCover.js";
@@ -265,6 +266,13 @@ export default function CreditSummary({ model, lang, company, date, money, fx, t
       {pl.grid && (
         <section className="rp-page rp-annex">
           <GridAnnex plant={a.plant} lang={lang} money={money} E={model.E} fin={model.fin} scenario={model.scenario} todayKey={todayKey} />
+        </section>
+      )}
+
+      {/* ---- annex: the plot and the panels laid out on it, when a plot is drawn */}
+      {hasLayout(pl) && (
+        <section className="rp-page rp-annex">
+          <SiteLayoutPlan pl={pl} lang={lang} />
         </section>
       )}
 
