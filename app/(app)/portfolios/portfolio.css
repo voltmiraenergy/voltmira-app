@@ -68,6 +68,8 @@ html[data-theme="dark"] .app .pf { --pf-a: #2BA170; --pf-b: #C4851A; --pf-c: #4C
 .app .pf-t tr.on td { background: var(--green-tint); }
 .app .pf-t td.t-warn { color: var(--pf-warn); font-weight: 700; }
 .app .pf-t td.t-bad { color: var(--pf-bad); font-weight: 700; }
+/* on a phone a wide table scrolls inside itself, never the whole page sideways */
+@media (max-width: 640px) { .app .pf-t { display: block; max-width: 100%; overflow-x: auto; } }
 .app .pf-edit td { background: var(--paper); }
 .app .pf-delta { min-width: 230px; }
 .app .pf-dwrap { display: inline-flex; align-items: center; justify-content: flex-end; gap: 10px; width: 100%; }
