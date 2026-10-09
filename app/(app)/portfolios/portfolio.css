@@ -565,7 +565,31 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 .app .gr-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .app .gr-full-hint { font-size: 12.5px; color: var(--muted); }
 .app .gr-map.drawing { cursor: crosshair; }
-.app .ly-map { height: 480px; min-height: 360px; }
+.app .ly-open { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 560px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); text-align: left; cursor: pointer; transition: border-color .2s ease, transform .15s ease; }
+.app .ly-open:hover { border-color: var(--green); }
+.app .ly-open:active { transform: scale(.99); }
+.app .ly-open-ic { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: var(--green-tint); color: var(--green); flex: none; }
+.app .ly-open-tx { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.app .ly-open-tx b { font-size: 14px; }
+.app .ly-open-tx small { font-size: 12px; color: var(--muted); }
+/* the plan on the card is the printed one */
+.app .ly-preview { display: flex; flex-direction: column; gap: 6px; max-width: 760px; }
+.app .ly-preview .gr-smap { position: relative; }
+.app .ly-preview .gr-smap-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.app .ly-preview .rp-small { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.app .ly-preview .ly-legend { list-style: none; margin: 2px 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; }
+.app .ly-preview .ly-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.app .ly-preview .ly-legend i { display: inline-block; width: 14px; height: 9px; border-radius: 1px; }
+.app .ly-preview .ly-legend i.ly-dash { background: none; border-top: 2px dashed; height: 0; }
+.app .ly-preview .ly-legend i.ly-line { background: none; border: 2px solid; height: 8px; }
+.app .ly-preview .ly-legend i.ly-excl { border: 1.5px dashed; height: 8px; }
+.app .ly-preview .ly-facts { border-collapse: collapse; font-size: 12.5px; }
+.app .ly-preview .ly-facts th { text-align: left; font-weight: 500; color: var(--muted); padding: 3px 14px 3px 0; }
+.app .ly-preview .ly-facts td { font-weight: 600; padding: 3px 0; }
+/* the site planner's own marks */
+.pd-st-wrap { background: none; border: 0; }
+.pd-st { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 6px; background: #D946EF; color: #fff; font: 700 11px/1 system-ui, sans-serif; border: 1.5px solid #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .4); }
+.sd-row-ic.pd-plot { color: #2E9A5E; }
 .app .gr-sq.on { outline: 3px solid #0B1F17; outline-offset: 1px; }
 .app .gr-bend-wrap { background: none; border: 0; }
 .app .gr-bend { display: block; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid #0B1F17; cursor: grab; }

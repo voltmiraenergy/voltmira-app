@@ -87,6 +87,12 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
   const setLive = (key, patch) => { const { raw: r, onChange: ch } = live.current; ch({ ...r, [key]: { ...(r[key] || {}), ...patch } }); };
   const drift = siteDrift(pl);
   const climateDrift = climateDriftKm(pl);
+  // the site planner saves the plan, and the tilt and facing once they are set there, on the plant as it is now
+  const saveLayout = ({ layout, angles }) => {
+    const { raw: cur, onChange: ch } = live.current;
+    const eq = cur.equipment || {};
+    ch({ ...cur, layout, ...(angles ? { equipment: { ...eq, mounting: { ...(eq.mounting || {}), kind: "fixed", tiltDeg: angles.tilt, azimuthDeg: angles.azimuth } } } : {}) });
+  };
   // the equipment list: one part at a time, kept as typed
   const setEq = (part, patch) => onChange({ ...raw, equipment: { ...(raw.equipment || {}), [part]: { ...((raw.equipment || {})[part] || {}), ...patch } } });
   const eqf = (part, key, label, o = {}) => (
@@ -456,7 +462,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
       </section>
 
       {/* ---- the plot and the panels laid out on it */}
-      <LayoutPanel id={id} lang={lang} raw={raw} pl={pl} onChange={onChange} />
+      <LayoutPanel lang={lang} pl={pl} onSave={saveLayout} />
 
       {/* ---- the grid around the site, and the connection */}
       <GridPanel id={id} lang={lang} raw={raw} hasSite={hasSite} money={money} E={E} fin={fin} scenario={scenario} groups={groups}

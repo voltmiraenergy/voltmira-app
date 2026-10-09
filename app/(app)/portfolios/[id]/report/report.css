@@ -156,6 +156,7 @@
 .app .ly-legend i { display: inline-block; width: 14px; height: 9px; border-radius: 1px; }
 .app .ly-legend i.ly-dash { background: none; border-top: 2px dashed; height: 0; }
 .app .ly-legend i.ly-line { background: none; border: 2px solid; height: 8px; }
+.app .ly-legend i.ly-excl { border: 1.5px dashed; height: 8px; }
 .app .ly-facts th, .app .ly-facts td { padding-top: 2px; padding-bottom: 2px; font-size: 10.5px; }
 .app .ly-facts th { width: 34%; }
 /* the equipment and site tables, and the methods page */

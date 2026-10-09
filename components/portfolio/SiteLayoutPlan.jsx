@@ -13,7 +13,7 @@ import { plt } from "../../lib/plantText.js";
 import { num } from "../../lib/portfolioFormat.js";
 
 const SAT = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-const COLOR = { plot: "#FFD54A", table: "#1E3A5F", tableLine: "#CFE3FF", cable: "#FF9F1C", station: "#D946EF", conn: "#E11D48" };
+const COLOR = { excl: "#E5484D", plot: "#FFD54A", table: "#1E3A5F", tableLine: "#CFE3FF", cable: "#FF9F1C", station: "#D946EF", conn: "#E11D48" };
 const NICE = [10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000];
 
 /** The figures of a layout as label and value pairs. */
@@ -28,6 +28,7 @@ export function layoutFacts(lay, lang = "en", declaredMwp = null) {
     [plt("ly_k_fit", lang), `${f(s.mwpFit, 2)} MWp`],
     [plt("ly_k_pitch", lang), plt("ly_v_pitch", lang, { pitch: f(s.pitchM), gcr: f(s.gcr, 2) })],
   ];
+  if (s.plotCount > 1) rows.push([plt("ly_k_plots", lang), plt("ly_v_plots", lang, { n: f(s.plotCount, 0), m: f(s.linkM, 0) })]);
   if (lay.result.stations.length) rows.push([plt("ly_k_cable", lang), plt("ly_v_cable", lang, { m: f(s.cableM, 0), n: f(lay.result.stations.length, 0) })]);
   return rows;
 }
@@ -50,13 +51,13 @@ export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 
   const lay = layoutFor(pl);
   if (!lay.result || !lay.result.tables.length) return null;
   const r = lay.result;
-  const pts = [...pl.layout.boundary.map(([lat, lon]) => ({ lat, lon })), { lat: r.connection.lat, lon: r.connection.lon }];
+  const pts = [...pl.layout.plots.flat().map(([lat, lon]) => ({ lat, lon })), { lat: r.connection.lat, lon: r.connection.lon }];
   const v = staticView(pts, { width, height, pad: 34, minZoom: 12, maxZoom: 19, tiles: { base: SAT, ref: SAT } });
   if (!v) return null;
   const xy = (lat, lon) => { const p = project(lat, lon, v.z); return [p.x - v.left, p.y - v.top]; };
   const poly = (cs) => cs.map((c) => xy(c[0], c[1]).map((n) => n.toFixed(1)).join(",")).join(" ");
   // the scale: metres per pixel at the plot's latitude
-  const lat0 = pl.layout.boundary.reduce((a, p) => a + p[0], 0) / pl.layout.boundary.length;
+  const lat0 = pl.layout.plots[0].reduce((a, p) => a + p[0], 0) / pl.layout.plots[0].length;
   const mpp = (156543.03392 * Math.cos((lat0 * Math.PI) / 180)) / Math.pow(2, v.z);
   const barM = NICE.find((m) => m / mpp >= 70) || NICE[NICE.length - 1];
   const barPx = barM / mpp;
@@ -72,7 +73,11 @@ export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 
           <img key={t.key} src={t.src} alt="" width={256} height={256} style={{ left: (t.left / width) * 100 + "%", top: (t.top / height) * 100 + "%", width: (256 / width) * 100 + "%" }} />
         ))}
         <svg className="gr-smap-svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
-          <polygon points={poly(pl.layout.boundary)} fill={COLOR.plot} fillOpacity="0.08" stroke={COLOR.plot} strokeWidth="2.2" strokeLinejoin="round" />
+          <defs>
+            <pattern id="lyHatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill={COLOR.excl} fillOpacity="0.28" /><line x1="0" y1="0" x2="0" y2="7" stroke={COLOR.excl} strokeWidth="2" /></pattern>
+          </defs>
+          {pl.layout.plots.map((ring, i) => <polygon key={"p" + i} points={poly(ring)} fill={COLOR.plot} fillOpacity="0.08" stroke={COLOR.plot} strokeWidth="2.2" strokeLinejoin="round" />)}
+          {pl.layout.exclusions.map((e, i) => <polygon key={"x" + i} points={poly(e.ring)} fill="url(#lyHatch)" stroke={COLOR.excl} strokeWidth="1.6" strokeDasharray="5 3" />)}
           {r.tables.map((t, i) => <polygon key={i} points={poly(t.corners)} fill={COLOR.table} fillOpacity="0.92" stroke={COLOR.tableLine} strokeWidth="0.35" />)}
           {r.cables.map((c, i) => <polyline key={i} points={poly(c)} fill="none" stroke={COLOR.cable} strokeWidth="1.8" strokeDasharray="5 3" />)}
           {r.stations.map((s) => {
@@ -105,6 +110,7 @@ export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 
         <li><i style={{ background: COLOR.conn }} />{plt("ly_leg_conn", lang)}</li>
         <li><i className="ly-dash" style={{ borderColor: COLOR.cable }} />{plt("ly_leg_cable", lang)}</li>
         <li><i className="ly-line" style={{ borderColor: COLOR.plot }} />{plt("ly_leg_plot", lang)}</li>
+        {pl.layout.exclusions.length > 0 && <li><i className="ly-excl" style={{ borderColor: COLOR.excl, background: "rgba(229,72,77,.3)" }} />{plt("ly_leg_excl", lang)}</li>}
       </ul>
       <table className="rp-kv ly-facts"><tbody>
         {layoutFacts(lay, lang, pl.solar?.mwp).map(([k, val]) => <tr key={k}><th scope="row">{k}</th><td>{val}</td></tr>)}
