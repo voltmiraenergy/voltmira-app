@@ -193,8 +193,14 @@ html[data-theme="dark"] .app .pf { --pf-a: #2BA170; --pf-b: #C4851A; --pf-c: #4C
 .app .pf-nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding: 4px 2px; margin: 0 -2px;
   position: sticky; top: 0; z-index: 5; background: var(--paper); }
 .app .pf-nav::-webkit-scrollbar { display: none; }
-.app .pf-nav a { flex: none; padding: 7px 12px; border-radius: 9px; font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none; white-space: nowrap; }
+.app .pf-nav a { flex: none; padding: 7px 12px; border-radius: 9px; font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none; white-space: nowrap; transition: color .25s ease, background-color .25s ease, transform .15s ease; }
 .app .pf-nav a:hover { color: var(--ink); background: var(--dx-hover); }
+.app .pf-nav a.on { color: var(--ink); background: var(--dx-hover); }
+.app .pf-nav a:active { transform: scale(.97); }
+/* the section a tab lands on is washed for a moment, so the eye finds it */
+@keyframes pf-land { 0% { box-shadow: 0 0 0 10px var(--green-tint); background-color: var(--green-tint); } 100% { box-shadow: 0 0 0 10px transparent; background-color: transparent; } }
+.app .pf-sec.pf-landed, .app .pl.pf-landed { animation: pf-land 1.3s ease-out; border-radius: 12px; }
+@media (prefers-reduced-motion: reduce) { .app .pf-nav a { transition: none; } .app .pf-sec.pf-landed, .app .pl.pf-landed { animation: none; } }
 .app .pf-sec { scroll-margin-top: 56px; display: flex; flex-direction: column; gap: 18px; }
 
 /* ---- empty state */
@@ -526,6 +532,18 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 .app .gr-main > div { display: flex; flex-direction: column; gap: 6px; }
 .app .gr-route { padding: 10px 12px; border-radius: 10px; background: var(--paper); }
 .app .gr-shared { padding: 10px 12px; border-radius: 10px; background: var(--amber-tint); }
+/* the two tables beside the map fit their column: headers wrap, nothing scrolls sideways */
+.app .gr-main .pf-scroll { overflow-x: visible; }
+.app .gr-ox, .app .gr-ct { table-layout: fixed; font-size: 12.5px; }
+.app .gr-ox th, .app .gr-ct th { white-space: normal; padding: 8px 5px; font-size: 10.5px; letter-spacing: .03em; line-height: 1.25; vertical-align: bottom; }
+.app .gr-ox td, .app .gr-ct td { padding: 9px 5px; }
+.app .gr-ox td:first-child { overflow-wrap: anywhere; }
+.app .gr-ox .r, .app .gr-ox .nw { white-space: normal; }
+.app .gr-ox th:nth-child(1) { width: 22%; } .app .gr-ox th:nth-child(2) { width: 10%; } .app .gr-ox th:nth-child(3) { width: 14%; }
+.app .gr-ox th:nth-child(4) { width: 16%; } .app .gr-ox th:nth-child(5) { width: 16%; } .app .gr-ox th:nth-child(6) { width: 11%; } .app .gr-ox th:nth-child(7) { width: 11%; }
+.app .gr-ox .btn.sm { padding: 5px 7px; font-size: 11.5px; white-space: normal; line-height: 1.2; }
+.app .gr-ct th:nth-child(1) { width: 16%; } .app .gr-ct th:nth-child(2), .app .gr-ct th:nth-child(3), .app .gr-ct th:nth-child(4) { width: 18%; } .app .gr-ct th:nth-child(5) { width: 30%; }
+.app .gr-ct select.input { padding-right: 4px; font-size: 11.5px; }
 .app .gr-ox td small, .app .gr-ct td small { display: block; font-size: 11px; color: var(--muted); font-weight: 500; }
 .app .gr-ox td { vertical-align: top; }
 .app .gr-ox tr.best td { background: var(--green-tint); }
@@ -534,8 +552,8 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 .app .gr-ox .gr-no { color: var(--pf-warn, #8A5A0F); font-weight: 600; }
 .app .gr-best { font-style: normal; font-weight: 700; color: var(--green); }
 .app .gr-inuse { font-size: 12px; font-weight: 700; color: var(--green); white-space: nowrap; }
-.app .gr-ct th[scope=row] { white-space: nowrap; font-weight: 600; text-align: left; }
-.app .gr-ct .input { min-width: 90px; padding: 6px 8px; font-size: 12.5px; }
+.app .gr-ct th[scope=row] { font-weight: 600; text-align: left; text-transform: none; letter-spacing: 0; font-size: 12px; }
+.app .gr-ct .input { min-width: 0; width: 100%; padding: 6px 7px; font-size: 12px; }
 .app .gr-cx-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .app .gr-cx-list li { padding: 8px 10px; border-radius: 8px; background: var(--paper); }
 .app .gr-cx-list li small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
@@ -568,7 +586,7 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 .app .gr-sq { display: block; width: 12px; height: 12px; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(20, 42, 33, .5); }
 .app .gr-est { display: flex; flex-direction: column; gap: 8px; }
 .app .gr-est h5 { margin: 0; }
-@media (max-width: 1100px) {
+@media (max-width: 1320px) {
   .app .gr-body { grid-template-columns: 1fr; }
   .app .gr-side { position: static; order: -1; }
   .app .gr-side .gr-map { height: 460px; min-height: 0; }

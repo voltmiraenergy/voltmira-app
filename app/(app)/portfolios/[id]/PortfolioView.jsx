@@ -38,6 +38,7 @@ import { PLANTS_KEY } from "../../../../lib/portfolioModel.js";
 import { blankPlant } from "../../../../lib/plantSample.js";
 import { plt } from "../../../../lib/plantText.js";
 import { mdDayKey } from "../../../../lib/tz.js";
+import { glideTo } from "../../../../lib/smoothJump.js";
 import PlantsPanel from "../../../../components/portfolio/PlantsPanel.jsx";
 
 /** kWh in the reader's language, for the map labels. */
@@ -124,6 +125,32 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
   const triedGeo = useRef(new Set());
   useEffect(() => { pNow.current = p; updateNow.current = update; });
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  // the on-page tabs: glide to the section, and light the tab of the section in view
+  const [here, setHere] = useState("overview");
+  useEffect(() => {
+    const onClick = (e) => {
+      const a = e.target.closest?.('a[href^="#"]');
+      if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+      const el = document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));
+      if (!el) return;
+      e.preventDefault();
+      glideTo(el, { offset: el.classList.contains("pl") ? 70 : 56 });
+      history.replaceState(null, "", a.getAttribute("href"));
+      if (NAV.some(([id]) => id === el.id)) setHere(el.id);
+    };
+    let tick = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(tick);
+      tick = requestAnimationFrame(() => {
+        let cur = null;
+        for (const [id] of NAV) { const el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= 120) cur = id; }
+        if (cur) setHere(cur);
+      });
+    };
+    document.addEventListener("click", onClick);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => { document.removeEventListener("click", onClick); window.removeEventListener("scroll", onScroll); cancelAnimationFrame(tick); };
+  }, []);
   const unplacedKey = model.assets.filter((a) => a.lat == null).map((a) => a.id).join(",");
   const missN = mapMiss.notFound + model.assets.filter((a) => a.lat == null && placeQueries({ address: a.address, title: a.name, market: a.market }).length === 0).length;
   useEffect(() => {
@@ -379,7 +406,7 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
           <nav className="pf-nav" aria-label={pt("on_page", lang)}>
             {NAV.map(([id, k]) => (
               <Fragment key={id}>
-                <a href={"#" + id}>{pt(k, lang)}</a>
+                <a href={"#" + id} className={here === id ? "on" : ""} aria-current={here === id ? "location" : undefined}>{pt(k, lang)}</a>
                 {id === "assets" && plants.length > 0 && <a href="#plants">{plt("sec_h", lang)}</a>}
               </Fragment>
             ))}
