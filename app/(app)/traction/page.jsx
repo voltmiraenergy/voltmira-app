@@ -10,6 +10,9 @@ import { isPlatformAdmin } from "../../../lib/platformAdmin.js";
 import { loadTraction } from "../../../lib/tractionData.js";
 import { relTime } from "../../../lib/relTime.js";
 import { fmtDate } from "../../../lib/tz.js";
+import { openPackRequests } from "../../../lib/packAdmin.js";
+import { paywallOn } from "../../../lib/packPricing.js";
+import PackRequests from "./PackRequests.jsx";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Traction | VoltMira", robots: { index: false } };
@@ -77,7 +80,7 @@ function WeekBars({ title, series, pick, fmt }) {
 export default async function TractionPage() {
   const user = await currentUser();
   if (!isPlatformAdmin(user?.email)) notFound();
-  const r = await loadTraction({ weeks: 12 });
+  const [r, packs] = await Promise.all([loadTraction({ weeks: 12 }), openPackRequests().catch(() => [])]);
   const T = r.totals;
   const thisWeek = r.series.at(-1), lastWeek = r.series.at(-2);
 
@@ -122,6 +125,16 @@ export default async function TractionPage() {
           <dd className="tr-sub">{INT(T.won)} won of {INT(T.won + T.lost)} decided</dd>
         </div>
       </dl>
+
+      <section className="dx-card" aria-labelledby="tr-packs-h">
+        <header className="dx-card-head">
+          <div>
+            <h2 id="tr-packs-h">Bank packs to unlock<span className="dx-count">{packs.length}</span></h2>
+            <p className="dx-muted-note">Paid by bank transfer: unlock once the money has arrived. Card payments unlock on their own. The pack gate is {paywallOn() ? "on" : "off (PACK_PAYWALL is not set), so every pack downloads freely"}.</p>
+          </div>
+        </header>
+        <PackRequests initial={packs} />
+      </section>
 
       <section className="dx-card" aria-labelledby="tr-weeks-h">
         <header className="dx-card-head"><div><h2 id="tr-weeks-h">Week by week</h2></div></header>

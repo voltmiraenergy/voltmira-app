@@ -28,6 +28,7 @@ import { pct, dscr, num as fnum, mwhUnit, kwpUnit, dscrTone, moneyFmt, capacity,
 import { fxNote, structureName, termsLine } from "../../../../lib/portfolioDisplay.js";
 import CashflowChart from "../../../../components/CashflowChart.jsx";
 import DscrChart from "../../../../components/portfolio/DscrChart.jsx";
+import PackPay from "../../../../components/portfolio/PackPay.jsx";
 import TornadoChart from "../../../../components/portfolio/TornadoChart.jsx";
 import SourcesUses from "../../../../components/portfolio/SourcesUses.jsx";
 import ReadinessPanel from "../../../../components/portfolio/ReadinessPanel.jsx";
@@ -884,7 +885,9 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
           <a className={"btn primary" + (exportsOff ? " off" : "")} aria-disabled={exportsOff} tabIndex={exportsOff ? -1 : undefined} href={`/api/portfolios/${portfolio.id}/report${exportQs}`} target="_blank" rel="noopener noreferrer">{pt("ex_report", lang)}</a>
           <a className={"btn ghost" + (exportsOff ? " off" : "")} aria-disabled={exportsOff} tabIndex={exportsOff ? -1 : undefined} href={`/api/portfolios/${portfolio.id}/teaser${exportQs}`} target="_blank" rel="noopener noreferrer" title={pt("ex_teaser_h", lang)}>{pt("ex_teaser", lang)}</a>
           <a className={"btn ghost" + (exportsOff ? " off" : "")} aria-disabled={exportsOff} tabIndex={exportsOff ? -1 : undefined} href={`/api/portfolios/${portfolio.id}/model${exportQs}`}>{pt("ex_model", lang)}</a>
-          <a className={"btn ghost" + (exportsOff ? " off" : "")} aria-disabled={exportsOff} tabIndex={exportsOff ? -1 : undefined} href={`/api/portfolios/${portfolio.id}/dataroom${exportQs}`}>{pt("ex_room", lang)}</a>
+          <PackPay portfolioId={portfolio.id} companyId={portfolio.company_id} lang={lang} disabled={exportsOff}>{(locked) => (locked
+            ? <span className="btn ghost off" aria-disabled="true">{pt("ex_room", lang)}</span>
+            : <a className={"btn ghost" + (exportsOff ? " off" : "")} aria-disabled={exportsOff} tabIndex={exportsOff ? -1 : undefined} href={`/api/portfolios/${portfolio.id}/dataroom${exportQs}`}>{pt("ex_room", lang)}</a>)}</PackPay>
         </div>
         <p className="pf-hint">{pt("ex_teaser_h", lang)}</p>
         <div className="pf-foot">

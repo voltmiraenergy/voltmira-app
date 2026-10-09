@@ -4,6 +4,8 @@
 // link shows), the Excel model, the checklist and every document on file, one
 // folder per item. The same pack as the installer's (lib/bankPack.js). A pack
 // above what a function may answer is handed over through Storage. Logged.
+// A plant whose pack is not paid for (once the gate is on) is not handed out
+// through a link either.
 // Listed in lib/pdfRoutes.mjs so the Chromium binary is bundled with it.
 import { NextResponse, after } from "next/server";
 import { renderPdf, requestOrigin } from "../../../../../lib/renderProposalPdf.js";
@@ -13,6 +15,7 @@ import { buildBankPack, PACK_LANGS } from "../../../../../lib/bankPack.js";
 import { PLANTS_KEY } from "../../../../../lib/portfolioModel.js";
 import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
 import { mdDayKey } from "../../../../../lib/tz.js";
+import { loadPackAccess, lockedBody } from "../../../../../lib/packAccess.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +27,8 @@ export async function GET(req, props) {
   const d = await loadDeal(token);
   if (d.state !== "active") return NextResponse.json({ error: "closed" }, { status: 404 });
   const { link, sb } = d;
+  const access = await loadPackAccess({ companyId: link.company_id, portfolioId: link.portfolio_id, plant: d.portfolio.assets[PLANTS_KEY][0], db: sb });
+  if (!access.open) return NextResponse.json(lockedBody(access), { status: 402 });
 
   const pdfs = {};
   for (const l of PACK_LANGS) {

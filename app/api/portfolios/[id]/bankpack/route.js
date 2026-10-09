@@ -8,7 +8,8 @@
 // through Storage with a five-minute link.
 // A summary that cannot be rendered is named in the manifest, so a bank is
 // never handed a package that quietly lacks it. Listed in lib/pdfRoutes.mjs so
-// the Chromium binary is bundled with it.
+// the Chromium binary is bundled with it. Once the pack gate is on
+// (lib/packPricing.js), a plant that is not paid for answers 402 with its price.
 import { NextResponse } from "next/server";
 import { renderPdf } from "../../../../../lib/renderProposalPdf.js";
 import { authorizePortfolio, authCookies, reportUrl } from "../../../../../lib/portfolioRoute.js";
@@ -18,6 +19,8 @@ import { mdDayKey } from "../../../../../lib/tz.js";
 import { supabaseServer } from "../../../../../lib/supabase.js";
 import { readDocs, storePack, INLINE_LIMIT } from "../../../../../lib/dealLoad.js";
 import { ITEM_IDS } from "../../../../../lib/dealRoom.js";
+import { loadPackAccess, lockedBody } from "../../../../../lib/packAccess.js";
+import { currentUser } from "../../../../../lib/session.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +33,9 @@ export async function GET(req, props) {
   const plantId = new URL(req.url).searchParams.get("plant") || "";
   const one = plantOnly(auth.d.portfolio, plantId);
   if (!one) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const user = await currentUser();
+  const access = await loadPackAccess({ companyId: auth.d.portfolio.company_id, portfolioId: id, plant: one.assets[PLANTS_KEY][0], email: user?.email });
+  if (!access.open) return NextResponse.json(lockedBody(access), { status: 402 });
   const model = buildModel({ portfolio: one, projects: [], E: auth.d.E, schemeLimitKw: auth.d.schemeLimitKw });
 
   const pdfs = {};

@@ -2,7 +2,8 @@
 // Setup: Paddle dashboard → Notifications → New destination → this URL
 //   (https://voltmira.com/api/paddle/webhook), subscribe to:
 //   subscription.created, subscription.activated, subscription.updated,
-//   subscription.canceled, subscription.paused.
+//   subscription.canceled, subscription.paused, and transaction.completed (a
+//   bank pack paid by card: lib/packPricing.js unlockFromTransaction).
 // Copy the destination's signing secret into PADDLE_WEBHOOK_SECRET (Vercel env).
 //
 // company_id + plan arrive in custom_data (set at checkout in lib/paddle.js), so
@@ -10,6 +11,8 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { supabaseAdmin } from "../../../../lib/supabase.js";
+import { unlockFromTransaction } from "../../../../lib/packPricing.js";
+import { PLANTS_KEY } from "../../../../lib/portfolioModel.js";
 
 // Paddle-Signature header looks like "ts=1700000000;h1=<hex>". The signed
 // payload is `${ts}:${rawBody}`, HMAC-SHA256 with the destination secret.
@@ -46,6 +49,29 @@ export async function POST(req) {
   if (!companyId) return NextResponse.json({ received: true, note: "no company_id" });
 
   const db = supabaseAdmin();
+
+  // a bank pack paid by card: unlock the plant it paid for, once (the
+  // transaction id is unique, so a retried notification adds nothing)
+  if (type === "transaction.completed" && custom.kind === "pack") {
+    const { data: portfolio } = await db.from("portfolios").select("id, company_id, assets").eq("id", custom.portfolio_id || "").maybeSingle();
+    const { row, error } = unlockFromTransaction({ data, portfolio, plantsKey: PLANTS_KEY });
+    if (error) {
+      console.error("[paddle] pack not unlocked:", error, data.id);
+      return NextResponse.json({ received: true, note: error });
+    }
+    const { error: dbErr } = await db.from("pack_unlocks").upsert(row, { onConflict: "paddle_txn_id", ignoreDuplicates: true });
+    if (dbErr) {
+      console.error("[paddle] pack unlock failed:", dbErr.message);
+      return NextResponse.json({ error: "unlock_failed" }, { status: 500 });
+    }
+    // an invoice requested for the same pack is no longer waiting
+    let q = db.from("pack_requests").update({ status: "unlocked", closed_at: new Date().toISOString() })
+      .eq("company_id", row.company_id).eq("portfolio_id", row.portfolio_id).eq("status", "open");
+    q = row.plant_id ? q.eq("plant_id", row.plant_id) : q.is("plant_id", null);
+    await q;
+    return NextResponse.json({ received: true, unlocked: true });
+  }
+
   const setPlan = (p, subId, custId) =>
     db.from("companies").update({
       plan: p,

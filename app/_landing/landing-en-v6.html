@@ -552,6 +552,8 @@ fieldset.field{border:0}
 .pricing{background:var(--paper-2);border-top:1px solid var(--line)}
 .plans{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
 @media(min-width:860px){.plans{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1180px){.plans{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.plan .pk-note{font-size:14px;color:var(--muted);margin:-14px 0 24px}
 .plan{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:24px;padding:clamp(26px,3vw,38px);display:flex;flex-direction:column;
   transition:transform .35s var(--ease-out),box-shadow .35s var(--ease-out),border-color .3s}
 .plan:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
@@ -999,9 +1001,22 @@ footer > .wrap::before{content:"";position:absolute;top:-65px;left:clamp(16px,4v
         </ul>
         <a href="/login" class="btn btn-ink btn-lg" data-i18n="v6_p_cta">Start free trial</a>
       </article>
+      <article class="plan rv d2s">
+        <h3 data-i18n="v6_p_pk">Project pack</h3>
+        <div class="amt" data-i18n="v6_p_pk_amt"><b>€600</b><small>/ project</small></div>
+        <p class="for" data-i18n="v6_p_pk_for">For developers and EPCs taking a plant to a bank</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_pk_1">Credit summary in Romanian and English, written for a credit officer</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_pk_2">Excel model with live formulas, P90 and stress tests</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_pk_3">Site plan, grid connection study and permit checklist</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_pk_4">A read-only deal room link for each bank</span></li>
+        </ul>
+        <p class="pk-note" data-i18n="v6_p_pk_note">Up to 2 MW. Above 2 MW: €2,900. A portfolio's data room: €9,000. Paid once, re-runs included for 90 days. The price never depends on the loan.</p>
+        <a href="/login" class="btn btn-ink btn-lg" data-i18n="v6_p_pk_cta">Build a pack free, pay to download</a>
+      </article>
       <article class="ent rv">
         <h3>Enterprise</h3>
-        <p data-i18n="v6_p_ent">For multi-branch installers: unlimited seats, a full audit log of every change, custom subsidy and tariff rules, and a dedicated manager with an SLA.</p>
+        <p data-i18n="v6_p_ent">For banks, funds and multi-branch installers: a deal room for credit officers, screening of green-loan files, unlimited seats, a full audit log and a dedicated manager with an SLA.</p>
         <a href="mailto:voltmiraenergy@gmail.com?subject=VoltMira%20Enterprise" class="btn btn-line" data-i18n="v6_p_ent_cta">Talk to us</a>
       </article>
     </div>

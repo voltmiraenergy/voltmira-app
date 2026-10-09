@@ -2,7 +2,9 @@
 // (?plant=<id>), the first document of the bank submission pack. The pack
 // route (/api/portfolios/[id]/bankpack) captures it with ?pdf=1, once in
 // Romanian and once in English; opened directly it is an on-screen preview
-// with a print button. Auth-scoped like every (app) page.
+// with a print button. Auth-scoped like every (app) page. Until the pack is
+// paid for (once the gate is on, lib/packPricing.js), the preview carries a
+// "Draft" ribbon, printed with it; the paid pack's PDFs never carry it.
 import "../../../dx.css";
 import "../../portfolio.css";
 import "../report/report.css";
@@ -20,6 +22,9 @@ import { supabaseServer } from "../../../../../lib/supabase.js";
 import { docCounts, ITEM_IDS } from "../../../../../lib/dealRoom.js";
 import CreditSummary from "./CreditSummary.jsx";
 import PrintButton from "../report/PrintButton.jsx";
+import { PLANTS_KEY } from "../../../../../lib/portfolioModel.js";
+import { loadPackAccess } from "../../../../../lib/packAccess.js";
+import { currentUser } from "../../../../../lib/session.js";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Credit summary | VoltMira" };
@@ -45,10 +50,13 @@ export default async function BankPage(props) {
   const sb = await supabaseServer();
   const { data: docs, error: docErr } = await sb.from("deal_documents").select("item_id").eq("portfolio_id", id).eq("plant_id", String(sp?.plant || ""));
   const counts = docErr ? null : docCounts((docs || []).filter((x) => ITEM_IDS.includes(x.item_id)));
+  const user = await currentUser();
+  const access = await loadPackAccess({ companyId: d.portfolio.company_id, portfolioId: id, plant: one.assets[PLANTS_KEY][0], email: user?.email });
   return (
     <div className={"rp-wrap" + (pdf ? " is-pdf" : "")}>
       {!pdf && sp?.fallback === "1" && <p className="rp-fallback" role="status">{pt("r_pdf_fallback", lang)}</p>}
       {!pdf && <div className="rp-bar"><PrintButton label={pt("r_print", lang)} /></div>}
+      {!access.open && <p className="rp-draft" role="note">{bt("pk_ribbon", lang)}</p>}
       <CreditSummary model={model} lang={lang} company={d.co?.name || ""} date={date} money={money} fx={d.fx} todayKey={todayKey()} docCounts={counts} rid={rid} />
       <style>{printCss({ lang, title: `${name}, ${bt("title", lang)}, ${bt("rid", lang, { x: rid })}` })}</style>
     </div>

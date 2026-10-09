@@ -234,8 +234,17 @@ export const I18N_V6 = {
     v6_p_team_2: "5 locuri, cu responsabili de proiect",
     v6_p_team_3: "Clienți partajați și analiza ratei de câștig",
     v6_p_team_4: "Suport prioritar în română, rusă și engleză",
+    v6_p_pk: "Pachet de proiect",
+    v6_p_pk_amt: "<b>600 €</b><small>/ proiect</small>",
+    v6_p_pk_for: "Pentru dezvoltatori și EPC care duc o centrală la bancă",
+    v6_p_pk_1: "Rezumat de credit în română și engleză, scris pentru analistul de credit",
+    v6_p_pk_2: "Model Excel cu formule active, P90 și teste de stres",
+    v6_p_pk_3: "Plan de amplasare, studiul racordării și lista autorizațiilor",
+    v6_p_pk_4: "Un link de citire în camera de date pentru fiecare bancă",
+    v6_p_pk_note: "Până la 2 MW. Peste 2 MW: 2.900 €. Camera de date a unui portofoliu: 9.000 €. Plătit o dată, regenerările incluse 90 de zile. Prețul nu depinde niciodată de credit.",
+    v6_p_pk_cta: "Construiește gratuit, plătește la descărcare",
     v6_p_ent:
-      "Pentru instalatori cu mai multe filiale: locuri nelimitate, jurnal complet de audit al fiecărei modificări, reguli personalizate de subvenții și tarife, manager dedicat și SLA.",
+      "Pentru bănci, fonduri și instalatori cu mai multe filiale: cameră de date pentru analiștii de credit, verificarea dosarelor de credite verzi, locuri nelimitate, jurnal complet de audit și manager dedicat cu SLA.",
     v6_p_ent_cta: "Contactează-ne",
 
     // faq
@@ -506,8 +515,17 @@ export const I18N_V6 = {
     v6_p_team_2: "5 мест с владельцами проектов",
     v6_p_team_3: "Общие клиенты и аналитика конверсии",
     v6_p_team_4: "Приоритетная поддержка на румынском, русском и английском",
+    v6_p_pk: "Пакет проекта",
+    v6_p_pk_amt: "<b>600 €</b><small>/ проект</small>",
+    v6_p_pk_for: "Для девелоперов и EPC, которые ведут станцию в банк",
+    v6_p_pk_1: "Кредитное резюме на румынском и английском для кредитного аналитика",
+    v6_p_pk_2: "Модель Excel с живыми формулами, P90 и стресс-тестами",
+    v6_p_pk_3: "Схема размещения, исследование подключения и перечень разрешений",
+    v6_p_pk_4: "Ссылка на комнату данных только для чтения для каждого банка",
+    v6_p_pk_note: "До 2 МВт. Свыше 2 МВт: 2 900 €. Комната данных портфеля: 9 000 €. Оплата один раз, повторные сборки 90 дней включены. Цена никогда не зависит от кредита.",
+    v6_p_pk_cta: "Соберите бесплатно, платите за скачивание",
     v6_p_ent:
-      "Для монтажников с несколькими филиалами: неограниченное число мест, полный журнал аудита всех изменений, свои правила субсидий и тарифов, выделенный менеджер и SLA.",
+      "Для банков, фондов и монтажников с филиалами: комната данных для кредитных аналитиков, проверка заявок на зелёные кредиты, неограниченные места, полный журнал аудита и персональный менеджер с SLA.",
     v6_p_ent_cta: "Связаться с нами",
 
     // faq
@@ -782,8 +800,17 @@ export const I18N_V6 = {
     v6_p_team_2: "5 місць із власниками проєктів",
     v6_p_team_3: "Спільні клієнти й аналітика конверсії",
     v6_p_team_4: "Пріоритетна підтримка",
+    v6_p_pk: "Пакет проєкту",
+    v6_p_pk_amt: "<b>600 €</b><small>/ проєкт</small>",
+    v6_p_pk_for: "Для девелоперів і EPC, які ведуть станцію до банку",
+    v6_p_pk_1: "Кредитне резюме румунською та англійською для кредитного аналітика",
+    v6_p_pk_2: "Модель Excel з живими формулами, P90 і стрес-тестами",
+    v6_p_pk_3: "Схема розміщення, дослідження приєднання та перелік дозволів",
+    v6_p_pk_4: "Посилання на кімнату даних лише для читання для кожного банку",
+    v6_p_pk_note: "До 2 МВт. Понад 2 МВт: 2 900 €. Кімната даних портфеля: 9 000 €. Оплата один раз, повторні формування 90 днів включено. Ціна ніколи не залежить від кредиту.",
+    v6_p_pk_cta: "Зберіть безкоштовно, платіть за завантаження",
     v6_p_ent:
-      "Для монтажників із кількома філіями: необмежена кількість місць, повний журнал аудиту всіх змін, власні правила субсидій і тарифів, виділений менеджер і SLA.",
+      "Для банків, фондів і монтажників із філіями: кімната даних для кредитних аналітиків, перевірка заявок на зелені кредити, необмежені місця, повний журнал аудиту та персональний менеджер з SLA.",
     v6_p_ent_cta: "Зв’язатися з нами",
 
     // faq

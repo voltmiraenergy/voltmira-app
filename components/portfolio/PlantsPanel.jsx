@@ -42,6 +42,7 @@ import { siteDrift } from "../../lib/sitePick.js";
 import { useDealRoom } from "./useDealRoom.js";
 import ItemFiles from "./ItemFiles.jsx";
 import DealRoom from "./DealRoom.jsx";
+import PackPay from "./PackPay.jsx";
 import { dt } from "../../lib/dealText.js";
 import { docCounts, isAnswered } from "../../lib/dealRoom.js";
 import { num as fnum, mwhUnit, dscr, dscrTone } from "../../lib/portfolioFormat.js";
@@ -549,14 +550,18 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
           )}
         </div>
         <p className="pl-line">{miss.count === 0 ? bt("pack_missing_0", lang) : bt("pack_missing", lang, { n: missNames.length, x: namesList(missNames, lang, 4) })}</p>
+        <PackPay portfolioId={portfolioId} plantId={id} companyId={companyId} lang={lang} disabled={packOff}>{(locked) => (
         <div className="pl-row">
-          <a className={"btn primary sm" + (packOff ? " off" : "")} {...offProps} href={`/api/portfolios/${portfolioId}/bankpack?plant=${encodeURIComponent(id)}&lang=${packLang}`}>{bt("pack_dl", lang)}</a>
+          {locked
+            ? <span className="btn primary sm off" aria-disabled="true">{bt("pk_dl_locked", lang)}</span>
+            : <a className={"btn primary sm" + (packOff ? " off" : "")} {...offProps} href={`/api/portfolios/${portfolioId}/bankpack?plant=${encodeURIComponent(id)}&lang=${packLang}`}>{bt("pack_dl", lang)}</a>}
           {PACK_LANGS.map((l) => (
             <a key={l} className={"btn ghost sm" + (packOff ? " off" : "")} {...offProps} href={`/portfolios/${portfolioId}/bank?plant=${encodeURIComponent(id)}&lang=${l}`} target="_blank" rel="noopener noreferrer">
               {bt("pack_view", lang, { l: bt("lang_" + l, lang) })}
             </a>
           ))}
         </div>
+        )}</PackPay>
         <small className="pf-hint" role="status">{saving ? bt("pack_saving", lang) : bt("pack_wait", lang)}</small>
       </section>
 
