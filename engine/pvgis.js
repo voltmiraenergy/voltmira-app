@@ -242,6 +242,54 @@ export async function getHourlySolarShape(lat, lon, opts = {}) {
   return { ...value, source: "pvgis" };
 }
 
+/** AC power per kWp of panels at which the clipping curve is read: 0.30 to 1.00 of a kWp, in steps of 0.05. */
+export const CLIP_RATIOS = Array.from({ length: 15 }, (_, i) => Math.round((0.3 + i * 0.05) * 100) / 100);
+
+/**
+ * How much of a year's energy an inverter or a grid limit would cut off, from
+ * PVGIS's hourly series (seriescalc, one real year, 1 kWp, the same 14%
+ * system losses as the yield). For each AC limit per kWp of panels (CLIP_RATIOS)
+ * it gives the share of the year's energy produced above that limit: the
+ * energy that is clipped. A plant with D MWp of panels and an L MW limit reads
+ * the curve at L / D. A year of hourly values is one year's weather, so it is
+ * a screening figure; the report says so.
+ * @returns {Promise<{ year:number, db:string, ratios:number[], lostPct:number[] }>}
+ */
+export async function getClippingCurve(lat, lon, opts = {}) {
+  const {
+    angle = 35, aspect = 0, loss = 14, year = 2019,
+    fetchImpl = globalThis.fetch, timeoutMs = 20000,
+  } = opts;
+  if (typeof lat !== "number" || typeof lon !== "number" || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    throw new Error("Invalid coordinates");
+  }
+  const url = `${PVGIS_SERIES_BASE}?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}` +
+    `&startyear=${year}&endyear=${year}&pvcalculation=1&peakpower=1&loss=${loss}` +
+    `&angle=${angle}&aspect=${aspect}&outputformat=json`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  let json;
+  try {
+    const res = await fetchImpl(url, { signal: ctrl.signal });
+    if (!res.ok) throw new Error(`PVGIS HTTP ${res.status}`);
+    json = await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+  const hourly = json?.outputs?.hourly;
+  if (!Array.isArray(hourly) || hourly.length < 8000) throw new Error("Unexpected PVGIS seriescalc response shape");
+  const p = hourly.map((h) => Math.max(0, Number(h?.P) || 0));
+  const total = p.reduce((a, b) => a + b, 0);
+  if (!(total > 0)) throw new Error("Unexpected PVGIS seriescalc response shape");
+  const lostPct = CLIP_RATIOS.map((r) => {
+    const cap = r * 1000;
+    let lost = 0;
+    for (const w of p) if (w > cap) lost += w - cap;
+    return Math.round((lost / total) * 1e4) / 100;
+  });
+  return { year, db: String(json?.inputs?.meteo_data?.radiation_db || "").slice(0, 40), ratios: CLIP_RATIOS, lostPct };
+}
+
 /**
  * Geocode an address → coordinates using OpenStreetMap Nominatim (free).
  * Production note: respect the usage policy (1 req/s, set a User-Agent

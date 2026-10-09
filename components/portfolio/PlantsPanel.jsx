@@ -26,7 +26,7 @@ import { bt } from "../../lib/bankText.js";
 import { stillMissing, PACK_LANGS } from "../../lib/bankPack.js";
 import { namesList } from "../../lib/portfolioDisplay.js";
 import StudyReader from "./StudyReader.jsx";
-import { P90Basis, WeatherReplay, SeasonalCover } from "./EnergyBasis.jsx";
+import { P90Basis, WeatherReplay, SeasonalCover, ExportLimit } from "./EnergyBasis.jsx";
 import { monthlyCover } from "../../lib/monthlyCover.js";
 import { weatherReplay } from "../../lib/weatherReplay.js";
 import { preflight } from "../../lib/preflight.js";
@@ -227,7 +227,10 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
                 <Field id={`sy-${id}`} label={plt("sol_yield", lang)} value={raw.solar.yieldKwhKwp} onChange={(v) => setIn("solar", { yieldKwhKwp: v, yieldSource: "manual" })} min="0" max="2500" />
                 <Field id={`sf-${id}`} label={plt("sol_degr_first", lang)} hint={plt("sol_degr_first_h", lang)} value={raw.solar.degrFirstPct ?? ""} onChange={(v) => setIn("solar", { degrFirstPct: v })} min="0" max="10" step="0.1" />
                 <Field id={`sa-${id}`} label={plt("sol_avail", lang)} hint={plt("sol_avail_h", lang)} value={raw.solar.availabilityPct ?? ""} onChange={(v) => setIn("solar", { availabilityPct: v })} min="0" max="20" step="0.1" />
+                <Field id={`sx-${id}`} label={plt("sol_ac", lang)} hint={plt("sol_ac_h", lang)} value={raw.solar.acMw ?? ""} onChange={(v) => setIn("solar", { acMw: v })} min="0" step="0.1" />
+                <Field id={`se-${id}`} label={plt("exp_mw", lang)} hint={plt("exp_mw_h", lang)} value={raw.exportMw ?? ""} onChange={(v) => set({ exportMw: v })} min="0" step="0.1" />
               </div>
+              <ExportLimit pl={pl} lang={lang} money={money} hint heading={false} lineClass="pl-line" noteClass="pf-hint" />
               {pl.solar.variabilityPct != null && <p className="pl-line ok">{plt("sol_pvgis_got", lang, { sd: fnum(pl.solar.variabilityPct, lang, 1), db: pl.solar.variabilityDb, years: pl.solar.variabilityYears })}</p>}
               <div className="pl-row">
                 <button type="button" className="btn sm" disabled={!hasSite || busy === "solar"} aria-busy={busy === "solar"} onClick={() => pvgis()}>{plt("sol_lookup", lang)}{busy === "solar" ? "..." : ""}</button>

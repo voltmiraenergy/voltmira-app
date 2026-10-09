@@ -225,3 +225,24 @@ test("a year with missing months is left out, and too short a record gives nothi
   await assert.rejects(getYearlyIrradiation(46, 28.5, { fetchImpl: mockFetch({}) }), /Unexpected/);
   await assert.rejects(getYearlyIrradiation(46, 28.5, { fetchImpl: mockFetch({}, { status: 500 }) }), /HTTP 500/);
 });
+
+test("getClippingCurve gives the share of the year's energy above each AC power per kWp", async () => {
+  const { getClippingCurve, CLIP_RATIOS } = await import("./pvgis.js");
+  // every hour 12 at 800 W and every hour 11 at 400 W, all year: 1200 Wh a day
+  const payload = seriesResponse((_m, hour) => (hour === 12 ? 800 : hour === 11 ? 400 : 0));
+  const c = await getClippingCurve(46, 28.5, { fetchImpl: mockFetch(payload) });
+  assert.deepEqual(c.ratios, CLIP_RATIOS);
+  const at = (r) => c.lostPct[CLIP_RATIOS.indexOf(r)];
+  assert.equal(at(0.3), Math.round(((500 + 100) / 1200) * 1e4) / 100, "300 W cap: 500 W and 100 W above it");
+  assert.equal(at(0.5), Math.round((300 / 1200) * 1e4) / 100, "500 W cap: only the 800 W hour is above it");
+  assert.equal(at(0.8), 0);
+  assert.equal(at(1), 0);
+  assert.ok(c.lostPct.every((v, i, a) => i === 0 || v <= a[i - 1]), "never rises with the limit");
+});
+
+test("getClippingCurve refuses a short or empty series and bad coordinates", async () => {
+  const { getClippingCurve } = await import("./pvgis.js");
+  await assert.rejects(() => getClippingCurve(46, 28.5, { fetchImpl: mockFetch({ outputs: { hourly: [{ time: "x", P: 1 }] } }) }), /shape/);
+  await assert.rejects(() => getClippingCurve(46, 28.5, { fetchImpl: mockFetch(seriesResponse(() => 0)) }), /shape/);
+  await assert.rejects(() => getClippingCurve(99, 28.5, {}), /coordinates/);
+});

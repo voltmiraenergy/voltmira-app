@@ -6,7 +6,7 @@
 import { plt } from "../../lib/plantText.js";
 import { num, dscr } from "../../lib/portfolioFormat.js";
 import { weakest } from "../../lib/weatherReplay.js";
-import { replayLine, monthlyLine, monthName } from "../../lib/energyBasis.js";
+import { replayLine, monthlyLine, monthName, exportLines, exportNote } from "../../lib/energyBasis.js";
 
 const PART_KEY = { ghi: "p90_ghi", weather: "p90_weather", model: "p90_model", soiling: "p90_soiling", availability: "p90_availability", shading: "p90_shading", lid: "p90_lid" };
 
@@ -109,6 +109,20 @@ export function YieldLosses({ losses, lang = "en", className = "rp-t" }) {
         </tbody>
       </table>
       <p className="rp-small">{plt("yl_src", lang)}</p>
+    </>
+  );
+}
+
+/** The solar part's export limit and what it clips. @param {{ pl: object, lang: string, money: object, hint?: boolean }} p  pl = a normalised plant */
+export function ExportLimit({ pl, lang = "en", money, hint = false, heading = true, lineClass = "rp-small", noteClass = "rp-small" }) {
+  const lines = exportLines(pl, lang, (v) => `${money.full(v)} ${money.cur}`, { hint });
+  if (!lines.length) return null;
+  const note = exportNote(pl, lang);
+  return (
+    <>
+      {heading && <h3 className="rp-sub">{plt("ex_h", lang)}</h3>}
+      <p className={lineClass}>{lines.join(" ")}</p>
+      {note && <p className={noteClass}>{note}</p>}
     </>
   );
 }
