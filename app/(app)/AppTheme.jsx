@@ -159,7 +159,7 @@ const CSS = `
   .btn.primary:hover{background:var(--green-soft);transform:translateY(-1px);box-shadow:0 6px 18px rgba(30,107,78,.3)}
   .btn.amber{background:var(--amber);color:var(--ink);box-shadow:0 3px 12px rgba(232,155,45,.3)}
   .btn.amber:hover{background:var(--amber-soft);transform:translateY(-1px);box-shadow:0 6px 18px rgba(232,155,45,.4)}
-  .btn.ghost{background:var(--paper-2);border-color:var(--line);color:var(--ink)}
+  .btn.ghost{background:var(--paper-2);border-color:var(--line);color:var(--ink);border-style:solid;border-width:1px}
   .btn.ghost:hover{border-color:var(--green);color:var(--green)}
   .btn.danger{background:var(--paper-2);border-color:var(--line);color:var(--red)}
   .btn.danger:hover{border-color:var(--red);background:var(--red-tint)}

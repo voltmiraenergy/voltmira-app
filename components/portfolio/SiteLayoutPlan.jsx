@@ -13,7 +13,7 @@ import { plt } from "../../lib/plantText.js";
 import { num } from "../../lib/portfolioFormat.js";
 
 const SAT = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-const COLOR = { excl: "#E5484D", plot: "#FFD54A", table: "#1E3A5F", tableLine: "#CFE3FF", cable: "#FF9F1C", station: "#D946EF", conn: "#E11D48" };
+const COLOR = { excl: "#E5484D", plot: "#FFD54A", table: "#1E3A5F", tableLine: "#CFE3FF", cable: "#FF9F1C", station: "#D946EF", conn: "#E11D48", turbine: "#0EA5E9" };
 const NICE = [10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000];
 
 /** The figures of a layout as label and value pairs. */
@@ -30,7 +30,19 @@ export function layoutFacts(lay, lang = "en", declaredMwp = null) {
   ];
   if (s.plotCount > 1) rows.push([plt("ly_k_plots", lang), plt("ly_v_plots", lang, { n: f(s.plotCount, 0), m: f(s.linkM, 0) })]);
   if (lay.result.stations.length) rows.push([plt("ly_k_cable", lang), plt("ly_v_cable", lang, { m: f(s.cableM, 0), n: f(lay.result.stations.length, 0) })]);
+  if (s.needTurbines > 0) rows.push([plt("ly_k_turbines", lang), plt("ly_v_turbines", lang, { n: f(s.turbineCount, 0), need: f(s.needTurbines, 0), d: f(s.rotorM, 0), r: f(s.rotorM ? turbineKeepoutM(lay) : 0, 0) })]);
   return rows;
+}
+
+/** A turbine's drawn keep-out radius, m, from the layout's own result (read off a drawn turbine so it matches exactly what is on the map). */
+function turbineKeepoutM(lay) {
+  const t = lay.result.turbines[0];
+  if (!t) return 0;
+  const c = [lay.result.turbines[0].lat, lay.result.turbines[0].lon];
+  const p0 = t.exclusion[0];
+  const R = 6371008.8, k = Math.PI / 180;
+  const dx = (p0[1] - c[1]) * k * Math.cos(c[0] * k), dy = (p0[0] - c[0]) * k;
+  return Math.hypot(dx, dy) * R;
 }
 
 /** The sentence under the heading: what is drawn, or why the plot is too small. */
@@ -38,10 +50,13 @@ export function layoutLead(pl, lay, lang = "en") {
   const s = lay.result.stats;
   const f = (v, d = 1) => num(v, lang, d);
   if (s.short) return plt("ly_short", lang, { ha: f(s.plotHa), fit: f(s.mwpFit, 2), need: f(s.mwpNeed, 2) });
-  return plt("ly_lead", lang, {
+  const base = plt(s.tracker ? "ly_lead_tracker" : "ly_lead", lang, {
     mwp: f(s.mwpPlaced, 2), tables: f(s.placedTables, 0), mods: f(s.modulesPerTable, 0), ha: f(s.plotHa), pitch: f(s.pitchM), tilt: f(s.tiltDeg, 0), gcr: f(s.gcr, 2),
     n: f(lay.result.stations.length, 0), cable: f(s.cableM, 0),
   });
+  if (!(s.needTurbines > 0)) return base;
+  const tv = { n: f(s.turbineCount, 0), need: f(s.needTurbines, 0), d: f(s.rotorM, 0), r: f(turbineKeepoutM(lay), 0) };
+  return `${base} ${plt(s.turbinesShort ? "ly_turbines_short_line" : "ly_turbines_line", lang, tv)}`;
 }
 
 /** Whether the plant has a layout to print. @param {object} pl  a normalised plant */
@@ -78,6 +93,7 @@ export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 
           </defs>
           {pl.layout.plots.map((ring, i) => <polygon key={"p" + i} points={poly(ring)} fill={COLOR.plot} fillOpacity="0.08" stroke={COLOR.plot} strokeWidth="2.2" strokeLinejoin="round" />)}
           {pl.layout.exclusions.map((e, i) => <polygon key={"x" + i} points={poly(e.ring)} fill="url(#lyHatch)" stroke={COLOR.excl} strokeWidth="1.6" strokeDasharray="5 3" />)}
+          {r.turbines.map((t) => <polygon key={"t" + t.n} points={poly(t.exclusion)} fill={COLOR.turbine} fillOpacity="0.07" stroke={COLOR.turbine} strokeWidth="1.3" strokeDasharray="3 3" />)}
           {r.tables.map((t, i) => <polygon key={i} points={poly(t.corners)} fill={COLOR.table} fillOpacity="0.92" stroke={COLOR.tableLine} strokeWidth="0.35" />)}
           {r.cables.map((c, i) => <polyline key={i} points={poly(c)} fill="none" stroke={COLOR.cable} strokeWidth="1.8" strokeDasharray="5 3" />)}
           {r.stations.map((s) => {
@@ -86,6 +102,15 @@ export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 
               <g key={s.n}>
                 <rect x={x - 5} y={y - 3.5} width="10" height="7" fill={COLOR.station} stroke="#ffffff" strokeWidth="1" />
                 <text x={x + 7} y={y - 6} fontSize="10" fontWeight="700" fill="#ffffff" stroke="#1B1B1B" strokeWidth="2.4" paintOrder="stroke" fontFamily="sans-serif">{s.n}</text>
+              </g>
+            );
+          })}
+          {r.turbines.map((t) => {
+            const [x, y] = xy(t.lat, t.lon);
+            return (
+              <g key={"tm" + t.n}>
+                <circle cx={x} cy={y} r="4.5" fill={COLOR.turbine} stroke="#ffffff" strokeWidth="1.3" />
+                <text x={x + 7} y={y - 6} fontSize="10" fontWeight="700" fill="#ffffff" stroke="#1B1B1B" strokeWidth="2.4" paintOrder="stroke" fontFamily="sans-serif">{`T${t.n}`}</text>
               </g>
             );
           })}
@@ -106,6 +131,7 @@ export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 
       </div>
       <ul className="ly-legend" aria-label={label}>
         <li><i style={{ background: COLOR.table }} />{plt("ly_leg_table", lang)}</li>
+        {r.turbines.length > 0 && <li><i className="ly-excl" style={{ borderColor: COLOR.turbine, background: "rgba(14,165,233,.15)" }} />{plt("ly_leg_turbine", lang)}</li>}
         <li><i style={{ background: COLOR.station }} />{plt("ly_leg_station", lang)}</li>
         <li><i style={{ background: COLOR.conn }} />{plt("ly_leg_conn", lang)}</li>
         <li><i className="ly-dash" style={{ borderColor: COLOR.cable }} />{plt("ly_leg_cable", lang)}</li>
@@ -115,7 +141,7 @@ export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 
       <table className="rp-kv ly-facts"><tbody>
         {layoutFacts(lay, lang, pl.solar?.mwp).map(([k, val]) => <tr key={k}><th scope="row">{k}</th><td>{val}</td></tr>)}
       </tbody></table>
-      <p className="rp-small">{pl.wind ? `${plt("ly_wind_note", lang)} ` : ""}{plt("ly_note", lang, { sb: num(r.stats.setbackM, lang, 0), w: num(moduleSides(lay.inputs.wp).short, lang, 2), h: num(moduleSides(lay.inputs.wp).long, lang, 2) })}</p>
+      <p className="rp-small">{plt("ly_note", lang, { sb: num(r.stats.setbackM, lang, 0), w: num(moduleSides(lay.inputs.wp).short, lang, 2), h: num(moduleSides(lay.inputs.wp).long, lang, 2) })}{r.turbines.length > 0 ? ` ${plt("ly_note_wind", lang)}` : ""}</p>
     </>
   );
 }

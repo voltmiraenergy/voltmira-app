@@ -87,11 +87,11 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
   const setLive = (key, patch) => { const { raw: r, onChange: ch } = live.current; ch({ ...r, [key]: { ...(r[key] || {}), ...patch } }); };
   const drift = siteDrift(pl);
   const climateDrift = climateDriftKm(pl);
-  // the site planner saves the plan, and the tilt and facing once they are set there, on the plant as it is now
-  const saveLayout = ({ layout, angles }) => {
+  // the site planner saves the plan, and the mounting (tilt and facing, or a tracker) once it is set there, on the plant as it is now
+  const saveLayout = ({ layout, mounting }) => {
     const { raw: cur, onChange: ch } = live.current;
     const eq = cur.equipment || {};
-    ch({ ...cur, layout, ...(angles ? { equipment: { ...eq, mounting: { ...(eq.mounting || {}), kind: "fixed", tiltDeg: angles.tilt, azimuthDeg: angles.azimuth } } } : {}) });
+    ch({ ...cur, layout, ...(mounting ? { equipment: { ...eq, mounting: { ...(eq.mounting || {}), ...mounting } } } : {}) });
   };
   // the equipment list: one part at a time, kept as typed
   const setEq = (part, patch) => onChange({ ...raw, equipment: { ...(raw.equipment || {}), [part]: { ...((raw.equipment || {})[part] || {}), ...patch } } });

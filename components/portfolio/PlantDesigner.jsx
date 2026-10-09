@@ -16,7 +16,7 @@ import "leaflet/dist/leaflet.css";
 import "../SiteDesigner.css";
 import { X, Undo2, Redo2, Pentagon, Ban, Ruler, Move, LocateFixed, Trash2, Check, Eye, ChevronRight, Sun, Info } from "lucide-react";
 import { layoutInputs, layoutPlots } from "../../lib/plantLayout.js";
-import { plotHectares, EXCLUSION_KINDS, TABLE_FORMATS, tableGeometry } from "../../lib/siteLayout.js";
+import { plotHectares, EXCLUSION_KINDS, TABLE_FORMATS, TRACKER_GCR_DEFAULT, TRACKER_GCR_RANGE, tableGeometry } from "../../lib/siteLayout.js";
 
 /* --------------------------------------------------------------- words --- */
 const TX = {
@@ -62,6 +62,11 @@ const TX = {
   next3: { en: "Next: panels", ro: "Mai departe: panouri", ru: "Далее: панели", uk: "Далі: панелі" },
   st3h: { en: "Lay out the panels", ro: "Așază panourile", ru: "Расставьте панели", uk: "Розставте панелі" },
   st3p: { en: "Rows are spaced so none shades the next at noon on 21 December. The tilt and facing are saved on the equipment list too.", ro: "Rândurile sunt distanțate astfel încât niciunul să nu umbrească următorul la amiază pe 21 decembrie. Înclinarea și orientarea se salvează și în lista de echipamente.", ru: "Ряды разнесены так, чтобы ни один не затенял следующий в полдень 21 декабря. Наклон и ориентация сохраняются и в списке оборудования.", uk: "Ряди рознесено так, щоб жоден не затінював наступний опівдні 21 грудня. Нахил і орієнтація зберігаються і в списку обладнання." },
+  mount: { en: "Mounting", ro: "Montaj", ru: "Монтаж", uk: "Монтаж" },
+  mountFixed: { en: "Fixed tilt", ro: "Înclinare fixă", ru: "Фиксированный наклон", uk: "Фіксований нахил" },
+  mountTracker: { en: "Tracker", ro: "Tracker", ru: "Трекер", uk: "Трекер" },
+  gcr: { en: "Ground-cover target", ro: "Ținta de acoperire a solului", ru: "Целевой коэффициент покрытия", uk: "Цільовий коефіцієнт покриття" },
+  gcrHelp: { en: "A single-axis tracker's rows run north-south and tilt with the sun; this sets how close together they stand.", ro: "Rândurile unui tracker pe o axă merg nord-sud și se înclină după soare; aceasta stabilește cât de aproape stau unele de altele.", ru: "Ряды однокоординатного трекера идут с севера на юг и наклоняются вслед за солнцем; это задаёт, насколько близко они стоят друг к другу.", uk: "Ряди однокоординатного трекера йдуть з півночі на південь і нахиляються за сонцем; це задає, наскільки близько вони стоять одне до одного." },
   tilt: { en: "Tilt", ro: "Înclinare", ru: "Наклон", uk: "Нахил" },
   facing: { en: "Facing", ro: "Orientare", ru: "Ориентация", uk: "Орієнтація" },
   facesDir: { en: "Faces {dir}", ro: "Orientat spre {dir}", ru: "Смотрит на {dir}", uk: "Дивиться на {dir}" },
@@ -77,6 +82,8 @@ const TX = {
   need: { en: "The plant needs {need} MWp; the plots hold {fit} MWp on {ha} ha.", ro: "Centrala are nevoie de {need} MWp; parcelele cuprind {fit} MWp pe {ha} ha.", ru: "Станции нужно {need} МВтп; участки вмещают {fit} МВтп на {ha} га.", uk: "Станції потрібно {need} МВтп; ділянки вміщують {fit} МВтп на {ha} га." },
   short: { en: "The plots are too small: {miss} MWp does not fit. Add a plot, lower the tilt or the distance from the boundary.", ro: "Parcelele sunt prea mici: {miss} MWp nu încap. Adaugă o parcelă, micșorează înclinarea sau distanța față de limită.", ru: "Участки малы: {miss} МВтп не помещается. Добавьте участок, уменьшите наклон или отступ.", uk: "Ділянки замалі: {miss} МВтп не вміщується. Додайте ділянку, зменште нахил або відступ." },
   grid: { en: "{n} inverter stations, about {m} m of medium-voltage cable to the connection point.", ro: "{n} stații de invertoare, circa {m} m de cablu de medie tensiune până la punctul de racordare.", ru: "{n} инверторных станций, около {m} м кабеля среднего напряжения до точки присоединения.", uk: "{n} інверторних станцій, близько {m} м кабелю середньої напруги до точки приєднання." },
+  turbinesFit: { en: "Wind: {n} of {need} turbines fit, rotor about {d} m, each with a {r} m keep-out circle.", ro: "Vânt: încap {n} din {need} turbine, rotor de circa {d} m, fiecare cu un cerc de siguranță de {r} m.", ru: "Ветер: помещается {n} из {need} турбин, ротор около {d} м, у каждой защитный круг {r} м.", uk: "Вітер: вміщується {n} з {need} турбін, ротор близько {d} м, у кожної захисне коло {r} м." },
+  turbinesShort: { en: "Not every turbine fits: {n} of {need}. Add a plot or move the keep-out zones.", ro: "Nu încap toate turbinele: {n} din {need}. Adaugă o parcelă sau mută zonele excluse.", ru: "Не все турбины помещаются: {n} из {need}. Добавьте участок или передвиньте запретные зоны.", uk: "Не всі турбіни вміщуються: {n} з {need}. Додайте ділянку або пересуньте заборонені зони." },
   apply: { en: "Save the plan", ro: "Salvează planul", ru: "Сохранить план", uk: "Зберегти план" },
   saved: { en: "Saved with the plant. It goes into the credit summary and the report.", ro: "Salvat cu centrala. Intră în fișa de credit și în raport.", ru: "Сохранено со станцией. Попадёт в кредитную справку и отчёт.", uk: "Збережено зі станцією. Потрапить у кредитну довідку та звіт." },
 };
@@ -165,6 +172,8 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   const saved = pl.layout || {};
   const [tilt, setTilt] = useState(Math.round(base.inputs.tiltDeg));
   const [az, setAz] = useState(Math.round(base.inputs.azimuthDeg));
+  const [mountKind, setMountKind] = useState(base.inputs.tracker ? "tracker" : "fixed");
+  const [gcr, setGcr] = useState(saved.trackerGcr ?? TRACKER_GCR_DEFAULT);
   const [fmt, setFmt] = useState(Math.max(0, TABLE_FORMATS.findIndex((t) => t.high === (saved.high || 2) && t.wide === (saved.wide || 26))));
   const [setback, setSetback] = useState(saved.setbackM ?? 5);
   const [ready, setReady] = useState(false);
@@ -196,15 +205,15 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   const showDimsRef = useRef(true);
   const timer = useRef(null);
   const api = useRef({});
-  // the angles go on the equipment list only once the user has set them here
-  const anglesTouched = useRef(false);
+  // the mounting (tilt, facing, or tracker and its ground-cover target) goes on the equipment list only once the user has set it here
+  const mountTouched = useRef(false);
   const settingsTouched = useRef(false);
-  const settingsRef = useRef({ tilt, az, fmt, setback });
+  const settingsRef = useRef({ tilt, az, mountKind, gcr, fmt, setback });
   const onSaveRef = useRef(onSave);
   const onCloseRef = useRef(onClose);
   const baseRef = useRef(base);
   useEffect(() => {
-    settingsRef.current = { tilt, az, fmt, setback };
+    settingsRef.current = { tilt, az, mountKind, gcr, fmt, setback };
     onSaveRef.current = onSave; onCloseRef.current = onClose; baseRef.current = base;
   });
 
@@ -296,11 +305,12 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       mirror();
       renderDims();
     }
-    // What is saved on the plant: the plots, the zones, the table format, the setback; the angles go on the equipment list.
+    // What is saved on the plant: the plots, the zones, the table format, the setback, the ground-cover target; the mounting goes on the equipment list.
     function save(snap) {
       const s = settingsRef.current, f = TABLE_FORMATS[s.fmt] || TABLE_FORMATS[0];
-      const layout = snap.plots.length ? { plots: snap.plots.map((p) => p.ring), exclusions: snap.exclusions.map((e) => ({ ring: e.ring, kind: e.kind })), high: f.high, wide: f.wide, setbackM: s.setback } : null;
-      onSaveRef.current?.({ layout, angles: anglesTouched.current ? { tilt: s.tilt, azimuth: s.az } : null });
+      const layout = snap.plots.length ? { plots: snap.plots.map((p) => p.ring), exclusions: snap.exclusions.map((e) => ({ ring: e.ring, kind: e.kind })), high: f.high, wide: f.wide, setbackM: s.setback, trackerGcr: s.gcr } : null;
+      const mounting = mountTouched.current ? (s.mountKind === "tracker" ? { kind: "tracker" } : { kind: "fixed", tiltDeg: s.tilt, azimuthDeg: s.az }) : null;
+      onSaveRef.current?.({ layout, mounting });
     }
     function pushHistory(snap) {
       if (history.restoring) return;
@@ -397,11 +407,16 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       if (!panelGroup.current) panelGroup.current = L.layerGroup().addTo(map);
       panelGroup.current.clearLayers();
       if (!snap.plots.length) { setResult(null); return; }
-      const inputs = { ...baseRef.current.inputs, tiltDeg: s.tilt, azimuthDeg: s.az, high: f.high, wide: f.wide, setbackM: s.setback };
+      const inputs = { ...baseRef.current.inputs, tiltDeg: s.tilt, azimuthDeg: s.az, tracker: s.mountKind === "tracker", trackerGcr: s.gcr, high: f.high, wide: f.wide, setbackM: s.setback };
       const r = layoutPlots(snap.plots.map((p) => p.ring), snap.exclusions, inputs);
       setResult(r ? { ...r, inputs } : null);
       if (!r) return;
       ensureTablePattern(map, f.high, f.wide);
+      // the wind turbines this plant also stands on, with their keep-out circle, drawn first so the tables sit visibly around them
+      for (const t of r.turbines) {
+        L.polygon(t.exclusion, { color: "#0EA5E9", weight: 1.5, dashArray: "4 4", fillColor: "#0EA5E9", fillOpacity: 0.08, interactive: false, pmIgnore: true }).addTo(panelGroup.current);
+        L.marker([t.lat, t.lon], { icon: L.divIcon({ className: "pd-tb-wrap", html: `<span class="pd-tb">T${t.n}</span>`, iconSize: [26, 22], iconAnchor: [13, 11] }), interactive: false, keyboard: false, pmIgnore: true }).addTo(panelGroup.current);
+      }
       for (const t of r.tables) L.polygon(t.corners, { color: "#B9C4CE", weight: 0.6, fillColor: "url(#pdTableCells)", fillOpacity: 1, interactive: false, pmIgnore: true }).addTo(panelGroup.current);
       for (const c of r.cables) L.polyline(c, { color: "#FF9F1C", weight: 2.5, dashArray: "6 4", interactive: false, pmIgnore: true }).addTo(panelGroup.current);
       for (const st of r.stations) {
@@ -503,11 +518,13 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
     if (!ready || !settingsTouched.current) return;
     const id = setTimeout(() => { api.current.save?.(); api.current.run?.(); }, 220);
     return () => clearTimeout(id);
-  }, [tilt, az, fmt, setback, ready]);
+  }, [tilt, az, mountKind, gcr, fmt, setback, ready]);
 
-  const touch = (angles) => { settingsTouched.current = true; if (angles) anglesTouched.current = true; };
+  const touch = (mounting) => { settingsTouched.current = true; if (mounting) mountTouched.current = true; };
   const putTilt = (v) => { touch(true); setTilt(v); };
   const putAz = (v) => { touch(true); setAz(v); };
+  const putMountKind = (v) => { touch(true); setMountKind(v); };
+  const putGcr = (v) => { touch(true); setGcr(v); };
   const putFmt = (v) => { touch(false); setFmt(v); };
   const putSetback = (v) => { touch(false); setSetback(v); };
 
@@ -538,9 +555,11 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   else if (tool === "edit") hint = tr("h_edit");
   const dir = nearestDir(az);
   const f = TABLE_FORMATS[fmt] || TABLE_FORMATS[0];
-  const geo = site ? tableGeometry(base.inputs.wp, tilt, site.lat, { wide: f.wide, high: f.high }) : null;
+  const tracker = mountKind === "tracker";
+  const geo = site ? tableGeometry(base.inputs.wp, tilt, site.lat, { wide: f.wide, high: f.high, tracker, trackerGcr: gcr }) : null;
   const perPlot = (i) => result?.plots?.find((p) => p.k === i)?.stats.placedTables ?? 0;
   const s = result?.stats;
+  const hasWind = !!base.inputs.wind;
 
   return (
     <div className="sd-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose?.(); }}>
@@ -665,41 +684,64 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                 <>
                   <header className="sd-step-h"><h3>{tr("st3h")}</h3><p>{tr("st3p")}</p></header>
                   <div className="sd-field">
-                    <span className="sd-lbl-row">
-                      <span className="sd-lbl" id="pd-tilt">{tr("tilt")}</span>
-                      <span className="sd-numwrap">
-                        <input type="number" className="sd-num" min="5" max="45" step="1" value={tilt} aria-labelledby="pd-tilt" onChange={(e) => e.target.value !== "" && putTilt(Math.min(45, Math.max(5, +e.target.value)))} />
-                        <span className="sd-unit">°</span>
-                      </span>
-                    </span>
-                    <input type="range" className="sd-slider" min="5" max="45" step="1" value={tilt} aria-labelledby="pd-tilt" style={{ "--fill": ((tilt - 5) / 40) * 100 + "%" }} onChange={(e) => putTilt(+e.target.value)} />
-                    <span className="sd-scale" aria-hidden="true"><span>5°</span><span>25°</span><span>45°</span></span>
-                  </div>
-                  <div className="sd-field">
-                    <span className="sd-lbl">{tr("facing")}</span>
-                    <div className="sd-compass-row">
-                      <div className="sd-compass" role="radiogroup" aria-label={tr("facing")}>
-                        {DIRS.map((d, k) => d ? (
-                          <button key={k} type="button" role="radio" aria-checked={dir.az === d.az} className={"sd-dir" + (dir.az === d.az ? " on" : "")} onClick={() => putAz(d.az)}>{d[lang] || d.en}</button>
-                        ) : (
-                          <span key={k} className="sd-compass-mid" aria-hidden="true">
-                            <svg width="24" height="24" viewBox="0 0 24 24" style={{ transform: `rotate(${az + 180}deg)` }}><path d="M12 3 L18 15 H13.5 V21 H10.5 V15 H6 Z" fill="currentColor" /></svg>
-                          </span>
-                        ))}
-                      </div>
-                      <div className="sd-compass-side">
-                        <b>{tr("facesDir", { dir: L3(DIR_NAME[String(dir.az)] || DIR_NAME[0]) })}</b>
-                        <label className="sd-field">
-                          <span className="sd-lbl">{tr("exact")}</span>
-                          <span className="sd-numwrap">
-                            <input type="number" className="sd-num" min="-180" max="180" step="5" value={az} onChange={(e) => e.target.value !== "" && e.target.value !== "-" && putAz(Math.min(180, Math.max(-180, +e.target.value)))} />
-                            <span className="sd-unit">°</span>
-                          </span>
-                        </label>
-                        <span className="sd-note">{tr("exactHelp")}</span>
-                      </div>
+                    <span className="sd-lbl" id="pd-mount">{tr("mount")}</span>
+                    <div className="sd-seg" role="radiogroup" aria-labelledby="pd-mount">
+                      <button type="button" role="radio" aria-checked={!tracker} className={!tracker ? "on" : ""} onClick={() => putMountKind("fixed")}>{tr("mountFixed")}</button>
+                      <button type="button" role="radio" aria-checked={tracker} className={tracker ? "on" : ""} onClick={() => putMountKind("tracker")}>{tr("mountTracker")}</button>
                     </div>
                   </div>
+                  {!tracker && (
+                    <>
+                      <div className="sd-field">
+                        <span className="sd-lbl-row">
+                          <span className="sd-lbl" id="pd-tilt">{tr("tilt")}</span>
+                          <span className="sd-numwrap">
+                            <input type="number" className="sd-num" min="5" max="45" step="1" value={tilt} aria-labelledby="pd-tilt" onChange={(e) => e.target.value !== "" && putTilt(Math.min(45, Math.max(5, +e.target.value)))} />
+                            <span className="sd-unit">°</span>
+                          </span>
+                        </span>
+                        <input type="range" className="sd-slider" min="5" max="45" step="1" value={tilt} aria-labelledby="pd-tilt" style={{ "--fill": ((tilt - 5) / 40) * 100 + "%" }} onChange={(e) => putTilt(+e.target.value)} />
+                        <span className="sd-scale" aria-hidden="true"><span>5°</span><span>25°</span><span>45°</span></span>
+                      </div>
+                      <div className="sd-field">
+                        <span className="sd-lbl">{tr("facing")}</span>
+                        <div className="sd-compass-row">
+                          <div className="sd-compass" role="radiogroup" aria-label={tr("facing")}>
+                            {DIRS.map((d, k) => d ? (
+                              <button key={k} type="button" role="radio" aria-checked={dir.az === d.az} className={"sd-dir" + (dir.az === d.az ? " on" : "")} onClick={() => putAz(d.az)}>{d[lang] || d.en}</button>
+                            ) : (
+                              <span key={k} className="sd-compass-mid" aria-hidden="true">
+                                <svg width="24" height="24" viewBox="0 0 24 24" style={{ transform: `rotate(${az + 180}deg)` }}><path d="M12 3 L18 15 H13.5 V21 H10.5 V15 H6 Z" fill="currentColor" /></svg>
+                              </span>
+                            ))}
+                          </div>
+                          <div className="sd-compass-side">
+                            <b>{tr("facesDir", { dir: L3(DIR_NAME[String(dir.az)] || DIR_NAME[0]) })}</b>
+                            <label className="sd-field">
+                              <span className="sd-lbl">{tr("exact")}</span>
+                              <span className="sd-numwrap">
+                                <input type="number" className="sd-num" min="-180" max="180" step="5" value={az} onChange={(e) => e.target.value !== "" && e.target.value !== "-" && putAz(Math.min(180, Math.max(-180, +e.target.value)))} />
+                                <span className="sd-unit">°</span>
+                              </span>
+                            </label>
+                            <span className="sd-note">{tr("exactHelp")}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {tracker && (
+                    <div className="sd-field">
+                      <span className="sd-lbl-row">
+                        <span className="sd-lbl" id="pd-gcr">{tr("gcr")}</span>
+                        <span className="sd-numwrap">
+                          <input type="number" className="sd-num" min={TRACKER_GCR_RANGE[0]} max={TRACKER_GCR_RANGE[1]} step="0.01" value={gcr} aria-labelledby="pd-gcr" onChange={(e) => e.target.value !== "" && putGcr(Math.min(TRACKER_GCR_RANGE[1], Math.max(TRACKER_GCR_RANGE[0], +e.target.value)))} />
+                        </span>
+                      </span>
+                      <input type="range" className="sd-slider" min={TRACKER_GCR_RANGE[0]} max={TRACKER_GCR_RANGE[1]} step="0.01" value={gcr} aria-labelledby="pd-gcr" style={{ "--fill": ((gcr - TRACKER_GCR_RANGE[0]) / (TRACKER_GCR_RANGE[1] - TRACKER_GCR_RANGE[0])) * 100 + "%" }} onChange={(e) => putGcr(+e.target.value)} />
+                      <span className="sd-note">{tr("gcrHelp")}</span>
+                    </div>
+                  )}
                   <div className="sd-field">
                     <span className="sd-lbl" id="pd-fmt">{tr("format")}</span>
                     <div className="sd-seg" role="radiogroup" aria-labelledby="pd-fmt">
@@ -738,6 +780,9 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                   {s.short
                     ? <p className="sd-warn" role="alert">{tr("short", { miss: nf(Math.max(0, s.mwpNeed - s.mwpFit), 2) })}</p>
                     : result.stations.length > 0 && <p className="sd-help">{tr("grid", { n: result.stations.length, m: nf(s.cableM, 0) })}</p>}
+                  {hasWind && (s.turbinesShort
+                    ? <p className="sd-warn" role="alert">{tr("turbinesShort", { n: s.turbineCount, need: s.needTurbines })}</p>
+                    : <p className="sd-help">{tr("turbinesFit", { n: s.turbineCount, need: s.needTurbines, d: nf(s.rotorM, 0), r: nf(s.rotorM ? (s.rotorM / 2 + base.inputs.wind.hubM) * 1.15 : 0, 0) })}</p>)}
                   <button type="button" className="sd-btn primary big sd-apply" disabled={!fits} onClick={() => { api.current.save?.(); onClose?.(); }}>
                     <Check size={19} aria-hidden="true" />{tr("apply")}
                   </button>
