@@ -23,6 +23,7 @@ import { hasFeature, planFor } from "../../../lib/features.js";
 import UpsellModal from "../../../components/UpsellModal.jsx";
 import { CONTRACT_TOKENS, COMMISSIONING_TOKENS } from "../../../lib/legalDocs.js";
 import LeadAssistant from "./LeadAssistant.jsx";
+import MonitoringBill from "./MonitoringBill.jsx";
 import { clearOfflineData } from "../../../lib/offline.js";
 
 const TABS = [
@@ -620,6 +621,9 @@ export default function Settings() {
               <button className="dx-btn" onClick={() => upgrade("team")}>{t("s_team", lang)}</button>
             </div>
           ) : <p className="st-p">{t("s_billing_note", lang, { plan: co.plan })}</p>}
+        </Card>
+        <Card title={t("mb_title", lang)} desc={t("mb_desc", lang)}>
+          <MonitoringBill lang={lang} />
         </Card>
         {isOwner && (
           <>

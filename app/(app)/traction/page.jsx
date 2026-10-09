@@ -13,6 +13,7 @@ import { fmtDate } from "../../../lib/tz.js";
 import { openPackRequests } from "../../../lib/packAdmin.js";
 import { paywallOn } from "../../../lib/packPricing.js";
 import PackRequests from "./PackRequests.jsx";
+import { monitoringBilled, FREE_SYSTEMS, EUR_PER_SYSTEM } from "../../../lib/monitoringPricing.js";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Traction | VoltMira", robots: { index: false } };
@@ -83,6 +84,8 @@ export default async function TractionPage() {
   const [r, packs] = await Promise.all([loadTraction({ weeks: 12 }), openPackRequests().catch(() => [])]);
   const T = r.totals;
   const thisWeek = r.series.at(-1), lastWeek = r.series.at(-2);
+  // monitoring, invoiced by hand each month (lib/monitoringPricing.js)
+  const monitoring = r.workspaces.reduce((t, w) => ({ systems: t.systems + (w.monitored || 0), eur: t.eur + (w.monitoringEur || 0), due: t.due + (w.monitoringEur > 0 ? 1 : 0) }), { systems: 0, eur: 0, due: 0 });
 
   return (
     <div className="dx trx">
@@ -136,6 +139,13 @@ export default async function TractionPage() {
         <PackRequests initial={packs} />
       </section>
 
+      <p className="dx-muted-note tr-mon">
+        Monitoring: {INT(monitoring.systems)} systems monitored across all workspaces.
+        {" "}{monitoringBilled()
+          ? <>To invoice this month: <b>€{monitoring.eur.toFixed(2)}</b> from {INT(monitoring.due)} workspaces (the first {FREE_SYSTEMS} systems free, then €{EUR_PER_SYSTEM.toFixed(2)} each). The per-workspace amounts are in the table below.</>
+          : <>Billing is off (MONITORING_BILLING is not set): installers are told it is free while it is tested. Once on, the first {FREE_SYSTEMS} systems are free, then €{EUR_PER_SYSTEM.toFixed(2)} each a month.</>}
+      </p>
+
       <section className="dx-card" aria-labelledby="tr-weeks-h">
         <header className="dx-card-head"><div><h2 id="tr-weeks-h">Week by week</h2></div></header>
         <div className="tr-charts">
@@ -181,6 +191,7 @@ export default async function TractionPage() {
                   <th>Workspace</th><th>Plan</th><th>Joined</th><th>Last active</th>
                   <th className="n">People</th><th className="n">Quotes</th><th className="n">Sent</th><th className="n">Won</th>
                   <th className="n">kWp quoted</th><th className="n">€ quoted</th><th className="n">Leads</th>
+                  <th className="n" title="Systems whose portal delivered one of the last two finished months">Monitored</th><th className="n">Monitoring €/mo</th>
                 </tr>
               </thead>
               <tbody>
@@ -192,6 +203,7 @@ export default async function TractionPage() {
                     <td>{w.lastActive ? relTime(w.lastActive, "en-GB") : "—"}</td>
                     <td className="n">{w.members}</td><td className="n">{w.quotes}</td><td className="n">{w.sent}</td><td className="n">{w.won}</td>
                     <td className="n">{KWP(w.kwpQuoted)}</td><td className="n">{EUR(w.eurQuoted)}</td><td className="n">{w.leads}</td>
+                    <td className="n">{w.monitored || 0}</td><td className="n">{w.monitoringEur > 0 ? "€" + w.monitoringEur.toFixed(2) : "—"}</td>
                   </tr>
                 ))}
               </tbody>
