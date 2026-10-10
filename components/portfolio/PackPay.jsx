@@ -7,12 +7,11 @@
 // Everything stays readable; only the downloads wait for the payment. With the
 // gate off (lib/packPricing.js PACK_PAYWALL) it shows nothing and every
 // download works as before. A portfolio of one plant pays with that plant's
-// pack, so its export section points to the plant card instead of a second
-// paywall. On a local machine with PACK_TEST_PAY=on, "Pay by card (test)"
+// pack, from either paywall (its plant card, its export section). On a local machine with PACK_TEST_PAY=on, "Pay by card (test)"
 // opens a test checkout (app/api/portfolios/[id]/pack/test-pay).
 // children(locked): the download buttons, told whether they are locked.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Lock, FileText, FileSpreadsheet, FileType, Map as MapIcon, Link2, CreditCard, Landmark, Scale, ArrowRight } from "lucide-react";
+import { Lock, FileText, FileSpreadsheet, FileType, Map as MapIcon, Link2, CreditCard, Landmark, Scale } from "lucide-react";
 import { bt } from "../../lib/bankText.js";
 import { num } from "../../lib/portfolioFormat.js";
 import { packCheckoutReady, openPackCheckout } from "../../lib/paddle.js";
@@ -122,25 +121,20 @@ export default function PackPay({ portfolioId, plantId = null, companyId = "", l
   const price = st ? num(st.priceEur, lang, 0) : "";
   const cardReady = st && (st.testPay || packCheckoutReady(st.tier, st.renewal));
 
-  // a portfolio of one plant, seen from its export section: the plant card holds the paywall
-  const pointer = locked && !plantId && st.scope === "project";
-  const items = ITEMS[plantId ? (st?.scope === "project" ? "project" : "plant") : "portfolio"];
+  // a portfolio of one plant: the same paywall wherever its downloads are (the plant
+  // card, the export section), paying for that plant's pack; a hint pointing elsewhere
+  // left the customer looking for a price they could not see
+  const projectWide = st?.scope === "project";
+  const items = ITEMS[projectWide ? "project" : plantId ? "plant" : "portfolio"];
 
   return (
     <>
       {st?.paywall && st.open && st.reason === "paid" && st.expiresAt && <p className="pl-line">{bt("pk_paid", lang, { d: day(st.expiresAt) })}</p>}
-      {pointer && (
-        <div className="pw-note" role="note">
-          <Lock size={16} aria-hidden="true" />
-          <span>{bt("pw_via_plant", lang, { name: st.plantName || "", price })}</span>
-          <a className="btn ghost sm" href={`#plant-${st.payPlantId}`}>{bt("pw_go", lang)}<ArrowRight size={14} aria-hidden="true" /></a>
-        </div>
-      )}
-      {locked && !pointer && (
+      {locked && (
         <section className="pw" aria-labelledby={`pw-h-${key}`}>
           <div className="pw-main">
             <p className="pw-eyebrow"><Lock size={13} aria-hidden="true" />{tierName}</p>
-            <h4 id={`pw-h-${key}`}>{bt(st.renewal ? "pw_title_renew" : plantId ? "pw_title" : "pw_title_portfolio", lang)}</h4>
+            <h4 id={`pw-h-${key}`}>{bt(st.renewal ? "pw_title_renew" : plantId || projectWide ? "pw_title" : "pw_title_portfolio", lang)}</h4>
             <p className="pw-sub">{bt(st.renewal ? "pw_sub_renew" : "pw_sub", lang)}</p>
             <p className="pw-label">{bt("pw_includes", lang)}</p>
             <ul className="pw-list">
