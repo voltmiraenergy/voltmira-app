@@ -1,19 +1,30 @@
 "use client";
-// components/portfolio/PackPay.jsx — paying for a plant's bank pack (or a
-// portfolio's data room) where it is downloaded: the tier and its price, card
-// payment through Paddle (lib/paddle.js openPackCheckout) or an invoice for a
-// bank transfer (app/api/portfolios/[id]/pack), and, once paid, until when the
-// pack stays open. With the gate off (lib/packPricing.js PACK_PAYWALL) it shows
-// nothing and every download works as before. On a local machine with
-// PACK_TEST_PAY=on, "Pay by card (test)" opens a test checkout that unlocks the
-// pack as a paid card payment would (app/api/portfolios/[id]/pack/test-pay).
-// children(locked): the download buttons, told whether the pack is locked.
+// components/portfolio/PackPay.jsx — the paywall of a plant's bank pack (in the
+// plant card) or of a portfolio's own documents (in the export section): what
+// the pack holds, its one price beside it, card payment through Paddle
+// (lib/paddle.js openPackCheckout) or an invoice for a bank transfer
+// (app/api/portfolios/[id]/pack), and once paid, until when it stays open.
+// Everything stays readable; only the downloads wait for the payment. With the
+// gate off (lib/packPricing.js PACK_PAYWALL) it shows nothing and every
+// download works as before. A portfolio of one plant pays with that plant's
+// pack, so its export section points to the plant card instead of a second
+// paywall. On a local machine with PACK_TEST_PAY=on, "Pay by card (test)"
+// opens a test checkout (app/api/portfolios/[id]/pack/test-pay).
+// children(locked): the download buttons, told whether they are locked.
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Lock, FileText, FileSpreadsheet, FileType, Map as MapIcon, Link2, CreditCard, Landmark, Scale, ArrowRight } from "lucide-react";
 import { bt } from "../../lib/bankText.js";
 import { num } from "../../lib/portfolioFormat.js";
 import { packCheckoutReady, openPackCheckout } from "../../lib/paddle.js";
 
 const LOC = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
+
+// what each kind of pack holds, in the order a credit officer reads it
+const ITEMS = {
+  plant: [[FileText, "pw_i_summary"], [FileSpreadsheet, "pw_i_model"], [FileType, "pw_i_word"], [MapIcon, "pw_i_site"], [Link2, "pw_i_deal"]],
+  project: [[FileText, "pw_i_summary"], [FileSpreadsheet, "pw_i_model"], [FileType, "pw_i_word"], [MapIcon, "pw_i_site"], [Link2, "pw_i_deal"], [FileText, "pw_i_project"]],
+  portfolio: [[FileText, "pw_i_report"], [FileSpreadsheet, "pw_i_portfolio_model"], [FileType, "pw_i_room"]],
+};
 
 export default function PackPay({ portfolioId, plantId = null, companyId = "", lang = "en", disabled = false, children }) {
   const [st, setSt] = useState(null);
@@ -24,6 +35,7 @@ export default function PackPay({ portfolioId, plantId = null, companyId = "", l
   const [testing, setTesting] = useState(false);
   const poll = useRef(null);
   const url = `/api/portfolios/${portfolioId}/pack${plantId ? `?plant=${encodeURIComponent(plantId)}` : ""}`;
+  const key = plantId || "room";
 
   const load = useCallback(async () => {
     if (!portfolioId) return null;
@@ -48,12 +60,14 @@ export default function PackPay({ portfolioId, plantId = null, companyId = "", l
   }, [portfolioId, url]);
 
   const locked = !!(st && st.paywall && !st.open);
+  // what the payment is for: this plant, or the plant whose pack opens the portfolio's documents
+  const payFor = st?.payPlantId ?? plantId ?? "";
   const day = (iso) => new Date(iso).toLocaleDateString(LOC[lang] || "en-GB", { day: "numeric", month: "long", year: "numeric" });
 
   async function payCard() {
     setNote(""); setBusy(true);
     try {
-      await openPackCheckout({ tier: st.tier, renewal: st.renewal, companyId, portfolioId, plantId });
+      await openPackCheckout({ tier: st.tier, renewal: st.renewal, companyId, portfolioId, plantId: payFor || null });
       setNote(bt("pk_after_card", lang));
       // the webhook unlocks the pack; look again every few seconds for three minutes
       let n = 0;
@@ -75,7 +89,7 @@ export default function PackPay({ portfolioId, plantId = null, companyId = "", l
     setNote(""); setBusy(true);
     try {
       const r = await fetch(`/api/portfolios/${portfolioId}/pack/test-pay`, {
-        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ plant: plantId || "" }),
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ plant: payFor }),
       });
       if (!r.ok) throw new Error();
       setTesting(false);
@@ -91,7 +105,7 @@ export default function PackPay({ portfolioId, plantId = null, companyId = "", l
     setNote(""); setBusy(true);
     try {
       const r = await fetch(`/api/portfolios/${portfolioId}/pack`, {
-        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ plant: plantId || "", billing }),
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ plant: payFor, billing }),
       });
       if (!r.ok) throw new Error();
       const j = await r.json();
@@ -106,37 +120,70 @@ export default function PackPay({ portfolioId, plantId = null, companyId = "", l
 
   const tierName = st ? bt("pk_tier_" + st.tier, lang) : "";
   const price = st ? num(st.priceEur, lang, 0) : "";
+  const cardReady = st && (st.testPay || packCheckoutReady(st.tier, st.renewal));
+
+  // a portfolio of one plant, seen from its export section: the plant card holds the paywall
+  const pointer = locked && !plantId && st.scope === "project";
+  const items = ITEMS[plantId ? (st?.scope === "project" ? "project" : "plant") : "portfolio"];
+
   return (
     <>
       {st?.paywall && st.open && st.reason === "paid" && st.expiresAt && <p className="pl-line">{bt("pk_paid", lang, { d: day(st.expiresAt) })}</p>}
-      {locked && (
-        <div className="pk-pay">
-          <p className="pl-line"><b>{bt(st.renewal ? "pk_renewal" : "pk_locked", lang, { tier: tierName, price })}</b></p>
-          {st.requestedAt && <p className="pf-hint" role="status">{bt("pk_requested", lang, { d: day(st.requestedAt) })}</p>}
-          {/* a card payment stays possible after an invoice was asked for */}
-          <div className="pl-row">
-            {st.testPay
-              ? <button type="button" className="btn primary sm" disabled={disabled || busy} onClick={() => setTesting(true)}>{bt("pk_test_btn", lang)}</button>
-              : packCheckoutReady(st.tier, st.renewal) && (
-                <button type="button" className="btn primary sm" disabled={disabled || busy} onClick={payCard}>{bt("pk_card", lang)}</button>
-              )}
-            {!asking && !st.requestedAt && <button type="button" className="btn ghost sm" disabled={disabled || busy} onClick={() => setAsking(true)}>{bt("pk_invoice", lang)}</button>}
+      {pointer && (
+        <div className="pw-note" role="note">
+          <Lock size={16} aria-hidden="true" />
+          <span>{bt("pw_via_plant", lang, { name: st.plantName || "", price })}</span>
+          <a className="btn ghost sm" href={`#plant-${st.payPlantId}`}>{bt("pw_go", lang)}<ArrowRight size={14} aria-hidden="true" /></a>
+        </div>
+      )}
+      {locked && !pointer && (
+        <section className="pw" aria-labelledby={`pw-h-${key}`}>
+          <div className="pw-main">
+            <p className="pw-eyebrow"><Lock size={13} aria-hidden="true" />{tierName}</p>
+            <h4 id={`pw-h-${key}`}>{bt(st.renewal ? "pw_title_renew" : plantId ? "pw_title" : "pw_title_portfolio", lang)}</h4>
+            <p className="pw-sub">{bt(st.renewal ? "pw_sub_renew" : "pw_sub", lang)}</p>
+            <p className="pw-label">{bt("pw_includes", lang)}</p>
+            <ul className="pw-list">
+              {items.map(([Icon, k]) => <li key={k}><Icon size={17} aria-hidden="true" /><span>{bt(k, lang)}</span></li>)}
+            </ul>
+            <p className="pw-trust"><Scale size={15} aria-hidden="true" /><span>{bt("pw_trust", lang)}</span></p>
           </div>
-          {/* not a <form>: the box can sit inside a page's own form */}
-          {asking && !st.requestedAt && (
-            <div className="pk-inv">
-              <label htmlFor={`pk-bill-${plantId || "room"}`}>{bt("pk_billing", lang)}</label>
-              <textarea id={`pk-bill-${plantId || "room"}`} rows={3} maxLength={1000} value={billing} onChange={(e) => setBilling(e.target.value)} />
-              <div className="pl-row">
-                <button type="button" className="btn primary sm" disabled={busy} onClick={askInvoice}>{bt("pk_send", lang)}</button>
-                <button type="button" className="btn ghost sm" onClick={() => setAsking(false)}>{bt("pk_cancel", lang)}</button>
-              </div>
+
+          <div className="pw-side">
+            <div className="pw-price"><b>{price}</b><span>EUR</span></div>
+            <p className="pw-terms"><b>{bt("pw_once", lang)}</b>. {bt("pw_rerun", lang)}</p>
+            {st.requestedAt && <p className="pw-status" role="status">{bt("pk_requested", lang, { d: day(st.requestedAt) })}</p>}
+            <div className="pw-actions">
+              {cardReady && (
+                <button type="button" className="btn primary" disabled={disabled || busy} onClick={() => (st.testPay ? setTesting(true) : payCard())}>
+                  <CreditCard size={16} aria-hidden="true" />{bt(st.testPay ? "pk_test_btn" : "pk_card", lang)}
+                </button>
+              )}
+              {!asking && !st.requestedAt && (
+                <button type="button" className={"btn " + (cardReady ? "ghost" : "primary")} disabled={disabled || busy} onClick={() => setAsking(true)}>
+                  <Landmark size={16} aria-hidden="true" />{bt("pk_invoice", lang)}
+                </button>
+              )}
             </div>
-          )}
+            {/* not a <form>: the paywall can sit inside a page's own form */}
+            {asking && !st.requestedAt && (
+              <div className="pk-inv">
+                <label htmlFor={`pk-bill-${key}`}>{bt("pk_billing", lang)}</label>
+                <textarea id={`pk-bill-${key}`} rows={3} maxLength={1000} value={billing} onChange={(e) => setBilling(e.target.value)} />
+                <div className="pl-row">
+                  <button type="button" className="btn primary sm" disabled={busy} onClick={askInvoice}>{bt("pk_send", lang)}</button>
+                  <button type="button" className="btn ghost sm" onClick={() => setAsking(false)}>{bt("pk_cancel", lang)}</button>
+                </div>
+              </div>
+            )}
+            {note && <p className="pf-hint" role="status">{note}</p>}
+            {cardReady && <p className="pw-secure">{bt("pw_secure", lang)}</p>}
+          </div>
+
           {testing && (
-            <div className="pk-modal" role="dialog" aria-modal="true" aria-labelledby={`pk-test-h-${plantId || "room"}`} onKeyDown={(e) => { if (e.key === "Escape") setTesting(false); }}>
+            <div className="pk-modal" role="dialog" aria-modal="true" aria-labelledby={`pk-test-h-${key}`} onKeyDown={(e) => { if (e.key === "Escape") setTesting(false); }}>
               <div className="pk-sheet">
-                <h4 id={`pk-test-h-${plantId || "room"}`}>{bt("pk_test_h", lang)}</h4>
+                <h4 id={`pk-test-h-${key}`}>{bt("pk_test_h", lang)}</h4>
                 <p className="pf-hint">{bt("pk_test_p", lang)}</p>
                 <dl className="pk-lines">
                   <div><dt>{bt("pk_test_item", lang)}</dt><dd>{tierName}</dd></div>
@@ -151,8 +198,7 @@ export default function PackPay({ portfolioId, plantId = null, companyId = "", l
               </div>
             </div>
           )}
-          {note && <p className="pf-hint" role="status">{note}</p>}
-        </div>
+        </section>
       )}
       {children ? children(locked) : null}
     </>

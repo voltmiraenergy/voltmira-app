@@ -1,7 +1,10 @@
 // app/api/portfolios/[id]/pack/route.js — the paid bank pack of one plant
-// (?plant=<id>), or of the portfolio's data room (no plant), for the plant
-// card: lib/packPricing.js.
-//   GET                      -> { paywall, open, reason, tier, priceEur, renewal, expiresAt, requestedAt }
+// (?plant=<id>), or of the portfolio's own documents (no plant: the report,
+// the teaser, the Excel model, the data room), for the paywall
+// (components/portfolio/PackPay.jsx): lib/packPricing.js, lib/packAccess.js.
+//   GET                      -> { paywall, open, reason, tier, priceEur, renewal, expiresAt, requestedAt,
+//                                 scope: "plant"|"project"|"portfolio", payPlantId }
+//     scope "project": a portfolio of one plant, whose documents that plant's pack opens
 //   POST { plant, billing }  -> asks VoltMira for an invoice, to pay by bank
 //                               transfer; the platform admins are emailed and
 //                               the pack is unlocked when the transfer arrives
@@ -9,7 +12,7 @@
 import { NextResponse } from "next/server";
 import { loadPortfolio } from "../../../../../lib/portfolioLoad.js";
 import { findPlant } from "../../../../../lib/bankPack.js";
-import { loadPackAccess, openRequest } from "../../../../../lib/packAccess.js";
+import { loadPackAccess, loadPortfolioAccess, openRequest } from "../../../../../lib/packAccess.js";
 import { paywallOn, PACK_TIERS, localSwitch } from "../../../../../lib/packPricing.js";
 import { currentUser } from "../../../../../lib/session.js";
 import { supabaseAdmin } from "../../../../../lib/supabase.js";
@@ -29,25 +32,28 @@ async function scope(id, plantParam) {
   const plant = plantParam ? findPlant(d.portfolio, plantParam) : null;
   if (plantParam && !plant) return { res: NextResponse.json({ error: "not_found" }, { status: 404 }) };
   const user = await currentUser();
-  let access = await loadPackAccess({ companyId: d.portfolio.company_id, portfolioId: id, plant, email: user?.email });
-  // the data room is the portfolio pack only for a portfolio that holds real
-  // plants; rooftop quotes and sample plants keep it free (as the route does)
-  if (!plant) {
-    const plants = Array.isArray(d.portfolio.assets?.[PLANTS_KEY]) ? d.portfolio.assets[PLANTS_KEY] : [];
-    if (!plants.length || (!localSwitch("PACK_LOCK_SAMPLES") && plants.every((p) => p?.sample))) access = { ...access, open: true, reason: "free" };
+  const plants = Array.isArray(d.portfolio.assets?.[PLANTS_KEY]) ? d.portfolio.assets[PLANTS_KEY].filter((p) => p && p.id) : [];
+  const real = localSwitch("PACK_LOCK_SAMPLES") ? plants : plants.filter((p) => !p.sample);
+  if (plant) {
+    const access = await loadPackAccess({ companyId: d.portfolio.company_id, portfolioId: id, plant, email: user?.email });
+    // a portfolio of this plant alone: its pack also opens the portfolio's documents
+    return { d, plant, user, real, access: { ...access, scope: real.length === 1 && String(real[0].id) === String(plant.id) ? "project" : "plant", payPlantId: String(plant.id) } };
   }
-  return { d, plant, user, access };
+  const access = await loadPortfolioAccess({ portfolio: d.portfolio, email: user?.email });
+  return { d, plant: null, user, real, access: { ...access, scope: access.payPlantId ? "project" : "portfolio" } };
 }
 
 export async function GET(req, props) {
   const { id } = await props.params;
   const s = await scope(id, new URL(req.url).searchParams.get("plant") || "");
   if (s.res) return s.res;
-  const { d, plant, access } = s;
-  const pending = paywallOn() && !access.open ? await openRequest(d.portfolio.company_id, id, plant ? String(plant.id) : null) : null;
+  const { d, plant, real, access } = s;
+  const payPlantId = access.payPlantId || null;
+  const pending = paywallOn() && !access.open ? await openRequest(d.portfolio.company_id, id, payPlantId) : null;
   return NextResponse.json({
     paywall: paywallOn(), open: access.open, reason: access.reason, tier: access.tier, priceEur: access.priceEur, renewal: access.renewal,
     expiresAt: access.unlock?.expires_at || null, requestedAt: pending?.created_at || null,
+    scope: access.scope, payPlantId, plantName: plant?.name || (payPlantId ? real.find((p) => String(p.id) === payPlantId)?.name || "" : ""),
     // a local machine may try the card payment without Paddle (lib/packPricing.js localSwitch)
     testPay: localSwitch("PACK_TEST_PAY"),
   }, { headers: { "cache-control": "no-store" } });

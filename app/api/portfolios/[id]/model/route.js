@@ -2,7 +2,7 @@
 // Excel workbook with live formulas (lib/portfolioExport.js buildWorkbook).
 import { NextResponse } from "next/server";
 import { buildWorkbook } from "../../../../../lib/portfolioExport.js";
-import { authorizePortfolio, safeName } from "../../../../../lib/portfolioRoute.js";
+import { authorizePortfolio, safeName, gatePortfolio } from "../../../../../lib/portfolioRoute.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +11,9 @@ export async function GET(req, props) {
   const { id } = await props.params;
   const auth = await authorizePortfolio(req, id, { limitKey: "pfxlsx", limit: 60 });
   if (auth instanceof NextResponse) return auth;
+  // a portfolio with plants: the pack pays for its documents (lib/packAccess.js)
+  const locked = await gatePortfolio(auth);
+  if (locked) return locked;
   const bytes = buildWorkbook(auth.model, auth.lang, { generatedAt: new Date().toISOString().slice(0, 10) });
   return new NextResponse(Buffer.from(bytes), {
     headers: {

@@ -3,16 +3,13 @@
 // manifest that says what is NOT in it. If the PDF cannot be rendered right now
 // the archive is still built, and the manifest says the report is missing, so a
 // lender is never handed a package that quietly lacks its main document.
-// A portfolio that holds plants sells its data room as the portfolio pack
-// (lib/packPricing.js): once the gate is on, it answers 402 until paid. A
-// portfolio of rooftop quotes only keeps its data room as before.
+// A portfolio that holds plants sells its documents with the pack
+// (lib/packAccess.js loadPortfolioAccess): once the gate is on, it answers 402
+// until paid. A portfolio of rooftop quotes only keeps its data room as before.
 import { NextResponse } from "next/server";
 import { renderPdf } from "../../../../../lib/renderProposalPdf.js";
 import { buildDataRoom } from "../../../../../lib/portfolioExport.js";
-import { authorizePortfolio, authCookies, reportUrl } from "../../../../../lib/portfolioRoute.js";
-import { loadPackAccess, lockedBody } from "../../../../../lib/packAccess.js";
-import { localSwitch } from "../../../../../lib/packPricing.js";
-import { currentUser } from "../../../../../lib/session.js";
+import { authorizePortfolio, authCookies, reportUrl, gatePortfolio } from "../../../../../lib/portfolioRoute.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,13 +19,9 @@ export async function GET(req, props) {
   const { id } = await props.params;
   const auth = await authorizePortfolio(req, id, { limitKey: "pfroom", limit: 15 });
   if (auth instanceof NextResponse) return auth;
-  // a portfolio of sample plants stays open, like each sample plant
-  const plants = auth.model.assets.filter((a) => a.kind === "plant");
-  if (plants.length && (localSwitch("PACK_LOCK_SAMPLES") || !plants.every((a) => a.plant?.sample))) {
-    const user = await currentUser();
-    const access = await loadPackAccess({ companyId: auth.d.portfolio.company_id, portfolioId: id, plant: null, email: user?.email });
-    if (!access.open) return NextResponse.json(lockedBody(access), { status: 402 });
-  }
+  // a portfolio with plants: the pack pays for its documents (lib/packAccess.js)
+  const locked = await gatePortfolio(auth);
+  if (locked) return locked;
   let pdf = null;
   try {
     ({ pdf } = await renderPdf(reportUrl(req, id, auth.lang), { cookies: authCookies(req), ready: "article.rp" }));

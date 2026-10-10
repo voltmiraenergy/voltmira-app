@@ -29,6 +29,8 @@ import { fxNote, structureName, termsLine } from "../../../../lib/portfolioDispl
 import CashflowChart from "../../../../components/CashflowChart.jsx";
 import DscrChart from "../../../../components/portfolio/DscrChart.jsx";
 import PackPay from "../../../../components/portfolio/PackPay.jsx";
+import { Lock } from "lucide-react";
+import { bt } from "../../../../lib/bankText.js";
 import TornadoChart from "../../../../components/portfolio/TornadoChart.jsx";
 import SourcesUses from "../../../../components/portfolio/SourcesUses.jsx";
 import ReadinessPanel from "../../../../components/portfolio/ReadinessPanel.jsx";
@@ -882,12 +884,14 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
             <select id="exLang" className="input" value={docLang} onChange={(e) => setDocLang(e.target.value)}>
               <option value="en">English</option><option value="uk">Українська</option><option value="ro">Română</option><option value="ru">Русский</option>
             </select></div>
-          <a className={"btn primary" + (exportsOff ? " off" : "")} aria-disabled={exportsOff} tabIndex={exportsOff ? -1 : undefined} href={`/api/portfolios/${portfolio.id}/report${exportQs}`} target="_blank" rel="noopener noreferrer">{pt("ex_report", lang)}</a>
-          <a className={"btn ghost" + (exportsOff ? " off" : "")} aria-disabled={exportsOff} tabIndex={exportsOff ? -1 : undefined} href={`/api/portfolios/${portfolio.id}/teaser${exportQs}`} target="_blank" rel="noopener noreferrer" title={pt("ex_teaser_h", lang)}>{pt("ex_teaser", lang)}</a>
-          <a className={"btn ghost" + (exportsOff ? " off" : "")} aria-disabled={exportsOff} tabIndex={exportsOff ? -1 : undefined} href={`/api/portfolios/${portfolio.id}/model${exportQs}`}>{pt("ex_model", lang)}</a>
-          <PackPay portfolioId={portfolio.id} companyId={portfolio.company_id} lang={lang} disabled={exportsOff}>{(locked) => (locked
-            ? <span className="btn ghost off" aria-disabled="true">{pt("ex_room", lang)}</span>
-            : <a className={"btn ghost" + (exportsOff ? " off" : "")} aria-disabled={exportsOff} tabIndex={exportsOff ? -1 : undefined} href={`/api/portfolios/${portfolio.id}/dataroom${exportQs}`}>{pt("ex_room", lang)}</a>)}</PackPay>
+          {/* a portfolio with plants: every download waits for its pack (components/portfolio/PackPay.jsx) */}
+          <PackPay portfolioId={portfolio.id} companyId={portfolio.company_id} lang={lang} disabled={exportsOff}>{(locked) => [
+            ["report", "primary", "ex_report", true], ["teaser", "ghost", "ex_teaser", true], ["model", "ghost", "ex_model", false], ["dataroom", "ghost", "ex_room", false],
+          ].map(([path, kind, label, tab]) => (locked
+            ? <span key={path} className={`btn ${kind} off pw-locked`} aria-disabled="true" title={bt("pw_locked_btn", lang)}><Lock size={14} aria-hidden="true" />{pt(label, lang)}</span>
+            : <a key={path} className={`btn ${kind}` + (exportsOff ? " off" : "")} aria-disabled={exportsOff} tabIndex={exportsOff ? -1 : undefined}
+              href={`/api/portfolios/${portfolio.id}/${path}${exportQs}`} {...(tab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              title={path === "teaser" ? pt("ex_teaser_h", lang) : undefined}>{pt(label, lang)}</a>))}</PackPay>
         </div>
         <p className="pf-hint">{pt("ex_teaser_h", lang)}</p>
         <div className="pf-foot">

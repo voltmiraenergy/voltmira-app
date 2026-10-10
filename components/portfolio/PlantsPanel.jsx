@@ -43,6 +43,7 @@ import { useDealRoom } from "./useDealRoom.js";
 import ItemFiles from "./ItemFiles.jsx";
 import DealRoom from "./DealRoom.jsx";
 import PackPay from "./PackPay.jsx";
+import { Lock } from "lucide-react";
 import { dt } from "../../lib/dealText.js";
 import { docCounts, isAnswered } from "../../lib/dealRoom.js";
 import { num as fnum, mwhUnit, dscr, dscrTone } from "../../lib/portfolioFormat.js";
@@ -553,7 +554,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
         <PackPay portfolioId={portfolioId} plantId={id} companyId={companyId} lang={lang} disabled={packOff}>{(locked) => (
         <div className="pl-row">
           {locked
-            ? <span className="btn primary sm off" aria-disabled="true">{bt("pk_dl_locked", lang)}</span>
+            ? <span className="btn primary sm off pw-locked" aria-disabled="true"><Lock size={14} aria-hidden="true" />{bt("pk_dl_locked", lang)}</span>
             : <a className={"btn primary sm" + (packOff ? " off" : "")} {...offProps} href={`/api/portfolios/${portfolioId}/bankpack?plant=${encodeURIComponent(id)}&lang=${packLang}`}>{bt("pack_dl", lang)}</a>}
           {PACK_LANGS.map((l) => (
             <a key={l} className={"btn ghost sm" + (packOff ? " off" : "")} {...offProps} href={`/portfolios/${portfolioId}/bank?plant=${encodeURIComponent(id)}&lang=${l}`} target="_blank" rel="noopener noreferrer">

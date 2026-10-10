@@ -4,7 +4,7 @@
 // render more than they may see. Same renderer as the proposal and the invoice.
 import { NextResponse } from "next/server";
 import { renderPdf } from "../../../../../lib/renderProposalPdf.js";
-import { authorizePortfolio, authCookies, reportUrl, safeName, askedCurrency } from "../../../../../lib/portfolioRoute.js";
+import { authorizePortfolio, authCookies, reportUrl, safeName, askedCurrency, gatePortfolio } from "../../../../../lib/portfolioRoute.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +14,9 @@ export async function GET(req, props) {
   const { id } = await props.params;
   const auth = await authorizePortfolio(req, id, { limitKey: "pfpdf" });
   if (auth instanceof NextResponse) return auth;
+  // a portfolio with plants: the pack pays for its documents (lib/packAccess.js)
+  const locked = await gatePortfolio(auth);
+  if (locked) return locked;
   const cur = askedCurrency(req);
   try {
     const { pdf, timings } = await renderPdf(reportUrl(req, id, auth.lang, cur), { cookies: authCookies(req), ready: "article.rp" });
