@@ -4,7 +4,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { getSolarYield, cacheKey, memoryCache } from "./pvgis.js";
+import { getSolarYield, cacheKey, memoryCache, getHourlySolarShape, hourlyCacheKey } from "./pvgis.js";
 import { simulate, defaultEngineSettings } from "./engine.js";
 
 /** Realistic PVGIS v5.2 response shape (values ≈ Bucharest, south-facing 35°). */
@@ -77,6 +77,92 @@ test("throws on non-200 and on malformed body", async () => {
   await assert.rejects(() => getSolarYield(44, 26, { fetchImpl: mockFetch({ nope: 1 }) }), /shape/);
 });
 
+/** A full synthetic 8760-record seriescalc year: `pAt(month, hour)` decides
+ *  each record's power, so a test can bake in whatever pattern it needs
+ *  while still satisfying getHourlySolarShape()'s real-shape length guard. */
+function seriesResponse(pAt) {
+  const hourly = [];
+  const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  for (let month = 1; month <= 12; month++) {
+    for (let day = 1; day <= daysInMonth[month - 1]; day++) {
+      for (let hour = 0; hour < 24; hour++) {
+        const mm = String(month).padStart(2, "0"), dd = String(day).padStart(2, "0"), hh = String(hour).padStart(2, "0");
+        hourly.push({ time: `2019${mm}${dd}:${hh}10`, P: pAt(month, hour) });
+      }
+    }
+  }
+  return { outputs: { hourly } };
+}
+
+test("getHourlySolarShape reduces a real-shaped year into two 24h arrays that each sum to 1", async () => {
+  // Noon-only output, every day of every month alike: both seasons should
+  // reduce to "all output at hour 12", trivially checkable by hand.
+  const payload = seriesResponse((month, hour) => (hour === 12 ? 100 : 0));
+  const r = await getHourlySolarShape(44.43, 26.10, { fetchImpl: mockFetch(payload) });
+  assert.equal(r.cold.length, 24);
+  assert.equal(r.warm.length, 24);
+  assert.ok(Math.abs(r.cold.reduce((a, b) => a + b, 0) - 1) < 1e-9);
+  assert.ok(Math.abs(r.warm.reduce((a, b) => a + b, 0) - 1) < 1e-9);
+  assert.equal(r.cold[12], 1);
+  assert.equal(r.warm[12], 1);
+  assert.equal(r.cold[0], 0);
+  assert.equal(r.source, "pvgis");
+});
+
+test("getHourlySolarShape reports the real kWh/kWp/day each season's shape was normalized from", async () => {
+  // 4 W for 1 hour every single day of the year = 4 Wh = 0.004 kWh/kWp/day, in both seasons alike.
+  const payload = seriesResponse((month, hour) => (hour === 12 ? 4 : 0));
+  const r = await getHourlySolarShape(44.43, 26.10, { fetchImpl: mockFetch(payload) });
+  assert.ok(Math.abs(r.coldKwhPerKwpDay - 0.004) < 1e-9, r.coldKwhPerKwpDay);
+  assert.ok(Math.abs(r.warmKwhPerKwpDay - 0.004) < 1e-9, r.warmKwhPerKwpDay);
+});
+
+test("getHourlySolarShape splits cold (Oct-Mar) from warm (Apr-Sep) correctly", () => {
+  return (async () => {
+    // Output only in July (month 7, a warm month) — the cold array must come
+    // back all-zero (no data that season), the warm array must carry it all.
+    const payload = seriesResponse((month, hour) => (month === 7 && hour === 12 ? 500 : 0));
+    const r = await getHourlySolarShape(44.43, 26.10, { fetchImpl: mockFetch(payload) });
+    assert.equal(r.cold.reduce((a, b) => a + b, 0), 0);
+    assert.ok(Math.abs(r.warm.reduce((a, b) => a + b, 0) - 1) < 1e-9);
+    assert.equal(r.warm[12], 1);
+  })();
+});
+
+test("getHourlySolarShape caches by coordinates/angle/aspect/year", async () => {
+  const urls = [];
+  const cache = memoryCache();
+  const payload = seriesResponse((month, hour) => (hour === 12 ? 1 : 0));
+  const opts = { fetchImpl: mockFetch(payload, { capture: urls }), cache };
+  const a = await getHourlySolarShape(44.43, 26.10, opts);
+  const b = await getHourlySolarShape(44.43, 26.10, opts);
+  assert.equal(urls.length, 1, "fetch called once");
+  assert.equal(a.cold[12], b.cold[12]);
+  assert.equal(b.source, "cache");
+});
+
+test("getHourlySolarShape request URL carries seriescalc params", async () => {
+  const urls = [];
+  const payload = seriesResponse(() => 0);
+  await getHourlySolarShape(47.01, 28.86, { year: 2019, fetchImpl: mockFetch(payload, { capture: urls }) });
+  const u = urls[0];
+  assert.ok(u.includes("seriescalc"));
+  assert.ok(u.includes("lat=47.0100") && u.includes("lon=28.8600"));
+  assert.ok(u.includes("startyear=2019") && u.includes("endyear=2019"));
+  assert.ok(u.includes("pvcalculation=1"));
+});
+
+test("getHourlySolarShape rejects invalid coordinates and malformed/short responses", async () => {
+  await assert.rejects(() => getHourlySolarShape(999, 0, { fetchImpl: mockFetch(seriesResponse(() => 0)) }));
+  await assert.rejects(() => getHourlySolarShape(44, 26, { fetchImpl: mockFetch({ outputs: { hourly: [{ time: "20190101:0010", P: 0 }] } }) }), /shape/);
+  await assert.rejects(() => getHourlySolarShape(44, 26, { fetchImpl: mockFetch({}, { status: 500 }) }), /HTTP 500/);
+});
+
+test("hourlyCacheKey rounds coordinates and includes the requested year", () => {
+  assert.equal(hourlyCacheKey(44.4321, 26.1049, { year: 2019 }), hourlyCacheKey(44.4299, 26.0951, { year: 2019 }));
+  assert.notEqual(hourlyCacheKey(44.43, 26.10, { year: 2019 }), hourlyCacheKey(44.43, 26.10, { year: 2020 }));
+});
+
 test("end-to-end: PVGIS yield flows into the engine as yieldOverride", async () => {
   const { yieldPerKwp, monthlyShape } = await getSolarYield(44.43, 26.10, { fetchImpl: mockFetch(pvgisResponse(1287)) });
   const E = defaultEngineSettings();
@@ -87,4 +173,76 @@ test("end-to-end: PVGIS yield flows into the engine as yieldOverride", async () 
   }, E, "expc");
   assert.equal(r.prod0, 6 * 1287); // real Bucharest yield, not the 1100 default
   assert.ok(r.payback > 4 && r.payback < 6);
+});
+
+test("keeps the site's year-to-year variability, the database and years, and the losses PVGIS reports", async () => {
+  const payload = pvgisResponse(1250.85);
+  payload.outputs.totals.fixed = { E_y: 1250.85, SD_y: 46.42, l_aoi: -2.79, l_spec: "1.19", l_tg: -6.98, l_total: -21.31 };
+  payload.inputs = { meteo_data: { radiation_db: "PVGIS-SARAH2", year_min: 2005, year_max: 2020 } };
+  const r = await getSolarYield(46, 28.5, { loss: 14, fetchImpl: mockFetch(payload) });
+  assert.deepEqual(r.variability, { sdPct: 3.7, db: "PVGIS-SARAH2", years: "2005-2020" });
+  assert.deepEqual(r.losses, { aoi: -2.79, spectral: 1.19, tempIrr: -6.98, total: -21.31, system: 14 });
+});
+
+test("a PVGIS answer without those fields still gives the yield, with no variability claimed", async () => {
+  const r = await getSolarYield(44.43, 26.10, { fetchImpl: mockFetch(pvgisResponse(1287)) });
+  assert.equal(r.variability, null);
+  assert.equal(r.losses.total, null);
+});
+
+import { getYearlyIrradiation } from "./pvgis.js";
+
+function monthly(years, perMonth) {
+  const rows = [];
+  for (const y of years) for (let m = 1; m <= 12; m++) rows.push({ year: y, month: m, "H(i)_m": perMonth(y, m) });
+  return { inputs: { meteo_data: { radiation_db: "PVGIS-SARAH2", year_min: years[0], year_max: years[years.length - 1] } }, outputs: { monthly: rows } };
+}
+
+test("each full year's in-plane radiation as a share of the average year", async () => {
+  const years = [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019];
+  // 2012 is 10% sunnier than 2011's 100, 2013 10% duller; the rest are 100
+  const f = { 2012: 110, 2013: 90 };
+  const r = await getYearlyIrradiation(46, 28.5, { fetchImpl: mockFetch(monthly(years, (y) => (f[y] ?? 100) / 12)) });
+  assert.equal(r.db, "PVGIS-SARAH2");
+  assert.equal(r.years, "2010-2019");
+  assert.equal(r.yearly.length, 10);
+  assert.equal(r.yearly.find((x) => x.y === 2012).pct, 110);
+  assert.equal(r.yearly.find((x) => x.y === 2013).pct, 90);
+  assert.equal(r.yearly.find((x) => x.y === 2015).pct, 100);
+  // the average of the shares is 100
+  assert.ok(Math.abs(r.yearly.reduce((a, x) => a + x.pct, 0) / 10 - 100) < 0.01);
+});
+
+test("a year with missing months is left out, and too short a record gives nothing", async () => {
+  const years = [2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013];
+  const p = monthly(years, () => 10);
+  p.outputs.monthly = p.outputs.monthly.filter((r) => !(r.year === 2007 && r.month === 5));
+  const r = await getYearlyIrradiation(46, 28.5, { fetchImpl: mockFetch(p) });
+  assert.equal(r.yearly.length, 8);
+  assert.ok(!r.yearly.some((x) => x.y === 2007));
+  assert.equal(await getYearlyIrradiation(46, 28.5, { fetchImpl: mockFetch(monthly([2018, 2019, 2020], () => 10)) }), null);
+  await assert.rejects(getYearlyIrradiation(95, 28.5, { fetchImpl: mockFetch(p) }), /Invalid coordinates/);
+  await assert.rejects(getYearlyIrradiation(46, 28.5, { fetchImpl: mockFetch({}) }), /Unexpected/);
+  await assert.rejects(getYearlyIrradiation(46, 28.5, { fetchImpl: mockFetch({}, { status: 500 }) }), /HTTP 500/);
+});
+
+test("getClippingCurve gives the share of the year's energy above each AC power per kWp", async () => {
+  const { getClippingCurve, CLIP_RATIOS } = await import("./pvgis.js");
+  // every hour 12 at 800 W and every hour 11 at 400 W, all year: 1200 Wh a day
+  const payload = seriesResponse((_m, hour) => (hour === 12 ? 800 : hour === 11 ? 400 : 0));
+  const c = await getClippingCurve(46, 28.5, { fetchImpl: mockFetch(payload) });
+  assert.deepEqual(c.ratios, CLIP_RATIOS);
+  const at = (r) => c.lostPct[CLIP_RATIOS.indexOf(r)];
+  assert.equal(at(0.3), Math.round(((500 + 100) / 1200) * 1e4) / 100, "300 W cap: 500 W and 100 W above it");
+  assert.equal(at(0.5), Math.round((300 / 1200) * 1e4) / 100, "500 W cap: only the 800 W hour is above it");
+  assert.equal(at(0.8), 0);
+  assert.equal(at(1), 0);
+  assert.ok(c.lostPct.every((v, i, a) => i === 0 || v <= a[i - 1]), "never rises with the limit");
+});
+
+test("getClippingCurve refuses a short or empty series and bad coordinates", async () => {
+  const { getClippingCurve } = await import("./pvgis.js");
+  await assert.rejects(() => getClippingCurve(46, 28.5, { fetchImpl: mockFetch({ outputs: { hourly: [{ time: "x", P: 1 }] } }) }), /shape/);
+  await assert.rejects(() => getClippingCurve(46, 28.5, { fetchImpl: mockFetch(seriesResponse(() => 0)) }), /shape/);
+  await assert.rejects(() => getClippingCurve(99, 28.5, {}), /coordinates/);
 });

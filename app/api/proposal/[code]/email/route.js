@@ -26,7 +26,8 @@ export const maxDuration = 60;
 // use. This catches typos; Resend is the real validator.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-export async function POST(req, { params }) {
+export async function POST(req, props) {
+  const params = await props.params;
   if (!emailConfigured()) {
     return NextResponse.json({ error: "email_not_configured" }, { status: 503 });
   }
@@ -74,8 +75,10 @@ export async function POST(req, { params }) {
     clientName: snap.client || "",
     companyName: co.name,
     liveUrl: `${base}/p/${code}`,
-    kw: snap.kw != null ? Number(snap.kw).toFixed(1) : "",
+    kw: snap.kw != null ? Number(snap.kw) : null,
     note,
+    // the client reads it in the workspace's language, formally addressed
+    lang: co.lang,
   });
 
   const res = await sendEmail({

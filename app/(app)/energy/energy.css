@@ -1,0 +1,144 @@
+/* app/(app)/energy/energy.css: the "Green energy" section. Shared header,
+ * cards and buttons come from app/(app)/dx.css. Same `.app` prefix rule.
+ *
+ * Series colours (the supply mix): own sources green, the left bank a neutral
+ * slate, Ukraine amber, Romania blue: the same green, amber and blue as the
+ * portfolio charts (validated as a set there), one shade per theme. */
+
+.app .en {
+  --en-own: #0F8A5F; --en-left: #8A938C; --en-ua: #B46A00; --en-ro: #2A6FC0;
+  --en-bar: #0F8A5F; --en-req: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+html[data-theme="dark"] .app .en {
+  --en-own: #2BA170; --en-left: #7C867E; --en-ua: #C4851A; --en-ro: #4C8FE0; --en-bar: #2BA170;
+}
+
+/* ---- headline numbers */
+.app .en-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.app .en-kpi {
+  display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 16px 18px;
+  border-radius: var(--dx-radius); background: var(--paper-2); border: 1px solid var(--line); box-shadow: var(--shadow);
+}
+.app .en-kpi span { font-size: 12.5px; font-weight: 600; color: var(--muted); line-height: 1.35; }
+.app .en-kpi .en-kpi-l { display: flex; align-items: center; gap: 9px; margin-bottom: 4px; }
+.app .en-ico { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--green-tint); color: var(--green); }
+/* a section's icon beside its title */
+.app .en .dx-card-head h2 { display: flex; align-items: center; gap: 9px; }
+.app .en .dx-card-head h2 svg { flex: none; color: var(--green); }
+.app .en-kpi b { font-family: var(--dx-d); font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; color: var(--ink); overflow-wrap: anywhere; }
+.app .en-kpi small { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+.app .en-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.app .en-two.in { gap: 28px; }
+.app .en-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; align-items: start; }
+.app .en h3 { font-family: var(--dx-d); font-size: 14.5px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+.app .en-note { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-top: 10px; max-width: 80ch; }
+.app .en-p { font-size: 13.5px; line-height: 1.55; color: var(--ink); margin-top: 8px; }
+.app .en-sub { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 12px 0 6px; }
+
+/* ---- the supply mix */
+.app .en-chart { display: flex; flex-direction: column; gap: 10px; }
+.app .en-chart-top { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
+.app .en-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink); }
+.app .en-legend li { display: inline-flex; align-items: center; gap: 7px; }
+.app .en-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.app .en-view { margin-top: 0; min-width: 170px; }
+.app .en-view button { padding: 6px 12px; font-size: 12.5px; }
+.app .en-plot { position: relative; width: 100%; overflow: hidden; }
+.app .en-plot svg { display: block; outline: none; }
+.app .en-plot svg:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-radius: 6px; }
+.app .en-grid { stroke: var(--line); stroke-width: 1; }
+.app .en-ax { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.app .en-ax-y { font-weight: 700; fill: var(--ink); }
+.app .en-plot g.on rect:not([fill="transparent"]) { filter: brightness(1.08); }
+.app .en-plot g.on > rect:last-of-type { fill: color-mix(in srgb, var(--ink) 5%, transparent); }
+.app .en-shift { stroke: var(--ink); stroke-width: 1.2; stroke-dasharray: 4 3; opacity: .6; }
+.app .en-shift-t { font-size: 11px; font-weight: 650; fill: var(--ink); }
+.app .en-tip {
+  position: absolute; transform: translateX(-50%); min-width: 200px; pointer-events: none;
+  display: flex; flex-direction: column; gap: 3px; padding: 9px 11px; border-radius: 10px;
+  background: var(--paper-2); border: 1px solid var(--line); box-shadow: 0 6px 22px rgba(20, 42, 33, .16); font-size: 12px;
+}
+.app .en-tip b { font-size: 12.5px; margin-bottom: 2px; }
+.app .en-tip span { display: flex; align-items: center; gap: 7px; color: var(--ink); }
+.app .en-tip i { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.app .en-tip em { margin-left: auto; font-style: normal; font-weight: 650; font-variant-numeric: tabular-nums; padding-left: 12px; }
+.app .en-table-wrap { overflow-x: auto; max-height: 420px; }
+.app .en-table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.app .en-table th { text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: 6px 8px; border-bottom: 1.5px solid var(--ink); position: sticky; top: 0; background: var(--paper-2); }
+.app .en-table td { padding: 5px 8px; border-bottom: 1px solid var(--line); }
+.app .en-table .r { text-align: right; }
+.app .en-table td.dim { color: var(--muted); font-style: italic; }
+
+/* ---- renewables' share, as columns */
+.app .en-bars { list-style: none; display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 8px; align-items: end; height: 210px; padding-top: 6px; }
+.app .en-bars li { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; min-width: 0; }
+.app .en-bars b { font-size: 11.5px; font-weight: 650; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app .en-bar { width: 100%; max-width: 34px; min-height: 2px; border-radius: 5px 5px 0 0; background: var(--en-bar); }
+.app .en-bars small { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---- now against the 2050 target */
+.app .en-targets { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.app .en-t-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.app .en-t-top b { font-size: 13.5px; font-weight: 650; }
+.app .en-t-top span { font-size: 12.5px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.app .en-t-bar { height: 10px; border-radius: 99px; background: var(--en-req); margin: 6px 0 3px; overflow: hidden; }
+.app .en-t-bar i { display: block; height: 100%; border-radius: 99px; background: var(--en-bar); }
+.app .en-targets small { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---- the day-ahead market and balancing */
+.app .en-dam { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.app .en-dam div { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); display: flex; flex-direction: column; gap: 2px; }
+.app .en-dam b { font-family: var(--dx-d); font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.app .en-dam small { font-size: 12px; color: var(--muted); }
+.app .en-bal { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.app .en-bal li { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.app .en-bal-n { font-size: 12.5px; font-weight: 650; }
+.app .en-bal-bars { position: relative; height: 14px; }
+.app .en-bal-bars i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; }
+.app .en-bal-bars i.req, .app .en-legend-s i.req { background: var(--en-req); }
+.app .en-bal-bars i.got, .app .en-legend-s i.got { background: var(--en-own); }
+.app .en-bal-v { font-size: 12px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app .en-legend-s { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 10px; }
+.app .en-legend-s i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; margin-left: 8px; }
+.app .en-legend-s i:first-child { margin-left: 0; }
+
+/* ---- the auction and the support */
+.app .en-big { font-family: var(--dx-d); font-size: 28px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.app .en-big small { font-family: var(--font-b); font-size: 13px; font-weight: 600; color: var(--muted); }
+.app .en-prog { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.app .en-prog li { display: flex; flex-direction: column; gap: 3px; padding: 11px 13px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); }
+.app .en-prog b { font-size: 13.5px; font-weight: 650; }
+.app .en-prog span { font-size: 12.5px; line-height: 1.5; color: var(--ink); }
+
+/* ---- grid and permits */
+.app .en-ic { list-style: none; display: flex; flex-direction: column; }
+.app .en-ic li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.app .en-ic b { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.app .en-ic small { font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.app .en-ic li { align-items: center; }
+.app .en-ic-c { display: inline-flex; align-items: center; gap: 7px; min-width: 84px; font-size: 12px; font-weight: 600; color: var(--muted); }
+/* the two neighbours' flags, drawn small: Romania's three vertical bands, Ukraine's two horizontal */
+.app .en-flag { flex: none; width: 18px; height: 12px; border-radius: 2.5px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
+.app .en-flag.f-RO { background: linear-gradient(90deg, #002B7F 0 33.34%, #FCD116 33.34% 66.67%, #CE1126 66.67%); }
+.app .en-flag.f-UA { background: linear-gradient(180deg, #0057B7 0 50%, #FFD700 50%); }
+.app .en-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; line-height: 1.45; }
+.app .en-steps li::marker { color: var(--muted); font-weight: 700; }
+.app .en-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; line-height: 1.45; }
+
+/* ---- responsive */
+@media (max-width: 1080px) {
+  .app .en-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app .en-three { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 860px) {
+  .app .en-two, .app .en-two.in { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .app .en-kpi { padding: 13px 14px; }
+  .app .en-kpi b { font-size: 21px; }
+  .app .en-bars { gap: 4px; }
+  .app .en-bars b { font-size: 10px; }
+  .app .en-bal li { grid-template-columns: 74px minmax(0, 1fr); }
+  .app .en-bal-v { grid-column: 2; }
+}

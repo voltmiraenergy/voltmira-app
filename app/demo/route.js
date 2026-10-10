@@ -7,27 +7,68 @@
 // visitor into it, so the demo IS the product — it can't drift.
 //
 // Three cases, in order:
-//   already in a demo   -> reuse it (refreshing /demo must not spawn tenants)
+//   already in a demo   -> reuse it (refreshing /demo must not spawn tenants),
+//                          unless it was seeded before DEMO_SEED_DATE
 //   signed in for real  -> interstitial; starting the demo would sign them out
 //   signed out          -> seed a workspace and drop them on the dashboard
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { createDemoWorkspace } from "../../lib/demoSeed.js";
-import { isDemoEmail } from "../../lib/demo.js";
+import { supabaseAdmin } from "../../lib/supabase.js";
+import { createDemoWorkspace, DEMO_SEED_DATE, resolvePdfDemoDest, resolveProposalDemoDest, resolveEditorDemoDest, resolveWidgetDemoDest } from "../../lib/demoSeed.js";
+import { isDemoEmail, isNonHumanAgent } from "../../lib/demo.js";
 import { isRateLimited, clientIp } from "../../lib/ratelimit.js";
+import { safeNext } from "../../lib/safeRedirect.js";
 
 export const dynamic = "force-dynamic";
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// This route builds its own createServerClient directly (not the shared
+// supabaseServer() factory in lib/supabase.js, which sets its own maxAge but
+// isn't used here) — so the long cookie lifetime has to be set explicitly on
+// it, same as it always was.
 const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 400;
 
-const LANGS = new Set(["en", "ro", "ru"]);
+const LANGS = new Set(["en", "ro", "ru", "uk"]);
+
+// One-hop deep links to specific, hard-to-address states — not real paths
+// (safeNext() rejects each of these like any other non-"/" value, so they're
+// compared by strict equality against these fixed literals, never
+// attacker-influenced content) resolved server-side into the actual path for
+// whichever tenant this visitor ends up in. A hardcoded path can't work for
+// either of these: proposal codes are random per tenant by design
+// (createProposal's codes are globally unique, so a shared literal would
+// collide across concurrent demo sessions), and project ids are equally
+// tenant-specific.
+//   pdf-annex           -> the enriched proposal PDF (equipment datasheet,
+//                          per-MPPT-input compliance matrix, backup-power
+//                          callout, and — once a roof's been drawn — the
+//                          real measured roof area/orientation)
+//   proposal-demo       -> the SAME proposal, live/mobile (no ?print=1) — the
+//                          real charts, the live self-audit sliders, the
+//                          cash/monthly financing toggle; what the client
+//                          actually opens on their phone, not the PDF
+//   hybrid-demo         -> the same demo project's editor, to see the hybrid
+//                          system-type UI (segmented Rețea/Hibrid control)
+//   site-designer-demo  -> the SAME editor (Site Designer is a button on that
+//                          page) — a separate, self-explanatory name since
+//                          it's what this link is actually for; this project
+//                          is the only seeded one with a resolved address, so
+//                          the button is enabled with no typing first
+//   widget-demo         -> the public quick-estimate widget for this tenant
+const NEXT_RESOLVERS = {
+  "pdf-annex": resolvePdfDemoDest,
+  "proposal-demo": resolveProposalDemoDest,
+  "hybrid-demo": resolveEditorDemoDest,
+  "site-designer-demo": resolveEditorDemoDest,
+  "widget-demo": resolveWidgetDemoDest,
+};
 
 function page(title, body, status = 200) {
   return new NextResponse(
     `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${title} — VoltMira</title>
+<meta name="robots" content="noindex, nofollow">
+<title>${title} | VoltMira</title>
 <style>
   :root{color-scheme:light dark}
   body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F6F5F0;color:#142A21;
@@ -51,9 +92,16 @@ export async function GET(req) {
       `<h1>The demo isn't available right now</h1><p>Come back in a few minutes.</p><a class="alt" href="/">Back to the site</a>`, 503);
   }
 
+  // Crawlers and link previews never provision a tenant (see isNonHumanAgent).
+  if (isNonHumanAgent(req.headers.get("user-agent"))) {
+    return page("Live demo",
+      `<h1>VoltMira live demo</h1><p>The demo opens a sample workspace with example clients, projects and proposals. Open this link in a browser to try it.</p><a class="go" href="/">Back to the site</a>`);
+  }
+
   const url = new URL(req.url);
   const lang = LANGS.has(url.searchParams.get("lang")) ? url.searchParams.get("lang") : "ro";
-  const dest = new URL("/dashboard", req.url);
+  const nextParam = url.searchParams.get("next");
+  let dest = new URL(safeNext(nextParam) || "/dashboard", req.url);
 
   // ---- is someone already signed in here? ----------------------------
   // Read-only client: we only need getUser(), and we must NOT write auth
@@ -63,18 +111,36 @@ export async function GET(req) {
   });
   const { data: { user } } = await probe.auth.getUser();
 
-  if (user) {
+  if (user && isDemoEmail(user.email)) {
     // Already inside a demo tenant — reuse it. This is what stops a refresh (or
     // a second click on the demo link) from provisioning another workspace.
-    if (isDemoEmail(user.email)) return NextResponse.redirect(dest);
-
+    // A demo from before the seed data last changed is not reused: the visitor
+    // would keep seeing the old sample (a demo in euros from before the Moldova
+    // launch, say). They get a fresh one below; the old tenant is left to the
+    // nightly clean-up (api/cron/reap-demo).
+    if (Date.parse(user.created_at || 0) >= Date.parse(DEMO_SEED_DATE)) {
+      if (NEXT_RESOLVERS[nextParam]) {
+        const resolved = await NEXT_RESOLVERS[nextParam](user.id);
+        if (resolved) dest = new URL(resolved, req.url);
+      }
+      return NextResponse.redirect(dest);
+    }
+  } else if (user) {
     // A real account. Signing in as the demo owner would replace their session
     // and quietly log them out of their own workspace, so make it a choice.
     if (!url.searchParams.get("confirm")) {
+      // Carry the intended destination through the confirmation click too —
+      // otherwise a `next=` deep link silently drops to /dashboard the moment
+      // this interstitial is in the way. A known NEXT_RESOLVERS sentinel is
+      // carried through as-is (safeNext would reject it, same as it rejects
+      // any non-"/" value) since it's a fixed literal, not attacker-influenced
+      // content.
+      const nextQ = NEXT_RESOLVERS[nextParam] ? nextParam : safeNext(nextParam);
+      const confirmHref = `/demo?confirm=1&lang=${lang}${nextQ ? `&next=${encodeURIComponent(nextQ)}` : ""}`;
       return page("Start the demo",
         `<h1>You're signed in to your own workspace</h1>
-         <p>Starting the demo signs you out of it. You can sign back in straight after — or open the demo in a private window to keep both.</p>
-         <a class="go" href="/demo?confirm=1&lang=${lang}">Start the demo anyway</a>
+         <p>Starting the demo signs you out of it. You can sign back in straight after, or open the demo in a private window to keep both.</p>
+         <a class="go" href="${confirmHref}">Start the demo anyway</a>
          <a class="alt" href="/dashboard">Back to my dashboard</a>`);
     }
   }
@@ -96,10 +162,42 @@ export async function GET(req) {
       `<h1>Couldn't start the demo</h1><p>Something went wrong setting up the sample workspace. Please try again.</p><a class="alt" href="/">Back to the site</a>`, 500);
   }
 
-  // ---- sign the visitor in -------------------------------------------
-  // Cookies are bound to the redirect response explicitly (the middleware
-  // pattern) rather than via next/headers, so the Set-Cookie headers reliably
-  // ride along with the 307 to /dashboard.
+  // ---- sign the visitor in --------------------------------------------
+  // NOT signInWithPassword: Supabase Auth's project-level CAPTCHA protection
+  // (turned on the day the real /login form got a Turnstile widget — see
+  // app/login/LoginForm.jsx) gates that call, and a server route has no
+  // browser to solve a challenge in, so every demo login 500'd from that day
+  // on.
+  //
+  // Also NOT a browser redirect through generateLink()'s own action_link:
+  // verified live that this project hands back magiclink/recovery tokens as a
+  // URL FRAGMENT (#access_token=…), never a PKCE ?code=, so a redirect to
+  // Supabase's verify endpoint lands back on /login with a fragment nothing
+  // reads — no server route can see a fragment at all (browsers never send it
+  // in a request), and this app's client never expected to parse one there.
+  //
+  // The robust fix: do the whole exchange server-side, right here.
+  // admin.auth.admin.generateLink() (service-role, the SAME non-captcha admin
+  // API app/api/team/route.js already uses for invites) hands back a
+  // hashed_token; sb.auth.verifyOtp() redeems it for a real session on the
+  // SAME cookie-bound client signInWithPassword used to use, so the Set-Cookie
+  // headers ride the redirect exactly as before — just a different, non-
+  // captcha-gated way of proving who's signing in.
+  if (NEXT_RESOLVERS[nextParam]) {
+    const resolved = await NEXT_RESOLVERS[nextParam](creds.id);
+    if (resolved) dest = new URL(resolved, req.url);
+  }
+  const admin = supabaseAdmin();
+  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+    type: "recovery", email: creds.email,
+  });
+  const tokenHash = linkData?.properties?.hashed_token;
+  if (linkErr || !tokenHash) {
+    console.error("[demo] link generation failed:", linkErr?.message);
+    return page("Demo unavailable",
+      `<h1>Couldn't start the demo</h1><p>The workspace was created but sign-in failed. Please try again.</p><a class="alt" href="/">Back to the site</a>`, 500);
+  }
+
   const res = NextResponse.redirect(dest);
   const sb = createServerClient(URL_, ANON, {
     cookieOptions: { maxAge: AUTH_COOKIE_MAX_AGE },
@@ -108,9 +206,9 @@ export async function GET(req) {
       setAll: (list) => list.forEach(({ name, value, options }) => res.cookies.set(name, value, options)),
     },
   });
-  const { error } = await sb.auth.signInWithPassword(creds);
-  if (error) {
-    console.error("[demo] sign-in failed:", error.message);
+  const { error: verifyErr } = await sb.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
+  if (verifyErr) {
+    console.error("[demo] sign-in failed:", verifyErr.message);
     return page("Demo unavailable",
       `<h1>Couldn't start the demo</h1><p>The workspace was created but sign-in failed. Please try again.</p><a class="alt" href="/">Back to the site</a>`, 500);
   }

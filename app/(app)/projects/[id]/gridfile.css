@@ -1,0 +1,64 @@
+/* app/(app)/projects/[id]/gridfile.css — the grid connection file card
+   (GridFile.jsx). Selectors start with .app for the reason dx.css gives. */
+
+.app .gf { margin-top: 16px; display: flex; flex-direction: column; gap: 14px; }
+.app .gf[aria-busy="true"] { opacity: .85; }
+.app .gf-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.app .gf-head h3 { margin: 0; font-size: 16px; }
+.app .gf-head p { margin: 3px 0 0; font-size: 12.5px; color: var(--muted); }
+.app .gf-count { font-variant-numeric: tabular-nums; font-size: 12px; font-weight: 700; color: var(--muted);
+  padding: 3px 9px; border-radius: 99px; border: 1px solid var(--line); background: var(--paper); }
+
+.app .gf-op { display: flex; flex-direction: column; gap: 7px; }
+.app .gf-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.app .gf-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border-radius: 11px;
+  background: var(--paper); border: 1px solid var(--line); max-width: 420px; }
+.app .gf-seg button { padding: 9px 10px; border-radius: 8px; font-size: 13.5px; font-weight: 600; color: var(--muted); transition: background .15s, color .15s; }
+.app .gf-seg button:hover { color: var(--ink); }
+.app .gf-seg button.on { background: var(--paper-2); color: var(--ink); box-shadow: 0 1px 3px rgba(20, 42, 33, .12); }
+.app .gf-select { max-width: 420px; }
+.app .gf-hint { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+.app .gf-dl { display: flex; align-items: flex-start; gap: 11px; padding: 12px 14px; border-radius: 12px; text-decoration: none; color: inherit;
+  border: 1px solid color-mix(in srgb, var(--green) 35%, var(--line)); background: var(--green-tint); transition: border-color .15s, transform .12s; }
+.app .gf-dl:hover { border-color: var(--green); }
+.app .gf-dl:active { transform: scale(.99); }
+.app .gf-dl svg { color: var(--green); flex: none; margin-top: 2px; }
+.app .gf-dl b { display: block; font-size: 14px; color: var(--green); }
+.app .gf-dl small { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+
+.app .gf-docs { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); font-size: 13px; }
+.app .gf-docs b { display: block; font-size: 13.5px; margin-bottom: 6px; }
+.app .gf-docs ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; color: var(--muted); line-height: 1.45; }
+
+.app .gf-chase, .app .gf-done { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border-radius: 11px; font-size: 13px; line-height: 1.45; }
+.app .gf-chase { background: var(--amber-tint); color: var(--amber-deep, #8A5A0F); font-weight: 600; }
+.app .gf-done { background: var(--green-tint); color: var(--green); font-weight: 600; }
+.app .gf-chase svg, .app .gf-done svg { flex: none; margin-top: 2px; }
+
+.app .gf-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.app .gf-steps li { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 10px 0; }
+.app .gf-steps li + li { border-top: 1px solid var(--line); }
+.app .gf-dot { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700;
+  color: var(--muted); background: var(--paper); border: 1.5px solid var(--line); }
+.app .gf-steps li.done .gf-dot { background: var(--green); border-color: var(--green); color: var(--on-green); }
+.app .gf-steps li.next .gf-dot { border-color: var(--amber); color: var(--amber-deep, #8A5A0F); }
+.app .gf-tx { display: flex; flex-direction: column; min-width: 0; }
+.app .gf-tx b { font-size: 14px; font-weight: 600; }
+.app .gf-tx small { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.app .gf-steps li:not(.done):not(.next) .gf-tx b { color: var(--dx-soft, var(--ink)); }
+.app .gf-when { display: flex; align-items: center; gap: 6px; }
+.app .gf-when input { border: 1px solid var(--line); border-radius: 9px; padding: 6px 8px; font-size: 13px; background: var(--paper-2); color: var(--ink); font-variant-numeric: tabular-nums; }
+.app .gf-undo { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: var(--muted); border: 1px solid var(--line); background: var(--paper-2); }
+.app .gf-undo:hover { color: var(--red); border-color: var(--red); }
+.app .gf-mark { padding: 7px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 600; border: 1px solid var(--line); background: var(--paper-2); color: var(--ink); white-space: nowrap; }
+.app .gf-mark:hover { border-color: var(--green); color: var(--green); }
+.app .gf-mark.primary { background: var(--green); border-color: var(--green); color: var(--on-green); }
+.app .gf-mark.primary:hover { color: #fff; filter: brightness(1.06); }
+.app .gf-err { margin: 0; font-size: 12.5px; color: var(--red); }
+
+@media (max-width: 560px) {
+  .app .gf-steps li { grid-template-columns: 28px minmax(0, 1fr); }
+  .app .gf-when, .app .gf-mark { grid-column: 2; justify-self: start; }
+  .app .gf-mark { min-height: 38px; }
+}

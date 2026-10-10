@@ -9,9 +9,9 @@ create table companies (
   name        text not null,
   short_name  text default '',
   logo_url    text default '',
-  default_market text not null default 'RO' check (default_market in ('RO','MD','DE')),
-  currency    text not null default 'EUR' check (currency in ('EUR','RON','MDL')),
-  lang        text not null default 'en' check (lang in ('en','ro','ru')),
+  default_market text not null default 'RO' check (default_market in ('RO','MD','UA')),
+  currency    text not null default 'EUR' check (currency in ('EUR','RON','MDL','UAH')),
+  lang        text not null default 'en' check (lang in ('en','ro','ru','uk')),
   -- calculation engine settings (same shape as engine/defaultEngineSettings)
   engine      jsonb not null default '{}'::jsonb,
   subsidy_amount_ron numeric not null default 20000,
@@ -51,7 +51,7 @@ create table projects (
   address     text not null default '',
   lat         double precision,
   lon         double precision,
-  market      text not null default 'RO' check (market in ('RO','MD','DE')),
+  market      text not null default 'RO' check (market in ('RO','MD','UA')),
   status      text not null default 'draft' check (status in ('draft','sent','won','lost')),
   -- system inputs (engine project shape)
   kw          numeric not null default 6,
@@ -153,14 +153,15 @@ create policy companies_update on companies for update
   using (id = my_company_id()
          and exists (select 1 from profiles where id = auth.uid() and role = 'owner'));
 
--- Profiles: see teammates; edit self; owners manage team
+-- Profiles: see teammates; edit self. Owners manage the team server-side
+-- (app/api/team, service role). Company, role and email are locked against
+-- user sessions by the trigger in lock-down-2026-09-28.sql: run it after this
+-- file on a fresh database.
 create policy profiles_select on profiles for select
   using (company_id = my_company_id());
 create policy profiles_update_self on profiles for update
-  using (id = auth.uid());
-create policy profiles_owner_all on profiles for all
-  using (company_id = my_company_id()
-         and exists (select 1 from profiles p2 where p2.id = auth.uid() and p2.role = 'owner'));
+  using (id = auth.uid())
+  with check (id = auth.uid() and company_id = my_company_id());
 
 -- Projects / leads / activity: full CRUD within own company
 create policy projects_all on projects for all

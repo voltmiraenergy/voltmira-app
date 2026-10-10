@@ -1,0 +1,72 @@
+/* app/(app)/documents/documents.css — the Documents page: the totals strip,
+ * the "paperwork to finish" list and the per-quote document pills. Shared
+ * header, cards, tabs and search come from app/(app)/dx.css; same `.app`
+ * prefix rule as there.
+ */
+
+.app .doc-strip {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow);
+}
+.app .doc-strip > div { background: var(--paper-2); padding: 14px 16px 13px; display: flex; flex-direction: column; min-width: 0; }
+.app .doc-strip dt { font-size: 11px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.app .doc-strip dd {
+  font-family: var(--dx-d); font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2;
+  font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 5px;
+}
+.app .doc-strip dd small { font-family: var(--font-b); font-size: 14px; font-weight: 600; color: var(--muted); margin-left: 5px; letter-spacing: 0; }
+.app .doc-strip dd.doc-sub { font-family: var(--font-b); font-size: 12px; font-weight: 500; letter-spacing: 0; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+
+/* who: avatar + title + client, shared by both lists */
+.app .doc-who { display: flex; align-items: center; gap: 11px; min-width: 0; text-decoration: none; color: inherit; }
+.app .doc-who-tx { display: flex; flex-direction: column; min-width: 0; }
+.app .doc-who b { font-size: 14px; font-weight: 650; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .doc-who:hover b { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+.app .doc-who small { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.app .doc-who small .chip { font-style: normal; padding: 1px 8px; font-size: 10.5px; }
+
+/* ---------------------------------------------------------------- paperwork to finish */
+.app .doc-todo { border-color: color-mix(in srgb, var(--amber) 45%, var(--line)); box-shadow: inset 3px 0 0 var(--amber), var(--shadow); }
+.app .doc-todo-list { list-style: none; display: flex; flex-direction: column; }
+.app .doc-todo-list li { display: grid; grid-template-columns: minmax(180px, 280px) minmax(0, 1fr); gap: 10px 18px; align-items: center; padding: 12px 0; }
+.app .doc-todo-list li + li { border-top: 1px solid var(--line); }
+.app .doc-todo-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.app .doc-todo-act {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: 9px;
+  background: var(--amber-tint); color: var(--amber-ink) !important; font-size: 12.5px; font-weight: 650;
+  text-decoration: none; white-space: nowrap; border: 1px solid transparent; transition: border-color .15s;
+}
+.app .doc-todo-act:hover { border-color: var(--amber); }
+
+/* ---------------------------------------------------------------- all documents */
+.app .doc-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px 14px; flex-wrap: wrap; margin-bottom: 6px; }
+.app .doc-bar .dx-tabs { margin-bottom: 0; }
+.app .doc-bar .dx-tabs a { text-decoration: none; }
+.app .doc-find { flex: 0 1 300px; max-width: 300px; }
+.app .doc-rows { list-style: none; display: flex; flex-direction: column; }
+.app .doc-row { display: grid; grid-template-columns: minmax(180px, 280px) minmax(0, 1fr); gap: 10px 18px; align-items: center; padding: 13px 0; }
+.app .doc-row + .doc-row { border-top: 1px solid var(--line); }
+.app .doc-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.app .doc-pill {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: 99px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--dx-soft) !important;
+  font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; font-variant-numeric: tabular-nums;
+  transition: border-color .15s, color .15s;
+}
+.app .doc-pill svg { flex: none; color: var(--muted); }
+.app .doc-pill em { font-style: normal; font-weight: 500; color: var(--muted); }
+.app a.doc-pill:hover { border-color: var(--green); color: var(--green) !important; }
+.app .doc-pill.done { background: var(--green-tint); border-color: transparent; color: var(--green) !important; }
+.app .doc-pill.done svg { color: var(--green); }
+.app .doc-pill.done em { color: color-mix(in srgb, var(--green) 70%, var(--muted)); }
+.app .doc-pill.wait { background: var(--amber-tint); border-color: transparent; color: var(--amber-ink) !important; }
+.app .doc-pill.wait svg { color: var(--amber-ink); }
+
+@media (max-width: 900px) {
+  .app .doc-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app .doc-todo-list li, .app .doc-row { grid-template-columns: minmax(0, 1fr); }
+  .app .doc-find { flex-basis: 100%; max-width: none; }
+}
+@media (pointer: coarse) {
+  .app .doc-pill, .app .doc-todo-act { height: 38px; }
+}

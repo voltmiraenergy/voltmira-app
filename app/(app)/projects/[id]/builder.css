@@ -1,0 +1,152 @@
+/* app/(app)/projects/[id]/builder.css — the quote builder in the shared
+ * workspace look: header, the pinned summary bar, tool buttons, expandable
+ * section rows, and a polish pass over the editor's cards. Base editor styles
+ * (.editor, .band, .fin-box …) live in AppTheme; same `.app` prefix rule as
+ * app/(app)/dx.css. The root is deliberately NOT `.dx`: the editor's modals are
+ * position:fixed children, and .dx's entrance animation would pin them.
+ */
+
+.app .qb {
+  --dx-d: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --amber-ink: #955F0B;
+  --dx-hover: color-mix(in srgb, var(--ink) 4.5%, transparent);
+  --dx-soft: color-mix(in srgb, var(--ink) 80%, var(--paper-2));
+  --dx-on-green: #fff;
+}
+html[data-theme="dark"] .app .qb { --amber-ink: #EBA542; --dx-on-green: #07130D; }
+
+/* ---------------------------------------------------------------- header */
+.app .qb-head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.app .qb-head-main { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px 20px; flex-wrap: wrap; }
+.app .qb-id { min-width: 0; flex: 1 1 420px; }
+.app .qb-title-row { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
+.app .qb-title-wrap { display: inline-grid; max-width: 100%; min-width: 0; margin-left: -9px; }
+.app .qb-title-wrap::after, .app .qb .qb-title {
+  grid-area: 1 / 1; font-family: var(--dx-d); font-size: 30px; font-weight: 700; letter-spacing: -.03em; line-height: 1.15;
+  padding: 2px 8px; border: 1px solid transparent; min-width: 8ch;
+}
+.app .qb-title-wrap::after { content: attr(data-value) " "; visibility: hidden; white-space: pre; overflow: hidden; }
+.app .qb .qb-title { width: 100%; border-radius: 10px; }
+.app .qb-title-row .chip { flex: none; }
+.app .qb-saved { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.app .qb-saved.s-error { color: var(--red); font-weight: 650; }
+/* no signal: the edit is kept on the device (lib/offline.js) */
+.app .qb-saved.s-db { color: var(--red); font-weight: 650; white-space: normal; }
+.app .qb-saved.s-device { color: var(--amber-deep, #8A5A0F); font-weight: 650; }
+.app .qb-sub { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; font-size: 14px; color: var(--muted); margin-top: 4px; min-height: 22px; }
+.app .qb-valid {
+  font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 99px;
+  background: var(--paper-2); border: 1px solid var(--line); color: var(--muted); white-space: nowrap;
+}
+.app .qb-valid.stale { background: var(--red-tint); border-color: transparent; color: var(--red); }
+.app .qb-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.app .qb-actions .btn { height: 40px; }
+.app .qb-actions .btn svg, .app .qb-actions .dx-new svg { flex: none; }
+.app .qb-tpl { display: inline-flex; align-items: center; gap: 6px; }
+.app .qb-tpl .input { width: 170px; padding: 8px 11px; }
+
+/* ---------------------------------------------------------------- pinned summary bar */
+.app .qb-bar {
+  position: sticky; top: 8px; z-index: 20; margin: 0 0 18px;
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 1px 2px rgba(20, 42, 33, .05), 0 10px 30px -14px rgba(20, 42, 33, .28);
+}
+.app .qb-bar > div { background: var(--paper-2); padding: 11px 15px 10px; min-width: 0; display: flex; flex-direction: column; }
+.app .qb-bar dt { font-size: 10.5px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .qb-bar dd {
+  font-family: var(--dx-d); font-size: 21px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2;
+  font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 3px; white-space: nowrap;
+}
+.app .qb-bar dd small { font-family: var(--font-b); font-size: 12.5px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.app .qb-bar dd.qb-bar-sub {
+  font-family: var(--font-b); font-size: 11.5px; font-weight: 500; letter-spacing: 0; color: var(--muted);
+  margin-top: 1px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.app .qb-bar .hi dd:not(.qb-bar-sub) { color: var(--amber-ink); }
+.app .qb-bar .pos dd:not(.qb-bar-sub) { color: var(--green); }
+.app .qb-bar .neg dd:not(.qb-bar-sub) { color: var(--red); }
+
+/* ---------------------------------------------------------------- cards */
+.app .qb .editor { gap: 18px; }
+.app .qb .card { border-radius: 16px; padding: 20px 22px; }
+.app .qb .card h3 {
+  font-family: var(--dx-d); font-size: 16px; font-weight: 700; letter-spacing: -.01em;
+  text-transform: none; color: var(--ink); margin-bottom: 14px;
+}
+.app .qb .band { border-radius: 14px; }
+.app .qb .band .yrs { font-family: var(--dx-d); }
+.app .qb .fin-metrics .fm { border-radius: 12px; }
+.app .qb .fin-metrics .fm b, .app .qb .cost-line .k b, .app .qb .fin-box .big { font-family: var(--dx-d); }
+.app .qb .cost-break .cb-t { font-size: 11px; letter-spacing: .07em; }
+.app .qb .verdict { border-radius: 12px; }
+
+/* ---------------------------------------------------------------- tool buttons */
+.app .qb-tools { display: flex; flex-direction: column; gap: 8px; }
+.app .qb-tool {
+  width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 12px; text-align: left;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink);
+  transition: border-color .16s, background .16s;
+}
+.app .qb-tool:hover:not(:disabled) { border-color: var(--green); }
+.app .qb-tool:disabled { opacity: .6; cursor: not-allowed; }
+.app .qb-tool[aria-busy="true"] { cursor: progress; }
+.app .qb-tool > svg { flex: none; color: var(--muted); }
+.app .qb-tool-ic { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--green-tint); color: var(--green); }
+.app .qb-tool-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.app .qb-tool-tx b { font-size: 13.5px; font-weight: 650; color: var(--ink); }
+.app .qb-tool-tx small { font-size: 12px; color: var(--muted); line-height: 1.35; }
+.app .qb-tool.done { border-color: color-mix(in srgb, var(--green) 40%, var(--line)); background: color-mix(in srgb, var(--green) 6%, var(--paper)); }
+.app .qb-tool.done .qb-tool-ic { background: var(--green); color: var(--dx-on-green); }
+.app .qb-tool.done .qb-tool-tx b { color: var(--green); }
+
+/* ---------------------------------------------------------------- expandable section rows */
+.app .qb .btn.qb-expand {
+  width: 100%; justify-content: space-between; padding: 15px 18px; border-radius: 16px;
+  background: var(--paper-2); border: 1px solid var(--line); box-shadow: var(--shadow);
+  font-size: 14px; font-weight: 650; color: var(--ink); white-space: normal; text-align: left;
+}
+.app .qb .btn.qb-expand::after {
+  content: ""; flex: none; width: 8px; height: 8px; margin-right: 3px;
+  border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg) translate(-2px, -2px);
+  transition: border-color .16s;
+}
+.app .qb .btn.qb-expand:hover { border-color: var(--green); color: var(--ink); }
+.app .qb .btn.qb-expand:hover::after { border-color: var(--green); }
+.app .qb .ds-closed { padding: 0; background: none; border: none; box-shadow: none; }
+
+/* ---------------------------------------------------------------- responsive */
+@media (max-width: 1200px) {
+  .app .qb-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 768px) {
+  .app .qb-title-wrap { width: 100%; }
+  .app .qb-title-wrap::after, .app .qb .qb-title { font-size: 23px; }
+  .app .qb-actions { width: 100%; }
+  .app .qb-actions .dx-new { flex: 1 1 100%; justify-content: center; order: -1; }
+  .app .qb-actions .btn { flex: 1 1 auto; }
+  /* On a phone the bar becomes one swipeable row, so it stays one line tall. */
+  .app .qb-bar {
+    display: flex; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+    top: 6px; margin-left: -4px; margin-right: -4px;
+  }
+  .app .qb-bar::-webkit-scrollbar { display: none; }
+  .app .qb-bar > div { flex: 0 0 auto; min-width: 128px; scroll-snap-align: start; padding: 9px 13px; }
+  .app .qb-bar dd { font-size: 18px; }
+  .app .qb .card { padding: 16px; border-radius: 14px; }
+}
+/* Narrow phone: three payback columns would clip "PESSIMISTIC"; each band
+   becomes a row, the label and return on the left, the years on the right. */
+@media (max-width: 480px) {
+  .app .qb .bands { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .app .qb .band {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "tag yrs" "roi yrs";
+    column-gap: 12px; align-items: center; padding: 12px 14px;
+  }
+  .app .qb .band .tag { grid-area: tag; margin-bottom: 2px; }
+  .app .qb .band .yrs { grid-area: yrs; }
+  .app .qb .band .roi { grid-area: roi; margin-top: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app .qb-saved.s-saving i { animation: none; }
+}

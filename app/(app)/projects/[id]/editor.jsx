@@ -3,28 +3,81 @@
 // engine. Autosaves to Supabase (debounced 600ms). PVGIS button pulls real yield
 // for the address. Proposal button creates the tracked link. Visual language
 // matches the live demo (editor grid, cards, bands, financing, modal).
-import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+//
+// A summary bar under the header stays pinned while the inputs scroll, so the
+// numbers the client will see (price, payback, savings) and the margin behind
+// them update in view as each input changes.
+import "../../dx.css";
+import "./builder.css";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
-import { createProposal, saveQuoteTemplate } from "../../../../lib/actions.js";
+import { createProposal, regenerateProposal, saveQuoteTemplate, markProjectWon } from "../../../../lib/actions.js";
+import AddressField from "../../../../components/AddressField.jsx";
+import SiteDesigner from "../../../../components/SiteDesigner.jsx";
+import BackLink from "../../../../components/BackLink.jsx";
+import BomCard from "../../../../components/BomCard.jsx";
+import DesignChecks from "../../../../components/DesignChecks.jsx";
+import StructuralLoads from "../../../../components/StructuralLoads.jsx";
+import BosEstimate from "../../../../components/BosEstimate.jsx";
+import PeakShaving from "../../../../components/PeakShaving.jsx";
+import DesignSuggestions from "../../../../components/DesignSuggestions.jsx";
+import BatterySizingPanel from "../../../../components/BatterySizingPanel.jsx";
+import SurplusPanel, { useBuyback } from "../../../../components/SurplusPanel.jsx";
+import UaPanel from "../../../../components/UaPanel.jsx";
 import InstallChecklist from "./InstallChecklist.jsx";
+import GridFile from "./GridFile.jsx";
+import WorkflowRail from "../../../../components/WorkflowRail.jsx";
+import AddToPortfolio from "../../../../components/AddToPortfolio.jsx";
+import SupportCard from "../../../../components/SupportCard.jsx";
+import { batteryEur } from "../../../../lib/greenSupport.js";
 import SignedContract from "./SignedContract.jsx";
 import ShareCard from "./ShareCard.jsx";
+import LegalDocsModal from "./LegalDocsModal.jsx";
 import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
+import { financials, bomTotal } from "../../../../lib/quoteAnalysis.js";
+import { startYearOf } from "../../../../lib/quoteInput.js";
+import { applyCalibration } from "../../../../lib/yieldCalibration.js";
 import { t } from "../../../../lib/i18n.js";
+import { autoBom, recommendMount } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
+import { designCheck } from "../../../../lib/designCheck.js";
+import { fitPanels, fitOptions } from "../../../../lib/roofLayout.js";
+import { moneyFormatter, numFor } from "../../../../lib/money.js";
+import { effectiveOfferCurrency, currencyOnMarketChange, betterCurrencyFor, normCurrency } from "../../../../lib/offerCurrency.js";
+import { saveOutbox, readOutbox, clearOutbox, isNetworkError } from "../../../../lib/offline.js";
+import LinkLabels from "../../../../components/LinkLabels.jsx";
+import { isPlaceholderTitle } from "../../../../lib/quoteTitle.js";
 
-// System-size slider range — raised to 50 kW for larger commercial projects.
-const KW_MIN = 2, KW_MAX = 50;
+// System-size slider range — raised to 500 kW: Site Designer's own real,
+// drawn-roof panel counts can land well past a "residential" size for a large
+// commercial roof, and the slider must be able to show whatever it applied.
+const KW_MIN = 2, KW_MAX = 500;
 
 // Short month labels in the app's language, via Intl — no extra i18n keys needed.
 function monthLabels(lang) {
-  const loc = { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB";
+  const loc = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB";
   const fmt = new Intl.DateTimeFormat(loc, { month: "short" });
   return Array.from({ length: 12 }, (_, i) => fmt.format(new Date(2021, i, 1)));
 }
 
 /* ---------- small SVG helpers ---------- */
+// Line icons for the header actions and tool buttons (Lucide geometry).
+const QI = {
+  pdf: <><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /><path d="M14 2v5a1 1 0 0 0 1 1h5" /><path d="M12 18v-6" /><path d="m9 15 3 3 3-3" /></>,
+  receipt: <><path d="M13 16H8" /><path d="M14 8H8" /><path d="M16 12H8" /><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z" /></>,
+  scale: <><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" /><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" /><path d="M7 21h10" /><path d="M12 3v18" /><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" /></>,
+  bookmark: <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />,
+  link: <><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></>,
+  roof: <><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9v11h14V9" /><path d="M9 20v-6h6v6" /></>,
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></>,
+  upload: <><path d="M12 3v12" /><path d="m17 8-5-5-5 5" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /></>,
+  chev: <path d="m9 18 6-6-6-6" />,
+  check: <path d="M20 6 9 17l-5-5" />,
+};
+const Qi = ({ d, size = 15, w = 2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{QI[d]}</svg>
+);
+
 function Chart({ q, lang }) {
   const W = 560, H = 170, PAD = 8, years = q.e.horizon;
   const all = [...q.p.rows, ...q.e.rows, ...q.o.rows, 0, -q.e.cost];
@@ -63,7 +116,7 @@ function Donut({ self, prod0, cons, lang }) {
   // the ring, where it has the width to read as one sentence.
   return (
     <svg viewBox="0 0 100 100" width="96" height="96" className="ss-ring" role="img"
-      aria-label={`${Math.round(sc * 100)}% of production self-consumed, covering ${Math.round(coverage * 100)}% of the client's use`}>
+      aria-label={t("ss_ring_aria", lang, { s: Math.round(sc * 100), c: Math.round(coverage * 100) })}>
       <circle cx="50" cy="50" r={r} fill="none" stroke="var(--line)" strokeWidth="12" />
       <circle cx="50" cy="50" r={r} fill="none" stroke="#E89B2D" strokeWidth="12" opacity=".65"
         strokeDasharray={`${c * (1 - sc)} ${c}`} transform="rotate(-90 50 50)" strokeLinecap="round" />
@@ -77,24 +130,89 @@ function Donut({ self, prod0, cons, lang }) {
   );
 }
 
+/* ---------- the offer's currency ---------- */
+// Copy for the currency choice, in the four languages, kept beside the one
+// place that uses it rather than in lib/i18n.js (same helper as UaPanel).
+const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
+// Each currency as an option, as the object of "switch the offer to ...", and
+// the client it suits ("for a client in Ukraine").
+const CUR_TXT = {
+  MDL: { opt: ["Lei moldovenești (MDL)", "Moldovan lei (MDL)", "Молдавские леи (MDL)", "Молдовські леї (MDL)"],
+    short: ["lei, MDL", "lei, MDL", "леи, MDL", "леї, MDL"],
+    acc: ["lei moldovenești (MDL)", "Moldovan lei (MDL)", "молдавские леи (MDL)", "молдовські леї (MDL)"],
+    who: ["un client din Moldova", "a client in Moldova", "клиента из Молдовы", "клієнта з Молдови"] },
+  UAH: { opt: ["Grivne ucrainene (UAH)", "Ukrainian hryvnia (UAH)", "Украинские гривны (UAH)", "Українські гривні (UAH)"],
+    short: ["grivne, UAH", "hryvnia, UAH", "гривны, UAH", "гривні, UAH"],
+    acc: ["grivne (UAH)", "hryvnia (UAH)", "гривны (UAH)", "гривні (UAH)"],
+    who: ["un client din Ucraina", "a client in Ukraine", "клиента из Украины", "клієнта з України"] },
+  EUR: { opt: ["Euro (EUR)", "Euro (EUR)", "Евро (EUR)", "Євро (EUR)"],
+    short: ["euro, EUR", "euro, EUR", "евро, EUR", "євро, EUR"],
+    acc: ["euro (EUR)", "euro (EUR)", "евро (EUR)", "євро (EUR)"],
+    who: ["", "", "", ""] },
+  RON: { opt: ["Lei românești (RON)", "Romanian lei (RON)", "Румынские леи (RON)", "Румунські леї (RON)"],
+    short: ["lei, RON", "lei, RON", "леи, RON", "леї, RON"],
+    acc: ["lei românești (RON)", "Romanian lei (RON)", "румынские леи (RON)", "румунські леї (RON)"],
+    who: ["un client din România", "a client in Romania", "клиента из Румынии", "клієнта з Румунії"] },
+};
+const curTxt = (lang, cur, k) => t3(lang, ...(CUR_TXT[cur] || CUR_TXT.EUR)[k]);
+
 /* ---------- editor ---------- */
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", signed = null }) {
+// A money field typed in the offer's own currency (lei, hryvnia), for the
+// electricity price and the monthly loan payment. The quote stores EUR, so the
+// field keeps the text being typed ("3," then "3,4") and only converts what it
+// hands on; it shows the stored amount, in the offer's currency, again once it
+// loses focus. allowZero: an empty or 0 field means 0 (a loan), not "ignore".
+function LocalMoneyInput({ eur, fmt, onEur, dec = 2, allowZero = false, className = "input" }) {
+  const [draft, setDraft] = useState(null);
+  const f = 10 ** dec;
+  const shown = draft ?? String(Math.round(fmt.toLocal(eur) * f) / f);
+  return (
+    <input className={className} type="number" step={dec > 0 ? 1 / f : 1} min="0" value={shown}
+      onFocus={() => setDraft(shown)} onBlur={() => setDraft(null)}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const v = e.target.value === "" ? 0 : +e.target.value;
+        if (allowZero ? v >= 0 : v > 0) onEur(fmt.fromLocal(v));
+      }} />
+  );
+}
+
+// `currency` is the WORKSPACE's (companies.currency); the offer may name its
+// own (p.offerCurrency, null = follow the workspace), see lib/offerCurrency.js.
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, calibration = null, canEditTechnical = true, vatRatePct = 0 }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
-    title: initial.title, client: initial.client_name, address: initial.address,
+    title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
+    // Coordinates of the resolved address pick. Null until someone picks a
+    // suggestion (or until add-project-coords.sql has been run); PVGIS then
+    // uses them directly instead of re-geocoding the text every time.
+    lat: initial.lat != null ? +initial.lat : null,
+    lon: initial.lon != null ? +initial.lon : null,
     market: initial.market, status: initial.status,
     kw: +initial.kw, price: +initial.price, cons: +initial.cons,
     batt: initial.batt, battKwh: initial.batt_kwh != null ? +initial.batt_kwh : 10,
     options: Array.isArray(initial.options) ? initial.options : [],
     bom: Array.isArray(initial.bom) ? initial.bom : [],
-    afmSubsidy: initial.afm_subsidy, loan: +initial.loan_monthly,
+    siteDesign: initial.site_design && typeof initial.site_design === "object" ? initial.site_design : {},
+    loan: +initial.loan_monthly,
     yieldOverride: initial.yield_per_kwp ? +initial.yield_per_kwp : undefined,
     monthlyYieldShape: initial.monthly_yield_shape || undefined,
     useMonthly: initial.use_monthly, consMonthly: initial.cons_monthly,
+    tariffMode: initial.tariff_mode || "flat",
     ownerId: initial.owner_id || null,
     nextFollowUp: initial.next_follow_up || "",
     notes: initial.notes || "",
+    // Ukraine: outage length, what stays on, generator, Energy Credit term (UaPanel)
+    uaPlan: initial.ua_plan && typeof initial.ua_plan === "object" ? initial.ua_plan : {},
+    // The currency this offer is written in; null follows the workspace.
+    offerCurrency: normCurrency(initial.offer_currency),
   });
+  // What the database holds for offer_currency, so the autosave writes it only
+  // when it changes (it is stored best-effort, see persist).
+  const storedOfferCur = useRef(normCurrency(initial.offer_currency));
+  // What a market change did to the offer's currency, said once under the
+  // selects: { kind: "switched" | "suggest", currency } (lib/offerCurrency.js).
+  const [curNote, setCurNote] = useState(null);
   const [saved, setSaved] = useState("saved");     // saved | saving | error
   const [pvgisBusy, setPvgisBusy] = useState(false);
   const [billBusy, setBillBusy] = useState(false);   // AI bill extractor
@@ -102,6 +220,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const [billErr, setBillErr] = useState("");
   const billInput = useRef(null);
   const [propUrl, setPropUrl] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState(null);
   // Emailing the PDF: the recipient isn't stored on the project (only the client's
   // NAME is), so this always starts empty rather than guessing an address.
   const [emailTo, setEmailTo] = useState("");
@@ -110,6 +230,13 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // of a proforma (asking for money up front) was reachable only by hand-editing
   // the URL. 0 = invoice the full amount.
   const [invOpen, setInvOpen] = useState(false);
+  // what the workflow rail last saved (a ticked step, a grid-file stage), so the
+  // checklist and grid-file cards below show it without a reload
+  const [railProg, setRailProg] = useState(null);
+  const [legalDocsOpen, setLegalDocsOpen] = useState(false);
+  const [legalTab, setLegalTab] = useState("contract");
+  const [siteDesignerOpen, setSiteDesignerOpen] = useState(false);
+  const [siteDesignApplying, setSiteDesignApplying] = useState(false);
   const [depPct, setDepPct] = useState(30);
   const [invTo, setInvTo] = useState("");
   const [invBusy, setInvBusy] = useState(false);
@@ -121,6 +248,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const [tplOpen, setTplOpen] = useState(false);
   const [tplName, setTplName] = useState("");
   const [tplBusy, setTplBusy] = useState(false);
+  const [disc, setDisc] = useState(6);   // % real discount rate, for NPV/LCOE
   const timer = useRef(null);
 
   function openTemplate() { setTplName(p.title || "Template"); setTplOpen(true); }
@@ -134,12 +262,38 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     } catch { /* non-fatal */ } finally { setTplBusy(false); }
   }
 
-  // Quote price is driven entirely by system size (kW × rate + battery).
-  const q = useMemo(() => quote({ ...p, costOverride: 0 }, E), [p, E]);
-  const fmt = n => "€" + Math.round(n).toLocaleString("en-IE");
-  const yrs = n => n === null ? "25+" : n === 0 ? tr("pp_immediate") : n.toFixed(1);
+  // Moldova's exported surplus is bought back at the operator's published
+  // monthly price, weighted by the months this system actually exports in — not
+  // the market's flat constant. Same figure Studio and the bankability export
+  // use, so an offer and its supporting documents never disagree.
+  const buyback = useBuyback(Number(p.price) || 0.18, FX.MDL);
+  const isMD = p.market === "MD";
+  const isUA = p.market === "UA";
+  const feedOverride = isMD ? buyback.weightedEur : undefined;
+  // Ukraine's green tariff ends with 2029, so the year the system starts decides
+  // how many years of it the client gets (engine: startYear).
+  const startYear = useMemo(() => startYearOf(initial.created_at), [initial.created_at]);
+
+  // Quote price is driven entirely by system size (kW × rate + battery); the
+  // bill of materials is the installer's cost, not a price override (see
+  // lib/quoteInput.js).
+  const q = useMemo(
+    () => quote({ ...p, startYear, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) }, E),
+    [p, E, feedOverride, startYear]);
+  // Money in the OFFER's currency (by default the workspace's: lei in Moldova)
+  // at today's rate; the engine and the stored quote stay in EUR
+  // (lib/money.js). Every figure below, and every panel handed `fmt`, follows it.
+  const offerCur = effectiveOfferCurrency(p.offerCurrency, workspaceCurrency, p.market);
+  const fmt = moneyFormatter({ currency: offerCur, lang, fx: E?.fx });
+  const nf = numFor(lang);
+  const num = n => Math.round(Number(n) || 0).toLocaleString({ en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB");
+  const yrs = n => n === null ? "25+" : n === 0 ? tr("pp_immediate") : nf(n, 1);
   // per-kWh prices need decimals, and 0.036 must not print as "0.04"
-  const eurKwh = v => "€" + Number(v).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+  const eurKwh = v => fmt.local ? fmt.perKwh(v) : "€" + Number(v).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+  // the system price per watt, in the offer's currency: "1,10 €/W", "21,78 lei/W"
+  const perW = v => fmt.local ? `${nf(fmt.toLocal(v), 2)} ${fmt.unit}/W` : `${nf(v, 2)} €/W`;
+  // The message that goes with the proposal link on Viber, WhatsApp and the share image.
+  const shareMsg = tr("wa_message", { client: p.client || tr("your_client"), company: companyName, url: propUrl || "" });
 
   // How far the array overshoots what the client can actually use, and the size
   // that would roughly match their annual consumption. Honours the monthly
@@ -166,6 +320,17 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const grants = Math.max(0, q.e.grossCost - q.e.cost);
   const cbMax = Math.max(q.e.cost, lifetime, 1);
 
+  /* ---- commercial metrics: what payback alone doesn't answer ---- */
+  const fin = useMemo(() => financials(q.e, q.e.grossCost, disc, E), [q.e, disc, E]);
+
+  // Inputs for the battery sweep: the same project WITHOUT a battery, so the
+  // curve measures what each added kWh is worth rather than re-stating the
+  // current pick.
+  const sweepBase = useMemo(() => {
+    const { batt, battKwh, ...rest } = p;
+    return { ...rest, startYear, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) };
+  }, [p, feedOverride, startYear]);
+
   /* debounced autosave — MUST surface failure: a false "Saved" while the write
      was rejected (expired session, offline, RLS) silently loses the edit. */
   async function persist(next) {
@@ -176,7 +341,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         market: next.market, status: next.status,
         kw: next.kw, price: next.price, cons: next.cons,
         batt: next.batt,
-        afm_subsidy: next.afmSubsidy, loan_monthly: next.loan,
+        loan_monthly: next.loan,
         use_monthly: !!next.useMonthly,
         cons_monthly: (next.useMonthly && Array.isArray(next.consMonthly) && next.consMonthly.length === 12)
           ? next.consMonthly : null,
@@ -186,24 +351,78 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         next_follow_up: next.nextFollowUp || null,
         notes: next.notes ?? "",
       }).eq("id", initial.id);
+      // No signal: keep the edit on this device and save it when the signal
+      // is back (lib/offline.js), instead of calling it a failure.
+      if (error && isNetworkError(error)) { if (saveOutbox(initial.id, next)) { setSaved("device"); return; } }
+      // Ukraine before supabase/add-ukrainian.sql has run: the database still
+      // refuses the UA market. Say that, not "check your connection".
+      if (error && /projects_market_check/.test(error.message || "")) { setSaved("db"); return; }
       setSaved(error ? "error" : "saved");
       if (error) console.error("autosave failed:", error.message);
       // batt_kwh is written separately + best-effort so a workspace that hasn't
       // run add-battery-kwh.sql yet still autosaves everything else (the column
       // may not exist; swallow that error rather than fail the whole save).
       else {
+        clearOutbox(initial.id);
         sb.from("projects").update({ batt_kwh: next.battKwh }).eq("id", initial.id)
           .then(({ error: e2 }) => { if (e2) console.warn("batt_kwh not stored (run add-battery-kwh.sql?):", e2.message); });
         sb.from("projects").update({ options: next.options }).eq("id", initial.id)
           .then(({ error: e3 }) => { if (e3) console.warn("options not stored (run add-quote-options.sql?):", e3.message); });
         sb.from("projects").update({ bom: next.bom }).eq("id", initial.id)
           .then(({ error: e4 }) => { if (e4) console.warn("bom not stored (run add-quote-bom.sql?):", e4.message); });
+        sb.from("projects").update({ lat: next.lat ?? null, lon: next.lon ?? null }).eq("id", initial.id)
+          .then(({ error: e5 }) => { if (e5) console.warn("coordinates not stored (run add-project-coords.sql?):", e5.message); });
+        sb.from("projects").update({ site_design: next.siteDesign || {} }).eq("id", initial.id)
+          .then(({ error: e6 }) => { if (e6) console.warn("site design not stored (run add-site-design.sql?):", e6.message); });
+        sb.from("projects").update({ client_email: next.clientEmail || "" }).eq("id", initial.id)
+          .then(({ error: e7 }) => { if (e7) console.warn("client email not stored (run add-proposal-nudges.sql?):", e7.message); });
+        sb.from("projects").update({ tariff_mode: next.tariffMode || "flat" }).eq("id", initial.id)
+          .then(({ error: e8 }) => { if (e8) console.warn("tariff mode not stored (run add-tariff-mode.sql?):", e8.message); });
+        if (next.market === "UA") sb.from("projects").update({ ua_plan: next.uaPlan || {} }).eq("id", initial.id)
+          .then(({ error: e9 }) => { if (e9) console.warn("Ukraine plan not stored (run add-ukrainian.sql?):", e9.message); });
+        // The offer's currency, only when it changed. Until add-offer-currency.sql
+        // has run, the choice still drives this screen; the warning then shows
+        // once per change rather than on every later save (a missing column
+        // will not appear by retrying; any other failure is retried next save).
+        const cur = normCurrency(next.offerCurrency);
+        if (cur !== storedOfferCur.current) sb.from("projects").update({ offer_currency: cur }).eq("id", initial.id)
+          .then(({ error: e10 }) => {
+            if (e10) console.warn("offer currency not stored (run add-offer-currency.sql?):", e10.message);
+            if (!e10 || /offer_currency/i.test(e10.message || "")) storedOfferCur.current = cur;
+          });
       }
     } catch (e) {
+      if (isNetworkError(e) && saveOutbox(initial.id, next)) { setSaved("device"); return; }
       setSaved("error");
       console.error("autosave threw:", e?.message || e);
     }
   }
+  // A quote that was just created has nothing in it yet: put the cursor in the client's name, so the
+  // first thing typed lands there instead of after a click. Desktop only (a phone's keyboard would
+  // cover the page the moment it opens), and never on a quote that already has a client.
+  const clientRef = useRef(null);
+  useEffect(() => {
+    if (initial.client_name || !isPlaceholderTitle(initial.title)) return;
+    if (typeof window === "undefined" || !window.matchMedia("(pointer: fine)").matches) return;
+    clientRef.current?.focus({ preventScroll: true });
+  }, [initial.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Edits made with no signal wait on the device (see persist). When this quote
+  // opens with some still waiting, they are the engineer's latest: show them
+  // and save them as soon as there is a network, now or when it comes back.
+  useEffect(() => {
+    const flush = () => {
+      const box = readOutbox(initial.id);
+      if (!box) return;
+      setP(box.data);
+      setSaved(navigator.onLine === false ? "device" : "saving");
+      if (navigator.onLine !== false) persist(box.data);
+    };
+    flush();
+    window.addEventListener("online", flush);
+    return () => window.removeEventListener("online", flush);
+    // persist reads only initial.id and the edit it is handed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial.id]);
   function update(patch) {
     const next = { ...p, ...patch };
     setP(next); setSaved("saving");
@@ -241,16 +460,132 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const addOption = () => { if (p.options.length < 2) update({ options: [...p.options, { label: "", kw: p.kw, battKwh: 0 }] }); };
   const removeOption = (i) => update({ options: p.options.filter((_, j) => j !== i) });
   useEffect(() => () => clearTimeout(timer.current), []);
+  // /projects/<id>?docs=contract (from the Documents page) opens the legal
+  // documents straight on that tab.
+  useEffect(() => {
+    const d = new URLSearchParams(window.location.search).get("docs");
+    if (d) { setLegalTab(d); setLegalDocsOpen(true); }
+  }, []);
+
+  // A row picked from Design Suggestions replaces whatever inverter line(s)
+  // are already in the BOM — never adds a second, competing one alongside it.
+  // Supplier-sourced, like autoBom's own lines: no productId, since this isn't
+  // the installer's own stocked catalog.
+  function applyInverterChoice(row) {
+    const kept = (Array.isArray(p.bom) ? p.bom : []).filter((l) => l.kind !== "inverter");
+    const line = {
+      kind: "inverter", brand: row.inverter.brand, model: row.inverter.model,
+      spec: `${row.inverter.kw} kW ${row.inverter.type}`,
+      qty: row.count, unit_price: row.inverter.price, source: "supplier",
+    };
+    update({ bom: [...kept, line] });
+  }
+
+  // Picking a different place invalidates a PVGIS yield fetched for the old one
+  // — keeping it would quote this roof with another town's sunshine. Moving the
+  // pin within ~1 km is the same PVGIS cache cell, so that keeps the yield.
+  function pickAddress(a) {
+    const moved = p.lat == null || p.lon == null
+      || Math.abs(p.lat - a.lat) > 0.01 || Math.abs(p.lon - a.lng) > 0.01;
+    update({
+      address: a.address, lat: a.lat, lon: a.lng,
+      ...(moved && p.yieldOverride ? { yieldOverride: undefined, monthlyYieldShape: undefined } : {}),
+    });
+  }
 
   async function fetchPVGIS() {
-    if (!p.address) return alert(tr("add_address"));
+    if (!p.address && p.lat == null) return alert(tr("add_address"));
     setPvgisBusy(true);
     try {
-      const r = await fetch(`/api/pvgis?address=${encodeURIComponent(p.address)}`);
+      // Coordinates from a picked address beat re-geocoding its text: the same
+      // street name exists in several towns, and the text lookup can resolve to
+      // a different one than the installer saw on the pin.
+      const query = p.lat != null && p.lon != null
+        ? `lat=${p.lat}&lon=${p.lon}`
+        : `address=${encodeURIComponent(p.address)}`;
+      const r = await fetch(`/api/pvgis?${query}`);
       const j = await r.json();
       if (j.yieldPerKwp) update({ yieldOverride: j.yieldPerKwp, monthlyYieldShape: j.monthlyShape });
       else alert(j.error || "PVGIS lookup failed");
     } finally { setPvgisBusy(false); }
+  }
+
+  // The Site Designer hands back a real, physical panel count per roof plane
+  // (lib/roofLayout.js's fitPanels), each with its own drawn tilt/azimuth —
+  // so this is the one place that actually exercises /api/pvgis's angle/
+  // aspect params instead of always taking the route's 35°/south default.
+  // Per-plane yields are combined panel-count-weighted into the single
+  // yieldOverride/monthlyYieldShape the engine already consumes.
+  // Lets the Site Designer preview real payback/ROI/CO2 for whatever kW its
+  // current drawn layout implies — same engine call as the main quote above,
+  // just with kw swapped for the layout's, so the two can never disagree.
+  const computeSiteDesignQuote = useCallback((kw) =>
+    quote({ ...p, kw, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) }, E),
+    [p, E, feedOverride]);
+
+  // Rail/clamp quantities for BosEstimate: the SAME real drawn roof planes
+  // and fitPanels() math applySiteDesignLayout/lib/actions.js's PDF snapshot
+  // already use, not a separate guess — recomputed live here (not persisted
+  // with the project) since a plane's geometry, or the BOM's real panel,
+  // can change without reopening Site Designer.
+  const siteRows = useMemo(() => {
+    const planes = Array.isArray(p.siteDesign?.planes) ? p.siteDesign.planes : [];
+    const validPlanes = planes.filter((pl) => Array.isArray(pl.polygon) && pl.polygon.length >= 3);
+    if (!validPlanes.length) return [];
+    const obstacles = Array.isArray(p.siteDesign?.obstacles)
+      ? p.siteDesign.obstacles.map((o) => o.polygon).filter((o) => Array.isArray(o) && o.length >= 3)
+      : [];
+    const { w, h } = designCheck({ bom: p.bom, kw: p.kw }).panel.dimensionsMm || { w: 1909, h: 1134 };
+    const opts = fitOptions(p.siteDesign?.layout);
+    return validPlanes.flatMap((pl) => fitPanels(pl.polygon, obstacles, h, w, opts).rows);
+  }, [p.siteDesign, p.bom, p.kw]);
+
+  async function applySiteDesignLayout(layout) {
+    if (!layout || !layout.totalCount) return;
+    setSiteDesignApplying(true);
+    try {
+      const results = await Promise.all(layout.perPlane.filter((pl) => pl.count > 0).map(async (pl) => {
+        try {
+          const r = await fetch(`/api/pvgis?lat=${pl.lat}&lon=${pl.lon}&angle=${pl.tiltDeg}&aspect=${pl.azimuthDeg}`);
+          const j = await r.json();
+          return { ...pl, yieldPerKwp: j.yieldPerKwp, monthlyShape: j.monthlyShape };
+        } catch { return { ...pl, yieldPerKwp: null }; }
+      }));
+      const valid = results.filter((r) => r.yieldPerKwp);
+      let patch = { kw: layout.kw };
+      if (valid.length) {
+        const totalCount = valid.reduce((s, r) => s + r.count, 0) || 1;
+        patch.yieldOverride = valid.reduce((s, r) => s + r.yieldPerKwp * r.count, 0) / totalCount;
+        if (valid.every((r) => Array.isArray(r.monthlyShape) && r.monthlyShape.length === 12)) {
+          patch.monthlyYieldShape = Array.from({ length: 12 },
+            (_, i) => valid.reduce((s, r) => s + r.monthlyShape[i] * r.count, 0) / totalCount);
+        }
+      }
+      // The roof material the most panels actually sit on, so a building with
+      // one small trapezoidal-sheet dormer and one large tile main roof still
+      // gets the mount that matches where the array actually is.
+      const dominantPlane = layout.perPlane.reduce((best, pl) => (!best || pl.count > best.count) ? pl : best, null);
+      const roofType = dominantPlane?.roofType;
+      const matchedMount = recommendMount(roofType);
+
+      const bomArr = Array.isArray(p.bom) ? p.bom : [];
+      const hasPanelLine = bomArr.some((l) => l.kind === "panel");
+      patch.bom = hasPanelLine
+        ? bomArr.map((l) => {
+            if (l.kind === "panel") return { ...l, qty: layout.totalCount, brand: layout.panelBrand, model: layout.panelModel };
+            // Only swap an EXISTING mount line's product, never add or
+            // remove one — an installer's custom BOM keeps its own shape.
+            if (l.kind === "mounting" && matchedMount) return { ...l, brand: matchedMount.brand, model: matchedMount.model, spec: matchedMount.type, unit_price: matchedMount.eurPerKw };
+            return l;
+          })
+        : bomArr.length === 0
+          ? autoBom(layout.kw, p.battKwh, roofType).map((l) => l.kind === "panel" ? { ...l, qty: layout.totalCount } : l)
+          : bomArr; // has other lines but no panel line, an unusual manual BOM; leave it rather than guess
+      update(patch);
+      setSiteDesignerOpen(false);
+    } finally {
+      setSiteDesignApplying(false);
+    }
   }
 
   async function makeProposal() {
@@ -260,14 +595,43 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     return code;
   }
 
+  // The link itself never changes (createProposal is idempotent by design —
+  // never bait-and-switch a client), but everything the link SHOWS is frozen
+  // at first-generate time. Edited the BOM, drawn the roof, changed the price
+  // since then? Nothing reaches the client until this runs. Refuses server-side
+  // once the client has actually accepted — see regenerateProposal's own comment.
+  async function refreshProposal() {
+    setRefreshing(true); setRefreshMsg(null);
+    try {
+      await regenerateProposal(initial.id);
+      setRefreshMsg({ ok: true, text: tr("prop_refreshed") });
+    } catch (e) {
+      setRefreshMsg({ ok: false, text: e.message === "already_accepted" ? tr("prop_refresh_accepted") : tr("prop_refresh_err") });
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   async function downloadPdf() {
-    // Warm first so the browser launch overlaps with makeProposal()/navigation.
-    fetch("/api/proposal/warm", { method: "POST", keepalive: true }).catch(() => { });
-    const code = propUrl ? propUrl.split("/p/")[1] : await makeProposal();
-    // Server-rendered PDF, not the browser print dialog. The dialog stamped
-    // Chrome's own header (page title + proposal URL) onto every page, which
-    // undid white-labelling, and left paper size up to whoever was exporting.
-    window.open(`/api/proposal/${code}/pdf`, "_blank", "noopener");
+    // Open the tab synchronously, inside the click gesture, so mobile popup
+    // blockers don't swallow it — they do when window.open runs after an await,
+    // which is why "Download PDF" appeared to do nothing on a phone.
+    const tab = window.open("", "_blank");
+    let code = propUrl ? propUrl.split("/p/")[1] : null;
+    if (!code) {
+      // createProposal is idempotent (returns the existing code), so this does
+      // NOT open the share modal — that's why it no longer mirrors "Generate".
+      try { code = await createProposal(initial.id); }
+      catch { if (tab) tab.close(); return; }
+    }
+    if (p.status === "draft") update({ status: "sent" });
+    // Clean, server-rendered PDF: headless Chromium with displayHeaderFooter:false,
+    // so there's NO browser header/footer stamp (page title, URL, date) the way
+    // a client-side window.print() leaves. Chromium is pre-warmed when the share
+    // panel opens (see the effect below), so this is a short wait, and the tab
+    // shows the actual PDF — saveable on desktop and on a phone.
+    const url = `/api/proposal/${code}/pdf`;
+    if (tab) tab.location.href = url; else window.location.href = url;
   }
 
   // Chromium's cold launch is ~3.5s. Kick it off when the share modal appears so
@@ -322,24 +686,34 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const validUntilDate = proposalSentAt ? new Date(new Date(proposalSentAt).getTime() + validityDays * 86400000) : null;
   const quoteStale = validUntilDate ? validUntilDate.getTime() < Date.now() : false;
   // app timezone, so this matches the date printed on the client's PDF
-  const validUntilStr = validUntilDate ? fmtDate(validUntilDate, { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB") : null;
-
-  // Local subsidy is market-aware: RO = AFM/Casa Verde (RON), MD = prosumer grant
-  // (MDL). DE has none, so the toggle hides there. Amount converts to EUR for the
-  // "−€X" hint, using the same FX the engine uses.
-  const subKey = mkt.subsidyKey;                 // e.g. "subsidyAmountRon" | "subsidyAmountMdl" | null
-  const subAmountEur = subKey ? (Number(E[subKey]) || 0) / (FX[mkt.subsidyFx] || 1) : 0;
-  const subLabel = p.market === "MD" ? tr("md_subsidy_label") : tr("afm_label");
+  const validUntilStr = validUntilDate ? fmtDate(validUntilDate, { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB") : null;
 
   // Switching market pre-fills the electricity price with the new market's
   // regional default — but only when the user hasn't typed a custom price yet
   // (i.e. it still equals the old market's default).
+  // The offer's currency follows the market by the same rule
+  // (lib/offerCurrency.js): only while it is still on the default or on the old
+  // market's own currency. Lei for a client in Ukraine is never right, so a lei
+  // workspace switches the offer to hryvnia and says so; a euro workspace keeps
+  // euro (a fair choice anywhere) and is offered the local currency in one click.
   function changeMarket(m) {
     const patch = { market: m };
     const oldDef = (MARKETS[p.market] || {}).defaultPrice;
     if (MARKETS[m] && Math.abs((p.price || 0) - (oldDef || 0)) < 0.0015) patch.price = MARKETS[m].defaultPrice;
+    const c = currencyOnMarketChange({ offerCurrency: p.offerCurrency, workspaceCurrency, from: p.market, to: m });
+    patch.offerCurrency = c.offerCurrency;
+    setCurNote(c.note);
     update(patch);
   }
+  function changeOfferCurrency(c) {
+    setCurNote(null);
+    update({ offerCurrency: normCurrency(c) });
+  }
+  // Under the selects: what a market change just did, or, for a quote still on
+  // the default, a workspace currency that belongs to another country than the
+  // client's (an older Ukrainian quote in a lei workspace).
+  const curHint = curNote || (p.offerCurrency == null && betterCurrencyFor(offerCur, p.market)
+    ? { kind: "mismatch", currency: betterCurrencyFor(offerCur, p.market) } : null);
 
   // A demo-style .check toggle row.
   const check = (on, l, sub, fn) => (
@@ -350,81 +724,250 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     </label>
   );
 
+  // The margin behind the price, from the same bill-of-materials total BomCard shows.
+  const materials = bomTotal(p.bom);
+  const margin = q.e.grossCost - materials;
+  const clientLine = [p.client, String(p.address || "").split(",").slice(0, 2).join(",").trim()].filter(Boolean).join(", ");
+
   return (
-    <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-      <div className="ed-head">
-        <Link className="back-link" href="/projects">
+    <div className="qb">
+      <header className="qb-head">
+        <BackLink href="/projects">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
-          {tr("back_projects").replace("← ", "")}
-        </Link>
-        <input className="proj-title" value={p.title} onChange={e => update({ title: e.target.value })} />
-        <span style={{ fontSize: 12, color: saved === "error" ? "var(--red)" : "var(--muted)", fontWeight: saved === "error" ? 700 : 400 }}>
-          {saved === "saving" ? tr("saving") : saved === "error" ? tr("save_failed") : tr("saved")}
-          {saved === "error" && (
-            <button className="btn sm danger" style={{ marginLeft: 8 }} onClick={() => { setSaved("saving"); persist(p); }}>{tr("retry")}</button>
-          )}
-        </span>
-        <span className="spacer" />
-        {tplOpen ? (
-          <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-            <input autoFocus className="input" value={tplName} maxLength={40}
-              onChange={e => setTplName(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") saveTemplate(); if (e.key === "Escape") setTplOpen(false); }}
-              placeholder={tr("tpl_name_ph")} style={{ width: 160, padding: "8px 11px" }} />
-            <button className="btn primary" disabled={tplBusy || !tplName.trim()} onClick={saveTemplate}>{tr("tpl_save_confirm")}</button>
-            <button className="btn ghost" onClick={() => setTplOpen(false)} aria-label={tr("tpl_cancel")}>✕</button>
-          </span>
-        ) : (
-          <button className="btn ghost" onClick={openTemplate}>{tplSaved ? tr("tpl_saved") : tr("tpl_save")}</button>
-        )}
-        <button className="btn ghost" onClick={downloadPdf}>{tr("dl_pdf")}</button>
-        <button className="btn ghost" onClick={() => setInvOpen(true)}>{tr("inv_button")}</button>
-        <button className="btn primary" onClick={makeProposal}>{tr("gen_proposal")}</button>
-      </div>
-
-      {proposalSentAt && (
-        <div style={{ margin: "-8px 0 16px", fontSize: 12.5, fontWeight: quoteStale ? 700 : 400,
-          color: quoteStale ? "var(--red)" : "var(--muted)" }}>
-          {tr("q_valid_until", { d: validUntilStr })}{quoteStale ? " · " + tr("q_stale") : ""}
+          {tr("nav_projects")}
+        </BackLink>
+        <div className="qb-head-main">
+          <div className="qb-id">
+            <div className="qb-title-row">
+              {/* A hidden copy of the title sizes the field (see .qb-title-wrap), so the
+                  status and save state sit right after the name at any length. */}
+              <span className="qb-title-wrap" data-value={p.title || " "}>
+                <input className="proj-title qb-title" value={p.title} aria-label={tr("col_project")} size={1}
+                  onChange={e => update({ title: e.target.value })} />
+              </span>
+              <span className={"chip static " + p.status}>{tr("st_" + p.status)}</span>
+              <span className={"qb-saved s-" + saved} role="status">
+                {saved === "saving" ? tr("saving") : saved === "error" ? tr("save_failed") : saved === "device" ? tr("saved_device") : saved === "db" ? tr("save_needs_ua_db") : tr("saved")}
+                {saved === "error" && (
+                  <button className="btn sm danger" style={{ marginLeft: 8 }} onClick={() => { setSaved("saving"); persist(p); }}>{tr("retry")}</button>
+                )}
+              </span>
+            </div>
+            <p className="qb-sub">
+              {clientLine}
+              {proposalSentAt && (
+                <span className={"qb-valid" + (quoteStale ? " stale" : "")}>
+                  {tr("q_valid_until", { d: validUntilStr })}{quoteStale ? ", " + tr("q_stale").toLowerCase() : ""}
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="qb-actions">
+            {tplOpen ? (
+              <span className="qb-tpl">
+                <input autoFocus className="input" value={tplName} maxLength={40}
+                  onChange={e => setTplName(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") saveTemplate(); if (e.key === "Escape") setTplOpen(false); }}
+                  placeholder={tr("tpl_name_ph")} />
+                <button className="btn primary sm" disabled={tplBusy || !tplName.trim()} onClick={saveTemplate}>{tr("tpl_save_confirm")}</button>
+                <button className="btn ghost sm" onClick={() => setTplOpen(false)} aria-label={tr("tpl_cancel")}>✕</button>
+              </span>
+            ) : (
+              <button className="btn ghost" onClick={openTemplate}><Qi d={tplSaved ? "check" : "bookmark"} />{tplSaved ? tr("tpl_saved") : tr("tpl_save")}</button>
+            )}
+            <button className="btn ghost" onClick={downloadPdf}><Qi d="pdf" />{tr("dl_pdf")}</button>
+            <button className="btn ghost" onClick={() => setInvOpen(true)}><Qi d="receipt" />{tr("inv_button")}</button>
+            <button className="btn ghost" onClick={() => { setLegalTab("contract"); setLegalDocsOpen(true); }}><Qi d="scale" />{tr("ld_open")}</button>
+            <button className="dx-new" onClick={makeProposal}><Qi d="link" w={2.2} />{tr("gen_proposal")}</button>
+          </div>
         </div>
-      )}
+      </header>
 
+      {/* What the client will see, and what it leaves you, pinned while you edit. */}
+      <dl className="qb-bar" aria-live="polite">
+        <div><dt>{tr("qb_pays")}</dt><dd>{fmt(q.e.cost)}</dd>
+          <dd className="qb-bar-sub">{grants > 0 ? tr("qb_pays_grant", { v: fmt(grants) }) : costPerW > 0 ? perW(costPerW) : ""}</dd></div>
+        <div className="hi"><dt>{tr("qb_payback")}</dt><dd>{yrs(q.e.payback)} <small>{tr("yrs")}</small></dd>
+          <dd className="qb-bar-sub">{tr("qb_range", { a: yrs(q.o.payback), b: yrs(q.p.payback) })}</dd></div>
+        <div><dt>{tr("savings_y1")}</dt><dd>{fmt(q.e.year1)}</dd>
+          <dd className="qb-bar-sub">{tr("qb_month", { v: fmt(mSave) })}</dd></div>
+        <div><dt>{tr("qb_prod")}</dt><dd>{num(q.e.prod0)} <small>kWh</small></dd>
+          <dd className="qb-bar-sub">{p.yieldOverride ? tr("qb_prod_pvgis") : tr("qb_prod_default")}</dd></div>
+        <div><dt>{tr("qb_self")}</dt><dd>{Math.round(q.e.self * 100)}%</dd>
+          <dd className="qb-bar-sub">{consEff > 0 ? tr("qb_cover", { n: Math.round(coverage * 100) }) : ""}</dd></div>
+        <div className={materials > 0 ? (margin < 0 ? "neg" : "pos") : ""}><dt>{materials > 0 ? tr("qb_margin") : tr("qb_price")}</dt>
+          <dd>{materials > 0 ? fmt(margin) : fmt(q.e.grossCost)}</dd>
+          <dd className="qb-bar-sub">{materials > 0
+            ? tr("qb_margin_sub", { p: q.e.grossCost > 0 ? Math.round((margin / q.e.grossCost) * 100) : 0, v: fmt(q.e.grossCost) })
+            : tr("qb_margin_none")}</dd></div>
+      </dl>
+
+      {/* Where this job is in the workflow, and the one next thing to do
+          (lib/workflow.js). The dashboard and the quotes list link here (#workflow). */}
+      <WorkflowRail projectId={initial.id} lang={lang} status={p.status}
+        onAction={async (a) => {
+          if (a.type === "send" || a.type === "copy_link") { makeProposal(); return true; }
+          if (a.type === "invoice") { setInvOpen(true); return true; }
+          if (a.type === "won") {
+            // Signed from the rail: record it (activity, CRM hook), then save the
+            // status through this editor's own autosave, so a pending edit still
+            // waiting on its timer cannot write the old status back.
+            clearTimeout(timer.current);
+            await markProjectWon(initial.id);
+            const next = { ...p, status: "won" };
+            setP(next);
+            await persist(next);
+            return true;
+          }
+          return false;
+        }}
+        onChange={({ installProgress, gridFile }) => {
+          if (installProgress || gridFile) setRailProg((cur) => ({
+            ...(cur || initial.install_progress || {}),
+            ...(installProgress || {}),
+            ...(gridFile ? { gridFile } : {}),
+          }));
+        }} />
+
+      <LinkLabels root=".editor" />
       <div className="editor">
         {/* left: inputs */}
         <div className="stack">
           <section className="card">
             <h3>{tr("client_site")}</h3>
             <div className="field"><label>{tr("client_name")}</label>
-              <input className="input" value={p.client} onChange={e => update({ client: e.target.value })} /></div>
+              <input ref={clientRef} className="input" value={p.client} onChange={e => update({ client: e.target.value })} /></div>
+            {/* Real prerequisite for the follow-up nudge automation (if
+                enabled in Settings) — without a stored address there's
+                nowhere to send a reminder. Optional: nudges just skip a
+                proposal that has none. */}
+            <div className="field"><label>{tr("client_email")}</label>
+              <input type="email" className="input" value={p.clientEmail || ""} placeholder={tr("client_email_ph")}
+                onChange={e => update({ clientEmail: e.target.value })} /></div>
             <div className="field"><label>{tr("address")}</label>
-              <input className="input" value={p.address} onChange={e => update({ address: e.target.value })} /></div>
+              <AddressField
+                lang={lang}
+                value={p.address}
+                lat={p.lat}
+                lng={p.lon}
+                mapSize={260}
+                onText={(s) => update({ address: s, lat: null, lon: null })}
+                onPick={pickAddress}
+              />
+            </div>
 
-            <button className={p.yieldOverride ? "btn amber" : "btn ghost"} style={{ width: "100%" }}
-              onClick={fetchPVGIS} disabled={pvgisBusy}>
-              {pvgisBusy ? tr("pvgis_fetching")
-                : p.yieldOverride ? tr("pvgis_real", { n: Math.round(p.yieldOverride) })
-                : tr("pvgis_use")}
-            </button>
+            {/* Draw the roof on real satellite imagery instead of assuming one
+                flat 35°-south plane — see components/SiteDesigner.jsx. Needs a
+                resolved pin, same requirement as the PVGIS fetch below. */}
+            <div className="qb-tools">
+              <button type="button" className={"qb-tool" + (Array.isArray(p.siteDesign?.planes) && p.siteDesign.planes.length ? " done" : "")}
+                disabled={p.lat == null || p.lon == null}
+                title={p.lat == null || p.lon == null ? tr("site_designer_need_address") : undefined}
+                onClick={() => setSiteDesignerOpen(true)}>
+                <span className="qb-tool-ic"><Qi d="roof" size={17} /></span>
+                <span className="qb-tool-tx"><b>{tr("site_designer_open")}</b><small>{p.lat == null || p.lon == null ? tr("site_designer_need_address") : tr("qb_tool_roof_sub")}</small></span>
+                <Qi d="chev" size={15} />
+              </button>
+              <button type="button" className={"qb-tool" + (p.yieldOverride ? " done" : "")} onClick={fetchPVGIS} disabled={pvgisBusy} aria-busy={pvgisBusy}>
+                <span className="qb-tool-ic"><Qi d={p.yieldOverride ? "check" : "sun"} size={17} /></span>
+                <span className="qb-tool-tx">
+                  <b>{pvgisBusy ? tr("pvgis_fetching") : p.yieldOverride ? tr("qb_pvgis_done", { n: Math.round(p.yieldOverride) }) : tr("pvgis_use")}</b>
+                  <small>{p.yieldOverride ? tr("qb_pvgis_again") : tr("qb_tool_pvgis_sub")}</small>
+                </span>
+                <Qi d="chev" size={15} />
+              </button>
+            </div>
             {p.yieldOverride && (
               <div className="pvgis-data">
                 <span className="pvg-k">{Math.round(p.yieldOverride)}</span> {tr("unit_kwp_yr")}
-                {Array.isArray(p.monthlyYieldShape) && p.monthlyYieldShape.length === 12 && <> · {tr("pvgis_monthly")}</>}
+                {Array.isArray(p.monthlyYieldShape) && p.monthlyYieldShape.length === 12 && <>, {tr("pvgis_monthly")}</>}
+                {/* Sunny Design names a "site for meteorological data" and a
+                    distance to it — SMA runs on a network of physical
+                    stations, so that number means something for them. PVGIS is
+                    gridded satellite irradiance, not station lookups, so a
+                    fabricated "X km away" would be a made-up number wearing
+                    their UI's clothes. This states what the source actually is. */}
+                <div className="pvgis-src">{tr("pvgis_src")}</div>
               </div>
             )}
+
+            {/* What the installed base measured. Offered, never applied on its
+                own: a yield that drifts by itself is the opposite of the
+                promise this product is sold on. */}
+            {calibration?.confident && p.yieldOverride && (() => {
+              const tuned = Math.round(applyCalibration(p.yieldOverride, calibration));
+              const deltaPct = (calibration.factor - 1) * 100;
+              const applied = Math.abs(tuned - Math.round(p.yieldOverride)) < 1;
+              return (
+                <div className="cal-note">
+                  <div className="cal-h">
+                    {tr("cal_title", { n: Math.abs(deltaPct).toFixed(0), d: tr(deltaPct >= 0 ? "cal_above" : "cal_below") })}
+                  </div>
+                  <div className="cal-s">{tr("cal_basis", { s: calibration.systems, m: calibration.months })}</div>
+                  {!applied && (
+                    <button className="btn ghost sm" style={{ marginTop: 8 }}
+                      onClick={() => update({ yieldOverride: tuned })}>
+                      {tr("cal_apply", { n: tuned })}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
 
             {team.length >= 1 && (
               <div className="field" style={{ marginTop: 15 }}><label>{tr("proj_owner")}</label>
                 <select className="input" value={p.ownerId || ""} onChange={e => update({ ownerId: e.target.value || null })}>
-                  <option value="">—</option>
+                  <option value="">{tr("proj_owner_none")}</option>
                   {team.map(m => <option key={m.id} value={m.id}>{m.name || m.email}</option>)}
                 </select>
               </div>
             )}
-            <div className="field"><label>{tr("market")}</label>
-              <select className="input" value={p.market} onChange={e => changeMarket(e.target.value)}>
-                <option value="MD">{tr("market_md")}</option>
-                <option value="RO">{tr("market_ro")}</option>
-              </select></div>
+            {/* The market and the currency the offer is written in, side by side:
+                the second is what the client reads every amount in (proposal,
+                PDF, proforma). They wrap one under the other on a phone. */}
+            <div style={{ display: "flex", flexWrap: "wrap", columnGap: 12 }}>
+              <div className="field" style={{ flex: "1 1 190px", minWidth: 0 }}><label>{tr("market")}</label>
+                <select className="input" value={p.market} onChange={e => changeMarket(e.target.value)}>
+                  <option value="MD">{tr("market_md")}</option>
+                  <option value="UA">{tr("market_ua")}</option>
+                  <option value="RO">{tr("market_ro")}</option>
+                </select></div>
+              {/* explicit margin: as the wrapper's last child, .field:last-child would drop it */}
+              <div className="field" style={{ flex: "1 1 190px", minWidth: 0, marginBottom: 15 }}>
+                <label htmlFor="offer-currency">{t3(lang, "Moneda ofertei", "Currency of the offer", "Валюта оферты", "Валюта пропозиції")}</label>
+                <select id="offer-currency" className="input" value={p.offerCurrency || ""} onChange={e => changeOfferCurrency(e.target.value)}>
+                  <option value="">{t3(lang, "Ca în setări", "Workspace default", "Как в настройках", "Як у налаштуваннях")} ({curTxt(lang, normCurrency(workspaceCurrency) || "EUR", "short")})</option>
+                  {["MDL", "UAH", "EUR", "RON"].map(c => <option key={c} value={c}>{curTxt(lang, c, "opt")}</option>)}
+                </select></div>
+            </div>
+            {curHint && (
+              <div className="cal-note" style={{ marginTop: -4, marginBottom: 15 }} role="status">
+                <div className="cal-h" style={{ fontWeight: 500 }}>
+                  {curHint.kind === "switched"
+                    ? t3(lang,
+                      `Am trecut oferta pe ${curTxt(lang, curHint.currency, "acc")}, pentru ${curTxt(lang, curHint.currency, "who")}. Poți alege altă monedă oricând.`,
+                      `Switched the offer to ${curTxt(lang, curHint.currency, "acc")} for ${curTxt(lang, curHint.currency, "who")}. You can pick another currency any time.`,
+                      `Оферта переведена в ${curTxt(lang, curHint.currency, "acc")} для ${curTxt(lang, curHint.currency, "who")}. Валюту можно сменить в любой момент.`,
+                      `Пропозицію переведено в ${curTxt(lang, curHint.currency, "acc")} для ${curTxt(lang, curHint.currency, "who")}. Валюту можна змінити будь-коли.`)
+                    : curHint.kind === "suggest"
+                      ? t3(lang,
+                        `Oferta e în euro, ca în setări. Pentru ${curTxt(lang, curHint.currency, "who")} o poți trece pe ${curTxt(lang, curHint.currency, "acc")}.`,
+                        `The offer is in euro, as in your settings. For ${curTxt(lang, curHint.currency, "who")} you can switch it to ${curTxt(lang, curHint.currency, "acc")}.`,
+                        `Оферта в евро, как в настройках. Для ${curTxt(lang, curHint.currency, "who")} её можно перевести в ${curTxt(lang, curHint.currency, "acc")}.`,
+                        `Пропозиція в євро, як у налаштуваннях. Для ${curTxt(lang, curHint.currency, "who")} її можна перевести в ${curTxt(lang, curHint.currency, "acc")}.`)
+                      : t3(lang,
+                        `Oferta e în ${offerCur}, pentru ${curTxt(lang, curHint.currency, "who")}.`,
+                        `This offer is in ${offerCur}, for ${curTxt(lang, curHint.currency, "who")}.`,
+                        `Оферта в ${offerCur} для ${curTxt(lang, curHint.currency, "who")}.`,
+                        `Пропозиція в ${offerCur} для ${curTxt(lang, curHint.currency, "who")}.`)}
+                </div>
+                {curHint.kind !== "switched" && (
+                  <button type="button" className="btn ghost sm" style={{ marginTop: 8 }} onClick={() => changeOfferCurrency(curHint.currency)}>
+                    {t3(lang, `Treci pe ${curHint.currency}`, `Switch to ${curHint.currency}`, `Перевести в ${curHint.currency}`, `Перевести в ${curHint.currency}`)}
+                  </button>
+                )}
+              </div>
+            )}
             <div className="field"><label>{tr("next_followup")}</label>
               <input className="input" type="date" value={p.nextFollowUp || ""}
                 onChange={e => update({ nextFollowUp: e.target.value })} /></div>
@@ -444,13 +987,32 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <h3>{tr("system")}</h3>
             <div className="field">
               <label>{tr("system_size")}<output>{p.kw.toFixed(1)} kW</output></label>
-              <input type="range" min={KW_MIN} max={KW_MAX} step="0.5" value={p.kw} style={{ "--fill": kwFill + "%" }}
-                aria-valuemin={KW_MIN} aria-valuemax={KW_MAX} aria-valuenow={p.kw}
-                onChange={e => update({ kw: +e.target.value })} />
+              <div className="slider-row">
+                <input type="range" min={KW_MIN} max={KW_MAX} step="0.5" value={p.kw} style={{ "--fill": kwFill + "%" }}
+                  aria-valuemin={KW_MIN} aria-valuemax={KW_MAX} aria-valuenow={p.kw}
+                  onChange={e => update({ kw: +e.target.value })} />
+                {/* A drag is imprecise once the range spans 2-500 kW — this
+                    lets an exact figure (from a real design, a client ask) be
+                    typed directly instead of hunted for on the slider. */}
+                <input type="number" className="slider-num" inputMode="decimal" step="0.1"
+                  aria-label={tr("system_size")} value={p.kw}
+                  onChange={e => update({ kw: +e.target.value || KW_MIN })} />
+              </div>
             </div>
-            <div className="field"><label>{tr("elec_price")}</label>
-              <input className="input" type="number" step="0.01" value={p.price}
-                onChange={e => update({ price: +e.target.value || 0.21 })} /></div>
+            {/* Typed in the offer's currency (lei, hryvnia or euro); stored in EUR. */}
+            <div className="field"><label>{fmt.local ? tr("elec_price_local", { u: fmt.unit }) : tr("elec_price")}</label>
+              {fmt.local
+                ? <LocalMoneyInput eur={p.price} fmt={fmt} onEur={(v) => update({ price: v })} />
+                : <input className="input" type="number" step="0.01" value={p.price}
+                    onChange={e => update({ price: +e.target.value || 0.21 })} />}</div>
+            {/* Only Moldova has this plan (Premier Energy/RED Nord, ANRE-
+                approved) — real self-consumption is ~entirely daytime, so a
+                differentiated plan makes solar worth more than the flat
+                price above implies. Defaults off: every existing/new project
+                keeps computing against the flat price unless explicitly
+                switched. */}
+            {p.market === "MD" && check(p.tariffMode === "differentiated", tr("md_tariff_diff"), tr("md_tariff_diff_sub"),
+              v => update({ tariffMode: v ? "differentiated" : "flat" }))}
             {!p.useMonthly && (
               <div className="field"><label>{tr("annual_cons")}</label>
                 <input className="input" type="number" step="100" value={p.cons}
@@ -479,21 +1041,23 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                   ))}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8, textAlign: "right" }}>
-                  {tr("mo_total_yr", { v: (p.consMonthly || []).reduce((a, b) => a + (+b || 0), 0).toLocaleString() })}
+                  {tr("mo_total_yr", { v: num((p.consMonthly || []).reduce((a, b) => a + (+b || 0), 0)) })}
                 </div>
               </div>
             )}
             {/* AI energy-bill extractor — snap the client's bill, review, apply */}
             <input ref={billInput} type="file" accept="image/*,application/pdf" hidden onChange={handleBill} />
-            <button type="button" className="btn ghost" style={{ width: "100%", marginTop: 8 }}
-              onClick={() => billInput.current && billInput.current.click()} disabled={billBusy}>
-              {billBusy ? tr("bill_reading") : tr("bill_upload")}
+            <button type="button" className="qb-tool" style={{ marginTop: 10 }}
+              onClick={() => billInput.current && billInput.current.click()} disabled={billBusy} aria-busy={billBusy}>
+              <span className="qb-tool-ic"><Qi d="upload" size={17} /></span>
+              <span className="qb-tool-tx"><b>{billBusy ? tr("bill_reading") : tr("bill_upload")}</b><small>{tr("qb_tool_bill_sub")}</small></span>
+              <Qi d="chev" size={15} />
             </button>
             {billErr && <div style={{ fontSize: 12.5, color: "var(--red)", marginTop: 6 }}>{billErr}</div>}
             {billRes && (
               <div className="pvgis-data" style={{ marginTop: 8 }}>
                 <div style={{ fontWeight: 700, marginBottom: 4 }}>{tr("bill_found")}</div>
-                <div>{tr("annual_cons")}: <span className="pvg-k">{billRes.annualKwh ? Math.round(billRes.annualKwh).toLocaleString() : "—"}</span> kWh</div>
+                <div>{tr("annual_cons")}: <span className="pvg-k">{billRes.annualKwh ? num(billRes.annualKwh) : "—"}</span> kWh</div>
                 {billRes.meterNumber && <div>{tr("bill_meter")}: {billRes.meterNumber}</div>}
                 {billRes.supplier && <div>{tr("bill_supplier")}: {billRes.supplier}</div>}
                 {billRes.subsidy && <div>{tr("bill_subsidy")}: {billRes.subsidy}</div>}
@@ -504,7 +1068,23 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 </div>
               </div>
             )}
-            {check(p.batt, tr("battery_label"), tr("battery_sub"), v => update({ batt: v }))}
+            {/* System type as a real, first-class choice — grid-tied and
+                hybrid are different products (different pitch: bill savings
+                vs. bill savings + backup resilience), not one checkbox among
+                many sizing inputs. Still just p.batt underneath, so the
+                capacity input below and the rest of the app (engine, PDF,
+                design checks) are unchanged. */}
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>{tr("sys_type_label")}</label>
+              <div className="seg2">
+                <button type="button" className={!p.batt ? "on" : ""} onClick={() => update({ batt: false })}>
+                  {tr("sys_type_grid")}
+                </button>
+                <button type="button" className={p.batt ? "on" : ""} onClick={() => update({ batt: true })}>
+                  {tr("sys_type_hybrid")}
+                </button>
+              </div>
+            </div>
             {p.batt && (() => {
               const battCost = (Number(p.battKwh) || 0) * (Number(E.batteryCostPerKwh) || 500);
               return (
@@ -513,15 +1093,11 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                   <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                     <input className="input" type="number" min="0" step="0.5" style={{ width: 120 }}
                       value={p.battKwh} onChange={e => update({ battKwh: +e.target.value || 0 })} />
-                    <span style={{ color: "var(--muted)", fontSize: 13 }}>kWh · {fmt(battCost)}</span>
+                    <span style={{ color: "var(--muted)", fontSize: 13 }}>kWh, {fmt(battCost)}</span>
                   </div>
                 </div>
               );
             })()}
-            {subKey &&
-              check(p.afmSubsidy, subLabel,
-                subAmountEur > 0 ? tr("afm_sub", { x: fmt(subAmountEur) }) : tr("afm_sub_unset"),
-                v => update({ afmSubsidy: v }))}
           </section>
 
           <section className="card">
@@ -547,6 +1123,34 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             )}
           </section>
 
+          {/* RBAC (lib/rbac.js): the real backstop is the enforce_project_rbac
+              DB trigger (add-rbac.sql) — this is just the UX signal, so a
+              Sales-titled member on a workspace that's turned RBAC on isn't
+              left guessing why their BOM edit didn't stick. Soft-disabled
+              rather than unmounted: still visible so they can read the
+              current config, just not interactive. */}
+          {canEditTechnical ? (
+            <BomCard
+              lang={lang}
+              bom={p.bom}
+              onChange={(bom) => update({ bom })}
+              catalog={catalog}
+              kw={p.kw}
+              battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+              quotePrice={q.e.grossCost}
+              money={fmt}
+            />
+          ) : (
+            <div style={{ position: "relative" }}>
+              <div style={{ position: "absolute", inset: 0, zIndex: 1, cursor: "not-allowed" }} title={tr("ed_readonly_bom")} />
+              <div style={{ opacity: .55, pointerEvents: "none" }}>
+                <BomCard lang={lang} bom={p.bom} onChange={() => {}} catalog={catalog} kw={p.kw}
+                  battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} quotePrice={q.e.grossCost} money={fmt} />
+              </div>
+              <div className="set-note" style={{ marginTop: -6 }}>{tr("ed_readonly_bom")}</div>
+            </div>
+          )}
+
         </div>
 
         {/* right: results */}
@@ -555,16 +1159,17 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <h3>{tr("sys_investment")}</h3>
             <div className="cost-line">
               <div className="k"><b>{fmt(q.e.cost)}</b>
-                <span>{tr("total_invest")}{p.afmSubsidy && <span className="mini-badge">{tr("with_subsidy")}</span>}</span></div>
-              <div className="k"><b>{Math.round(q.e.prod0).toLocaleString()} kWh</b>
+                <span>{tr("total_invest")}</span></div>
+              <div className="k"><b>{num(q.e.prod0)} kWh</b>
                 <span>{tr("prod_year")}{p.yieldOverride ? " " + tr("tag_pvgis") : " " + tr("tag_default")}</span></div>
               <div className="k"><b>{fmt(q.e.year1)}</b><span>{tr("savings_y1")}</span></div>
             </div>
             {/* Cost per watt is how installers sanity-check a price against the
-                market in one glance — €/W here, not the demo's lei/W, because
-                this installer-side view is EUR throughout (see fmt above). */}
+                market in one glance. In the offer's currency, like every other
+                figure on this screen (see fmt above): €/W for a euro offer,
+                lei/W or грн/W otherwise. */}
             {costPerW > 0 && (
-              <div className="cost-spec">{tr("cost_per_w")}: <b>{costPerW.toFixed(2)} €/W</b></div>
+              <div className="cost-spec">{tr("cost_per_w")}: <b>{perW(costPerW)}</b></div>
             )}
             {/* Ring + legend side by side. Previously a spacer shoved the ring to
                 the far right of the number row, leaving a dead gap across the
@@ -635,14 +1240,108 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               ))}
             </div>
             <div style={{ marginTop: 14 }}><Chart q={q} lang={lang} /></div>
+
+            {/* NPV / IRR / LCOE — what a commercial client or a lender asks for
+                once payback alone stops being the whole question. */}
+            <div className="fin-metrics">
+              <div className="fm"><b>{fmt(fin.npv)}</b><span>{tr("m_npv")} @ {disc.toFixed(0)}%</span></div>
+              <div className="fm"><b>{fin.irr == null ? "—" : (fin.irr * 100).toFixed(1) + "%"}</b><span>{tr("m_irr")}</span></div>
+              <div className="fm"><b>{eurKwh(fin.lcoe)}</b>
+                <span>{tr("m_lcoe")}, {tr("m_vs_price")} {eurKwh(Number(p.price) || 0)}</span></div>
+            </div>
+            <label className="disc-row">
+              {tr("m_disc")}<output>{disc.toFixed(1)}%</output>
+              <input type="range" min="3" max="12" step="0.5" value={disc}
+                style={{ "--fill": ((disc - 3) / 9) * 100 + "%" }}
+                onChange={e => setDisc(+e.target.value)} />
+            </label>
           </section>
+
+          {/* Whether the thing is buildable, before whether it's profitable —
+              run against the equipment actually picked in the bill of materials. */}
+          <DesignChecks
+            lang={lang}
+            bom={p.bom}
+            kw={p.kw}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            consKwh={consEff}
+            market={p.market}
+          />
+
+          <StructuralLoads lang={lang} roofPitchDeg={p.siteDesign?.planes?.[0]?.tiltDeg} />
+
+          <BosEstimate lang={lang} bom={p.bom} kw={p.kw}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} consKwh={consEff} phases={undefined} market={p.market}
+            rows={siteRows} />
+
+          <PeakShaving lang={lang} lat={p.lat} lon={p.lon} kw={p.kw} cons={consEff}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} market={p.market}
+            roofPitchDeg={p.siteDesign?.planes?.[0]?.tiltDeg} roofAzimuthDeg={p.siteDesign?.planes?.[0]?.azimuthDeg} />
+
+          {/* Compare every inverter that could serve this array, not just the
+              one in the BOM — applying a row swaps the BOM's inverter line. */}
+          <DesignSuggestions
+            lang={lang}
+            bom={p.bom}
+            kw={p.kw}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            market={p.market}
+            onApply={applyInverterChoice}
+          />
+
+          {/* Battery sizing and the surplus price: the two questions an offer in
+              Moldova actually turns on. Both computed by the engine for THIS
+              client — the same panels Studio shows, not a second implementation. */}
+          <BatterySizingPanel
+            lang={lang}
+            base={sweepBase}
+            E={E}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            onApply={(kwh) => update({ batt: kwh > 0, battKwh: kwh })}
+            money={fmt}
+            spread={isMD ? buyback.spread : null}
+            netMetering={mkt.oneToOne}
+          />
+
+          {isUA && (
+            <UaPanel
+              lang={lang}
+              kw={Number(p.kw) || 0}
+              battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+              plan={p.uaPlan}
+              onPlan={(uaPlan) => update({ uaPlan })}
+              onApplyBattery={(kwh) => update({ batt: true, battKwh: kwh })}
+              costEur={q.e.cost}
+              fxUah={Number(E?.fx?.UAH) || FX.UAH}
+              fitUah={Number(E?.uaFitUah) || 6.1331}
+              afterUah={Number(E?.uaFeedAfterUah) || 2.5}
+              money={fmt}
+            />
+          )}
+
+          {isMD && (
+            <SurplusPanel
+              lang={lang}
+              buyback={buyback}
+              prodKwh={q.e.prod0}
+              selfRatio={q.e.self}
+              mdlPerEur={FX.MDL}
+              money={fmt}
+              num={num}
+            />
+          )}
 
           <section className="card">
             <h3>{tr("financing")}</h3>
             <div className="fin-split">
+              {/* The repayment is typed in the offer's currency too, so it sits
+                  beside the savings it is compared with in the same unit. */}
               <div className="fin-box">
-                <div className="lbl">{tr("monthly_loan")}</div>
-                <input type="number" value={p.loan} onChange={e => update({ loan: +e.target.value || 0 })} />
+                <div className="lbl">{tr("monthly_loan")} ({fmt.local ? fmt.unit : "€"})</div>
+                {fmt.local
+                  ? <LocalMoneyInput eur={p.loan || 0} fmt={fmt} dec={0} allowZero className=""
+                      onEur={(v) => update({ loan: v })} />
+                  : <input type="number" value={p.loan} onChange={e => update({ loan: +e.target.value || 0 })} />}
               </div>
               <div className="fin-box">
                 <div className="lbl">{tr("est_savings")}</div>
@@ -654,13 +1353,44 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             </div>
           </section>
 
+          {/* What programmes may pay for part of this job (Moldova). For the
+              installer only: none of it reaches the client's offer. */}
+          {isMD && (
+            <SupportCard projectId={initial.id} lang={lang} market={p.market} costEur={q.e.grossCost}
+              batteryEur={batteryEur({ batt: p.batt, battKwh: p.battKwh, batteryCostPerKwh: E.batteryCostPerKwh })}
+              vatRatePct={vatRatePct} fx={E.fx} initialKind={initial.client_kind ?? null} />
+          )}
+
           {signed && <SignedContract signed={signed} lang={lang} />}
 
           {p.status === "won" && (
-            <InstallChecklist projectId={initial.id} initial={initial.install_progress} lang={lang} />
+            <InstallChecklist key={railProg ? JSON.stringify(railProg) : "init"} projectId={initial.id}
+              initial={railProg || initial.install_progress} lang={lang} />
           )}
+
+          {/* The grid-connection file, Moldova's or Ukraine's: from the moment
+              the offer is out (some installers apply for the approval before
+              the client signs). */}
+          {(isMD || isUA) && (p.status !== "draft" || initial.install_progress?.gridFile) && (
+            <GridFile key={p.market + (railProg?.gridFile ? JSON.stringify(railProg.gridFile) : "")} projectId={initial.id}
+              market={p.market} address={[p.address, p.title].filter(Boolean).join(", ")}
+              initial={(railProg || initial.install_progress)?.gridFile} lang={lang} />
+          )}
+
+          {/* A signed job in Moldova or Ukraine goes into a portfolio for a
+              lender (renders nothing otherwise). */}
+          <AddToPortfolio projectId={initial.id} lang={lang} status={p.status} market={p.market} />
         </div>
       </div>
+
+      {/* site designer: draw the roof on satellite imagery, full screen */}
+      {siteDesignerOpen && p.lat != null && p.lon != null && (
+        <SiteDesigner lang={lang} lat={p.lat} lon={p.lon} address={p.address} siteDesign={p.siteDesign}
+          onChange={(sd) => update({ siteDesign: sd })}
+          onApply={applySiteDesignLayout} applying={siteDesignApplying}
+          projectInputs={p} onComputeQuote={computeSiteDesignQuote} money={fmt}
+          onClose={() => setSiteDesignerOpen(false)} />
+      )}
 
       {/* proforma modal: pick a deposit, then open the document */}
       {invOpen && (
@@ -706,6 +1436,14 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         </div>
       )}
 
+      {/* The contract states the price in the offer's currency, the same
+          amount the client read on the proposal (it used to say EUR always). */}
+      {legalDocsOpen && (
+        <LegalDocsModal lang={lang} onClose={() => setLegalDocsOpen(false)} initialTab={legalTab}
+          company={{ name: companyName, ...companyLegal }}
+          project={{ id: initial.id, clientName: p.client, address: p.address, kw: p.kw, price: fmt.toLocal(q.e.cost), currency: fmt.currency, batt: p.batt, battKwh: p.battKwh, market: p.market, bom: p.bom, gridOperator: initial.install_progress?.gridFile?.operator, title: p.title }} />
+      )}
+
       {/* proposal modal */}
       {propUrl && (
         <div className="overlay" onClick={() => setPropUrl(null)}>
@@ -719,13 +1457,28 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 setCopied(true); setTimeout(() => setCopied(false), 1800);
               }}>{copied ? tr("t_copied") : tr("copy")}</button>
             </div>
-            {/* WhatsApp is how solar sells in RO/MD — pre-write the message + link */}
-            <a className="btn wapp" style={{ width: "100%", marginBottom: 10 }}
-              href={`https://wa.me/?text=${encodeURIComponent(tr("wa_message", { client: p.client || tr("your_client"), company: companyName, url: propUrl }))}`}
-              target="_blank" rel="noopener noreferrer">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.38a9.9 9.9 0 0 0 4.73 1.2h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.64-1.03-5.13-2.9-7A9.82 9.82 0 0 0 12.04 2Zm0 18.15h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.1.81.83-3.02-.2-.31a8.22 8.22 0 0 1-1.26-4.4c0-4.54 3.7-8.23 8.24-8.23 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.69 8.24-8.22 8.24Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.4-.42-.56-.43h-.48c-.16 0-.42.06-.64.31-.22.25-.84.83-.84 2.02 0 1.19.86 2.34.98 2.5.12.16 1.69 2.58 4.1 3.62.57.25 1.02.4 1.37.5.57.19 1.1.16 1.51.1.46-.07 1.47-.6 1.68-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.28Z" /></svg>
-              {tr("wa_share")}
-            </a>
+            {/* The link stays the same; this refreshes what it SHOWS from the
+                project's current state — the escape hatch for edits made after
+                the first "Generate" click, which createProposal() itself will
+                never pick up. Server refuses once the client has accepted; the
+                status check here just avoids showing a button that would fail. */}
+            {p.status !== "won" && (
+              <div className="prop-refresh-row">
+                <button className="btn sm ghost" disabled={refreshing} onClick={refreshProposal}>
+                  {refreshing ? tr("prop_refreshing") : tr("prop_refresh")}
+                </button>
+                {refreshMsg && <span className={"email-msg " + (refreshMsg.ok ? "ok" : "bad")} style={{ margin: 0 }}>{refreshMsg.text}</span>}
+              </div>
+            )}
+            {/* Where Moldovan clients actually read messages: Viber first, then
+                WhatsApp and Telegram. Each opens the app with the message and the
+                tracked link already written. */}
+            <div className="share-lbl">{tr("share_on")}</div>
+            <div className="share-row">
+              <a className="btn viber" href={`viber://forward?text=${encodeURIComponent(shareMsg)}`}>Viber</a>
+              <a className="btn wapp" href={`https://wa.me/?text=${encodeURIComponent(shareMsg)}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+              <a className="btn tg" href={`https://t.me/share/url?url=${encodeURIComponent(propUrl)}&text=${encodeURIComponent(tr("share_msg_nolink", { client: p.client || tr("your_client"), company: companyName }))}`} target="_blank" rel="noopener noreferrer">Telegram</a>
+            </div>
             {/* Email the PDF. Rendering happens server-side, so this takes a
                 couple of seconds — the button states say so rather than looking
                 dead. */}
@@ -744,14 +1497,14 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
 
             <ShareCard lang={lang} companyName={companyName} companyLogo={companyLogo}
               client={p.client || tr("your_client")}
-              systemLabel={`${p.kw.toFixed(1)} kW${p.batt ? " + " + (p.battKwh || 10) + " kWh" : ""}`}
+              systemLabel={`${nf(p.kw, 1)} kW${p.batt ? " + " + nf(p.battKwh || 10, Number.isInteger(+(p.battKwh || 10)) ? 0 : 1) + " kWh" : ""}`}
               bands={[
                 { label: tr("pessimistic"), years: yrs(q.p.payback) + " " + tr("yrs") },
                 { label: tr("expected"), years: yrs(q.e.payback) + " " + tr("yrs") },
                 { label: tr("optimistic"), years: yrs(q.o.payback) + " " + tr("yrs") },
               ]}
               savings={fmt(q.e.rows[q.e.rows.length - 1])}
-              waText={tr("wa_message", { client: p.client || tr("your_client"), company: companyName, url: propUrl })} />
+              waText={shareMsg} />
             <div className="modal-acts">
               <button className="btn ghost" onClick={() => setPropUrl(null)}>{tr("close")}</button>
               <a className="btn primary" href={propUrl} target="_blank" rel="noopener noreferrer">{tr("open_as_client")}</a>

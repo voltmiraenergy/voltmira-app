@@ -1,0 +1,205 @@
+/* app/(app)/projects/quotes.css — the Quotes list: status tiles, search and
+ * quick views, and the table (which turns into stacked cards on a phone).
+ * Shared header/cards/buttons come from app/(app)/dx.css; same `.app` prefix
+ * rule as there, because AppTheme's reset loads after this file.
+ */
+
+/* ---------------------------------------------------------------- status tiles */
+.app .q-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.app .q-tile {
+  --c: var(--ink);
+  display: flex; flex-direction: column; gap: 2px; padding: 13px 16px 12px; min-width: 0;
+  background: var(--paper-2); border: 1px solid var(--line); border-radius: 14px;
+  text-decoration: none; color: inherit; box-shadow: var(--shadow);
+  transition: border-color .16s, box-shadow .16s, transform .14s;
+}
+.app .q-tile:hover { border-color: color-mix(in srgb, var(--c) 45%, var(--line)); transform: translateY(-1px); }
+.app .q-tile.on { border-color: var(--c); box-shadow: inset 0 0 0 1px var(--c), var(--shadow); }
+.app .q-tile-lbl {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11.5px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+}
+.app .q-tile-lbl i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+.app .q-tile.on .q-tile-lbl { color: var(--c); }
+.app .q-tile b {
+  font-family: var(--dx-d); font-size: 27px; font-weight: 700; line-height: 1.15; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 3px;
+}
+.app .q-tile small { font-size: 12.5px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app .q-tile.s-draft { --c: var(--muted); }
+.app .q-tile.s-sent { --c: var(--blue); }
+.app .q-tile.s-won { --c: var(--green); }
+.app .q-tile.s-lost { --c: var(--red); }
+
+/* ---------------------------------------------------------------- search + quick views */
+.app .q-bar { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
+.app .q-views { display: flex; gap: 6px; flex-wrap: wrap; }
+.app .q-view {
+  --v: var(--muted); --vt: var(--paper);
+  display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 11px 0 10px;
+  border-radius: 99px; border: 1px solid var(--line); background: var(--paper-2);
+  font-size: 12.5px; font-weight: 600; color: var(--ink); text-decoration: none; white-space: nowrap;
+  transition: border-color .16s, background .16s, color .16s;
+}
+.app .q-view svg { color: var(--v); }
+.app .q-view span {
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--v);
+  background: var(--vt); padding: 1px 7px; border-radius: 99px;
+}
+.app .q-view:hover { border-color: color-mix(in srgb, var(--v) 50%, var(--line)); }
+.app .q-view.on { background: var(--vt); border-color: var(--v); color: var(--v); }
+.app .q-view.on span { background: var(--paper-2); }
+.app .q-view.v-hot { --v: var(--amber-ink); --vt: var(--amber-tint); }
+.app .q-view.v-unopened { --v: var(--blue); --vt: var(--blue-tint); }
+.app .q-view.v-stale { --v: var(--red); --vt: var(--red-tint); }
+.app .q-view.v-followup { --v: var(--green); --vt: var(--green-tint); }
+/* the planned line's views (lib/workflow.js) */
+.app .q-view.v-stuck, .app .q-view.v-unbilled { --v: var(--amber-ink); --vt: var(--amber-tint); }
+.app .q-view.v-unconnected { --v: var(--blue); --vt: var(--blue-tint); }
+.app .q-view.v-unmonitored { --v: var(--muted); --vt: var(--paper); }
+.app .q-view.v-ready { --v: var(--green); --vt: var(--green-tint); }
+
+/* stage filter */
+.app .q-stage { display: inline-flex; }
+.app .q-stage-sel {
+  height: 38px; padding: 0 30px 0 12px; border-radius: 99px; border: 1px solid var(--line);
+  background: var(--paper-2); color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; max-width: 240px;
+}
+.app .q-stage-sel:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------- table */
+.app .q-card { padding: 6px 6px 0; }
+.app .q-th { color: inherit; text-decoration: none; display: inline-flex; gap: 4px; align-items: center; }
+.app .q-tbl th.num, .app .q-tbl td.num { text-align: right; }
+.app .q-tbl th.num .q-th { justify-content: flex-end; }
+.app .q-tbl td { vertical-align: middle; }
+.app .q-tbl tr.hot td.c-sel { box-shadow: inset 3px 0 0 var(--amber); }
+.app .q-tbl td.c-quote { min-width: 190px; }
+.app .q-title-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.app .q-title-row .note-dot { margin-left: 0; color: var(--muted); display: inline-grid; }
+.app .q-tag {
+  display: inline-flex; align-items: center; margin-left: 7px; padding: 1px 6px; border-radius: 5px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; line-height: 1.5;
+  background: var(--paper); border: 1px solid var(--line); color: var(--muted); vertical-align: 1px;
+}
+.app .q-tag.batt { background: var(--green-tint); border-color: transparent; color: var(--green); text-transform: none; letter-spacing: 0; }
+.app .q-tbl td.c-sys .q-tag { display: flex; width: fit-content; margin: 4px 0 0; }
+.app .q-muted { font-size: 12.5px; color: var(--muted); }
+
+.app .q-eng-top { display: flex; align-items: center; gap: 8px; }
+.app .q-eng b { font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
+.app .q-eng.hot b { color: var(--amber-ink); }
+.app .q-eng .t-sub { white-space: nowrap; }
+.app .q-meter { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }
+.app .q-meter i { width: 4px; border-radius: 2px; background: var(--line); }
+.app .q-meter i:nth-child(1) { height: 6px; }
+.app .q-meter i:nth-child(2) { height: 8px; }
+.app .q-meter i:nth-child(3) { height: 10px; }
+.app .q-meter i:nth-child(4) { height: 12px; }
+.app .q-meter i:nth-child(5) { height: 14px; }
+.app .q-meter i.on { background: var(--blue); }
+.app .q-eng.hot .q-meter i.on { background: var(--amber); }
+
+/* Where the job stands and its one next step (lib/workflow.js). */
+.app .q-tbl td.c-next { min-width: 170px; max-width: 230px; }
+.app .q-wf { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.app .q-wf-stage { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.app .q-wf-bar { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px; width: 100%; max-width: 180px; }
+.app .q-wf-bar i { height: 4px; border-radius: 99px; background: var(--line); }
+.app .q-wf-bar i.done { background: var(--green); }
+.app .q-wf-bar i.current { background: var(--amber); }
+.app .q-wf-bar i.gap { background: var(--red); }
+.app .q-wf-bar i.skipped { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.app .q-wf-next {
+  font-size: 13px; font-weight: 650; color: var(--green); text-decoration: none; line-height: 1.35; margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+.app .q-wf-next:hover { text-decoration: underline; text-underline-offset: 3px; }
+.app .q-wf-none { font-size: 12.5px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+.app .q-wf-meta { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app .q-wf.stuck .q-wf-meta { color: var(--amber-ink); font-weight: 650; }
+.app .q-wf.lost .q-wf-bar { opacity: .5; }
+
+/* Owner avatar, then the row actions: quiet until the row is in play, always on for touch. */
+.app .q-act { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.app .q-owner { width: 26px; height: 26px; font-size: 10.5px; flex: none; cursor: default; }
+.app .q-tbl .row-acts { opacity: .4; transition: opacity .16s; }
+.app .q-tbl tr:hover .row-acts, .app .q-tbl tr:focus-within .row-acts { opacity: 1; }
+
+.app .q-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: 10px 12px; border-top: 1px solid var(--line);
+}
+.app .q-count { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app .q-foot .pager { border-top: none; padding: 0; font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- responsive */
+/* The page caps at ~1100px, so the table has the same room on every desktop:
+   tight cells and row icons at every width, and "deschisă acum 20 de zile" on
+   two lines. Looser (and only from 1440px) the table ran 50-130px wider than
+   its card and scrolled sideways, clipping the last row icon. */
+.app .q-tbl th, .app .q-tbl td { padding-left: 8px; padding-right: 8px; }
+.app .q-tbl .row-acts { gap: 2px; }
+.app .q-tbl .row-acts .btn.icon { padding: 6px; }
+.app .q-eng .t-sub { white-space: normal; max-width: 112px; }
+.app .q-tbl td.c-next { min-width: 150px; }
+@media (max-width: 1366px) {
+  .app .q-tbl .q-owner { display: none; }
+}
+@media (max-width: 1080px) {
+  .app .q-tiles { grid-template-columns: repeat(5, minmax(120px, 1fr)); overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .app .q-tiles::-webkit-scrollbar { display: none; }
+}
+/* Each row becomes a card below this: a table this wide can't fit beside the
+   sidebar on a tablet or a small laptop (1280px included) without scrolling
+   sideways. */
+@media (max-width: 1365px) {
+  /* who and how much on top, the rest beneath */
+  .app .q-card { padding: 2px 14px 0; }
+  .app .q-tbl thead { display: none; }
+  .app .q-tbl, .app .q-tbl tbody { display: block; }
+  .app .q-tbl tr {
+    display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 9px;
+    grid-template-areas: "sel quote val" ". sys pb" ". st op" ". next next" ". act act";
+    padding: 14px 0; border-bottom: 1px solid var(--line);
+  }
+  .app .q-tbl tbody tr:last-child { border-bottom: none; }
+  .app .q-tbl tbody tr:hover { background: none; }
+  .app .q-tbl td { display: block; padding: 0; border: none; }
+  .app .q-tbl tr.hot td.c-sel { box-shadow: none; }
+  .app .q-tbl .c-sel { grid-area: sel; padding-top: 9px; }
+  .app .q-tbl .c-quote { grid-area: quote; min-width: 0; }
+  .app .q-tbl .c-val { grid-area: val; font-weight: 700; padding-top: 8px; }
+  .app .q-tbl .c-sys { grid-area: sys; color: var(--muted); }
+  .app .q-tbl .c-pb { grid-area: pb; text-align: right; color: var(--muted); }
+  .app .q-tbl .c-st { grid-area: st; }
+  /* the age sits beside the status chip here, not under it: give it room */
+  .app .q-tbl .c-st .age { margin: 0 0 0 8px; vertical-align: middle; }
+  .app .q-tbl .c-op { grid-area: op; text-align: right; }
+  .app .q-tbl .c-op .q-eng-top { justify-content: flex-end; }
+  .app .q-tbl .c-op .q-eng .t-sub { white-space: nowrap; max-width: none; }
+  .app .q-tbl .c-next { grid-area: next; max-width: none; }
+  .app .q-tbl .c-next .q-wf {
+    padding: 9px 11px; border-radius: 10px; background: var(--paper); border: 1px solid var(--line);
+  }
+  .app .q-tbl .c-next .q-wf-bar { max-width: none; }
+  .app .q-tbl .c-act { grid-area: act; }
+  .app .q-tbl .q-act { justify-content: flex-start; }
+  .app .q-tbl .row-acts { justify-content: flex-start; opacity: 1; }
+  .app .q-foot { padding: 10px 0; }
+}
+
+@media (max-width: 760px) {
+  .app .q-tiles { gap: 8px; margin-right: -16px; padding-right: 16px; scroll-snap-type: x proximity; }
+  .app .q-tile { scroll-snap-align: start; padding: 11px 13px; }
+  .app .q-tile b { font-size: 23px; }
+  .app .q-bar .dx-find { max-width: none; flex-basis: 100%; }
+  .app .q-stage, .app .q-stage-sel { width: 100%; max-width: none; }
+  .app .q-views { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-right: -16px; padding-right: 16px; width: calc(100% + 16px); }
+  .app .q-views::-webkit-scrollbar { display: none; }
+}
+
+@media (pointer: coarse) {
+  .app .q-tbl .row-acts { opacity: 1; }
+  .app .q-view { height: 40px; }
+}

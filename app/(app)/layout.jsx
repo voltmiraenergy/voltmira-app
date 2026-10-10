@@ -3,15 +3,23 @@
 // via <AppTheme/>. Responsive (collapses to a bottom bar on mobile).
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Sprout, Zap, Users, Building2, ChevronRight } from "lucide-react";
 import SignOut from "./signout.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import SideNav from "./SideNav.jsx";
 import AppTheme from "./AppTheme.jsx";
+import OfflineReady from "./OfflineReady.jsx";
 import Logo from "../../lib/Logo.jsx";
+import HtmlLang from "../../lib/HtmlLang.jsx";
 import { t, normLang } from "../../lib/i18n.js";
+import { pt } from "../../lib/portfolioText.js";
+import { et } from "../../lib/energyText.js";
 import { currentUser, currentCompany } from "../../lib/session.js";
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { isDemoEmail } from "../../lib/demo.js";
+
+// One icon per plan, for the plan row under the profile card.
+const PLAN_ICON = { free: Sprout, pro: Zap, team: Users, enterprise: Building2 };
 
 // Initials for the profile avatar — first letters of the first two words, or the
 // first two characters of an email local-part. Matches the demo's initialsOf().
@@ -41,10 +49,13 @@ export default async function AppLayout({ children }) {
     { href: "/dashboard", label: t("nav_dashboard", lang) },
     { href: "/leads", label: t("nav_leads", lang) },
     { href: "/projects", label: t("nav_projects", lang) },
+    { href: "/portfolios", label: pt("nav", lang) },
+    { href: "/energy", label: et("nav", lang) },
+    { href: "/documents", label: t("nav_documents", lang) },
     { href: "/activity", label: t("nav_activity", lang) },
+    { href: "/studio", label: t("nav_studio", lang) },
     { href: "/catalog", label: t("nav_catalog", lang) },
     { href: "/team", label: t("nav_team", lang) },
-    { href: "/refer", label: t("nav_refer", lang) },
     { href: "/settings", label: t("nav_settings", lang) },
     { href: "/guide", label: t("nav_guide", lang) },
   ];
@@ -52,12 +63,14 @@ export default async function AppLayout({ children }) {
   return (
     <div className="app">
       <AppTheme />
+      <HtmlLang lang={lang} />
       {/* Persist the workspace language so the client error boundary (which can't
-          read the server-side company lang) can localize itself. */}
-      <script dangerouslySetInnerHTML={{ __html: `try{localStorage.setItem('voltmira_lang',${JSON.stringify(lang)})}catch(e){}` }} />
-      <a className="skip-link" href="#main">{lang === "ro" ? "Sari la conținut" : lang === "ru" ? "К содержимому" : "Skip to content"}</a>
+          read the server-side company lang) can localize itself, and as a cookie
+          so /login greets a signed-out user in the same language. */}
+      <script dangerouslySetInnerHTML={{ __html: `try{localStorage.setItem('voltmira_lang',${JSON.stringify(lang)})}catch(e){}document.cookie='voltmira_lang='+${JSON.stringify(lang)}+'; path=/; max-age=31536000; samesite=lax'` }} />
+      <a className="skip-link" href="#main">{lang === "ro" ? "Sari la conținut" : lang === "ru" ? "К содержимому" : lang === "uk" ? "До вмісту" : "Skip to content"}</a>
       <aside className="sidebar">
-        <div className="logo"><Logo dark size={26} /></div>
+        <Link className="logo" href="/dashboard" aria-label="VoltMira"><Logo size={32} /></Link>
         <SideNav items={items} moreLabel={t("nav_more", lang)}
           sheetFooter={
             <>
@@ -72,13 +85,31 @@ export default async function AppLayout({ children }) {
             </>
           } />
         <div className="side-foot">
-          <Link className="profile" href="/profile" style={{ textDecoration: "none", color: "inherit" }} title={t("pf_title", lang)}>
-            {avatar
-              ? <img className="avatar" src={avatar} alt="" style={{ objectFit: "cover", background: "var(--paper-2)" }} />
-              : <div className="avatar">{initialsOf(who)}</div>}
-            <div className="who"><b>{who}</b><span>{co?.name}</span></div>
-          </Link>
-          <div className="side-plan">{(co?.plan || "free") + " " + t("plan_suffix", lang)}</div>
+          <div className="side-card">
+            <Link className="profile" href="/profile" style={{ textDecoration: "none", color: "inherit" }} title={t("pf_title", lang)}>
+              {avatar
+                ? <img className="avatar" src={avatar} alt="" style={{ objectFit: "cover", background: "var(--paper-2)" }} />
+                : <div className="avatar">{initialsOf(who)}</div>}
+              <div className="who"><b>{who}</b><span>{co?.name}</span></div>
+            </Link>
+            {/* The plan, as a row of its own: "Plan Team", "План Team" (the plan's brand
+                name inside a phrase in the workspace language), and where it leads:
+                Settings > Plan, to compare on the free plan, to manage on a paid one. */}
+            {(() => {
+              const free = !co?.plan || co.plan === "free";
+              const PlanIcon = PLAN_ICON[free ? "free" : co.plan] || Zap;
+              return (
+                <Link className={"side-plan" + (free ? " is-free" : "")} href="/settings?tab=plan">
+                  <i className="sp-ico"><PlanIcon size={15} strokeWidth={2} aria-hidden="true" /></i>
+                  <span className="sp-tx">
+                    <b>{free ? t("side_plan_free", lang) : t("side_plan", lang, { plan: co.plan.charAt(0).toUpperCase() + co.plan.slice(1) })}</b>
+                    <small>{t(free ? "side_plan_compare" : "side_plan_manage", lang)}</small>
+                  </span>
+                  <ChevronRight className="sp-go" size={15} strokeWidth={2} aria-hidden="true" />
+                </Link>
+              );
+            })()}
+          </div>
           <ThemeToggle lang={lang} />
           <SignOut lang={lang} />
         </div>
@@ -86,6 +117,9 @@ export default async function AppLayout({ children }) {
       <main className="main" id="main">
         {/* Demo tenants are real workspaces (see lib/demoSeed.js), so without this
             strip there is nothing telling a visitor the data is invented. */}
+        {/* Offline mode: keeps opened pages and recent quotes for places
+            with no signal, and says so when there is none. */}
+        <OfflineReady lang={lang} demo={isDemoEmail(user.email)} />
         {isDemoEmail(user.email) && (
           <div className="demo-bar">
             <span className="demo-badge">{t("demo_badge", lang)}</span>

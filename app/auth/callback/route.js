@@ -23,7 +23,7 @@ export async function GET(req) {
   }
 
   if (code) {
-    const sb = supabaseServer();
+    const sb = await supabaseServer();
     const { error } = await sb.auth.exchangeCodeForSession(code);
     if (error) {
       console.error("auth callback exchange failed:", error.message);

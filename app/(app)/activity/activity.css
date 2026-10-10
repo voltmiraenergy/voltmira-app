@@ -1,0 +1,98 @@
+/* app/(app)/activity/activity.css — the Activity log, on the shared workspace
+   look (dx.css). Every selector starts with .app for the reason dx.css gives. */
+
+.app .ax .dx-head-tools { flex-wrap: nowrap; }
+.app .ax-search { flex: 0 1 300px; max-width: 300px; }
+.app .ax-tabs a { text-decoration: none; }
+.app .ax-who-sel {
+  height: 40px; padding: 0 34px 0 12px; border-radius: 11px; border: 1px solid var(--line);
+  background-color: var(--paper-2); color: var(--ink); font-size: 13.5px; font-weight: 600;
+  min-width: 150px; max-width: 220px;
+}
+.app .ax-who-sel:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 16%, transparent); }
+
+.app .ax-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+.app .ax-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.app .ax-tabs { align-self: flex-start; max-width: 100%; margin-bottom: 0; }
+.app .ax-side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 16px; min-width: 0; }
+
+/* ---- one day */
+.app .ax-day { display: flex; flex-direction: column; gap: 8px; }
+.app .ax-day-h {
+  display: flex; align-items: center; gap: 8px; padding: 0 4px;
+  font-size: 12px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+}
+.app .ax-day-h span {
+  font-size: 11px; letter-spacing: 0; font-variant-numeric: tabular-nums; padding: 1px 7px; border-radius: 99px;
+  background: var(--paper-2); border: 1px solid var(--line);
+}
+.app .ax-list { list-style: none; padding: 4px; }
+.app .ax-row + .ax-row { border-top: 1px solid var(--line); }
+.app .ax-in {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr) auto 16px; align-items: center; gap: 12px;
+  padding: 11px 12px; border-radius: 12px; color: inherit; text-decoration: none; transition: background .15s;
+}
+.app a.ax-in:hover { background: var(--dx-hover); }
+.app a.ax-in:hover .ax-go { color: var(--green); transform: translateX(2px); }
+.app .ax-ic { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; }
+.app .c-blue { color: var(--blue); background: color-mix(in srgb, var(--blue) 13%, transparent); }
+.app .c-amber { color: var(--amber-ink); background: color-mix(in srgb, var(--amber) 16%, transparent); }
+.app .c-green { color: var(--green); background: var(--green-tint); }
+.app .c-muted { color: var(--muted); background: var(--paper); border: 1px solid var(--line); }
+.app .ax-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.app .ax-text { font-size: 14px; line-height: 1.4; color: var(--ink); overflow-wrap: anywhere; }
+.app .ax-text b { font-weight: 650; }
+.app .ax-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.app .ax-who { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--dx-soft); }
+.app .ax-who i {
+  font-style: normal; width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center;
+  font-size: 9px; font-weight: 700; background: var(--green-tint); color: var(--green);
+}
+.app .ax-who.auto { font-weight: 500; color: var(--muted); }
+.app .ax-kind::before { content: ""; display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: currentColor; margin-right: 10px; vertical-align: middle; opacity: .6; }
+.app .ax-time { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app .ax-go { color: var(--muted); transition: transform .15s, color .15s; }
+/* settings changes are the rows a team most often needs to find again */
+.app .ax-row.is-sys .ax-text { color: var(--ink); }
+
+.app .ax-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 0; }
+.app .ax-range { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app .dx-btn.is-off { opacity: .45; pointer-events: none; }
+
+/* ---- side column */
+.app .ax-people, .app .ax-kinds { list-style: none; display: flex; flex-direction: column; gap: 2px; margin: 0 -8px; }
+.app .ax-people a, .app .ax-kinds a {
+  display: grid; align-items: center; gap: 10px; padding: 8px; border-radius: 10px;
+  color: inherit; text-decoration: none; transition: background .15s;
+}
+.app .ax-people a { grid-template-columns: 30px minmax(0, 1fr) auto; }
+.app .ax-people a:hover, .app .ax-kinds a:hover { background: var(--dx-hover); }
+.app .ax-people a.on, .app .ax-kinds a.on { background: var(--green-tint); }
+.app .ax-people i {
+  font-style: normal; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 11px; font-weight: 700; background: var(--green-tint); color: var(--green);
+}
+.app .ax-people a.on i { background: var(--green); color: var(--dx-on-green); }
+.app .ax-people span { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .ax-people b, .app .ax-kinds b { font-family: var(--dx-d); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.app .ax-kinds a { grid-template-columns: 92px minmax(0, 1fr) 34px; }
+.app .ax-kinds-l { font-size: 13px; font-weight: 600; color: var(--dx-soft); }
+.app .ax-kinds-bar { height: 8px; border-radius: 99px; background: var(--paper); border: 1px solid var(--line); overflow: hidden; }
+.app .ax-kinds-bar i { display: block; height: 100%; border-radius: 99px; min-width: 2px; border: 0; }
+.app .ax-kinds-bar i.c-blue { background: var(--blue); }
+.app .ax-kinds-bar i.c-amber { background: var(--amber); }
+.app .ax-kinds-bar i.c-green { background: var(--green); }
+.app .ax-kinds-bar i.c-muted { background: var(--muted); opacity: .5; }
+.app .ax-kinds b { text-align: right; }
+
+@media (max-width: 1080px) {
+  .app .ax-layout { grid-template-columns: minmax(0, 1fr); }
+  .app .ax-side { position: static; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (max-width: 768px) {
+  .app .dx-head-tools .ax-who-sel { flex: 0 1 auto; min-width: 0; max-width: 42%; }
+  .app .ax-side { grid-template-columns: minmax(0, 1fr); }
+  .app .ax-in { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; padding: 11px 8px; }
+  .app .ax-go { display: none; }
+  .app .ax-ic { width: 34px; height: 34px; }
+}
