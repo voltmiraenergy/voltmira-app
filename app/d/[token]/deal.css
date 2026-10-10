@@ -3,6 +3,10 @@
 .app.dl-app { display: block; }
 .app.dl-app .main { min-height: 100vh; }
 .app .dl-view { max-width: 980px; display: flex; flex-direction: column; gap: 18px; }
+/* the credit summary is centred with auto margins, which in a flex column sizes it to its content
+   (597px on a phone) instead of the screen: give it the full width, up to its own max-width */
+.app .dl-view > * { min-width: 0; }
+.app .dl-view > .rp-wrap { width: 100%; }
 
 .app .dl-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
 .app .dl-title { display: flex; flex-direction: column; gap: 6px; min-width: 0; }

@@ -88,7 +88,11 @@ export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 
   ].map(([lat, lon]) => ({ lat, lon }));
   const v = fitView(pts, { width, height, pad: 16, maxZoom: 19, tiles: { base: SAT, ref: SAT } });
   if (!v) return null;
-  const xy = v.xy;
+  // every drawn point to a tenth of a pixel: the server and the browser compute the map
+  // projection with slightly different rounding, and unrounded figures made the plan's
+  // markup differ between the two (a React hydration warning on the plant card)
+  const xy = (lat, lon) => v.xy(lat, lon).map((n) => Math.round(n * 10) / 10);
+  const pc = (n, d) => `${Math.round((n / d) * 1e6) / 1e4}%`;
   const poly = (cs) => cs.map((c) => xy(c[0], c[1]).map((n) => n.toFixed(1)).join(",")).join(" ");
   const barM = NICE.find((m) => m / v.mpp >= 70) || NICE[NICE.length - 1];
   const barPx = barM / v.mpp;
@@ -101,7 +105,7 @@ export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 
       <div className="pf-smap gr-smap ly-plan" style={{ aspectRatio: `${width} / ${height}` }} role="img" aria-label={label}>
         {v.tiles.map((t) => (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={t.key} src={t.src} alt="" width={256} height={256} style={{ left: (t.left / width) * 100 + "%", top: (t.top / height) * 100 + "%", width: (t.size / width) * 100 + "%" }} />
+          <img key={t.key} src={t.src} alt="" width={256} height={256} style={{ left: pc(t.left, width), top: pc(t.top, height), width: pc(t.size, width) }} />
         ))}
         <svg className="gr-smap-svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
           <defs>

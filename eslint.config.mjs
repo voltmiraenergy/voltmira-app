@@ -2,6 +2,7 @@
 // Core Web Vitals). Run with `npm run lint`.
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
+import globals from "globals";
 
 export default defineConfig([
   ...nextVitals,
@@ -16,6 +17,12 @@ export default defineConfig([
       "react-hooks/refs": "warn",
       "react-hooks/immutability": "warn",
     },
+  },
+  {
+    // A name used but never defined crashes a route at runtime and nothing else
+    // catches it (a ReferenceError in /api/portfolios/[id]/pack did, 2026-10-10).
+    languageOptions: { globals: { ...globals.browser, ...globals.node, ...globals.es2024 } },
+    rules: { "no-undef": "error" },
   },
   globalIgnores([".next/**", "node_modules/**", "public/**", "scripts/**", "engine/node_modules/**"]),
 ]);

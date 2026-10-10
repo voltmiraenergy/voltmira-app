@@ -15,11 +15,12 @@ import { appTitle } from "../../../lib/pageTitle.js";
 import {
   DAY_SUPPLY, RES_SHARE, CAPACITY_JUL_2026, TARGETS_2050, OBJECTIVES, BESS_STATUS, DAY_AHEAD, BALANCING, AUCTION_2, RAA, EVO, PROGRAMS,
 } from "../../../lib/greenData.js";
-import { et, sourceLine } from "../../../lib/energyText.js";
+import { et } from "../../../lib/energyText.js";
 import { num, mwhUnit } from "../../../lib/portfolioFormat.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { LOCALE } from "../../../lib/relTime.js";
 import SupplyMix from "../../../components/energy/SupplyMix.jsx";
+import { Leaf, Zap, BatteryCharging, Globe, UtilityPole, TrendingUp, Target, ChartLine, Gavel, HandCoins, Cable } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const generateMetadata = appTitle((lang) => et("nav", lang));
@@ -28,6 +29,9 @@ const mwUnit = (lang) => (lang === "ru" || lang === "uk" ? "МВт" : "MW");
 const LEI = { en: "lei", ro: "lei", ru: "лей", uk: "лей" };
 const MILLION = { en: "million", ro: "milioane", ru: "млн", uk: "млн" };
 const BILLION = { en: "billion", ro: "miliarde", ru: "млрд", uk: "млрд" };
+// one icon family (lucide) across the app: a figure's icon in a soft square, a section's beside its title
+const KI = { size: 17, strokeWidth: 1.9, "aria-hidden": true };
+const HI = { size: 18, strokeWidth: 1.9, "aria-hidden": true };
 
 export default async function EnergyPage() {
   const co = await currentCompany();
@@ -54,7 +58,6 @@ export default async function EnergyPage() {
   const balMax = Math.max(...BALANCING.tender.map((t) => t.requestMw));
   const product = { fcr: "FCR", afrr: "aFRR", mfrr_12h: "mFRR (12 h)", mfrr_2h: "mFRR (2 h)" };
   const P = Object.fromEntries(PROGRAMS.map((p) => [p.id, p]));
-  const src = et("src", lang, { src: sourceLine(["mbw2026"], lang) });
 
   return (
     <div className="dx en">
@@ -68,15 +71,15 @@ export default async function EnergyPage() {
 
       {/* ---- the headline numbers */}
       <section className="en-kpis" aria-label={et("pg_h1", lang)}>
-        <div className="en-kpi"><span>{et("mk_k_res", lang)}</span><b>{pc(res[2026])}</b><small>{et("mk_k_res_s", lang, { a: pc(res[2024]), b: pc(res[2018]) })}</small></div>
-        <div className="en-kpi"><span>{et("mk_k_cap", lang)}</span><b>{mw(cap.statedTotalMw)}</b><small>{et("mk_k_cap_s", lang, { s: mw(cap.mw.solar), w: mw(cap.mw.wind), p: mw(cap.mw.solar_prosumers) })}</small></div>
-        <div className="en-kpi"><span>{et("mk_k_bess", lang)}</span><b>{mwh(BESS_STATUS.installedMwh)}</b><small>{et("mk_k_bess_s", lang, { need: mwh(BESS_STATUS.neededMwh) })}</small></div>
-        <div className="en-kpi"><span>{et("mk_obj_import", lang)}</span><b>{pc(OBJECTIVES.importDependencePct.from)}</b><small>{et("mk_obj_import_v", lang, { a: pc(OBJECTIVES.importDependencePct.from), y1: OBJECTIVES.importDependencePct.fromYear, b: pc(OBJECTIVES.importDependencePct.to), y2: OBJECTIVES.importDependencePct.toYear })}</small></div>
+        <div className="en-kpi"><span className="en-kpi-l"><i className="en-ico"><Leaf {...KI} /></i>{et("mk_k_res", lang)}</span><b>{pc(res[2026])}</b><small>{et("mk_k_res_s", lang, { a: pc(res[2024]), b: pc(res[2018]) })}</small></div>
+        <div className="en-kpi"><span className="en-kpi-l"><i className="en-ico"><Zap {...KI} /></i>{et("mk_k_cap", lang)}</span><b>{mw(cap.statedTotalMw)}</b><small>{et("mk_k_cap_s", lang, { s: mw(cap.mw.solar), w: mw(cap.mw.wind), p: mw(cap.mw.solar_prosumers) })}</small></div>
+        <div className="en-kpi"><span className="en-kpi-l"><i className="en-ico"><BatteryCharging {...KI} /></i>{et("mk_k_bess", lang)}</span><b>{mwh(BESS_STATUS.installedMwh)}</b><small>{et("mk_k_bess_s", lang, { need: mwh(BESS_STATUS.neededMwh) })}</small></div>
+        <div className="en-kpi"><span className="en-kpi-l"><i className="en-ico"><Globe {...KI} /></i>{et("mk_obj_import", lang)}</span><b>{pc(OBJECTIVES.importDependencePct.from)}</b><small>{et("mk_obj_import_v", lang, { a: pc(OBJECTIVES.importDependencePct.from), y1: OBJECTIVES.importDependencePct.fromYear, b: pc(OBJECTIVES.importDependencePct.to), y2: OBJECTIVES.importDependencePct.toYear })}</small></div>
       </section>
 
       {/* ---- supply */}
       <section className="dx-card" aria-labelledby="en-supply-h">
-        <header className="dx-card-head"><div><h2 id="en-supply-h">{et("sec_supply", lang)}</h2><p>{et("sec_supply_s", lang)}</p></div></header>
+        <header className="dx-card-head"><div><h2 id="en-supply-h"><UtilityPole {...HI} />{et("sec_supply", lang)}</h2><p>{et("sec_supply_s", lang)}</p></div></header>
         <SupplyMix lang={lang} />
         <p className="en-note">{et("mk_mix_note", lang)}</p>
         <p className="en-note">{et("day_split", lang, { res: pc(DAY_SUPPLY.resPct), imp: pc(DAY_SUPPLY.importPct), chp: pc(DAY_SUPPLY.chpPct) })}</p>
@@ -85,7 +88,7 @@ export default async function EnergyPage() {
       <div className="en-two">
         {/* ---- growth */}
         <section className="dx-card" aria-labelledby="en-growth-h">
-          <header className="dx-card-head"><div><h2 id="en-growth-h">{et("sec_growth", lang)}</h2><p>{et("sec_growth_s", lang)}</p></div></header>
+          <header className="dx-card-head"><div><h2 id="en-growth-h"><TrendingUp {...HI} />{et("sec_growth", lang)}</h2><p>{et("sec_growth_s", lang)}</p></div></header>
           <ol className="en-bars" aria-label={et("sec_growth", lang)}>
             {Object.entries(res).map(([y, v]) => (
               <li key={y}>
@@ -99,7 +102,7 @@ export default async function EnergyPage() {
 
         {/* ---- targets */}
         <section className="dx-card" aria-labelledby="en-targets-h">
-          <header className="dx-card-head"><div><h2 id="en-targets-h">{et("sec_targets", lang)}</h2></div></header>
+          <header className="dx-card-head"><div><h2 id="en-targets-h"><Target {...HI} />{et("sec_targets", lang)}</h2></div></header>
           <ul className="en-targets">
             {targets.map((t) => (
               <li key={t.id}>
@@ -115,7 +118,7 @@ export default async function EnergyPage() {
 
       {/* ---- prices and balancing */}
       <section className="dx-card" aria-labelledby="en-market-h">
-        <header className="dx-card-head"><div><h2 id="en-market-h">{et("sec_market", lang)}</h2></div></header>
+        <header className="dx-card-head"><div><h2 id="en-market-h"><ChartLine {...HI} />{et("sec_market", lang)}</h2></div></header>
         <div className="en-two in">
           <div>
             <h3>{et("mk_dam_h", lang)}</h3>
@@ -150,7 +153,7 @@ export default async function EnergyPage() {
       <div className="en-two">
         {/* ---- the auction */}
         <section className="dx-card" aria-labelledby="en-au-h">
-          <header className="dx-card-head"><div><h2 id="en-au-h">{et("sec_auction", lang)}</h2></div></header>
+          <header className="dx-card-head"><div><h2 id="en-au-h"><Gavel {...HI} />{et("sec_auction", lang)}</h2></div></header>
           <p className="en-big">{eurMwh(AUCTION_2.priceEurMwh)}<small>{num(AUCTION_2.priceMdlKwh, lang, 4)} {LEI[lang]}/kWh</small></p>
           <p className="en-p">{et("au_line", lang, {
             bids: AUCTION_2.bids, omw: mw(AUCTION_2.offeredMw), omwh: mwh(AUCTION_2.offeredMwh), tmw: mw(AUCTION_2.tenderedMw), tmwh: mwh(AUCTION_2.tenderedMwh),
@@ -162,7 +165,7 @@ export default async function EnergyPage() {
         {/* ---- support */}
         <section className="dx-card" aria-labelledby="en-sup-h">
           <header className="dx-card-head">
-            <div><h2 id="en-sup-h">{et("sec_support", lang)}</h2><p>{et("sec_support_s", lang)}</p></div>
+            <div><h2 id="en-sup-h"><HandCoins {...HI} />{et("sec_support", lang)}</h2><p>{et("sec_support_s", lang)}</p></div>
             <Link className="dx-link" href="/projects">{et("open_quotes", lang)}</Link>
           </header>
           <ul className="en-prog">
@@ -176,13 +179,13 @@ export default async function EnergyPage() {
 
       {/* ---- grid and permits */}
       <section className="dx-card" aria-labelledby="en-grid-h">
-        <header className="dx-card-head"><div><h2 id="en-grid-h">{et("sec_grid", lang)}</h2></div></header>
+        <header className="dx-card-head"><div><h2 id="en-grid-h"><Cable {...HI} />{et("sec_grid", lang)}</h2></div></header>
         <div className="en-three">
           <div>
             <h3>{et("ic_h", lang)}</h3>
             <ul className="en-ic">
               {OBJECTIVES.interconnections.map((ic) => (
-                <li key={ic.id}><span className={"en-ic-c c-" + ic.country}>{et(ic.country === "RO" ? "ic_ro" : "ic_ua", lang)}</span><b>{ic.ends.join(", ")}</b><small>{ic.kv} kV</small></li>
+                <li key={ic.id}><span className="en-ic-c"><i className={"en-flag f-" + ic.country} aria-hidden="true" />{et(ic.country === "RO" ? "ic_ro" : "ic_ua", lang)}</span><b>{ic.ends.join(", ")}</b><small>{ic.kv} kV</small></li>
               ))}
             </ul>
             <p className="en-note">{et("ic_note", lang)}</p>
@@ -202,7 +205,6 @@ export default async function EnergyPage() {
         </div>
       </section>
 
-      <p className="en-src">{src}. {et("pg_scope", lang)}</p>
     </div>
   );
 }

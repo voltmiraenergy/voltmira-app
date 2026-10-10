@@ -20,6 +20,11 @@ html[data-theme="dark"] .app .en {
   border-radius: var(--dx-radius); background: var(--paper-2); border: 1px solid var(--line); box-shadow: var(--shadow);
 }
 .app .en-kpi span { font-size: 12.5px; font-weight: 600; color: var(--muted); line-height: 1.35; }
+.app .en-kpi .en-kpi-l { display: flex; align-items: center; gap: 9px; margin-bottom: 4px; }
+.app .en-ico { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--green-tint); color: var(--green); }
+/* a section's icon beside its title */
+.app .en .dx-card-head h2 { display: flex; align-items: center; gap: 9px; }
+.app .en .dx-card-head h2 svg { flex: none; color: var(--green); }
 .app .en-kpi b { font-family: var(--dx-d); font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; color: var(--ink); overflow-wrap: anywhere; }
 .app .en-kpi small { font-size: 12px; color: var(--muted); line-height: 1.4; }
 
@@ -30,7 +35,6 @@ html[data-theme="dark"] .app .en {
 .app .en-note { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-top: 10px; max-width: 80ch; }
 .app .en-p { font-size: 13.5px; line-height: 1.55; color: var(--ink); margin-top: 8px; }
 .app .en-sub { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 12px 0 6px; }
-.app .en-src { font-size: 12px; color: var(--muted); line-height: 1.5; }
 
 /* ---- the supply mix */
 .app .en-chart { display: flex; flex-direction: column; gap: 10px; }
@@ -112,9 +116,12 @@ html[data-theme="dark"] .app .en {
 .app .en-ic li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); }
 .app .en-ic b { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
 .app .en-ic small { font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.app .en-ic-c { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 2px 7px; border-radius: 99px; }
-.app .en-ic-c.c-RO { background: color-mix(in srgb, var(--en-ro) 15%, transparent); color: var(--en-ro); }
-.app .en-ic-c.c-UA { background: color-mix(in srgb, var(--en-ua) 15%, transparent); color: var(--en-ua); }
+.app .en-ic li { align-items: center; }
+.app .en-ic-c { display: inline-flex; align-items: center; gap: 7px; min-width: 84px; font-size: 12px; font-weight: 600; color: var(--muted); }
+/* the two neighbours' flags, drawn small: Romania's three vertical bands, Ukraine's two horizontal */
+.app .en-flag { flex: none; width: 18px; height: 12px; border-radius: 2.5px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
+.app .en-flag.f-RO { background: linear-gradient(90deg, #002B7F 0 33.34%, #FCD116 33.34% 66.67%, #CE1126 66.67%); }
+.app .en-flag.f-UA { background: linear-gradient(180deg, #0057B7 0 50%, #FFD700 50%); }
 .app .en-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; line-height: 1.45; }
 .app .en-steps li::marker { color: var(--muted); font-weight: 700; }
 .app .en-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; line-height: 1.45; }

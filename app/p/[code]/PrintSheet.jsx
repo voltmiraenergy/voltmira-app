@@ -218,6 +218,16 @@ const CSS = `
   @page{ size:A4; margin:14mm; }
   @media print{ .print-sheet{width:auto;padding:0;margin:0} }
   @media screen{ .p-money{margin-top:28px;padding-top:18px;border-top:1px dashed #E3E1D6} }
+  /* opened on a phone (the PDF renders as print, so this never reaches the paper): a side margin,
+     the four offer figures two by two, and the side-by-side blocks stacked */
+  @media screen and (max-width:560px){
+    .print-sheet{padding:20px 16px}
+    .p-offer{grid-template-columns:1fr 1fr}
+    .p-offer > div:nth-child(3){border-left:0}
+    .p-offer > div:nth-child(n+3){border-top:1px solid #E3E1D6}
+    .p-scen,.p-buy.has-roof,.p-duo,.p-fit,.p-assump{grid-template-columns:minmax(0,1fr)}
+    .p-steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
 `;
 
 export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, acceptUrl = "", fx = null }) {
