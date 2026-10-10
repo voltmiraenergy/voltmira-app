@@ -11,6 +11,7 @@ import { renderPdf } from "../../../../../lib/renderProposalPdf.js";
 import { buildDataRoom } from "../../../../../lib/portfolioExport.js";
 import { authorizePortfolio, authCookies, reportUrl } from "../../../../../lib/portfolioRoute.js";
 import { loadPackAccess, lockedBody } from "../../../../../lib/packAccess.js";
+import { localSwitch } from "../../../../../lib/packPricing.js";
 import { currentUser } from "../../../../../lib/session.js";
 
 export const runtime = "nodejs";
@@ -23,7 +24,7 @@ export async function GET(req, props) {
   if (auth instanceof NextResponse) return auth;
   // a portfolio of sample plants stays open, like each sample plant
   const plants = auth.model.assets.filter((a) => a.kind === "plant");
-  if (plants.length && !plants.every((a) => a.plant?.sample)) {
+  if (plants.length && (localSwitch("PACK_LOCK_SAMPLES") || !plants.every((a) => a.plant?.sample))) {
     const user = await currentUser();
     const access = await loadPackAccess({ companyId: auth.d.portfolio.company_id, portfolioId: id, plant: null, email: user?.email });
     if (!access.open) return NextResponse.json(lockedBody(access), { status: 402 });

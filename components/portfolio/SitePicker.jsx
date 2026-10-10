@@ -148,11 +148,14 @@ export default function SitePicker({ id, lang = "en", start = null, others = [],
         </div>
       </div>
       <p className="pf-hint">{plt("pick_hint", lang)}</p>
-      <form className="pk-search" onSubmit={search} role="search">
+      {/* not a <form>: the picker also sits inside the guided start's form (a form in a form is
+          invalid HTML), so Enter in the box searches here and never submits the page's form */}
+      <div className="pk-search" role="search">
         <label htmlFor={`pk-q-${id}`} className="pk-vh">{plt("pick_search", lang)}</label>
-        <input id={`pk-q-${id}`} className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder={plt("pick_search", lang)} />
-        <button type="submit" className="btn sm">{plt("pick_go", lang)}</button>
-      </form>
+        <input id={`pk-q-${id}`} className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder={plt("pick_search", lang)}
+          onKeyDown={(e) => { if (e.key === "Enter") search(e); }} />
+        <button type="button" className="btn sm" onClick={search}>{plt("pick_go", lang)}</button>
+      </div>
       {findMsg && <small className="pf-warn" role="status">{findMsg}</small>}
       {hits && (
         <div className="pk-hits">

@@ -10,7 +10,7 @@ import { NextResponse } from "next/server";
 import { loadPortfolio } from "../../../../../lib/portfolioLoad.js";
 import { findPlant } from "../../../../../lib/bankPack.js";
 import { loadPackAccess, openRequest } from "../../../../../lib/packAccess.js";
-import { paywallOn, PACK_TIERS } from "../../../../../lib/packPricing.js";
+import { paywallOn, PACK_TIERS, localSwitch } from "../../../../../lib/packPricing.js";
 import { currentUser } from "../../../../../lib/session.js";
 import { supabaseAdmin } from "../../../../../lib/supabase.js";
 import { sendEmail } from "../../../../../lib/email.js";
@@ -34,7 +34,7 @@ async function scope(id, plantParam) {
   // plants; rooftop quotes and sample plants keep it free (as the route does)
   if (!plant) {
     const plants = Array.isArray(d.portfolio.assets?.[PLANTS_KEY]) ? d.portfolio.assets[PLANTS_KEY] : [];
-    if (!plants.length || plants.every((p) => p?.sample)) access = { ...access, open: true, reason: "free" };
+    if (!plants.length || (!localSwitch("PACK_LOCK_SAMPLES") && plants.every((p) => p?.sample))) access = { ...access, open: true, reason: "free" };
   }
   return { d, plant, user, access };
 }
@@ -48,6 +48,8 @@ export async function GET(req, props) {
   return NextResponse.json({
     paywall: paywallOn(), open: access.open, reason: access.reason, tier: access.tier, priceEur: access.priceEur, renewal: access.renewal,
     expiresAt: access.unlock?.expires_at || null, requestedAt: pending?.created_at || null,
+    // a local machine may try the card payment without Paddle (lib/packPricing.js localSwitch)
+    testPay: localSwitch("PACK_TEST_PAY"),
   }, { headers: { "cache-control": "no-store" } });
 }
 

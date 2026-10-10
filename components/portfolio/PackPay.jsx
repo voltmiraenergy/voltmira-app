@@ -4,7 +4,9 @@
 // payment through Paddle (lib/paddle.js openPackCheckout) or an invoice for a
 // bank transfer (app/api/portfolios/[id]/pack), and, once paid, until when the
 // pack stays open. With the gate off (lib/packPricing.js PACK_PAYWALL) it shows
-// nothing and every download works as before.
+// nothing and every download works as before. On a local machine with
+// PACK_TEST_PAY=on, "Pay by card (test)" opens a test checkout that unlocks the
+// pack as a paid card payment would (app/api/portfolios/[id]/pack/test-pay).
 // children(locked): the download buttons, told whether the pack is locked.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { bt } from "../../lib/bankText.js";
@@ -19,6 +21,7 @@ export default function PackPay({ portfolioId, plantId = null, companyId = "", l
   const [billing, setBilling] = useState("");
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  const [testing, setTesting] = useState(false);
   const poll = useRef(null);
   const url = `/api/portfolios/${portfolioId}/pack${plantId ? `?plant=${encodeURIComponent(plantId)}` : ""}`;
 
@@ -67,8 +70,24 @@ export default function PackPay({ portfolioId, plantId = null, companyId = "", l
     }
   }
 
-  async function askInvoice(e) {
-    e.preventDefault();
+  // the local test checkout: what Paddle's overlay would charge, unlocked as its webhook would
+  async function payTest() {
+    setNote(""); setBusy(true);
+    try {
+      const r = await fetch(`/api/portfolios/${portfolioId}/pack/test-pay`, {
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ plant: plantId || "" }),
+      });
+      if (!r.ok) throw new Error();
+      setTesting(false);
+      await load();
+    } catch {
+      setNote(bt("pk_err", lang));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function askInvoice() {
     setNote(""); setBusy(true);
     try {
       const r = await fetch(`/api/portfolios/${portfolioId}/pack`, {
@@ -93,23 +112,44 @@ export default function PackPay({ portfolioId, plantId = null, companyId = "", l
       {locked && (
         <div className="pk-pay">
           <p className="pl-line"><b>{bt(st.renewal ? "pk_renewal" : "pk_locked", lang, { tier: tierName, price })}</b></p>
-          {st.requestedAt ? <p className="pf-hint" role="status">{bt("pk_requested", lang, { d: day(st.requestedAt) })}</p> : (
-            <div className="pl-row">
-              {packCheckoutReady(st.tier, st.renewal) && (
+          {st.requestedAt && <p className="pf-hint" role="status">{bt("pk_requested", lang, { d: day(st.requestedAt) })}</p>}
+          {/* a card payment stays possible after an invoice was asked for */}
+          <div className="pl-row">
+            {st.testPay
+              ? <button type="button" className="btn primary sm" disabled={disabled || busy} onClick={() => setTesting(true)}>{bt("pk_test_btn", lang)}</button>
+              : packCheckoutReady(st.tier, st.renewal) && (
                 <button type="button" className="btn primary sm" disabled={disabled || busy} onClick={payCard}>{bt("pk_card", lang)}</button>
               )}
-              {!asking && <button type="button" className="btn ghost sm" disabled={disabled || busy} onClick={() => setAsking(true)}>{bt("pk_invoice", lang)}</button>}
-            </div>
-          )}
+            {!asking && !st.requestedAt && <button type="button" className="btn ghost sm" disabled={disabled || busy} onClick={() => setAsking(true)}>{bt("pk_invoice", lang)}</button>}
+          </div>
+          {/* not a <form>: the box can sit inside a page's own form */}
           {asking && !st.requestedAt && (
-            <form className="pk-inv" onSubmit={askInvoice}>
+            <div className="pk-inv">
               <label htmlFor={`pk-bill-${plantId || "room"}`}>{bt("pk_billing", lang)}</label>
               <textarea id={`pk-bill-${plantId || "room"}`} rows={3} maxLength={1000} value={billing} onChange={(e) => setBilling(e.target.value)} />
               <div className="pl-row">
-                <button type="submit" className="btn primary sm" disabled={busy}>{bt("pk_send", lang)}</button>
+                <button type="button" className="btn primary sm" disabled={busy} onClick={askInvoice}>{bt("pk_send", lang)}</button>
                 <button type="button" className="btn ghost sm" onClick={() => setAsking(false)}>{bt("pk_cancel", lang)}</button>
               </div>
-            </form>
+            </div>
+          )}
+          {testing && (
+            <div className="pk-modal" role="dialog" aria-modal="true" aria-labelledby={`pk-test-h-${plantId || "room"}`} onKeyDown={(e) => { if (e.key === "Escape") setTesting(false); }}>
+              <div className="pk-sheet">
+                <h4 id={`pk-test-h-${plantId || "room"}`}>{bt("pk_test_h", lang)}</h4>
+                <p className="pf-hint">{bt("pk_test_p", lang)}</p>
+                <dl className="pk-lines">
+                  <div><dt>{bt("pk_test_item", lang)}</dt><dd>{tierName}</dd></div>
+                  <div><dt>{bt("pk_test_card", lang)}</dt><dd className="pk-card">4242 4242 4242 4242</dd></div>
+                  <div className="pk-total"><dt>{bt("pk_test_total", lang)}</dt><dd>{price} EUR</dd></div>
+                </dl>
+                <p className="pf-hint">{bt("pk_test_vat", lang)}</p>
+                <div className="pl-row">
+                  <button type="button" className="btn primary" autoFocus disabled={busy} onClick={payTest}>{bt("pk_test_pay", lang, { price })}</button>
+                  <button type="button" className="btn ghost" disabled={busy} onClick={() => setTesting(false)}>{bt("pk_cancel", lang)}</button>
+                </div>
+              </div>
+            </div>
           )}
           {note && <p className="pf-hint" role="status">{note}</p>}
         </div>

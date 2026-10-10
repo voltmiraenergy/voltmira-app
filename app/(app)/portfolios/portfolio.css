@@ -445,6 +445,16 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 /* paying for the pack (components/portfolio/PackPay.jsx) */
 .app .pk-pay { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; border-color: rgba(232,155,45,.55); background: rgba(232,155,45,.10); }
 .app .pk-inv { display: flex; flex-direction: column; gap: 6px; }
+/* the local test checkout (PACK_TEST_PAY), shaped like Paddle's overlay */
+.app .pk-modal { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(10, 14, 12, .55); }
+.app .pk-sheet { width: min(440px, 100%); display: flex; flex-direction: column; gap: 12px; padding: 22px 22px 18px; border-radius: 14px; background: var(--pf-surface, var(--app-surface, #fff)); color: inherit; border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0, 0, 0, .35); }
+.app .pk-sheet h4 { margin: 0; font-size: 18px; }
+.app .pk-lines { margin: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.app .pk-lines > div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.app .pk-lines dt { color: var(--muted); }
+.app .pk-lines dd { margin: 0; font-weight: 600; text-align: right; }
+.app .pk-lines .pk-card { font-family: ui-monospace, Consolas, monospace; letter-spacing: .04em; white-space: nowrap; }
+.app .pk-lines .pk-total dt, .app .pk-lines .pk-total dd { color: inherit; font-weight: 800; font-size: 16px; }
 .app .pk-inv label { font-size: 13px; font-weight: 600; }
 .app .pk-inv textarea { width: 100%; max-width: 520px; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--pf-surface, #fff); color: inherit; }
 /* the guided start of a plant (app/(app)/portfolios/start) */
