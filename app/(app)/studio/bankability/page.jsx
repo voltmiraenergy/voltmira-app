@@ -9,8 +9,8 @@
 // surrounding chrome follows the app language like every other surface.
 import { useEffect, useMemo, useState } from "react";
 import {
-  useLang, makeT, PreviewHeader, MockNote, EUR, NUM, engineSettings, downloadStudioDoc,
-  useStudioClient, ClientBar, systemFor, DocReveal,
+  useLang, makeT, PreviewHeader, MockNote, engineSettings, downloadStudioDoc,
+  useStudioClient, ClientBar, systemFor, DocReveal, useFmt,
 } from "../studio-kit.jsx";
 import { simulate, SOLAR_SEASON, effectiveYield, FX } from "../_engine.js";
 import {
@@ -94,6 +94,7 @@ function csvDownload(name, rows) {
 }
 
 export default function BankabilityPreview() {
+  const { EUR, NUM } = useFmt();
   const lang = useLang();
   const t = makeT(TX, lang);
   const { client } = useStudioClient();

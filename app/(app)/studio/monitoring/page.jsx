@@ -17,8 +17,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { PREVIEW_BASE } from "../features.js";
 import {
-  useLang, tx, PreviewHeader, MockNote, NUM, EUR, useStudioJobs, useToast,
-  loadTickets, addTicket,
+  useLang, tx, PreviewHeader, MockNote, useStudioJobs, useToast,
+  loadTickets, addTicket, useFmt,
 } from "../studio-kit.jsx";
 import {
   fleetRows, localLei, localUnit, isSample, buildSampleFleet, clearJobStorage, useSunFactors, fetchSunFactors, sampleSitePoints,
@@ -354,6 +354,7 @@ function Trend({ ratios, asOf, start }) {
 }
 
 function MonthChart({ row, lang }) {
+  const { NUM } = useFmt();
   const m = MONTHS[lang] || MONTHS.en;
   // The target each month is measured against: P50, scaled by that month's
   // actual sunshine once it is known (fleetHealth's `expected`).
@@ -389,6 +390,7 @@ export default function MonitoringPage() {
 }
 
 function FleetMonitoring() {
+  const { EUR, NUM } = useFmt();
   const lang = useLang();
   const t = (o) => tx(o, lang);
   const params = useSearchParams();
@@ -741,7 +743,7 @@ const CSS = `
 .mn-sys span{font-size:11.5px;color:var(--muted)}
 .mn-r{font-weight:700}
 .mn-t-good{color:var(--green)}
-.mn-t-mid{color:#B4700F}
+.mn-t-mid{color:var(--amber-ink)}
 .mn-t-bad{color:var(--red)}
 .mn-trend{display:block}
 .mn-trend-base{stroke:var(--hair);stroke-width:1;stroke-dasharray:2 2}

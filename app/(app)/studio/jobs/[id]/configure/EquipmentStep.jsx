@@ -6,7 +6,7 @@
 // PANELS/INVERTERS/BATTERIES).
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, XCircle, ArrowUpDown, PanelsTopLeft, Zap, BatteryFull, X } from "lucide-react";
-import { tx, EUR, PANELS, INVERTERS, BATTERIES } from "../../../studio-kit.jsx";
+import { tx, PANELS, INVERTERS, BATTERIES, useFmt } from "../../../studio-kit.jsx";
 import Accordion from "./Accordion.jsx";
 
 function SortHeader({ label, active, dir, onClick, align }) {
@@ -111,6 +111,7 @@ function ComparePanel({ items, fields, onClose, onRemove, t }) {
 }
 
 export default function EquipmentStep({ job, patch, derived, lang }) {
+  const { EUR } = useFmt();
   const t = (o) => tx(o, lang);
   const noInverter = !job.inverterId;
   const noPanel = !job.panelId;

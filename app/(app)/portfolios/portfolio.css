@@ -400,6 +400,7 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 
 /* ---- large projects: the list page's card and the plants of a portfolio */
 .app .pf-plants-acts { display: flex; flex-wrap: wrap; gap: 10px; }
+.app .pf-or { margin: 18px 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .app .pf-plant-new { grid-template-columns: minmax(0, 1fr) auto; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
 .app .pl-addrow { margin-top: 10px; }
 .app .pl-sec-h { margin: 6px 0 12px; }

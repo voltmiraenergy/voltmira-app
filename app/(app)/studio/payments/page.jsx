@@ -6,9 +6,9 @@
 // the XML are derived from the engine + the client bar.
 import { useEffect, useMemo, useState } from "react";
 import {
-  useLang, tx, PreviewHeader, MockNote, NUM, downloadStudioDoc,
+  useLang, tx, PreviewHeader, MockNote, downloadStudioDoc,
   useStudioClient, useStudioJobs, ClientBar, useToast, DocReveal,
-  jobMoneySummary, setPayRecord,
+  jobMoneySummary, setPayRecord, useFmt,
 } from "../studio-kit.jsx";
 import { FX } from "../_engine.js";
 
@@ -63,6 +63,7 @@ const TX = {
 };
 
 export default function PaymentsPreview() {
+  const { NUM } = useFmt();
   const lang = useLang();
   const T = (o) => tx(o, lang);
   const { client } = useStudioClient();
@@ -192,7 +193,7 @@ export default function PaymentsPreview() {
           border-radius:99px;padding:3px 9px}
         .pmt-st.ok{background:var(--green-tint);color:var(--green)}
         .pmt-st.done{background:var(--green-tint);color:var(--green)}
-        .pmt-st.due{background:var(--amber-tint);color:#B4700F}
+        .pmt-st.due{background:var(--amber-tint);color:var(--amber-ink)}
         .pmt-st.await{background:var(--paper);border:1px solid var(--line);color:var(--muted)}
         .pmt-st.bad{background:var(--amber-tint);color:#B4472F}
         .qt-flag{border-radius:9px;padding:10px 13px;font-size:12.5px;font-weight:600}
@@ -205,7 +206,7 @@ export default function PaymentsPreview() {
         .pmt-mini{font-family:inherit;font-size:10.5px;font-weight:600;border:1px solid var(--line);background:var(--paper-2);
           color:var(--muted);border-radius:7px;padding:4px 8px;cursor:pointer;white-space:nowrap;transition:all .14s}
         .pmt-mini:hover{border-color:var(--green);color:var(--green)}
-        .pmt-mini.on{background:var(--green);border-color:var(--green);color:#fff}
+        .pmt-mini.on{background:var(--green);border-color:var(--green);color:var(--on-green)}
         .pmt-mini.del{color:var(--red);font-size:13px;line-height:1;padding:4px 9px}
         .pmt-mini.del:hover{border-color:var(--red);background:var(--red);color:#fff}
       ` }} />

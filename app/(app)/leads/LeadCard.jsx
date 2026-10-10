@@ -161,9 +161,13 @@ export default function LeadCard({ lead, lang, company = "" }) {
           </div>
 
           <div className="ld-meta">
-            <span className="lead-src" title={t("lead_source", lang)}>
-              <Svg size={13}>{SOURCE_ICON[src]}</Svg>{t(SOURCE_KEY[src], lang)}
-            </span>
+            {/* A website-form lead starts on the "website form" channel: the same two words twice in a row is
+                noise, so the read-only source badge only shows when it tells something the channel does not. */}
+            {!(src === "widget" && ch === "website") && (
+              <span className="lead-src" title={t("lead_source", lang)}>
+                <Svg size={13}>{SOURCE_ICON[src]}</Svg>{t(SOURCE_KEY[src], lang)}
+              </span>
+            )}
             <span className="lead-chan" title={t("lead_set_channel", lang)}>
               <span className="lead-chan-dot" aria-hidden="true"
                 style={{ background: CHANNEL_DOT[ch], boxShadow: `0 0 0 3px ${CHANNEL_DOT[ch]}22` }} />

@@ -217,10 +217,10 @@ export default function AddressField({
         .af-wrap{position:relative}
         .af-inputrow{position:relative;display:flex;align-items:center}
         .af-inputrow input{flex:1;padding-right:106px}
-        .af-mode{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:9.5px;font-weight:700;
+        .af-mode{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10.5px;font-weight:700;
           letter-spacing:.02em;padding:3px 8px;border-radius:99px;pointer-events:none;white-space:nowrap}
-        .af-mode.demo{background:var(--amber-tint);color:#B4700F}
-        .af-mode.live{background:var(--green-tint);color:var(--green-soft)}
+        .af-mode.demo{background:var(--amber-tint);color:var(--amber-ink)}
+        .af-mode.live{background:var(--green-tint);color:var(--green)}
         .af-drop{position:absolute;z-index:20;top:calc(100% + 4px);left:0;right:0;background:var(--paper-2);
           border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow-lg,var(--shadow));list-style:none;
           margin:0;padding:6px;display:grid;gap:2px;max-height:260px;overflow-y:auto}

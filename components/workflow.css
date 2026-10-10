@@ -4,7 +4,7 @@
  * rules above AppTheme's reset, which loads after this file. */
 
 .app .wfr, .app .wfp {
-  --wf-amber-ink: #B4700F;
+  --wf-amber-ink: #955F0B;
   --wf-soft: color-mix(in srgb, var(--ink) 78%, var(--paper-2));
 }
 html[data-theme="dark"] .app .wfr, html[data-theme="dark"] .app .wfp { --wf-amber-ink: #EBA542; }

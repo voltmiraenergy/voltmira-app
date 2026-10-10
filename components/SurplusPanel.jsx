@@ -153,7 +153,7 @@ export default function SurplusPanel({ lang, buyback, prodKwh, selfRatio, mdlPer
         .sp-m span{display:block;margin-top:2px;font-size:10.5px;color:var(--muted);line-height:1.35}
         .sp-spread{margin-top:14px;padding:12px 14px;background:var(--amber-tint);border-radius:10px;
           display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-        .sp-spread b{font-family:var(--font-d,inherit);font-size:20px;font-weight:700;color:#B4700F;
+        .sp-spread b{font-family:var(--font-d,inherit);font-size:20px;font-weight:700;color:var(--amber-ink);
           letter-spacing:-.01em;flex:none}
         .sp-spread span{flex:1;min-width:240px;font-size:12px;color:var(--ink);line-height:1.55}
         .sp-yoy{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:12px}

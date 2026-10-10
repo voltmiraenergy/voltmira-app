@@ -9,8 +9,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PREVIEW_BASE } from "../../features.js";
 import {
-  useLang, tx, EUR, FeatureIcon, ClientBar,
-  useStudioJobs, STAGES, jobProgress, jobMoneySummary, readJSON, writeJSON,
+  useLang, tx, FeatureIcon, ClientBar,
+  useStudioJobs, STAGES, jobProgress, jobMoneySummary, readJSON, writeJSON, useFmt,
 } from "../../studio-kit.jsx";
 
 const T = {
@@ -38,6 +38,7 @@ const T = {
 };
 
 export default function JobHub() {
+  const { EUR } = useFmt();
   const lang = useLang();
   const t = (o) => tx(o, lang);
   const params = useParams();
@@ -153,7 +154,7 @@ export default function JobHub() {
       <div className="pv-panel">
         <h3>{t(T.notes)}</h3>
         <textarea className="pv-input" rows={3} style={{ resize: "vertical", fontFamily: "inherit" }}
-          placeholder={t(T.notesPh)} value={notes} onChange={(e) => saveNotes(e.target.value)} />
+          aria-label={t(T.notes)} placeholder={t(T.notesPh)} value={notes} onChange={(e) => saveNotes(e.target.value)} />
       </div>
     </>
   );

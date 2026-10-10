@@ -17,8 +17,8 @@ import Link from "next/link";
 import { Cloud, CloudUpload, CloudOff, HardDrive } from "lucide-react";
 import { PREVIEW_BASE } from "./features.js";
 import {
-  useLang, tx, EUR, FeatureIcon,
-  useStudioJobs, STAGES, jobProgress, jobMoneySummary, newJobId,
+  useLang, tx, FeatureIcon,
+  useStudioJobs, STAGES, jobProgress, jobMoneySummary, newJobId, useFmt,
 } from "./studio-kit.jsx";
 import { useStudioSync } from "./studio-sync.js";
 
@@ -113,14 +113,20 @@ const TOOLS = [
 ];
 
 const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ""));
-const kEUR = (n) => (n >= 1000 ? "€" + (n / 1000).toFixed(n >= 100000 ? 0 : 1).replace(/\.0$/, "") + "k" : EUR(n));
 function initials(s) {
   const p = String(s || "").trim().split(/\s+/).filter(Boolean);
   return ((p[0]?.[0] || "") + (p[1]?.[0] || p[0]?.[1] || "")).toUpperCase() || "—";
 }
 
 export default function StudioOverview() {
+  const { EUR, NUM } = useFmt();
   const lang = useLang();
+  // "€525k" in English, "525k €" where the euro sign follows the amount
+  const kEUR = (n) => {
+    if (n < 1000) return EUR(n);
+    const v = NUM(n / 1000, n >= 100000 ? 0 : 1).replace(/[.,]0$/, "");
+    return lang === "en" ? "€" + v + "k" : v + "k €";
+  };
   const t = (o, vars) => (vars ? fill(tx(o, lang), vars) : tx(o, lang));
   const { jobs, addJob, hydrated } = useStudioJobs();
   const [filter, setFilter] = useState("all");

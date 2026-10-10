@@ -382,7 +382,7 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
             <p className="pf-hint pf-ts">{pt("list_steps", lang)}</p>
           </div>
           <div className="pf-empty-act">
-            <button type="button" className="btn" onClick={addPlant}>{plt("add_plant", lang)}</button>
+            <button type="button" className="btn primary" onClick={addPlant}>{plt("add_plant", lang)}</button>
             {quotes.length === 0 ? (
               <>
                 <p className="pf-hint">{pt("no_quotes_market", lang)}</p>

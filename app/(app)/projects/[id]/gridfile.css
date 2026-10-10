@@ -41,7 +41,7 @@
 .app .gf-steps li + li { border-top: 1px solid var(--line); }
 .app .gf-dot { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700;
   color: var(--muted); background: var(--paper); border: 1.5px solid var(--line); }
-.app .gf-steps li.done .gf-dot { background: var(--green); border-color: var(--green); color: #fff; }
+.app .gf-steps li.done .gf-dot { background: var(--green); border-color: var(--green); color: var(--on-green); }
 .app .gf-steps li.next .gf-dot { border-color: var(--amber); color: var(--amber-deep, #8A5A0F); }
 .app .gf-tx { display: flex; flex-direction: column; min-width: 0; }
 .app .gf-tx b { font-size: 14px; font-weight: 600; }
@@ -53,7 +53,7 @@
 .app .gf-undo:hover { color: var(--red); border-color: var(--red); }
 .app .gf-mark { padding: 7px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 600; border: 1px solid var(--line); background: var(--paper-2); color: var(--ink); white-space: nowrap; }
 .app .gf-mark:hover { border-color: var(--green); color: var(--green); }
-.app .gf-mark.primary { background: var(--green); border-color: var(--green); color: #fff; }
+.app .gf-mark.primary { background: var(--green); border-color: var(--green); color: var(--on-green); }
 .app .gf-mark.primary:hover { color: #fff; filter: brightness(1.06); }
 .app .gf-err { margin: 0; font-size: 12.5px; color: var(--red); }
 

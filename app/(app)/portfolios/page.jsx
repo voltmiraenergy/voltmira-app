@@ -4,6 +4,7 @@
 import "../dx.css";
 import "./portfolio.css";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { supabaseServer } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
 import { normLang } from "../../../lib/i18n.js";
@@ -61,10 +62,16 @@ export default async function PortfoliosPage(props) {
           {/* ---- large projects: a plant of its own, or a sample to explore */}
           <section className="card pf-plants-card" aria-labelledby="pf-plants-h">
             <div className="dx-card-head"><div><h2 id="pf-plants-h">{plt("card_h", lang)}</h2><p>{plt("card_p", lang)}</p></div></div>
+            {/* a developer's own plant comes first, and is the one primary action of the card: the guided
+                start asks for the site, the parts, the sale and the loan. The samples are for looking around. */}
+            <div className="pf-plants-acts">
+              <Link className="btn primary" href="/portfolios/start">{plt("st_cta", lang)}<ArrowRight size={16} strokeWidth={2.2} aria-hidden="true" /></Link>
+            </div>
+            <p className="pf-or">{plt("sample_or", lang)}</p>
             <div className="pf-plants-acts">
               <form action={createSampleProject}>
                 <input type="hidden" name="kind" value="hybrid" />
-                <SubmitButton className="btn primary">{plt("sample_hybrid", lang)}</SubmitButton>
+                <SubmitButton className="btn ghost">{plt("sample_hybrid", lang)}</SubmitButton>
               </form>
               <form action={createSampleProject}>
                 <input type="hidden" name="kind" value="rooftops" />
@@ -72,10 +79,6 @@ export default async function PortfoliosPage(props) {
               </form>
             </div>
             <p className="pf-hint">{plt("sample_wait", lang)}</p>
-            {/* a developer's own plant: the guided start asks for the site, the parts, the sale and the loan */}
-            <div className="pl-row pf-plant-new">
-              <Link className="btn" href="/portfolios/start">{plt("st_cta", lang)}</Link>
-            </div>
           </section>
 
           <section className="card pf-new">

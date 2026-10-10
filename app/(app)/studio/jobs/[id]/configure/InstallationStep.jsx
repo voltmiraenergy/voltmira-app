@@ -241,7 +241,7 @@ export default function InstallationStep({ job, derived, lang, touch = () => {} 
               {FIELD_STEPS.map((s) => (
                 <tr key={s}>
                   <td>{FLD_LABEL[s][lang] || FLD_LABEL[s].en}</td>
-                  <td className="r" style={{ width: 130 }}><b style={{ color: steps[s] ? "var(--green)" : "#B4700F" }}>{steps[s] ? tx({ ro: "efectuat", en: "done", ru: "выполнено", uk: "виконано" }, lang) : tx({ ro: "în curs", en: "pending", ru: "в процессе", uk: "у процесі" }, lang)}</b></td>
+                  <td className="r" style={{ width: 130 }}><b style={{ color: steps[s] ? "var(--green)" : "var(--amber-ink)" }}>{steps[s] ? tx({ ro: "efectuat", en: "done", ru: "выполнено", uk: "виконано" }, lang) : tx({ ro: "în curs", en: "pending", ru: "в процессе", uk: "у процесі" }, lang)}</b></td>
                 </tr>
               ))}
             </tbody>

@@ -7,9 +7,10 @@
 // installation, balance of system and margin), and a real string-voltage
 // check against the chosen inverter.
 import { AlertTriangle, XCircle, ShieldCheck } from "lucide-react";
-import { tx, EUR, NUM } from "../../../studio-kit.jsx";
+import { tx, useFmt } from "../../../studio-kit.jsx";
 
 export default function LiveEngineSidebar({ job, derived, lang }) {
+  const { EUR, NUM } = useFmt();
   const t = (o) => tx(o, lang);
   if (!derived) return null;
   const { sys, results, costEur, strings, vocExceeds, annualKwh } = derived;

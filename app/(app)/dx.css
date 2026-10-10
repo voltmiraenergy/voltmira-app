@@ -12,7 +12,7 @@
 
 .app .dx {
   --dx-d: 'Inter Tight', 'Inter', system-ui, sans-serif;
-  --amber-ink: #B4700F;
+  --amber-ink: #955F0B;
   --dx-radius: 16px;
   --dx-hover: color-mix(in srgb, var(--ink) 4.5%, transparent);
   --dx-soft: color-mix(in srgb, var(--ink) 80%, var(--paper-2));

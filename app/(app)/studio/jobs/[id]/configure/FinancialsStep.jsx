@@ -4,12 +4,13 @@
 // results.e.rows, the same series simulate() in _engine.js returns for every
 // other Studio surface, drawn instead of only feeding the payback number.
 import { Landmark, Wallet, LineChart } from "lucide-react";
-import { tx, EUR } from "../../../studio-kit.jsx";
+import { tx, useFmt } from "../../../studio-kit.jsx";
 import { amortizedMonthlyPayment } from "@voltmira/engine";
 import SegmentedControl from "./SegmentedControl.jsx";
 import Slider from "./Slider.jsx";
 
 function CashFlowChart({ rows, payback, lang }) {
+  const { EUR } = useFmt();
   const t = (o) => tx(o, lang);
   if (!rows || !rows.length) return null;
   const W = 600, H = 190, padL = 56, padR = 14, padT = 18, padB = 24;
@@ -48,6 +49,7 @@ function CashFlowChart({ rows, payback, lang }) {
 }
 
 export default function FinancialsStep({ job, patch, derived, lang }) {
+  const { EUR } = useFmt();
   const t = (o) => tx(o, lang);
   const financing = job.financing || { type: "cash", months: 60, ratePct: 9 };
   const monthly = financing.type === "credit"

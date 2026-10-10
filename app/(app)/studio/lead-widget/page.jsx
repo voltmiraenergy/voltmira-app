@@ -6,8 +6,7 @@
 // Mock leads and stats; the maths is the real @voltmira/engine.
 import { useEffect, useMemo, useState } from "react";
 import {
-  useLang, tx, PreviewHeader, MockNote, NUM,
-  CopyButton, engineSettings,
+  useLang, tx, PreviewHeader, MockNote, CopyButton, engineSettings, useFmt,
 } from "../studio-kit.jsx";
 import { quote, FX, OPTIMAL_YIELD } from "../_engine.js";
 import AddressField from "../address-field.jsx";
@@ -80,9 +79,9 @@ const SEED_LEADS = [
   { name: "Sergiu Moraru", loc: "Strășeni", kw: 10, ago: { ro: "ieri", en: "yesterday", ru: "вчера", uk: "учора" } },
 ];
 
-const MDL = (eur) => NUM(Math.round(eur * FX.MDL)) + " MDL";
-
 export default function LeadWidgetPreview() {
+  const { NUM } = useFmt();
+  const MDL = (eur) => NUM(Math.round(eur * FX.MDL)) + " MDL";
   const lang = useLang();
   const T = (o) => tx(o, lang);
   useEffect(() => { document.title = `${tx(TX.title, lang)} | VoltMira`; }, [lang]);
@@ -182,8 +181,8 @@ export default function LeadWidgetPreview() {
                 <form className="lw-cta" onSubmit={submit}>
                   <div className="lw-cta-t">{w.cta}</div>
                   <div className="lw-cta-row">
-                    <input className="pv-input" placeholder={w.name} value={name} onChange={(e) => setName(e.target.value)} />
-                    <input className="pv-input" placeholder={w.phone} value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    <input className="pv-input" aria-label={w.name} placeholder={w.name} value={name} onChange={(e) => setName(e.target.value)} />
+                    <input className="pv-input" aria-label={w.phone} placeholder={w.phone} value={phone} onChange={(e) => setPhone(e.target.value)} />
                   </div>
                   <button className="btn lw-send" type="submit">{w.send}</button>
                   {sent && <div className="lw-sent">{w.sent}</div>}

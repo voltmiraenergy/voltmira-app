@@ -19,6 +19,7 @@ const TIER_LABEL_KEY = {
 };
 
 export default function RecommendedKits({ lang, onAdded }) {
+  const numLoc = { ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
   const kits = useMemo(() => recommendedKits(), []);
   const [pending, start] = useTransition();
   const [addingId, setAddingId] = useState(null);
@@ -62,14 +63,14 @@ export default function RecommendedKits({ lang, onAdded }) {
                   <tr key={i}>
                     <td className="p-kind">{kindLabel(l.kind, lang)}</td>
                     <td>{bomLineText(l)}<span className="cat-kit-qty">× {l.qty}</span></td>
-                    <td className="cat-kit-price">€{Math.round(l.unit_price * l.qty).toLocaleString("en-IE")}</td>
+                    <td className="cat-kit-price">€{Math.round(l.unit_price * l.qty).toLocaleString(numLoc)}</td>
                   </tr>
                 ))}
               </tbody></table>
 
               <div className="cat-kit-total">
                 <span>{t("cat_kit_total", lang)}</span>
-                <b>€{Math.round(kit.total).toLocaleString("en-IE")}</b>
+                <b>€{Math.round(kit.total).toLocaleString(numLoc)}</b>
               </div>
 
               <button type="button" className={"btn " + (isAdded ? "ghost" : "primary")}

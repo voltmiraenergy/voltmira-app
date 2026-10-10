@@ -9,9 +9,9 @@
 import { useMemo, useState } from "react";
 import { Plus, Wrench, FileText, AlertTriangle, ClipboardList, ShieldCheck, BarChart3, CheckCircle2 } from "lucide-react";
 import {
-  tx, NUM, seeded, downloadStudioDoc, DocReveal, useToast,
+  tx, seeded, downloadStudioDoc, DocReveal, useToast,
   actualsKey, readJSON, writeJSON,
-  loadTickets, addTicket, toggleTicket,
+  loadTickets, addTicket, toggleTicket, useFmt,
 } from "../../../studio-kit.jsx";
 import { p50Row, useSunFactors } from "../../../fleet-data.js";
 import Accordion from "./Accordion.jsx";
@@ -19,6 +19,7 @@ import Accordion from "./Accordion.jsx";
 const MONTHS = { ro: ["ian", "feb", "mar", "apr", "mai", "iun", "iul", "aug", "sep", "oct", "nov", "dec"], en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], ru: ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"], uk: ["січ", "лют", "бер", "кві", "тра", "чер", "лип", "сер", "вер", "жов", "лис", "гру"] };
 
 export default function MonitoringStep({ job, lang, touch = () => {} }) {
+  const { NUM } = useFmt();
   const t = (o) => tx(o, lang);
   const [toast, fire] = useToast();
   const months = MONTHS[lang] || MONTHS.en;
@@ -217,7 +218,7 @@ export default function MonitoringStep({ job, lang, touch = () => {} }) {
           <div className="doc-grid">
             <div className="doc-kv"><span>{tx({ ro: "Producție reală (an curent)", en: "Actual (year to date)", ru: "Факт (с начала года)", uk: "Факт (з початку року)" }, lang)}</span><b>{NUM(data.ytdAct)} kWh</b></div>
             <div className="doc-kv"><span>{tx({ ro: "Estimare P50 (an curent)", en: "P50 estimate (YTD)", ru: "Оценка P50 (с начала года)", uk: "Оцінка P50 (з початку року)" }, lang)}</span><b>{NUM(data.ytdP50)} kWh</b></div>
-            <div className="doc-kv"><span>{tx({ ro: "Realizat din P50", en: "Delivered vs P50", ru: "Выполнено от P50", uk: "Виконано від P50" }, lang)}</span><b style={{ color: data.filled.length === 0 ? "#777" : data.pct >= 100 ? "var(--green)" : "#B4700F" }}>{data.filled.length === 0 ? "—" : data.pct + "%"}</b></div>
+            <div className="doc-kv"><span>{tx({ ro: "Realizat din P50", en: "Delivered vs P50", ru: "Выполнено от P50", uk: "Виконано від P50" }, lang)}</span><b style={{ color: data.filled.length === 0 ? "#777" : data.pct >= 100 ? "var(--green)" : "var(--amber-ink)" }}>{data.filled.length === 0 ? "—" : data.pct + "%"}</b></div>
             <div className="doc-kv"><span>{tx({ ro: "Ultima lună", en: "Last month", ru: "Последний месяц", uk: "Останній місяць" }, lang)}</span><b>{data.lastMonth ? months[data.lastMonth.i] + ": " + NUM(data.lastMonth.actual) + " kWh" : "—"}</b></div>
           </div>
 
@@ -230,7 +231,7 @@ export default function MonitoringStep({ job, lang, touch = () => {} }) {
                   <td>{months[r.i]}</td>
                   <td>{(r.p50 / 1000).toFixed(2)}</td>
                   <td>{(r.actual / 1000).toFixed(2)}</td>
-                  <td><b style={{ color: r.actual >= r.p50 ? "var(--green)" : "#B4700F" }}>{Math.round((r.actual / r.p50) * 100)}%</b></td>
+                  <td><b style={{ color: r.actual >= r.p50 ? "var(--green)" : "var(--amber-ink)" }}>{Math.round((r.actual / r.p50) * 100)}%</b></td>
                 </tr>
               ))}
             </tbody>

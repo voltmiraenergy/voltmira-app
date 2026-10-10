@@ -12,13 +12,14 @@ import { useSearchParams } from "next/navigation";
 import { AlertTriangle, MapPin, Zap, Sun } from "lucide-react";
 import { PREVIEW_BASE } from "../../../features.js";
 import {
-  useLang, tx, NUM, useStudioJobs, engineSettings, systemFor, jobCostEur, stringSizing,
+  useLang, tx, useStudioJobs, engineSettings, systemFor, jobCostEur, stringSizing, useFmt,
 } from "../../../studio-kit.jsx";
 import { quote, effectiveYield } from "../../../_engine.js";
 import LiveEngineSidebar from "./LiveEngineSidebar.jsx";
 import WizardSteps, { JobJourney } from "./WizardSteps.jsx";
 
 export default function StudioWorkspace({ jobId }) {
+  const { NUM } = useFmt();
   const lang = useLang();
   const t = (o) => tx(o, lang);
   const { jobs, updateJob, hydrated } = useStudioJobs();

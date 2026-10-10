@@ -17,10 +17,11 @@ const CSS = `
     --ink:#142A21; --ink-2:#0D1F18;
     --green:#1E6B4E; --green-soft:#2A8563; --green-tint:#E4EFE9;
     --amber:#E89B2D; --amber-soft:#F4B45C; --amber-tint:#FBF0DD;
-    --muted:#66756C; --line:#E3E1D6;
-    --red:#C4543B; --red-tint:#F7E6E1;
+    --muted:#5A695F; --line:#E3E1D6;
+    --red:#AA4430; --red-tint:#F7E6E1;
+    --amber-ink:#955F0B; --on-green:#fff; --on-amber:#142A21;
     --blue:#3D6B8E; --blue-tint:#E4EDF4;
-    --white-dim:rgba(255,255,255,.66); --white-faint:rgba(255,255,255,.4); --white-line:rgba(255,255,255,.12);
+    --white-dim:rgba(255,255,255,.66); --white-faint:rgba(255,255,255,.62); --white-line:rgba(255,255,255,.12);
     --shadow:0 1px 2px rgba(20,42,33,.05),0 4px 16px rgba(20,42,33,.06);
     --shadow-lg:0 8px 34px rgba(20,42,33,.16);
     --radius:14px; --trans:.35s ease;
@@ -35,6 +36,7 @@ const CSS = `
     --muted:#8E998F; --line:#28302A;
     --red:#E0725A; --red-tint:rgba(196,84,59,.2);
     --blue:#6FA0C4; --blue-tint:rgba(61,107,142,.22);
+    --amber-ink:#EBA542; --on-green:#07130D;
     --shadow:0 1px 2px rgba(0,0,0,.35),0 4px 16px rgba(0,0,0,.4);
     --shadow-lg:0 10px 36px rgba(0,0,0,.55);
   }
@@ -81,7 +83,7 @@ const CSS = `
   }
   .nav a svg{flex:none;opacity:.85}
   .nav a:hover{background:var(--white-line);color:#fff}
-  .nav a.active{background:var(--amber);color:var(--ink);font-weight:600}
+  .nav a.active{background:var(--amber);color:var(--on-amber);font-weight:600}
   .nav a.active svg{opacity:1}
   /* the mobile "More" bottom sheet + its trigger are hidden on desktop, where
      the full vertical nav already shows every tab */
@@ -94,7 +96,7 @@ const CSS = `
   .side-card .profile{border-radius:0;background:none}
   .avatar{
     width:36px;height:36px;border-radius:50%;flex:none;
-    background:var(--amber);color:var(--ink);
+    background:var(--amber);color:var(--on-amber);
     display:grid;place-items:center;font-family:var(--font-d);font-weight:700;font-size:13.5px;
   }
   .avatar.sm{width:30px;height:30px;font-size:12px}
@@ -109,16 +111,15 @@ const CSS = `
     color:#fff;line-height:1;user-select:none;
   }
   .av-c0{background:#2F6FB3}
-  .av-c1{background:#C9781E}
+  .av-c1{background:#A96519}
   .av-c2{background:#6B54C6}
-  .av-c3{background:#C4543B}
-  .av-c4{background:#2E8C6A}
+  .av-c3{background:#C0523A}
+  .av-c4{background:#2B8464}
   .av-c5{background:#B0417E}
   .av-c6{background:#3E7D8C}
   .av-c7{background:#8A6D2F}
   .av-c8{background:#4E6BA8}
   .av-c9{background:#A0552B}
-  html[data-theme="dark"] .av-sq{color:#F2F5F0}
 
   /* project/client row: tile + the existing title/sub stack */
   .row-id{display:flex;align-items:center;gap:11px;min-width:0}
@@ -169,9 +170,9 @@ const CSS = `
     white-space:nowrap;user-select:none;
   }
   .btn:active{transform:scale(.97)}
-  .btn.primary{background:var(--green);color:#fff;box-shadow:0 3px 12px rgba(30,107,78,.25)}
+  .btn.primary{background:var(--green);color:var(--on-green);box-shadow:0 3px 12px rgba(30,107,78,.25)}
   .btn.primary:hover{background:var(--green-soft);transform:translateY(-1px);box-shadow:0 6px 18px rgba(30,107,78,.3)}
-  .btn.amber{background:var(--amber);color:var(--ink);box-shadow:0 3px 12px rgba(232,155,45,.3)}
+  .btn.amber{background:var(--amber);color:var(--on-amber);box-shadow:0 3px 12px rgba(232,155,45,.3)}
   .btn.amber:hover{background:var(--amber-soft);transform:translateY(-1px);box-shadow:0 6px 18px rgba(232,155,45,.4)}
   .btn.ghost{background:var(--paper-2);border-color:var(--line);color:var(--ink);border-style:solid;border-width:1px}
   .btn.ghost:hover{border-color:var(--green);color:var(--green)}
@@ -219,7 +220,7 @@ const CSS = `
     padding:9px 13px;border-radius:12px;background:var(--amber-tint);
     border:1px solid color-mix(in srgb,var(--amber) 40%,transparent)}
   .sample-badge{font-family:var(--font-d);font-size:10.5px;font-weight:700;letter-spacing:.09em;
-    text-transform:uppercase;color:var(--ink);background:var(--amber);border-radius:99px;padding:3px 9px;flex:none}
+    text-transform:uppercase;color:var(--on-amber);background:var(--amber);border-radius:99px;padding:3px 9px;flex:none}
   .sample-note{font-size:13px;color:var(--ink);opacity:.85;flex:1;min-width:0;line-height:1.45}
   .sample-cta{flex:none;font-size:12.5px;font-weight:600;color:var(--ink);text-decoration:none;
     border-bottom:1.5px solid color-mix(in srgb,var(--ink) 40%,transparent);padding-bottom:1px}
@@ -261,7 +262,7 @@ const CSS = `
     padding:10px 14px;border-radius:12px;background:var(--amber-tint);
     border:1px solid color-mix(in srgb,var(--amber) 38%,transparent)}
   .demo-badge{font-family:var(--font-d);font-size:10.5px;font-weight:700;letter-spacing:.09em;
-    text-transform:uppercase;color:var(--ink);background:var(--amber);border-radius:99px;padding:3px 9px;flex:none}
+    text-transform:uppercase;color:var(--on-amber);background:var(--amber);border-radius:99px;padding:3px 9px;flex:none}
   .demo-note{font-size:13px;color:var(--ink);opacity:.85;flex:1;min-width:0;line-height:1.45}
   .demo-cta{flex:none;font-size:12.5px;font-weight:600;color:var(--ink);text-decoration:none;
     border-bottom:1.5px solid color-mix(in srgb,var(--ink) 40%,transparent);padding-bottom:1px}
@@ -282,7 +283,7 @@ const CSS = `
   .chip.won{background:var(--green-tint);color:var(--green)}
   .chip.lost{background:var(--red-tint);color:var(--red)}
   .chip.static{cursor:default}
-  .chip.hot{background:var(--amber-tint);color:#B4700F}
+  .chip.hot{background:var(--amber-tint);color:var(--amber-ink)}
 
   .field{margin-bottom:15px}
   .field:last-child{margin-bottom:0}
@@ -342,7 +343,7 @@ const CSS = `
   .seg2 button{flex:1;padding:9px 10px;border:none;border-radius:8px;background:none;color:var(--muted);
     font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
   .seg2 button:hover{color:var(--ink)}
-  .seg2 button.on{background:var(--green);color:#fff}
+  .seg2 button.on{background:var(--green);color:var(--on-green)}
 
   /* Tables */
   .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -368,10 +369,10 @@ const CSS = `
 
   /* Quote aging + engagement (pipeline intelligence) */
   .age{display:inline-block;margin-top:5px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
-  .age.warn{color:#B4700F}
+  .age.warn{color:var(--amber-ink)}
   .age.bad{color:var(--red)}
   .opens{font-family:var(--font-d);font-weight:700;font-size:14px}
-  .opens.hot{color:#B4700F}
+  .opens.hot{color:var(--amber-ink)}
   .note-dot{margin-left:6px;font-size:12px;cursor:help;vertical-align:middle}
   .tpl-item:hover{background:var(--paper)}
 
@@ -439,7 +440,7 @@ const CSS = `
   .feed li{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:13px;align-items:flex-start}
   .feed li:last-child{border-bottom:none}
   .feed .f-ic{width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center;background:var(--green-tint);color:var(--green)}
-  .feed .f-ic.amber{background:var(--amber-tint);color:#B4700F}
+  .feed .f-ic.amber{background:var(--amber-tint);color:var(--amber-ink)}
   .feed .f-ic.blue{background:var(--blue-tint);color:var(--blue)}
   .feed .f-tx{flex:1;line-height:1.45;color:var(--ink)}
   .feed .f-tx b{font-weight:600}
@@ -652,7 +653,7 @@ const CSS = `
 
   .m-av{position:relative;flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;
     background:color-mix(in srgb,var(--rc) 16%,transparent);box-shadow:0 0 0 1.5px color-mix(in srgb,var(--rc) 45%,transparent) inset}
-  .m-av-in{font-family:var(--font-d);font-weight:700;font-size:15px;color:var(--rc)}
+  .m-av-in{font-family:var(--font-d);font-weight:700;font-size:15px;color:color-mix(in srgb,var(--rc) 50%,var(--ink))}
   .m-crown{position:absolute;right:-3px;bottom:-3px;width:17px;height:17px;border-radius:50%;
     background:var(--amber);color:var(--ink);display:grid;place-items:center;
     box-shadow:0 0 0 2px var(--paper-2)}
@@ -663,7 +664,7 @@ const CSS = `
   .m-you{font-size:11px;color:var(--muted);background:var(--paper);border:1px solid var(--line);
     border-radius:99px;padding:1px 7px}
   .m-pending{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
-    border-radius:99px;padding:2px 8px;background:var(--amber-tint);color:#B4700F;white-space:nowrap}
+    border-radius:99px;padding:2px 8px;background:var(--amber-tint);color:var(--amber-ink);white-space:nowrap}
   .m-mail{font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .m-meta{display:flex;align-items:center;gap:8px;margin-top:7px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
   .m-meta i{width:3px;height:3px;border-radius:50%;background:var(--line);flex:none}
@@ -673,7 +674,7 @@ const CSS = `
   .m-bar{height:4px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px;max-width:320px}
   .m-bar span{display:block;height:100%;border-radius:99px;transition:width .35s var(--ease,ease)}
 
-  .m-role{flex:none;font-size:11px;font-weight:600;white-space:nowrap;color:var(--rc);
+  .m-role{flex:none;font-size:11px;font-weight:600;white-space:nowrap;color:color-mix(in srgb,var(--rc) 50%,var(--ink));
     background:color-mix(in srgb,var(--rc) 12%,transparent);border-radius:99px;padding:2px 9px}
   .m-acts{flex:none;display:flex;align-items:center;gap:6px;color:var(--muted)}
   /* Keep the name from wrapping the row into two lines on a narrow card. */
@@ -812,6 +813,17 @@ const CSS = `
     /* Otherwise a save/copy toast lands behind the bottom nav instead of
        above it — the one other fixed-bottom element on the page. */
     .toast{bottom:calc(var(--mnav-h) + env(safe-area-inset-bottom) + 14px)}
+  }
+
+  /* Touch targets. A thumb needs about 40px; these controls were 30-32px tall. Buttons grow; links that sit
+     inside a line of text keep their look and get a larger hit area instead (the invisible ::after). */
+  @media (max-width:760px),(pointer:coarse){
+    .app .dx-btn,.app .btn.sm,.app .btn.ghost,.app .st-nav-i,.app .pv-tab,.app .ld-tab,.app .doc-todo-act,.app .seg2 button,
+    .app .dx-tabs button,.app .dx-tabs a,.app .doc-pill,.app .ld-reach,.app .doc-who,.app .q-view,.app .dx-done{min-height:40px}
+    .app .dx-done{min-width:40px}
+    .app .row-acts .btn.icon{min-width:38px;min-height:38px}
+    .app .demo-cta,.app .sample-cta,.app .dx-move-title,.app .q-tbl .t-title,.app .q-wf-next,.app .dx-link{position:relative}
+    .app .demo-cta::after,.app .sample-cta::after,.app .dx-move-title::after,.app .q-tbl .t-title::after,.app .q-wf-next::after,.app .dx-link::after{content:"";position:absolute;inset:-10px -6px}
   }
 `;
 

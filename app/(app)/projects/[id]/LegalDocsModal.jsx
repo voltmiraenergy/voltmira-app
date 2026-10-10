@@ -150,8 +150,8 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
         {docType === "contract" && (
           <>
             <div className="ld-warn"><b>{t("ld_warn_title", lang)}</b> {t("ld_warn_body", lang)}</div>
-            <label className="ld-label">{t("ld_preview_label", lang)}</label>
-            <textarea className="ld-textarea" value={contractText} onChange={(e) => setContractText(e.target.value)} spellCheck={false} />
+            <label className="ld-label" htmlFor="ld-text">{t("ld_preview_label", lang)}</label>
+            <textarea id="ld-text" className="ld-textarea" value={contractText} onChange={(e) => setContractText(e.target.value)} spellCheck={false} />
             <div className="ld-foot">
               <button type="button" className="btn ghost" onClick={onClose}>{t("cat_det_close", lang)}</button>
               <button type="button" className="btn primary" disabled={exporting}
@@ -193,8 +193,8 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
         {docType === "commissioning" && (
           <>
             <div className="ld-warn"><b>{t("ld_warn_title", lang)}</b> {t("ld_commissioning_note", lang)}</div>
-            <label className="ld-label">{t("ld_preview_label", lang)}</label>
-            <textarea className="ld-textarea" value={commissioningText} onChange={(e) => setCommissioningText(e.target.value)} spellCheck={false} />
+            <label className="ld-label" htmlFor="ld-text">{t("ld_preview_label", lang)}</label>
+            <textarea id="ld-text" className="ld-textarea" value={commissioningText} onChange={(e) => setCommissioningText(e.target.value)} spellCheck={false} />
             <div className="ld-foot">
               <button type="button" className="btn ghost" onClick={onClose}>{t("cat_det_close", lang)}</button>
               <button type="button" className="btn primary" disabled={exporting}
@@ -245,14 +245,14 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
         .ld-op{display:flex;gap:2px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:3px;margin:0 0 12px;max-width:380px}
         .ld-tab{flex:1;min-width:120px;padding:9px;font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);
           background:none;border:none;border-radius:8px;cursor:pointer;transition:background .14s,color .14s}
-        .ld-tab.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,42,33,.12)}
-        .ld-warn{display:flex;gap:9px;font-size:12.5px;line-height:1.5;color:#7A5A12;background:var(--amber-tint,#FBF0DC);
-          border:1px solid #E8C77A;border-radius:10px;padding:11px 13px;margin-bottom:14px}
+        .ld-tab.on{background:var(--paper-2);color:var(--ink);box-shadow:0 1px 3px rgba(20,42,33,.12)}
+        .ld-warn{display:flex;gap:9px;font-size:12.5px;line-height:1.5;color:var(--amber-ink);background:var(--amber-tint,#FBF0DC);
+          border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);border-radius:10px;padding:11px 13px;margin-bottom:14px}
         .ld-label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
           color:var(--muted);margin-bottom:6px}
         .ld-textarea{width:100%;height:340px;padding:14px;border:1px solid var(--line);border-radius:10px;
           font-family:ui-monospace,Consolas,monospace;font-size:12.5px;line-height:1.55;color:var(--ink);
-          background:#fff;resize:vertical;color-scheme:light}
+          background:var(--paper-2);resize:vertical}
         .ld-rec-card{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:10px}
         .ld-rec-row{display:flex;justify-content:space-between;gap:12px;padding:10px 14px;font-size:13px;border-bottom:1px solid var(--line)}
         .ld-rec-row:last-child{border-bottom:none}

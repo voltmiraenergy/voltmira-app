@@ -30,7 +30,7 @@ export default function MyProductDetailModal({ p, lang, onClose, onEdit }) {
   const supForRows = sup && sup.warrantyVerified === false
     ? { ...sup, warrantyYears: null, warrantyNote: null } : sup;
   const rows = sup ? compareRows(sup.kind, lang) : [];
-  const fmt = (n) => "€" + Math.round(Number(n) || 0).toLocaleString("en-IE");
+  const fmt = (n) => "€" + Math.round(Number(n) || 0).toLocaleString({ ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE");
   const img = p.image_url || (sup ? productImage(sup) : placeholderImage({ kind: p.kind }));
 
   return (

@@ -15,7 +15,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { supabaseServer } from "../../../lib/supabase.js";
-import { currentCompany, currentActor } from "../../../lib/session.js";
+import { currentCompany, currentActor, currentUser } from "../../../lib/session.js";
+import { isDemoEmail } from "../../../lib/demo.js";
 import { createProject, cycleProjectStatus } from "../../../lib/actions.js";
 import { quote } from "@voltmira/engine";
 import { companyEngine } from "../../../lib/engineSettings.js";
@@ -97,6 +98,7 @@ export default async function Dashboard() {
   const sb = await supabaseServer();
   const since24h = new Date(Date.now() - 864e5).toISOString();
   const since48h = new Date(Date.now() - 2 * 864e5).toISOString();
+  const demoUser = isDemoEmail((await currentUser())?.email);
   const [co, actor, { data: projects }, { data: leads }, { data: acts }, stats, { data: events }, readingsRes,
     linkedRes, portfoliosRes, opensRes] = await Promise.all([
     currentCompany(),
@@ -330,7 +332,8 @@ export default async function Dashboard() {
 
   // Sample rows stay IN the numbers (that is what "Load sample pipeline" is
   // for); the risk is not knowing they are there, so the bar says so.
-  const hasSample = list.some((r) => r.sample) || leadList.some((l) => l.sample);
+  // (a demo workspace already says so in the bar across the top of the app: two bars said it twice)
+  const hasSample = !demoUser && (list.some((r) => r.sample) || leadList.some((l) => l.sample));
   const emptyWorkspace = list.length === 0 && leadList.length === 0;
   const recent = list.slice(0, 6);
   // Deals actively in installation: at least one step ticked, not yet live. A
@@ -363,7 +366,7 @@ export default async function Dashboard() {
         <div className="dx-hello">
           <p className="dx-date">{dateLine.charAt(0).toUpperCase() + dateLine.slice(1)}</p>
           <h1>{greet}{first ? `, ${first}` : ""}.</h1>
-          {!emptyWorkspace && <p className="dx-summary">{t("dx_summary", lang, { moves: moves.length, pipe: fmt(pipeline) })}</p>}
+          {!emptyWorkspace && <p className="dx-summary">{t("dx_summary", lang, { moves: moves.length, n: sentN, pipe: fmt(pipeline) })}</p>}
         </div>
         <div className="dx-head-tools">
           <CommandPalette

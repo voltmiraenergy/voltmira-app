@@ -6,7 +6,7 @@
 //
 // Design language is the app's own (AppTheme.jsx tokens: --paper-2, --line,
 // --green, --amber, --ink …). Preview-only classes are namespaced `.pv-`.
-import { useEffect, useState, useRef, createContext, useContext } from "react";
+import { useEffect, useMemo, useState, useRef, createContext, useContext } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { defaultEngineSettings } from "./_engine.js";
@@ -70,10 +70,28 @@ export function makeT(table, lang) {
 }
 
 /* --------------------------------------------------------------- helpers ---- */
-export const EUR = (n, dp = 0) =>
-  "€" + Number(n || 0).toLocaleString("en-IE", { maximumFractionDigits: dp, minimumFractionDigits: dp });
-export const NUM = (n, dp = 0) =>
-  Number(n || 0).toLocaleString("en-IE", { maximumFractionDigits: dp, minimumFractionDigits: dp });
+// Numbers follow the language of the page: "€3.488" in Romanian reads as three thousand euro, while the
+// English "€3,488" in a Romanian page reads as three euro and a bit. Intl does the separators and puts
+// the € where the language puts it ("3.488 €", "€3,488", "3 488 €").
+const NUM_LOCALE = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
+const fmtCache = {};
+const nf = (lang, dp) => {
+  const key = lang + "|" + dp;
+  return fmtCache[key] || (fmtCache[key] = new Intl.NumberFormat(NUM_LOCALE[lang] || "en-IE", { maximumFractionDigits: dp, minimumFractionDigits: dp }));
+};
+export const fmtNUM = (n, dp = 0, lang = "en") => nf(lang, dp).format(Number(n || 0));
+// The € is written as a sign in every language ("EUR" is what Intl gives Romanian): before the amount in
+// English, after it, with a no-break space, in Romanian, Russian and Ukrainian.
+export const fmtEUR = (n, dp = 0, lang = "en") => (lang === "en" ? "€" + fmtNUM(n, dp, lang) : fmtNUM(n, dp, lang) + " €");
+/** EUR(n, dp) and NUM(n, dp) in the language of the page the component is on. */
+export function useFmt() {
+  const lang = useLang();
+  return useMemo(() => ({
+    lang,
+    EUR: (n, dp = 0) => fmtEUR(n, dp, lang),
+    NUM: (n, dp = 0) => fmtNUM(n, dp, lang),
+  }), [lang]);
+}
 export const PCT = (n, dp = 1) => (n >= 0 ? "" : "−") + Math.abs(Number(n || 0)).toFixed(dp) + "%";
 
 // Deterministic PRNG (mulberry32), for the sample readings a user asks to load,
@@ -232,7 +250,8 @@ export function ClientBar({ lang }) {
     <div className="pv-panel cl-bar">
       <div className="cl-head">
         <h3 style={{ margin: 0 }}>{T({ en: "Client & system", ro: "Client și sistem", ru: "Клиент и система", uk: "Клієнт і система" })}</h3>
-        <select className="cl-preset" value={activeId} onChange={(e) => selectJob(e.target.value)}>
+        <select className="cl-preset" value={activeId} onChange={(e) => selectJob(e.target.value)}
+          aria-label={T({ en: "Job", ro: "Lucrare", ru: "Объект", uk: "Об’єкт" })}>
           {jobs.map((j) => <option key={j.id} value={j.id}>{j.name}</option>)}
         </select>
         <Link href={`${PREVIEW_BASE}/jobs/${activeId}`} className="btn ghost sm">
@@ -530,7 +549,7 @@ export const TOKENS_CSS = `
   font-family:var(--font-b);padding:10px 16px;border-radius:11px;border:1px solid transparent;text-decoration:none;
   white-space:nowrap;cursor:pointer;transition:transform .14s,box-shadow .18s,background .18s,border-color .18s,color .18s}
 .pv-wrap .btn:active{transform:scale(.97)}
-.pv-wrap .btn.primary{background:var(--green);color:#fff;box-shadow:0 3px 12px rgba(30,107,78,.25)}
+.pv-wrap .btn.primary{background:var(--green);color:var(--on-green);box-shadow:0 3px 12px rgba(30,107,78,.25)}
 .pv-wrap .btn.primary:hover{background:var(--green-soft)}
 .pv-wrap .btn.ghost{background:var(--paper-2);border-color:var(--line);color:var(--ink)}
 .pv-wrap .btn.ghost:hover{border-color:var(--green);color:var(--green)}
@@ -613,7 +632,7 @@ export const PREVIEW_CSS = `
 .eqp-row-spec{font-size:11px;color:var(--muted)}
 .eqp-row-sup{display:flex;flex-direction:column;font-size:10.5px;color:var(--muted)}
 .eqp-row-sup em{font-style:normal;color:var(--green-soft)}
-.eqp-row-sup em.low{color:#B4700F}
+.eqp-row-sup em.low{color:var(--amber-ink)}
 .eqp-row-price{font-family:var(--font-m,monospace);font-size:12px;color:var(--ink);white-space:nowrap}
 .eqp-empty{font-size:12px;color:var(--muted);padding:10px 4px}
 @media(max-width:640px){.eqp-row{grid-template-columns:1fr 1fr}.eqp-row-sup,.eqp-row-price{grid-column:span 1}}
@@ -663,7 +682,7 @@ export const PREVIEW_CSS = `
 .st-row-n{flex:none;position:relative;z-index:1;width:23px;height:23px;border-radius:50%;
   display:grid;place-items:center;background:var(--green-tint);color:var(--green);
   font-family:var(--font-m,monospace);font-size:11px;font-weight:700;margin-top:2px}
-.st-row:hover .st-row-n{background:var(--green);color:#fff}
+.st-row:hover .st-row-n{background:var(--green);color:var(--on-green)}
 .st-row-ic{flex:none;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
   background:var(--paper);border:1px solid var(--line);color:var(--green);margin-top:-1px}
 .st-row-tx{flex:1;min-width:0}
@@ -678,7 +697,7 @@ export const PREVIEW_CSS = `
   border-radius:99px;padding:4px 11px;white-space:nowrap}
 /* no leading status dot: the tinted pill already carries the stage (same as .chip) */
 .pv-stage.blue{background:var(--blue-tint);color:var(--blue)}
-.pv-stage.amber{background:var(--amber-tint);color:#B4700F}
+.pv-stage.amber{background:var(--amber-tint);color:var(--amber-ink)}
 .pv-stage.green-soft{background:var(--green-tint);color:var(--green-soft)}
 .pv-stage.green{background:var(--green-tint);color:var(--green)}
 
@@ -710,8 +729,8 @@ export const PREVIEW_CSS = `
 .jb-step.done:not(:last-child)::after{background:var(--green)}
 .jb-step-dot{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;flex:none;z-index:1;
   background:var(--paper);border:2px solid var(--line);color:var(--muted)}
-.jb-step.current .jb-step-dot{background:var(--amber-tint);border-color:var(--amber);color:#B4700F}
-.jb-step.done .jb-step-dot{background:var(--green);border-color:var(--green);color:#fff}
+.jb-step.current .jb-step-dot{background:var(--amber-tint);border-color:var(--amber);color:var(--amber-ink)}
+.jb-step.done .jb-step-dot{background:var(--green);border-color:var(--green);color:var(--on-green)}
 .jb-step-lbl{font-size:12px;font-weight:700;color:var(--muted)}
 .jb-step.current .jb-step-lbl{color:var(--ink)}
 .jb-step.done .jb-step-lbl{color:var(--green)}
@@ -724,7 +743,7 @@ export const PREVIEW_CSS = `
 .jb-todo:hover{background:var(--paper)}
 .jb-todo-ic{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;
   border:2px solid var(--line);color:transparent}
-.jb-todo.done .jb-todo-ic{background:var(--green);border-color:var(--green);color:#fff}
+.jb-todo.done .jb-todo-ic{background:var(--green);border-color:var(--green);color:var(--on-green)}
 .jb-todo-tx{flex:1;font-size:13px;color:var(--ink)}
 .jb-todo.done .jb-todo-tx{color:var(--muted);text-decoration:line-through}
 .jb-todo-go{flex:none;color:var(--muted)}
@@ -753,7 +772,7 @@ export const PREVIEW_CSS = `
 .pv-metric span{font-size:12px;color:var(--muted);display:block;margin-top:4px;line-height:1.35}
 @media(max-width:520px){.pv-metric b{font-size:18px}.pv-metric{padding:11px 12px}}
 .pv-metric.good b{color:var(--green)}
-.pv-metric.warn b{color:#B4700F}
+.pv-metric.warn b{color:var(--amber-ink)}
 
 .pv-tbl{width:100%;border-collapse:collapse;font-size:13px}
 .pv-tbl th{font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
@@ -782,7 +801,7 @@ html[data-theme="dark"] .pv-fchip.on{background:#080B09;border-color:#080B09}
 .pv-delta.down{color:var(--green);font-weight:600}
 .pv-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;border-radius:99px;padding:2px 9px;letter-spacing:.02em}
 .pv-tag.in{background:var(--green-tint);color:var(--green)}
-.pv-tag.low{background:var(--amber-tint);color:#B4700F}
+.pv-tag.low{background:var(--amber-tint);color:var(--amber-ink)}
 .pv-tag.order{background:var(--blue-tint);color:var(--blue)}
 
 .pv-callout{display:flex;gap:12px;align-items:flex-start;background:var(--green-tint);

@@ -147,6 +147,9 @@ export default async function Projects(props) {
   const stageRank = (w) => (w.lost ? 99 : lineOrder.indexOf(w.stage));
 
   // The engine runs once per quote; tiles, views, sort and rows all read this.
+  // The market tag only tells rows apart when the book spans more than one market; on one it is noise
+  // that pushes titles onto a third line.
+  const mixedMarkets = new Set(allRows.map((p) => p.market).filter(Boolean)).size > 1;
   const all = allRows.map((p) => ({ p, st: stats.get(p.id) || null, q: quote(rowToQuoteInput(p), E).e, w: wfMap.get(p.id) }));
 
   // One tile per status: how many, and how much contract value (pre-grant, so
@@ -364,7 +367,7 @@ export default async function Projects(props) {
                               <Link className="t-title" href={`/projects/${p.id}`}>{p.title || t("untitled", lang)}</Link>
                               {p.notes ? <span className="note-dot" title={p.notes} aria-label={t("has_notes", lang)}><Svg d="note" size={13} /></span> : null}
                             </div>
-                            <div className="t-sub">{p.client_name}{p.market ? <span className="q-tag">{p.market}</span> : null}</div>
+                            <div className="t-sub">{p.client_name}{mixedMarkets && p.market ? <span className="q-tag">{p.market}</span> : null}</div>
                           </div>
                         </div>
                       </td>

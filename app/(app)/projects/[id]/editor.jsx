@@ -45,6 +45,8 @@ import { fitPanels, fitOptions } from "../../../../lib/roofLayout.js";
 import { moneyFormatter, numFor } from "../../../../lib/money.js";
 import { effectiveOfferCurrency, currencyOnMarketChange, betterCurrencyFor, normCurrency } from "../../../../lib/offerCurrency.js";
 import { saveOutbox, readOutbox, clearOutbox, isNetworkError } from "../../../../lib/offline.js";
+import LinkLabels from "../../../../components/LinkLabels.jsx";
+import { isPlaceholderTitle } from "../../../../lib/quoteTitle.js";
 
 // System-size slider range — raised to 500 kW: Site Designer's own real,
 // drawn-roof panel counts can land well past a "residential" size for a large
@@ -395,6 +397,15 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       console.error("autosave threw:", e?.message || e);
     }
   }
+  // A quote that was just created has nothing in it yet: put the cursor in the client's name, so the
+  // first thing typed lands there instead of after a click. Desktop only (a phone's keyboard would
+  // cover the page the moment it opens), and never on a quote that already has a client.
+  const clientRef = useRef(null);
+  useEffect(() => {
+    if (initial.client_name || !isPlaceholderTitle(initial.title)) return;
+    if (typeof window === "undefined" || !window.matchMedia("(pointer: fine)").matches) return;
+    clientRef.current?.focus({ preventScroll: true });
+  }, [initial.id]); // eslint-disable-line react-hooks/exhaustive-deps
   // Edits made with no signal wait on the device (see persist). When this quote
   // opens with some still waiting, they are the engineer's latest: show them
   // and save them as soon as there is a network, now or when it comes back.
@@ -818,13 +829,14 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           }));
         }} />
 
+      <LinkLabels root=".editor" />
       <div className="editor">
         {/* left: inputs */}
         <div className="stack">
           <section className="card">
             <h3>{tr("client_site")}</h3>
             <div className="field"><label>{tr("client_name")}</label>
-              <input className="input" value={p.client} onChange={e => update({ client: e.target.value })} /></div>
+              <input ref={clientRef} className="input" value={p.client} onChange={e => update({ client: e.target.value })} /></div>
             {/* Real prerequisite for the follow-up nudge automation (if
                 enabled in Settings) — without a stored address there's
                 nowhere to send a reminder. Optional: nudges just skip a

@@ -29,6 +29,7 @@ import StickyCta from "./StickyCta.jsx";
 import HtmlLang from "../../../lib/HtmlLang.jsx";
 import { moneyFormatter, numFor } from "../../../lib/money.js";
 import { t, normLang } from "../../../lib/i18n.js";
+import { isPlaceholderTitle } from "../../../lib/quoteTitle.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { kindLabel, bomLineText, surplusRevenue } from "../../../lib/quoteAnalysis.js";
 import { findWarrantyInfo } from "../../../lib/supplierCatalog.js";
@@ -191,7 +192,7 @@ export default async function ProposalPage(props) {
   const expired = now > validTs;
   const validShort = expired ? ppt("expired_on", lang, { d: validUntil }) : ppt("valid_until", lang, { d: validUntil });
 
-  const placeholderTitle = !inputs.title || /^\s*new quote\s*$/i.test(inputs.title);
+  const placeholderTitle = isPlaceholderTitle(inputs.title);
   const headline = placeholderTitle ? t("pdf_auto_title", lang, { kw: kwTxt }) : inputs.title;
   const sysLine = ppt("sys_line", lang, { kw: kwTxt, b: withBatt });
   const whoLine = [inputs.client ? ppt("for_client", lang, { c: inputs.client }) : "", inputs.address || ""].filter(Boolean).join(", ");

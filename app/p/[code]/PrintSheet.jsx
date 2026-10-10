@@ -14,6 +14,7 @@
 // Rendered instead of the mobile proposal when ?print=1.
 import { moneyFormatter, numFor } from "../../../lib/money.js";
 import { t } from "../../../lib/i18n.js";
+import { isPlaceholderTitle } from "../../../lib/quoteTitle.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { SOLAR_SEASON, FX, effectiveConsumption, amortizedMonthlyPayment } from "@voltmira/engine";
 import { designCheck, designCheckRows } from "../../../lib/designCheck.js";
@@ -323,8 +324,8 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   const validityDays = E.quoteValidityDays || 30;
   const validBase = sentAt ? new Date(sentAt).getTime() : Date.now();
   const validUntil = fmtDate(new Date(validBase + validityDays * 864e5), loc);
-  // "New quote" is the table default: describe the system instead of printing it.
-  const placeholderTitle = !inputs.title || /^\s*new quote\s*$/i.test(inputs.title);
+  // The default title ("New quote", or its translation) is not a title: describe the system instead of printing it.
+  const placeholderTitle = isPlaceholderTitle(inputs.title);
   const headline = placeholderTitle ? t("pdf_auto_title", lang, { kw: nf(inputs.kw, 1) }) : inputs.title;
   const mktLine = t("market_" + (inputs.market || "RO").toLowerCase(), lang);
   const who = [inputs.client ? tr("pdf2_for", { c: inputs.client }) : "", inputs.address || ""].filter(Boolean).join(", ");
