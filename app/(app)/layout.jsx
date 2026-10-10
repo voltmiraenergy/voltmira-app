@@ -3,6 +3,7 @@
 // via <AppTheme/>. Responsive (collapses to a bottom bar on mobile).
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Sprout, Zap, Users, Building2, ChevronRight } from "lucide-react";
 import SignOut from "./signout.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import SideNav from "./SideNav.jsx";
@@ -16,6 +17,9 @@ import { et } from "../../lib/energyText.js";
 import { currentUser, currentCompany } from "../../lib/session.js";
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { isDemoEmail } from "../../lib/demo.js";
+
+// One icon per plan, for the plan row under the profile card.
+const PLAN_ICON = { free: Sprout, pro: Zap, team: Users, enterprise: Building2 };
 
 // Initials for the profile avatar — first letters of the first two words, or the
 // first two characters of an email local-part. Matches the demo's initialsOf().
@@ -81,18 +85,30 @@ export default async function AppLayout({ children }) {
             </>
           } />
         <div className="side-foot">
-          <Link className="profile" href="/profile" style={{ textDecoration: "none", color: "inherit" }} title={t("pf_title", lang)}>
-            {avatar
-              ? <img className="avatar" src={avatar} alt="" style={{ objectFit: "cover", background: "var(--paper-2)" }} />
-              : <div className="avatar">{initialsOf(who)}</div>}
-            <div className="who"><b>{who}</b><span>{co?.name}</span></div>
-          </Link>
-          {/* "Plan Team", "План Team": the plan's brand name inside a phrase in
-              the workspace language (it read "team plan" in every language) */}
-          <div className="side-plan">
-            {!co?.plan || co.plan === "free"
-              ? t("side_plan_free", lang)
-              : t("side_plan", lang, { plan: co.plan.charAt(0).toUpperCase() + co.plan.slice(1) })}
+          <div className="side-card">
+            <Link className="profile" href="/profile" style={{ textDecoration: "none", color: "inherit" }} title={t("pf_title", lang)}>
+              {avatar
+                ? <img className="avatar" src={avatar} alt="" style={{ objectFit: "cover", background: "var(--paper-2)" }} />
+                : <div className="avatar">{initialsOf(who)}</div>}
+              <div className="who"><b>{who}</b><span>{co?.name}</span></div>
+            </Link>
+            {/* The plan, as a row of its own: "Plan Team", "План Team" (the plan's brand
+                name inside a phrase in the workspace language), and where it leads:
+                Settings > Plan, to compare on the free plan, to manage on a paid one. */}
+            {(() => {
+              const free = !co?.plan || co.plan === "free";
+              const PlanIcon = PLAN_ICON[free ? "free" : co.plan] || Zap;
+              return (
+                <Link className={"side-plan" + (free ? " is-free" : "")} href="/settings?tab=plan">
+                  <i className="sp-ico"><PlanIcon size={15} strokeWidth={2} aria-hidden="true" /></i>
+                  <span className="sp-tx">
+                    <b>{free ? t("side_plan_free", lang) : t("side_plan", lang, { plan: co.plan.charAt(0).toUpperCase() + co.plan.slice(1) })}</b>
+                    <small>{t(free ? "side_plan_compare" : "side_plan_manage", lang)}</small>
+                  </span>
+                  <ChevronRight className="sp-go" size={15} strokeWidth={2} aria-hidden="true" />
+                </Link>
+              );
+            })()}
           </div>
           <ThemeToggle lang={lang} />
           <SignOut lang={lang} />

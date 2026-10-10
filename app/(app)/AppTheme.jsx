@@ -89,6 +89,9 @@ const CSS = `
   .more-sheet,.more-backdrop{display:none}
   .side-foot{margin-top:auto}
   .profile{display:flex;align-items:center;gap:11px;padding:12px;border-radius:12px;background:var(--white-line)}
+  /* the profile and the plan as one surface: the person on top, their plan under a hairline */
+  .side-card{border-radius:12px;background:var(--white-line);overflow:hidden}
+  .side-card .profile{border-radius:0;background:none}
   .avatar{
     width:36px;height:36px;border-radius:50%;flex:none;
     background:var(--amber);color:var(--ink);
@@ -135,7 +138,18 @@ const CSS = `
     padding:6px;border-radius:8px;transition:color .15s,background .15s;
   }
   .reset-link:hover{color:#fff;background:var(--white-line)}
-  .side-plan{text-transform:uppercase;letter-spacing:.06em;font-size:11px;color:var(--white-faint);margin:12px 4px 0}
+  .side-plan{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--white-line);
+    text-decoration:none;color:inherit;transition:background .15s}
+  .side-plan:hover{background:rgba(255,255,255,.07)}
+  .side-plan:focus-visible{outline-offset:-2px}
+  .sp-ico{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:8px;font-style:normal;
+    background:rgba(235,165,66,.18);color:var(--amber-soft)}
+  .side-plan.is-free .sp-ico{background:var(--white-line);color:var(--white-dim)}
+  .sp-tx{flex:1;min-width:0;line-height:1.25}
+  .sp-tx b{display:block;font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sp-tx small{display:block;font-size:11.5px;color:var(--white-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sp-go{flex:none;color:var(--white-faint);transition:transform .15s,color .15s}
+  .side-plan:hover .sp-go{color:#fff;transform:translateX(2px)}
 
   .main{min-width:0;display:flex;flex-direction:column;background:var(--paper)}
   .view{padding:26px 30px 48px;max-width:1180px;width:100%;margin:0 auto;animation:viewIn .3s ease}
