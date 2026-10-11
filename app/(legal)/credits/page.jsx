@@ -5,7 +5,12 @@
 // one of a real VoltMira installation, remove its entry here. The Wikimedia
 // photos this page used to credit are only in the retired landing versions
 // (landing-en-v2..v5.html), which are no longer served.
+//
+// While CNED_DATA is on (a local preview, lib/cnedData.js) it also lists the
+// data behind the Green energy map: CNED, BNS and geoBoundaries.
 import LegalShell from "../LegalShell.jsx";
+import { cnedEnabled } from "../../../lib/cnedData.js";
+import { ct } from "../../../lib/cnedText.js";
 
 export const metadata = {
   title: "Photo Credits | VoltMira",
@@ -71,6 +76,18 @@ export default function Credits() {
           </li>
         ))}
       </ul>
+
+      {/* the data behind the Green energy map, listed only while it is shown (CNED_DATA, lib/cnedData.js) */}
+      {cnedEnabled() && (
+        <>
+          <h2>Data and maps</h2>
+          <ul>
+            <li>{ct("cr_cned", "en")}</li>
+            <li>{ct("cr_bns", "en")}</li>
+            <li>{ct("cr_shapes", "en")} <a href="https://www.geoboundaries.org" target="_blank" rel="noopener noreferrer">geoboundaries.org</a></li>
+          </ul>
+        </>
+      )}
 
       <h2>Corrections</h2>
       <p>

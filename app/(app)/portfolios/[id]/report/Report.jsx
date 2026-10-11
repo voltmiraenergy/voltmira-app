@@ -23,6 +23,8 @@ import SourcesUses from "../../../../../components/portfolio/SourcesUses.jsx";
 import StaticMap from "../../../../../components/portfolio/StaticMap.jsx";
 import ReadinessPanel from "../../../../../components/portfolio/ReadinessPanel.jsx";
 import MarketContext from "../../../../../components/portfolio/MarketContext.jsx";
+import { cnedSnapshot, raionStats, regionalContext } from "../../../../../lib/cnedData.js";
+import { SHAPES } from "../../../../../lib/data/mdRaionShapes.js";
 import { et } from "../../../../../lib/energyText.js";
 import { plt } from "../../../../../lib/plantText.js";
 import PlantReport from "../../../../../components/portfolio/PlantReport.jsx";
@@ -58,6 +60,9 @@ export default function Report({ model, lang, company, date, money, fx, rid = ""
   const hasPlants = model.assets.some((a) => a.kind === "plant");
   const sections = sectionsFor(market, { map: model.assets.some((a) => a.lat != null), plants: hasPlants });
   const anySample = model.assets.some((a) => a.kind === "plant" && a.plant.sample);
+  // CNED's register, a local preview while CNED_DATA is on: what is already built in each asset's area
+  const cned = market === "MD" ? cnedSnapshot() : null;
+  const regional = cned ? regionalContext(raionStats(cned), model.assets, SHAPES) : null;
   const p90f = 1 - (Z.P90 * SIGMA_PCT) / 100;
   const preset = FINANCING_PRESETS.find((x) => x.id === model.portfolio?.finance?.preset);
   const impact = model.es?.impact || {};
@@ -131,7 +136,7 @@ export default function Report({ model, lang, company, date, money, fx, rid = ""
       {/* ---- market context, Moldova */}
       {sections.includes("r_market") && (
         <section className="rp-page">
-          <MarketContext lang={lang} heading={<H2 sections={sections} id="r_market" lang={lang} />} />
+          <MarketContext lang={lang} heading={<H2 sections={sections} id="r_market" lang={lang} />} regional={regional} cnedDate={cned?.source.dataTo || null} />
         </section>
       )}
 

@@ -30,6 +30,8 @@ import HtmlLang from "../../../lib/HtmlLang.jsx";
 import { moneyFormatter, numFor } from "../../../lib/money.js";
 import { t, normLang } from "../../../lib/i18n.js";
 import { isPlaceholderTitle } from "../../../lib/quoteTitle.js";
+import { ct } from "../../../lib/cnedText.js";
+import { raionName } from "../../../lib/mdRaions.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { kindLabel, bomLineText, surplusRevenue } from "../../../lib/quoteAnalysis.js";
 import { findWarrantyInfo } from "../../../lib/supplierCatalog.js";
@@ -39,10 +41,7 @@ import { compassLabel } from "../../../lib/roofLayout.js";
 import { weightedExportPriceMdl } from "../../../lib/prosumerPrice.js";
 import { SOLAR_SEASON, FX, effectiveConsumption, amortizedMonthlyPayment } from "@voltmira/engine";
 import { ppt, yearsN, kwhUnit, kwUnit } from "./text.js";
-import {
-  ArrowUpRight, BatteryCharging, CalendarClock, ChevronDown, Info, Moon, Package, Phone, Plug, Scale,
-  Snowflake, SolarPanel, ThermometerSun, TrendingUp, TriangleAlert, Wrench, Zap,
-} from "lucide-react";
+import { ArrowUpRight, BatteryCharging, CalendarClock, ChevronDown, Info, Moon, Package, Phone, Plug, Scale, Snowflake, SolarPanel, ThermometerSun, TrendingUp, TriangleAlert, Wrench, Zap, Award, MapPin } from "lucide-react";
 
 async function getProposal(code) {
   const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -94,7 +93,7 @@ export default async function ProposalPage(props) {
     );
   }
   const { company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
-    offer = null, chosenOption = null,
+    offer = null, chosenOption = null, cned = null,
     roofAreaM2 = null, roofOrientation = null, roofPlanes = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
@@ -282,6 +281,8 @@ export default async function ProposalPage(props) {
                   ? <span className="pp-logo"><img src={company.logoUrl} alt="" /></span>
                   : initials ? <span className="pp-mono" aria-hidden="true">{initials}</span> : null}
                 <span className="pp-co">{coName}</span>
+                {/* only from CNED's own register (lib/cnedInstallers.js), never typed */}
+                {cned?.qualified && <span className="pp-badge" title={ct("badge_t", lang)}><Award className="pp-ic" aria-hidden="true" />{ct("badge", lang)}</span>}
               </div>
               <span className={"pp-valid" + (expired ? " is-over" : "")}>
                 <CalendarClock className="pp-ic" aria-hidden="true" />{validShort}
@@ -289,6 +290,14 @@ export default async function ProposalPage(props) {
             </div>
             <h1 className="pp-h1">{headline}</h1>
             <p className="pp-sub"><b>{sysLine}</b>{whoLine}</p>
+            {/* one line from CNED's register about the client's area, frozen
+                with the offer when the installer switched it on (RaionCard) */}
+            {cned?.raionLine && (
+              <p className="pp-local"><MapPin className="pp-ic" aria-hidden="true" />
+                <span>{ct("pp_line", lang, { raion: raionName(cned.raionLine.raion, lang), h: nf(cned.raionLine.households, 0) })}{" "}
+                  <small>{ct("pp_src", lang, { date: fmtDate(cned.raionLine.dataTo + "T12:00:00Z", loc, { day: "numeric", month: "long", year: "numeric" }).replace(/\.$/, "") })}</small></span>
+              </p>
+            )}
           </div>
 
           <div className="pp-statement">

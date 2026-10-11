@@ -137,6 +137,13 @@
 .pp-sub { font-size: 15.5px; line-height: 1.5; color: var(--on-ink-2); max-width: 46ch; }
 .pp-sub b { display: block; color: var(--on-ink); font-weight: 600; margin-bottom: 2px; }
 .pp-cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 20px; }
+/* one line about the client's area from CNED's register, and the CNED
+   qualified-installer badge: both only from CNED's own data */
+.pp-local { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; font-size: 14px; line-height: 1.5; color: var(--on-ink-2); max-width: 52ch; }
+.pp-local .pp-ic { width: 16px; height: 16px; flex: none; margin-top: 3px; color: var(--amber-hi); }
+.pp-local small { font-size: 12px; opacity: .8; white-space: nowrap; }
+.pp-badge { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 12px; font-weight: 600; color: var(--on-ink); padding: 4px 10px 4px 8px; border: 1px solid var(--on-ink-line); border-radius: 999px; }
+.pp-badge .pp-ic { width: 14px; height: 14px; color: var(--amber-hi); }
 
 /* the offer as a statement: one price, then three rows */
 .pp-statement {
@@ -598,7 +605,7 @@
   .pp-wrap { padding: 0 !important; max-width: none; }
   .pp-hero { color: var(--ink); background: #fff !important; border: 1px solid var(--line); }
   .pp-hero .pp-h1, .pp-price-v, .pp-row dd, .pp-co, .pp-sub b { color: var(--ink) !important; }
-  .pp-sub, .pp-k, .pp-row dt, .pp-row dt small, .pp-valid { color: var(--muted) !important; }
+  .pp-sub, .pp-k, .pp-row dt, .pp-row dt small, .pp-valid, .pp-local, .pp-badge { color: var(--muted) !important; }
   .pp-rail, .pp-sticky, .pp-qa, .pp-btn, .pp-seg, .pp-ref, .ca, .pp-no-print { display: none !important; }
   .pp-layout { display: block; }
   .pp-sec, .pp-card, .pp-accept { break-inside: avoid; box-shadow: none !important; }

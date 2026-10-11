@@ -8,6 +8,8 @@
 // code filtering (RLS stays closed to anonymous users).
 
 import { NextResponse } from "next/server";
+import { cnedEnabled } from "../../../../lib/cnedData.js";
+import { isCnedQualified } from "../../../../lib/cnedInstallers.js";
 import { supabaseAdmin } from "../../../../lib/supabase.js";
 import { escapeHtml } from "../../../../lib/safe.js";
 import { logActivity } from "../../../../lib/activity.js";
@@ -133,6 +135,15 @@ export async function GET(req, props) {
         cost: oq.cost, payback: oq.payback, year1: oq.year1 };
     });
 
+  // CNED's register (a local preview while CNED_DATA is on, lib/cnedData.js):
+  // the area line frozen with this offer, and the qualified-installer badge
+  // checked by the workspace's IDNO. Off, neither field is sent.
+  let cned = null;
+  if (cnedEnabled()) {
+    const { data: reg } = await db.from("companies").select("reg_no").eq("id", prop.company_id).maybeSingle();
+    cned = { raionLine: prop.snapshot?.raionLine || null, qualified: isCnedQualified(reg?.reg_no) };
+  }
+
   return NextResponse.json({
     code: prop.code,
     accepted: !!prop.accepted_at,
@@ -150,6 +161,7 @@ export async function GET(req, props) {
     // page, its PDF and the emailed copy all format money with this.
     company: { name: co?.name, shortName: co?.short_name, logoUrl: co?.logo_url, currency: effectiveOfferCurrency(prop.snapshot?.offerCurrency, co?.currency, prop.snapshot?.market), lang: co?.lang, plan: co?.plan || "free", wonCount: wonCount || 0, installWarrantyYears: co?.install_warranty_years || null },
     preparedBy,
+    cned,
     // the exchange rates frozen with the proposal, so a client in Moldova reads
     // the same lei figure on every visit (lib/money.js)
     fx: E?.fx || null,

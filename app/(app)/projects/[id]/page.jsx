@@ -7,6 +7,7 @@ import { calibrateYield } from "../../../../lib/yieldCalibration.js";
 import { currentUser } from "../../../../lib/session.js";
 import { canViewAllProjects, canEditTechnical } from "../../../../lib/rbac.js";
 import Editor from "./editor.jsx";
+import { cnedEnabled } from "../../../../lib/cnedData.js";
 import { appTitle } from "../../../../lib/pageTitle.js";
 
 export const dynamic = "force-dynamic";
@@ -89,7 +90,7 @@ export default async function ProjectPage(props) {
     proposalSentAt={prop?.created_at || null} companyName={co?.name || "VoltMira"} companyLogo={co?.logo_url || ""}
     companyLegal={{ legal_name: co?.legal_name || "", reg_no: co?.reg_no || "", legal_address: co?.legal_address || "", iban: co?.iban || "", install_warranty_years: co?.install_warranty_years || null,
       contract_template_override: wl?.contract_template_override || "", commissioning_template_override: wl?.commissioning_template_override || "" }}
-    signed={signed} calibration={calibration} vatRatePct={Number(co?.vat_rate) || 0} />;
+    signed={signed} calibration={calibration} vatRatePct={Number(co?.vat_rate) || 0} cnedOn={cnedEnabled()} />;
 }
 
 /**

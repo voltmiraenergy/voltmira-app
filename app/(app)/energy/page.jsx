@@ -6,6 +6,12 @@
 // lib/greenData.js, as printed in the Ministry of Energy's presentation; nothing is
 // estimated from a chart, and what is not published stays out. Hourly
 // day-ahead prices wait on OPEM's consent to their reuse.
+//
+// With CNED_DATA on (a local preview until CNED confirms its reuse, see
+// lib/cnedData.js) the page adds CNED's register: the headline capacity and
+// storage at CNED's latest date, the installer's market, the map of raioane,
+// every area in a table, prosumers by scheme, yearly production and the
+// batteries on the grid.
 import "../dx.css";
 import "./energy.css";
 import Link from "next/link";
@@ -20,7 +26,12 @@ import { num, mwhUnit } from "../../../lib/portfolioFormat.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { LOCALE } from "../../../lib/relTime.js";
 import SupplyMix from "../../../components/energy/SupplyMix.jsx";
-import { Leaf, Zap, BatteryCharging, Globe, UtilityPole, TrendingUp, Target, ChartLine, Gavel, HandCoins, Cable } from "lucide-react";
+import CnedExplorer from "../../../components/energy/CnedExplorer.jsx";
+import CnedCards from "../../../components/energy/CnedCards.jsx";
+import { cnedSnapshot, raionStats, nationalTotals } from "../../../lib/cnedData.js";
+import { CENTRES } from "../../../lib/data/mdRaionShapes.js";
+import { ct } from "../../../lib/cnedText.js";
+import { Leaf, Zap, BatteryCharging, Globe, UtilityPole, TrendingUp, Target, ChartLine, Gavel, HandCoins, Cable, Info } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const generateMetadata = appTitle((lang) => et("nav", lang));
@@ -59,6 +70,12 @@ export default async function EnergyPage() {
   const product = { fcr: "FCR", afrr: "aFRR", mfrr_12h: "mFRR (12 h)", mfrr_2h: "mFRR (2 h)" };
   const P = Object.fromEntries(PROGRAMS.map((p) => [p.id, p]));
 
+  // CNED's register, only while CNED_DATA is on
+  const snap = cnedSnapshot();
+  const cn = snap ? { totals: nationalTotals(snap), stats: raionStats(snap, CENTRES) } : null;
+  const cnDate = cn ? day(cn.totals.dataTo) : null;
+  const cnSource = cn ? ct("src", lang, { src: ct("src_cned", lang, { date: cnDate }) }) : null;
+
   return (
     <div className="dx en">
       <header className="dx-head">
@@ -72,10 +89,33 @@ export default async function EnergyPage() {
       {/* ---- the headline numbers */}
       <section className="en-kpis" aria-label={et("pg_h1", lang)}>
         <div className="en-kpi"><span className="en-kpi-l"><i className="en-ico"><Leaf {...KI} /></i>{et("mk_k_res", lang)}</span><b>{pc(res[2026])}</b><small>{et("mk_k_res_s", lang, { a: pc(res[2024]), b: pc(res[2018]) })}</small></div>
-        <div className="en-kpi"><span className="en-kpi-l"><i className="en-ico"><Zap {...KI} /></i>{et("mk_k_cap", lang)}</span><b>{mw(cap.statedTotalMw)}</b><small>{et("mk_k_cap_s", lang, { s: mw(cap.mw.solar), w: mw(cap.mw.wind), p: mw(cap.mw.solar_prosumers) })}</small></div>
-        <div className="en-kpi"><span className="en-kpi-l"><i className="en-ico"><BatteryCharging {...KI} /></i>{et("mk_k_bess", lang)}</span><b>{mwh(BESS_STATUS.installedMwh)}</b><small>{et("mk_k_bess_s", lang, { need: mwh(BESS_STATUS.neededMwh) })}</small></div>
+        {cn ? (
+          <div className="en-kpi"><span className="en-kpi-l"><i className="en-ico"><Zap {...KI} /></i>{et("mk_k_cap", lang)}</span><b>{mw(cn.totals.totalKw / 1000)}</b>
+            <small>{ct("k_cap_s", lang, { s: mw(cn.totals.plants.pv.kw / 1000), w: mw(cn.totals.plants.wind.kw / 1000), p: mw(cn.totals.prosumers.kw / 1000), h: mw(cn.totals.plants.hydro.kw / 1000), date: cnDate })}</small></div>
+        ) : (
+          <div className="en-kpi"><span className="en-kpi-l"><i className="en-ico"><Zap {...KI} /></i>{et("mk_k_cap", lang)}</span><b>{mw(cap.statedTotalMw)}</b><small>{et("mk_k_cap_s", lang, { s: mw(cap.mw.solar), w: mw(cap.mw.wind), p: mw(cap.mw.solar_prosumers) })}</small></div>
+        )}
+        {cn && cn.totals.bess?.n > 0 ? (
+          <div className="en-kpi"><span className="en-kpi-l"><i className="en-ico"><BatteryCharging {...KI} /></i>{ct("k_bess_l", lang)}</span><b>{mwh(cn.totals.bess.kwh / 1000)}</b>
+            <small>{ct("k_bess_s", lang, { n: cn.totals.bess.n, mw: mw(cn.totals.bess.kw / 1000), y: cn.totals.bess.years.join(", ") })}</small></div>
+        ) : (
+          <div className="en-kpi"><span className="en-kpi-l"><i className="en-ico"><BatteryCharging {...KI} /></i>{et("mk_k_bess", lang)}</span><b>{mwh(BESS_STATUS.installedMwh)}</b><small>{et("mk_k_bess_s", lang, { need: mwh(BESS_STATUS.neededMwh) })}</small></div>
+        )}
         <div className="en-kpi"><span className="en-kpi-l"><i className="en-ico"><Globe {...KI} /></i>{et("mk_obj_import", lang)}</span><b>{pc(OBJECTIVES.importDependencePct.from)}</b><small>{et("mk_obj_import_v", lang, { a: pc(OBJECTIVES.importDependencePct.from), y1: OBJECTIVES.importDependencePct.fromYear, b: pc(OBJECTIVES.importDependencePct.to), y2: OBJECTIVES.importDependencePct.toYear })}</small></div>
       </section>
+
+      {cn && (
+        <>
+          <p className="cn-local" role="note"><Info size={16} aria-hidden="true" />{ct("local_note", lang)}</p>
+          <p className="en-note">
+            {ct("k_inst_s", lang, { pv: cn.totals.plants.pv.n, w: cn.totals.plants.wind.n, h: cn.totals.plants.hydro.n, p: num(cn.totals.prosumers.n, lang, 0) })}.{" "}
+            {ct("k_total_note", lang, { o: mw(cn.totals.otherKw / 1000) })} {cnSource}
+          </p>
+          <CnedExplorer lang={lang} stats={cn.stats} points={snap.points} unlocatedKw={cn.totals.unlocatedKw} companyId={co?.id}
+            sources={ct("src", lang, { src: `${ct("src_cned", lang, { date: cnDate })}; ${ct("src_pop", lang)}; ${ct("src_shapes", lang)}` })} />
+          <CnedCards lang={lang} yearly={snap.yearly} production={snap.production} totals={cn.totals} stats={cn.stats} source={cnSource} />
+        </>
+      )}
 
       {/* ---- supply */}
       <section className="dx-card" aria-labelledby="en-supply-h">

@@ -12,13 +12,20 @@ import { et, sourceLine } from "../../lib/energyText.js";
 import { num, mwhUnit } from "../../lib/portfolioFormat.js";
 import { fmtDate } from "../../lib/tz.js";
 import { LOCALE } from "../../lib/relTime.js";
+import { ct } from "../../lib/cnedText.js";
+import { raionName } from "../../lib/mdRaions.js";
 
 const mwUnit = (lang) => (lang === "ru" || lang === "uk" ? "МВт" : "MW");
 const LEI = { en: "lei", ro: "lei", ru: "лей", uk: "лей" };
 const MILLION = { en: "million", ro: "milioane", ru: "млн", uk: "млн" };
 const BILLION = { en: "billion", ro: "miliarde", ru: "млрд", uk: "млрд" };
 
-export default function MarketContext({ lang = "en", heading }) {
+/**
+ * @param {object} p
+ * @param {object[]|null} [p.regional]  lib/cnedStats.js regionalContext() rows, only while CNED_DATA is on
+ * @param {string|null}   [p.cnedDate]  the date CNED's figures run to
+ */
+export default function MarketContext({ lang = "en", heading, regional = null, cnedDate = null }) {
   const loc = LOCALE[lang] || "en-GB";
   const pc = (v) => (v == null ? "" : `${num(v, lang, 1)}%`);
   const mw = (v) => `${num(v, lang, 2)} ${mwUnit(lang)}`;
@@ -125,6 +132,35 @@ export default function MarketContext({ lang = "en", heading }) {
         </tbody></table>
       </div>
       <p className="rp-small">{et("src", lang, { src: sourceLine(g.sources, lang) })}</p>
+
+      {/* what is already built in each asset's area, from CNED's register (a
+          local preview while CNED_DATA is on). A crowded area is a prompt to
+          check the substation, never a finding about the grid. */}
+      {regional?.length > 0 && (
+        <div className="rp-keep">
+          <h3>{ct("rg_h", lang)}</h3>
+          <p className="rp-small">{ct("rg_intro", lang)}</p>
+          <table className="rp-t"><thead><tr>
+            <th>{ct("rg_asset", lang)}</th><th>{ct("rg_raion", lang)}</th><th className="r">{ct("rg_pv", lang)}</th>
+            <th className="r">{ct("rg_wind", lang)}</th><th className="r">{ct("rg_pros", lang)}</th><th className="r">{ct("rg_bess", lang)}</th><th>{ct("rg_flag", lang)}</th>
+          </tr></thead><tbody>
+            {regional.map((r, i) => (
+              <tr key={i}>
+                <td>{r.name}</td>
+                <td>{r.raion ? raionName(r.raion, lang) : ""}</td>
+                {r.covered ? (
+                  <>
+                    <td className="r">{mw(r.pvKw / 1000)}</td><td className="r">{mw(r.windKw / 1000)}</td>
+                    <td className="r">{mw(r.prosumersKw / 1000)}</td><td className="r">{r.bessKwh ? mwh(r.bessKwh / 1000) : ""}</td>
+                    <td>{r.crowded ? ct("rg_crowded", lang) : ""}</td>
+                  </>
+                ) : <td colSpan={5}>{ct("rg_uncovered", lang)}</td>}
+              </tr>
+            ))}
+          </tbody></table>
+          <p className="rp-small">{ct("src", lang, { src: ct("src_cned", lang, { date: cnedDate ? day(cnedDate) : "" }) })}</p>
+        </div>
+      )}
     </>
   );
 }
