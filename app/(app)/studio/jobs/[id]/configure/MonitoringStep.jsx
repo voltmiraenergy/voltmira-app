@@ -203,7 +203,7 @@ export default function MonitoringStep({ job, lang, touch = () => {} }) {
       </div>
 
       <div className="ws-actions">
-        <button type="button" onClick={() => downloadStudioDoc("raport-performanta-" + (job.ref || "voltmira"))} className="btn ghost sm">
+        <button type="button" onClick={() => downloadStudioDoc("raport-performanta-" + (job.ref || "voltmira"), undefined, { kind: "performance", ref: job.id })} className="btn ghost sm">
           <FileText size={15} aria-hidden="true" /> {t({ en: "Performance report: print or PDF", ro: "Raport de performanță: printează sau PDF", ru: "Отчёт о выработке: печать или PDF", uk: "Звіт про генерацію: друк або PDF" })}
         </button>
       </div>

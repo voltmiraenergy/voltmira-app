@@ -473,7 +473,7 @@ export function printDoc() {
 // stamp). We grab the rendered .pv-doc + its own CSS and post them to the server,
 // which renders them with headless Chromium. Falls back to window.print() if the
 // server render is unavailable, so the button always does something.
-export async function downloadStudioDoc(filename = "voltmira-document", label) {
+export async function downloadStudioDoc(filename = "voltmira-document", label, opts = {}) {
   if (typeof document === "undefined") return;
   const doc = document.querySelector(".pv-wrap .pv-doc");
   if (!doc) { window.print(); return; }
@@ -490,8 +490,10 @@ export async function downloadStudioDoc(filename = "voltmira-document", label) {
   try {
     const res = await fetch("/api/studio/pdf", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ html: doc.outerHTML, css, title: label || filename, filename }),
+      body: JSON.stringify({ html: doc.outerHTML, css, title: label || filename, filename, kind: opts.kind, ref: opts.ref }),
     });
+    // out of credits on the free plan: the plan page explains and sells them
+    if (res.status === 402) { window.location.assign(`/settings?tab=plan&need=${encodeURIComponent(opts.kind || "annex")}`); return; }
     if (!res.ok) throw new Error("pdf_" + res.status);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);

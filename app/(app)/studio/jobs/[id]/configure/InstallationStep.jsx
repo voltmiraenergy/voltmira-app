@@ -200,7 +200,7 @@ export default function InstallationStep({ job, derived, lang, touch = () => {} 
       </div>
 
       <div className="ws-actions">
-        <button type="button" onClick={() => downloadStudioDoc("proces-verbal-" + (job.ref || "voltmira"))} className="btn ghost sm">
+        <button type="button" onClick={() => downloadStudioDoc("proces-verbal-" + (job.ref || "voltmira"), undefined, { kind: "protocol", ref: job.id })} className="btn ghost sm">
           <FileText size={15} aria-hidden="true" /> {t({ en: "Handover certificate: print or PDF", ro: "Proces-verbal: printează sau PDF", ru: "Акт приёмки: печать или PDF", uk: "Акт приймання: друк або PDF" })}
         </button>
       </div>

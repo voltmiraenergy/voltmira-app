@@ -24,7 +24,7 @@ export default function CreditsPanel({ lang = "en", companyId, plan }) {
     load();
     try {
       const q = new URLSearchParams(location.search);
-      if (q.get("need") === "offers" || q.get("need") === "grid") setNeed(q.get("need"));
+      if (["offers", "grid", "annex", "protocol", "performance"].includes(q.get("need"))) setNeed(q.get("need"));
       if (q.get("credits") === "1") { setBought(true); setTimeout(load, 6000); }
     } catch { /* no banner */ }
   }, []);
@@ -49,7 +49,7 @@ export default function CreditsPanel({ lang = "en", companyId, plan }) {
 
   return (
     <div className="cr-wrap">
-      {need && !paid && <p className="cr-banner" role="status">{cr(need === "grid" ? "need_grid" : "need_offers", lang)}</p>}
+      {need && !paid && <p className="cr-banner" role="status">{cr(need === "grid" ? "need_grid" : need === "offers" ? "need_offers" : "need_doc", lang)}</p>}
       {bought && <p className="cr-banner ok" role="status">{cr("bought", lang)}</p>}
       <p className="st-p">{cr("desc", lang)}</p>
       {paid ? (

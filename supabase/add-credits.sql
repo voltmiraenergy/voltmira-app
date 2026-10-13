@@ -16,11 +16,16 @@ create table if not exists credit_ledger (
   id uuid primary key default gen_random_uuid(),
   company_id uuid not null references companies(id) on delete cascade,
   delta integer not null check (delta <> 0),
-  reason text not null check (reason in ('purchase', 'offer', 'grid_file', 'admin')),
+  reason text not null,
   ref text,
   paddle_txn_id text unique,
   created_at timestamptz not null default now()
 );
+-- what a row is for; widened as credits gained uses (an older copy of this
+-- table may have a shorter list, so the check is dropped and re-added)
+alter table credit_ledger drop constraint if exists credit_ledger_reason_check;
+alter table credit_ledger add constraint credit_ledger_reason_check
+  check (reason in ('purchase', 'offer', 'grid_file', 'annex', 'protocol', 'performance', 'admin'));
 create index if not exists credit_ledger_company_idx on credit_ledger(company_id, created_at desc);
 -- one spend per reference: the same quote's grid file is charged once
 create unique index if not exists credit_ledger_spend_once on credit_ledger(company_id, reason, ref)

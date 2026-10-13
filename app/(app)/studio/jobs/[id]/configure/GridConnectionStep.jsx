@@ -160,7 +160,7 @@ export default function GridConnectionStep({ job, patch, derived, lang }) {
           <CheckCircle2 size={15} aria-hidden="true" />
           {filed ? t({ en: "Undo: not filed", ro: "Anulează: nedepus", ru: "Отменить: не подано", uk: "Скасувати: не подано" }) : t({ en: "Mark as filed", ro: "Marchează ca depus", ru: "Отметить как поданное", uk: "Позначити як поданий" })}
         </button>
-        <button type="button" className="btn ghost sm" onClick={() => downloadStudioDoc("anexa-tehnica")}>
+        <button type="button" className="btn ghost sm" onClick={() => downloadStudioDoc("anexa-tehnica", undefined, { kind: "annex", ref: job.id })}>
           <FileText size={15} aria-hidden="true" /> {t({ en: "Print or save as PDF", ro: "Printează sau salvează PDF", ru: "Печать или PDF", uk: "Друк або PDF" })}
         </button>
       </div>
