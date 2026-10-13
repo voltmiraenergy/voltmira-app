@@ -11,7 +11,8 @@ import "../../dx.css";
 import "./builder.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
-import { createProposal, regenerateProposal, saveQuoteTemplate, markProjectWon } from "../../../../lib/actions.js";
+import { regenerateProposal, saveQuoteTemplate, markProjectWon } from "../../../../lib/actions.js";
+import { sendOffer } from "../../../../lib/sendOffer.js";
 import AddressField from "../../../../components/AddressField.jsx";
 import SiteDesigner from "../../../../components/SiteDesigner.jsx";
 import BackLink from "../../../../components/BackLink.jsx";
@@ -590,7 +591,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   }
 
   async function makeProposal() {
-    const code = await createProposal(initial.id);
+    const code = await sendOffer(initial.id);
     setPropUrl(`${location.origin}/p/${code}`);
     if (p.status === "draft") update({ status: "sent" });
     return code;
@@ -622,7 +623,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     if (!code) {
       // createProposal is idempotent (returns the existing code), so this does
       // NOT open the share modal — that's why it no longer mirrors "Generate".
-      try { code = await createProposal(initial.id); }
+      try { code = await sendOffer(initial.id); }
       catch { if (tab) tab.close(); return; }
     }
     if (p.status === "draft") update({ status: "sent" });

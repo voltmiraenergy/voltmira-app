@@ -4,7 +4,8 @@
 // them through the same server actions the rest of the app uses. Plain links
 // (link, tel) and the invoice chooser are rendered by the caller; this runs
 // everything that writes.
-import { setLeadStatus, createProjectFromLead, setInstallStep, setGridFile, createProposal, markProjectWon } from "../../../lib/actions.js";
+import { setLeadStatus, createProjectFromLead, setInstallStep, setGridFile, markProjectWon } from "../../../lib/actions.js";
+import { sendOffer } from "../../../lib/sendOffer.js";
 import { mdDayKey } from "../../../lib/tz.js";
 
 /**
@@ -33,7 +34,7 @@ export async function runAction(a) {
       return {};
     case "send":
     case "copy_link": {
-      const code = await createProposal(a.projectId);
+      const code = await sendOffer(a.projectId);
       const url = `${window.location.origin}/p/${code}`;
       try { await navigator.clipboard?.writeText(url); } catch { /* the link is shown either way */ }
       return { copied: url };

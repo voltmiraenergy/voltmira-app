@@ -14,7 +14,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, Receipt, Calculator, Bot, Bell, CreditCard, Upload, Trash2, RotateCcw, Download, Lock, PencilLine } from "lucide-react";
 import { supabaseBrowser } from "../../../lib/supabase-browser.js";
-import { openCheckout } from "../../../lib/paddle.js";
+import { openCheckout, yearlyReady } from "../../../lib/paddle.js";
+import { cr } from "../../../lib/creditsText.js";
 import { saveCompany, seedSampleData, clearSampleData, getMyRole } from "../../../lib/actions.js";
 import { defaultEngineSettings } from "@voltmira/engine";
 import { t, normLang, LANGS, LANG_NAMES } from "../../../lib/i18n.js";
@@ -24,6 +25,7 @@ import UpsellModal from "../../../components/UpsellModal.jsx";
 import { CONTRACT_TOKENS, COMMISSIONING_TOKENS } from "../../../lib/legalDocs.js";
 import LeadAssistant from "./LeadAssistant.jsx";
 import MonitoringBill from "./MonitoringBill.jsx";
+import CreditsPanel from "./CreditsPanel.jsx";
 import { clearOfflineData } from "../../../lib/offline.js";
 
 const TABS = [
@@ -84,6 +86,7 @@ export default function Settings() {
   const router = useRouter();
   const [co, setCo] = useState(null);
   const [msg, setMsg] = useState("");
+  const [period, setPeriod] = useState("month");   // the plan buttons: monthly or yearly
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tab, setTabState] = useState("company");
@@ -228,6 +231,7 @@ export default function Settings() {
       const { data: { user } } = await sb.auth.getUser();
       await openCheckout({
         plan,
+        interval: period === "year" && yearlyReady(plan) ? "year" : "month",
         email: user?.email,
         companyId: co.id,
         successUrl: (process.env.NEXT_PUBLIC_APP_URL || location.origin) + "/settings?tab=plan&upgraded=1",
@@ -616,11 +620,24 @@ export default function Settings() {
       <>
         <Card title={t("s_plan", lang)} extra={<span className="st-plan-badge">{co.plan}</span>}>
           {co.plan === "free" ? (
-            <div className="st-plan-acts">
-              <button className="dx-btn primary" onClick={() => upgrade("pro")}>{t("s_upgrade_pro", lang)}</button>
-              <button className="dx-btn" onClick={() => upgrade("team")}>{t("s_team", lang)}</button>
-            </div>
+            <>
+              {/* monthly or yearly: the yearly prices are 10 months for 12 */}
+              {(yearlyReady("pro") || yearlyReady("team")) && (
+                <div className="seg2 cr-seg" role="group" aria-label={cr("period_l", lang)}>
+                  <button type="button" className={period === "month" ? "on" : ""} aria-pressed={period === "month"} onClick={() => setPeriod("month")}>{cr("per_month", lang)}</button>
+                  <button type="button" className={period === "year" ? "on" : ""} aria-pressed={period === "year"} onClick={() => setPeriod("year")}>{cr("per_year", lang)}, {cr("two_free", lang)}</button>
+                </div>
+              )}
+              <div className="st-plan-acts">
+                <button className="dx-btn primary" onClick={() => upgrade("pro")}>{cr(period === "year" ? "pro_year" : "pro_month", lang)}</button>
+                <button className="dx-btn" onClick={() => upgrade("team")}>{cr(period === "year" ? "team_year" : "team_month", lang)}</button>
+              </div>
+              {period === "year" && <p className="st-p cr-dim">{yearlyReady("pro") ? cr("year_note", lang) : cr("year_off", lang)}</p>}
+            </>
           ) : <p className="st-p">{t("s_billing_note", lang, { plan: co.plan })}</p>}
+        </Card>
+        <Card title={cr("h", lang)}>
+          <CreditsPanel lang={lang} companyId={co.id} plan={co.plan} />
         </Card>
         <Card title={t("mb_title", lang)} desc={t("mb_desc", lang)}>
           <MonitoringBill lang={lang} />

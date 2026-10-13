@@ -3,7 +3,8 @@
 //   (https://voltmira.com/api/paddle/webhook), subscribe to:
 //   subscription.created, subscription.activated, subscription.updated,
 //   subscription.canceled, subscription.paused, and transaction.completed (a
-//   bank pack paid by card: lib/packPricing.js unlockFromTransaction).
+//   bank pack paid by card: lib/packPricing.js unlockFromTransaction; or a
+//   pack of credits: lib/credits.js creditsFromTransaction).
 // Copy the destination's signing secret into PADDLE_WEBHOOK_SECRET (Vercel env).
 //
 // company_id + plan arrive in custom_data (set at checkout in lib/paddle.js), so
@@ -13,6 +14,7 @@ import crypto from "node:crypto";
 import { supabaseAdmin } from "../../../../lib/supabase.js";
 import { unlockFromTransaction } from "../../../../lib/packPricing.js";
 import { PLANTS_KEY } from "../../../../lib/portfolioModel.js";
+import { creditsFromTransaction } from "../../../../lib/credits.js";
 
 // Paddle-Signature header looks like "ts=1700000000;h1=<hex>". The signed
 // payload is `${ts}:${rawBody}`, HMAC-SHA256 with the destination secret.
@@ -45,7 +47,15 @@ export async function POST(req) {
   const data = evt.data || {};
   const custom = data.custom_data || {};
   const companyId = custom.company_id;
-  const plan = ["pro", "team", "enterprise"].includes(custom.plan) ? custom.plan : "pro";
+  // The plan comes from the PRICE that was subscribed to (monthly or yearly), so
+  // a checkout cannot name a dearer plan than the one it paid for; custom_data
+  // is only the fallback for a price id this server does not know.
+  const priceIds = (data.items || []).map((it) => it?.price?.id || it?.price_id).filter(Boolean);
+  const E = process.env;
+  const byPrice = priceIds.some((id) => id && (id === E.NEXT_PUBLIC_PADDLE_PRICE_TEAM || id === E.NEXT_PUBLIC_PADDLE_PRICE_TEAM_YEARLY)) ? "team"
+    : priceIds.some((id) => id && (id === E.NEXT_PUBLIC_PADDLE_PRICE_PRO || id === E.NEXT_PUBLIC_PADDLE_PRICE_PRO_YEARLY)) ? "pro"
+    : priceIds.some((id) => id && id === E.NEXT_PUBLIC_PADDLE_PRICE_ENTERPRISE) ? "enterprise" : null;
+  const plan = byPrice || (["pro", "team", "enterprise"].includes(custom.plan) ? custom.plan : "pro");
   if (!companyId) return NextResponse.json({ received: true, note: "no company_id" });
 
   const db = supabaseAdmin();
@@ -70,6 +80,22 @@ export async function POST(req) {
     q = row.plant_id ? q.eq("plant_id", row.plant_id) : q.is("plant_id", null);
     await q;
     return NextResponse.json({ received: true, unlocked: true });
+  }
+
+  // credits paid by card: add the pack the price paid for, once (the
+  // transaction id is unique, so a retried notification adds nothing)
+  if (type === "transaction.completed" && custom.kind === "credits") {
+    const { row, error } = creditsFromTransaction({ data });
+    if (error) {
+      console.error("[paddle] credits not added:", error, data.id);
+      return NextResponse.json({ received: true, note: error });
+    }
+    const { error: dbErr } = await db.from("credit_ledger").upsert(row, { onConflict: "paddle_txn_id", ignoreDuplicates: true });
+    if (dbErr) {
+      console.error("[paddle] credits failed:", dbErr.message);
+      return NextResponse.json({ error: "credits_failed" }, { status: 500 });
+    }
+    return NextResponse.json({ received: true, credited: row.delta });
   }
 
   const setPlan = (p, subId, custId) =>

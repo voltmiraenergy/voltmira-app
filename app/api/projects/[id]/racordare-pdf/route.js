@@ -13,6 +13,8 @@ import { fillRacordarePdf } from "../../../../../lib/racordarePdf.js";
 import { fillRedNordPdf } from "../../../../../lib/racordareRedNordPdf.js";
 import { suggestOperator, OPERATORS } from "../../../../../lib/mdGrid.js";
 import { designCheck } from "../../../../../lib/designCheck.js";
+import { gridFileDecision, creditsPaywallOn } from "../../../../../lib/credits.js";
+import { creditBalance, paidBefore, spendCredits } from "../../../../../lib/creditAccess.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,6 +36,16 @@ export async function GET(req, props) {
   if (!project) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (project.market !== "MD")
     return NextResponse.json({ error: "md_only" }, { status: 400 });
+
+  // The free plan pays one credit per quote for the filled application (a paid
+  // plan includes it; nothing is charged until CREDITS_PAYWALL is on). Out of
+  // credits, the person is sent to the plan page, not shown a bare error.
+  let spend = 0;
+  if (creditsPaywallOn()) {
+    const d = gridFileDecision({ plan: co.plan || "free", balance: await creditBalance(project.company_id), paidBefore: await paidBefore(project.company_id, "grid_file", project.id) });
+    if (!d.allowed) return NextResponse.redirect(new URL("/settings?tab=plan&need=grid", req.url));
+    spend = d.spend;
+  }
 
   const want = new URL(req.url).searchParams.get("op");
   const saved = project.install_progress?.gridFile?.operator;
@@ -61,6 +73,9 @@ export async function GET(req, props) {
         systemKw: project.kw, hasBattery: !!project.batt, battKwh: project.batt_kwh,
       });
     }
+    // taken only once the file exists, so a failed fill costs nothing
+    if (spend && !(await spendCredits(project.company_id, spend, "grid_file", project.id)))
+      return NextResponse.redirect(new URL("/settings?tab=plan&need=grid", req.url));
     const file = op === "rednord" ? "cerere-racordare-red-nord.pdf" : "cerere-racordare-premier-energy.pdf";
     return new NextResponse(bytes, {
       headers: {

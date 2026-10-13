@@ -47,7 +47,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getProjectWorkflow } from "../lib/workflowActions.js";
-import { setInstallStep, setGridFile, createProposal, markProjectWon } from "../lib/actions.js";
+import { setInstallStep, setGridFile, markProjectWon } from "../lib/actions.js";
+import { sendOffer } from "../lib/sendOffer.js";
 import { wt, describe, stageName, actLabel } from "../lib/workflowText.js";
 import { mdDayKey, fmtDate } from "../lib/tz.js";
 import { LOCALE } from "../lib/relTime.js";
@@ -117,7 +118,7 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
       } else if (a.type === "won") {
         await markProjectWon(projectId);
       } else if (a.type === "send" || a.type === "copy_link") {
-        const code = await createProposal(projectId);
+        const code = await sendOffer(projectId);
         const url = `${window.location.origin}/p/${code}`;
         try { await navigator.clipboard?.writeText(url); } catch { /* the link is shown below either way */ }
         setMsg({ ok: true, text: `${wt("rl_copied", lang)}: ${url}` });
