@@ -16,6 +16,7 @@ import { Building2, Receipt, Calculator, Bot, Bell, CreditCard, Upload, Trash2, 
 import { supabaseBrowser } from "../../../lib/supabase-browser.js";
 import { openCheckout, yearlyReady } from "../../../lib/paddle.js";
 import { cr } from "../../../lib/creditsText.js";
+import { creditsPreview } from "../../../lib/creditsPreview.js";
 import { saveCompany, seedSampleData, clearSampleData, getMyRole } from "../../../lib/actions.js";
 import { defaultEngineSettings } from "@voltmira/engine";
 import { t, normLang, LANGS, LANG_NAMES } from "../../../lib/i18n.js";
@@ -637,7 +638,7 @@ export default function Settings() {
           ) : <p className="st-p">{t("s_billing_note", lang, { plan: co.plan })}</p>}
         </Card>
         <Card title={cr("h", lang)}>
-          <CreditsPanel lang={lang} companyId={co.id} plan={co.plan} />
+          <CreditsPanel lang={lang} companyId={co.id} plan={creditsPreview() ? "free" : co.plan} />
         </Card>
         <Card title={t("mb_title", lang)} desc={t("mb_desc", lang)}>
           <MonitoringBill lang={lang} />

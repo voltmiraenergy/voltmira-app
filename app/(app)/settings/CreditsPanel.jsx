@@ -48,7 +48,7 @@ export default function CreditsPanel({ lang = "en", companyId, plan }) {
   const label = (r) => (r.delta > 0 ? cr("h_purchase", lang, { n: r.delta }) : cr("h_" + r.reason, lang));
 
   return (
-    <>
+    <div className="cr-wrap">
       {need && !paid && <p className="cr-banner" role="status">{cr(need === "grid" ? "need_grid" : "need_offers", lang)}</p>}
       {bought && <p className="cr-banner ok" role="status">{cr("bought", lang)}</p>}
       <p className="st-p">{cr("desc", lang)}</p>
@@ -82,6 +82,6 @@ export default function CreditsPanel({ lang = "en", companyId, plan }) {
           </ul>
         </>
       )}
-    </>
+    </div>
   );
 }

@@ -82,6 +82,8 @@
 .app .st-plan-badge { font-size: 11.5px; font-weight: 700; background: var(--amber-tint); color: var(--amber-ink); border-radius: 99px; padding: 3px 11px; text-transform: capitalize; }
 .app .st-plan-acts { display: flex; gap: 8px; flex-wrap: wrap; }
 .app .st-plan-acts .dx-btn { height: 38px; padding: 0 16px; font-size: 13.5px; }
+.app .cr-wrap { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.app .cr-wrap > * { margin: 0; max-width: 100%; }
 .app .cr-seg { margin: 0 0 12px; max-width: 460px; }
 .app .cr-seg button { font-size: 13px; padding: 8px 10px; }
 .app .cr-dim { color: var(--muted); font-size: 12.5px; }

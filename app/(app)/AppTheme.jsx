@@ -139,6 +139,15 @@ const CSS = `
     padding:6px;border-radius:8px;transition:color .15s,background .15s;
   }
   .reset-link:hover{color:#fff;background:var(--white-line)}
+  .side-credits{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--white-line);
+    text-decoration:none;color:inherit;transition:background .15s}
+  .side-credits:hover{background:rgba(255,255,255,.07)}
+  .side-credits:focus-visible{outline-offset:-2px}
+  .side-credits .sp-ico{background:rgba(235,165,66,.18);color:var(--amber-soft)}
+  .side-credits:hover .sp-go{color:#fff;transform:translateX(2px)}
+  .sc-bar{display:block;height:5px;border-radius:3px;background:var(--white-line);margin:5px 0 4px;overflow:hidden}
+  .sc-bar i{display:block;height:100%;border-radius:3px;background:var(--amber-soft)}
+  .sc-bar.is-full i{background:var(--red)}
   .side-plan{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--white-line);
     text-decoration:none;color:inherit;transition:background .15s}
   .side-plan:hover{background:rgba(255,255,255,.07)}
