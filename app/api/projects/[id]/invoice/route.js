@@ -15,7 +15,7 @@
 // The caller must be signed in and own the project, and the headless browser
 // replays THEIR session cookies so it can never render more than they may see.
 import { NextResponse } from "next/server";
-import { renderPdf } from "../../../../../lib/renderProposalPdf.js";
+import { renderPdf, requestOrigin } from "../../../../../lib/renderProposalPdf.js";
 import { supabaseServer } from "../../../../../lib/supabase.js";
 import { currentUser, currentCompany, currentActor } from "../../../../../lib/session.js";
 import { sendEmail, proformaEmail, emailConfigured } from "../../../../../lib/email.js";
@@ -45,7 +45,7 @@ async function authorize(req, id) {
   const co = await currentCompany();
   if (!co) return NextResponse.json({ error: "no_company" }, { status: 403 });
   // RLS-scoped read: a project outside the caller's company simply isn't there.
-  const { data: project } = await supabaseServer()
+  const { data: project } = await (await supabaseServer())
     .from("projects").select("id, title, client_name, company_id, invoice_no").eq("id", id).maybeSingle();
   if (!project) return NextResponse.json({ error: "not_found" }, { status: 404 });
   return { user, co, project };
@@ -56,13 +56,16 @@ function depositOf(v) {
 }
 
 function targetUrl(req, id, dep) {
-  const base = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+  // the caller's own host: the render replays THEIR session cookies, which
+  // mean nothing on another host NEXT_PUBLIC_APP_URL might name
+  const base = requestOrigin(req);
   // pdf=1 tells the page to skip PrintNow: window.print() inside headless
   // Chromium blocks rather than returning, and we drive printing via CDP.
   return `${base}/projects/${id}/invoice?pdf=1${dep > 0 ? `&deposit=${dep}` : ""}`;
 }
 
-export async function GET(req, { params }) {
+export async function GET(req, props) {
+  const params = await props.params;
   if (await isRateLimited(`inv:${clientIp(req)}`, 30, 60 * 60 * 1000)) {
     return NextResponse.json({ error: "rate" }, { status: 429 });
   }
@@ -71,7 +74,7 @@ export async function GET(req, { params }) {
 
   const dep = depositOf(new URL(req.url).searchParams.get("deposit"));
   try {
-    const { pdf, timings } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req) });
+    const { pdf, timings } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page" });
     const name = `${auth.project.invoice_no || "proforma"}.pdf`.replace(/[^\w.-]+/g, "-");
     return new NextResponse(pdf, {
       headers: {
@@ -83,11 +86,13 @@ export async function GET(req, { params }) {
     });
   } catch (e) {
     console.error("[invoice-pdf] failed:", e?.message || e);
-    return NextResponse.json({ error: "pdf_failed" }, { status: 500 });
+    // The invoice page prints itself (PrintNow): a usable fallback, not raw JSON.
+    return NextResponse.redirect(`${requestOrigin(req)}/projects/${params.id}/invoice${dep > 0 ? `?deposit=${dep}` : ""}`, 303);
   }
 }
 
-export async function POST(req, { params }) {
+export async function POST(req, props) {
+  const params = await props.params;
   if (!emailConfigured()) return NextResponse.json({ error: "email_not_configured" }, { status: 503 });
   if (await isRateLimited(`invmail:${clientIp(req)}`, 30, 60 * 60 * 1000)) {
     return NextResponse.json({ error: "rate" }, { status: 429 });
@@ -103,7 +108,7 @@ export async function POST(req, { params }) {
 
   let pdf;
   try {
-    ({ pdf } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req) }));
+    ({ pdf } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page" }));
   } catch (e) {
     console.error("[invoice-mail] render failed:", e?.message || e);
     return NextResponse.json({ error: "pdf_failed" }, { status: 500 });
@@ -114,6 +119,7 @@ export async function POST(req, { params }) {
     companyName: auth.co.name,
     depositPct: dep,
     note: String(body?.note || "").slice(0, 1000),
+    lang: auth.co.lang,
   });
   const res = await sendEmail({
     to, subject, html,

@@ -1,0 +1,25 @@
+/* components/uapanel.css — the Ukraine panel on a quote (UaPanel.jsx). */
+
+.uap { display: flex; flex-direction: column; gap: 18px; }
+.uap h3 { margin: 0; }
+.uap-block { display: flex; flex-direction: column; gap: 10px; padding-top: 16px; border-top: 1px solid var(--line); }
+.uap-block:first-of-type { padding-top: 0; border-top: 0; }
+.uap-block h4 { margin: 0; font-size: 14px; font-weight: 700; }
+.uap-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.uap-fields .field, .uap-credit .field { margin: 0; }
+@media (max-width: 640px) { .uap-fields { grid-template-columns: 1fr; } }
+.uap-hint { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.45; max-width: 70ch; }
+.uap-p { margin: 0; font-size: 13px; line-height: 1.55; max-width: 70ch; }
+
+.uap-verdict { display: flex; flex-direction: column; gap: 3px; padding: 11px 13px; border-radius: 10px;
+  background: var(--amber-tint); color: var(--amber-deep, #8A5A0F); font-size: 12.5px; line-height: 1.5; }
+.uap-verdict b { font-size: 13.5px; }
+.uap-verdict.good { background: var(--green-tint); color: var(--green); }
+.uap-apply { align-self: flex-start; }
+
+.uap-credit { display: grid; grid-template-columns: minmax(120px, 1fr) repeat(3, 1fr); gap: 10px; align-items: end; }
+@media (max-width: 760px) { .uap-credit { grid-template-columns: 1fr 1fr; } }
+.uap-m { background: var(--paper); border: 1px solid var(--line); border-radius: 11px; padding: 9px 12px; }
+.uap-m b { display: block; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.uap-m.good b { color: var(--green); }
+.uap-m span { display: block; margin-top: 2px; font-size: 10.5px; color: var(--muted); }

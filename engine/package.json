@@ -5,7 +5,8 @@
   "main": "engine.js",
   "exports": {
     ".": "./engine.js",
-    "./pvgis": "./pvgis.js"
+    "./pvgis": "./pvgis.js",
+    "./siteClimate": "./siteClimate.js"
   },
   "scripts": {
     "test": "node --test *.test.js"

@@ -14,11 +14,11 @@ import { t } from "../../lib/i18n.js";
 function detectLang() {
   try {
     const s = localStorage.getItem("voltmira_lang");
-    if (s === "en" || s === "ro" || s === "ru") return s;
+    if (s === "en" || s === "ro" || s === "ru" || s === "uk") return s;
   } catch { /* ignore */ }
   try {
     const n = (navigator.language || "en").slice(0, 2).toLowerCase();
-    if (n === "ro" || n === "ru") return n;
+    if (n === "ro" || n === "ru" || n === "uk") return n;
   } catch { /* ignore */ }
   return "en";
 }
@@ -108,9 +108,9 @@ export default function ResetPassword() {
   const lbl = { fontSize: 13, fontWeight: 600, color: "var(--app-muted)", display: "block", margin: "14px 0 6px" };
 
   return (
-    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "var(--app-bg)",
+    <main style={{ minHeight: "100dvh", display: "grid", gridTemplateColumns: "minmax(0, 1fr)", placeItems: "center", background: "var(--app-bg)",
       fontFamily: "Inter, system-ui, sans-serif", padding: 18 }}>
-      <div style={{ width: "100%", maxWidth: 400, background: "var(--app-surface)", border: "1px solid var(--app-line)",
+      <div style={{ width: "100%", maxWidth: 400, boxSizing: "border-box", background: "var(--app-surface)", border: "1px solid var(--app-line)",
         borderRadius: 16, padding: "30px 26px", color: "var(--app-text)" }}>
         <h1 style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 6px" }}>
           {t(invite ? "rp_title_invite" : "rp_title_reset", lang)}</h1>

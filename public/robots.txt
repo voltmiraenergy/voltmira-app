@@ -1,9 +1,8 @@
+# Private and app areas are kept out of search with a noindex header rather
+# than a Disallow here: a blocked URL cannot be crawled, so Google never sees
+# the noindex and reports the page as "Blocked by robots.txt" instead.
 User-agent: *
 Allow: /
 Disallow: /api/
-# /demo provisions a real (disposable) workspace per visit, so a crawler hitting
-# it would create tenants. The landing page links to it for humans; there is
-# nothing here worth indexing anyway, since it just redirects to the app.
-Disallow: /demo
 
 Sitemap: https://voltmira.com/sitemap.xml

@@ -1,0 +1,339 @@
+/* components/SiteDesigner.css — the roof designer: a full-screen workspace with
+ * the satellite map on the left and, on the right, three tabs (roof,
+ * obstacles, panels) above the result (stacked on a phone). Controls are
+ * sized for a finger: 44 px and up. Built on the app tokens from
+ * AppTheme.jsx, so both themes follow html[data-theme].
+ *
+ * Every selector starts with `.app`, as in dx.css: AppTheme's <style> sits
+ * later in the document and resets `.app *{margin:0;padding:0}` and
+ * `.app button`, so a bare class would lose every tie to it.
+ */
+
+.app .sd-scrim {
+  position: fixed; inset: 0; z-index: 130; display: flex; padding: 16px;
+  background: rgba(13, 31, 24, .55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+}
+.app .sd-shell {
+  --sd-d: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --sd-on-green: #fff;
+  --sd-plane: #2E9A5E;
+  position: relative; flex: 1; min-width: 0; width: 100%; max-width: 1600px; margin: 0 auto;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--paper); color: var(--ink); border-radius: 18px; box-shadow: var(--shadow-lg);
+}
+html[data-theme="dark"] .app .sd-shell { --sd-on-green: #07130D; }
+/* focus lands on the dialog itself when it opens; that is not a control */
+.app .sd-shell:focus, .app .sd-shell:focus-visible { outline: none; }
+
+/* ------------------------------------------------------------------ header */
+.app .sd-head {
+  flex: none; display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px 12px 18px; background: var(--paper-2); border-bottom: 1px solid var(--line);
+}
+.app .sd-head-ic {
+  flex: none; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--green-tint); color: var(--green);
+}
+.app .sd-head-tx { flex: 1; min-width: 0; }
+.app .sd-head-tx h2 { font-family: var(--sd-d); font-size: 18px; font-weight: 700; letter-spacing: -.01em; line-height: 1.2; }
+.app .sd-head-tx p { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.app .sd-head-acts { flex: none; display: flex; align-items: center; gap: 8px; }
+.app .sd-head-sep { width: 1px; height: 28px; background: var(--line); margin: 0 2px; }
+
+.app .sd-ibtn {
+  width: 44px; height: 44px; border-radius: 11px; display: grid; place-items: center; flex: none;
+  border: 1px solid var(--line); background: var(--paper-2); color: var(--ink);
+  transition: border-color .15s, color .15s, background .15s;
+}
+.app .sd-ibtn:hover:not(:disabled) { border-color: var(--green); color: var(--green); }
+.app .sd-ibtn:disabled { opacity: .38; cursor: default; }
+.app .sd-ibtn.del { width: 40px; height: 40px; border-radius: 10px; color: var(--muted); }
+.app .sd-ibtn.del:hover:not(:disabled) { border-color: var(--red); color: var(--red); background: var(--red-tint); }
+
+/* -------------------------------------------------------------------- body */
+.app .sd-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 420px; }
+.app .sd-stage { position: relative; min-width: 0; min-height: 0; background: #1B2520; }
+.app .sd-map { position: absolute; inset: 0; }
+.app .sd-map.leaflet-container { font: inherit; background: #1B2520; }
+
+/* the tools, floating over the top of the map, always with their names */
+.app .sd-tools {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 1000;
+  display: flex; align-items: stretch; gap: 3px; padding: 5px; max-width: calc(100% - 28px);
+  background: var(--paper-2); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-lg);
+  overflow-x: auto; scrollbar-width: none;
+}
+.app .sd-tools::-webkit-scrollbar { display: none; }
+.app .sd-tool {
+  flex: none; display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px;
+  border-radius: 11px; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.app .sd-tool svg { color: var(--muted); transition: color .15s; }
+.app .sd-tool:hover { background: var(--paper); }
+.app .sd-tool.on { background: var(--green); color: var(--sd-on-green); }
+.app .sd-tool.on svg { color: var(--sd-on-green); }
+.app .sd-tool-sep { flex: none; width: 1px; margin: 8px 4px; background: var(--line); }
+
+/* what the active tool expects next */
+.app .sd-hint {
+  position: absolute; left: 50%; top: 80px; transform: translateX(-50%); z-index: 1000;
+  width: max-content; max-width: min(620px, calc(100% - 28px));
+  display: flex; align-items: center; gap: 14px; padding: 12px 12px 12px 18px; border-radius: 14px;
+  background: rgba(13, 31, 24, .93); color: #fff; font-size: 14px; line-height: 1.45; box-shadow: var(--shadow-lg);
+}
+.app .sd-hint-tx { min-width: 0; }
+.app .sd-hint-types { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.app .sd-hint-types button {
+  height: 38px; padding: 0 12px; border-radius: 9px; font-size: 13.5px; font-weight: 600;
+  background: rgba(255, 255, 255, .12); color: rgba(255, 255, 255, .88);
+}
+.app .sd-hint-types button.on { background: #fff; color: #142A21; }
+.app .sd-hint-end {
+  flex: none; height: 40px; padding: 0 16px; border-radius: 10px; font-size: 14px; font-weight: 650;
+  background: rgba(255, 255, 255, .16); color: #fff;
+}
+.app .sd-hint-end:hover { background: rgba(255, 255, 255, .26); }
+
+/* map switches, bottom left */
+.app .sd-mapctl { position: absolute; left: 14px; bottom: 14px; z-index: 1000; display: flex; flex-wrap: wrap; gap: 8px; max-width: calc(100% - 100px); }
+.app .sd-chip {
+  display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 16px; border-radius: 99px;
+  background: var(--paper-2); border: 1px solid var(--line); color: var(--ink);
+  font-size: 13.5px; font-weight: 600; box-shadow: var(--shadow); white-space: nowrap;
+}
+.app .sd-chip:hover { border-color: var(--green); color: var(--green); }
+.app .sd-chip.on { border-color: var(--green); color: var(--green); box-shadow: 0 0 0 3px var(--green-tint), var(--shadow); }
+
+.app .sd-loading {
+  position: absolute; inset: 0; z-index: 1100; display: grid; place-items: center; padding: 24px;
+  background: #1B2520; color: rgba(255, 255, 255, .78); font-size: 14px; text-align: center; line-height: 1.5;
+}
+
+/* Leaflet's own chrome, restyled to match */
+.app .sd-map .leaflet-bottom.leaflet-right { margin-bottom: 4px; }
+.app .sd-map .leaflet-control-zoom { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-lg); }
+.app .sd-map .leaflet-control-zoom a {
+  width: 44px; height: 44px; line-height: 42px; font-size: 20px; font-weight: 500;
+  background: var(--paper-2); color: var(--ink); border-bottom-color: var(--line);
+}
+.app .sd-map .leaflet-control-zoom a:hover { background: var(--paper); color: var(--green); }
+.app .sd-map .leaflet-control-attribution { font-size: 10px; background: rgba(255, 255, 255, .72); }
+.app .sd-pin-wrap { pointer-events: none; }
+.app .sd-pin { width: 32px; height: 40px; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .45)); }
+.app .sd-mk-wrap { background: none; border: 0; }
+.app .sd-mk {
+  width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; cursor: grab;
+  background: #142A21; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
+  font-size: 9.5px; font-weight: 800; letter-spacing: .02em; font-family: 'Inter', system-ui, sans-serif;
+}
+.app .sd-mk.on { background: #E89B2D; color: #142A21; }
+.app .sd-dim-icon { background: none; border: 0; }
+.app .sd-dim-label {
+  display: inline-block; padding: 2px 6px; border-radius: 5px; white-space: nowrap;
+  background: rgba(13, 31, 24, .86); color: #fff; font-size: 10.5px; font-weight: 700;
+  font-variant-numeric: tabular-nums; font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ------------------------------------------------------------- side panel */
+.app .sd-side { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--paper-2); border-left: 1px solid var(--line); }
+
+/* the three tabs */
+.app .sd-tabs {
+  flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px;
+  padding: 12px 14px; border-bottom: 1px solid var(--line); background: var(--paper-2);
+}
+/* number above the name, so "Obstacole" or "Препятствия" fits at any width */
+.app .sd-tab {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 0;
+  height: 60px; padding: 0 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); color: var(--muted);
+  font-size: 13.5px; font-weight: 650; transition: border-color .15s, background .15s, color .15s;
+}
+.app .sd-tab-tx { max-width: 100%; }
+.app .sd-tab:hover { border-color: var(--green); color: var(--ink); }
+.app .sd-tab.on { background: var(--green-tint); border-color: var(--green); color: var(--ink); }
+.app .sd-tab-tx { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .sd-tab-n {
+  flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 12px; font-weight: 700; background: var(--paper-2); border: 1.5px solid var(--line); color: var(--muted);
+}
+.app .sd-tab.on .sd-tab-n { border-color: var(--green); color: var(--green); }
+.app .sd-tab.done .sd-tab-n { background: var(--green); border-color: var(--green); color: var(--sd-on-green); }
+
+.app .sd-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 16px 20px; display: flex; flex-direction: column; gap: 16px; }
+.app .sd-step-h h3 { font-family: var(--sd-d); font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+.app .sd-step-h p { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin-top: 4px; }
+
+/* buttons */
+.app .sd-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 44px; padding: 0 18px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--paper-2); color: var(--ink);
+  font-size: 14px; font-weight: 650; text-align: center; transition: background .15s, border-color .15s, color .15s;
+}
+.app .sd-btn.big { width: 100%; min-height: 52px; height: auto; padding: 10px 18px; font-size: 15px; line-height: 1.25; }
+.app .sd-btn:hover:not(:disabled) { border-color: var(--green); color: var(--green); }
+.app .sd-btn.on { background: var(--green-tint); border-color: var(--green); color: var(--green); }
+.app .sd-btn.primary { background: var(--green); border-color: var(--green); color: var(--sd-on-green); }
+.app .sd-btn.primary:hover:not(:disabled) { background: var(--green-soft); border-color: var(--green-soft); color: var(--sd-on-green); }
+.app .sd-btn:disabled { opacity: .5; cursor: default; }
+.app .sd-btn[aria-busy="true"] { cursor: progress; }
+.app .sd-btn svg { flex: none; }
+.app .sd-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+
+/* how to draw, in three steps */
+.app .sd-how { list-style: none; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; background: var(--paper); border: 1px solid var(--line); }
+.app .sd-how li { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; line-height: 1.45; }
+.app .sd-how li span {
+  flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; margin-top: -2px;
+  background: var(--paper-2); border: 1.5px solid var(--green); color: var(--green); font-size: 12.5px; font-weight: 700;
+}
+
+/* one card per roof side */
+.app .sd-cards { display: flex; flex-direction: column; gap: 10px; }
+.app .sd-plane { border: 1px solid var(--line); border-radius: 14px; background: var(--paper-2); transition: border-color .15s, box-shadow .15s; }
+.app .sd-plane.on { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-tint); }
+.app .sd-plane-top { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 12px; }
+.app .sd-plane-name { flex: 1; min-width: 0; min-height: 44px; display: flex; align-items: center; gap: 12px; text-align: left; border-radius: 9px; }
+.app .sd-swatch { flex: none; width: 16px; height: 16px; border-radius: 5px; border: 2px solid var(--sd-plane); background: color-mix(in srgb, var(--sd-plane) 18%, transparent); }
+.app .sd-plane.on .sd-swatch { border-color: var(--amber); background: var(--amber-tint); }
+.app .sd-plane-name span { min-width: 0; }
+.app .sd-plane-name b { display: block; font-size: 15px; font-weight: 650; }
+.app .sd-plane-name small { display: block; font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.app .sd-plane-fit { flex: none; font-size: 13px; font-weight: 700; color: var(--green); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.app .sd-plane-body { display: flex; flex-direction: column; gap: 18px; padding: 16px 14px 16px; border-top: 1px solid var(--line); }
+
+/* fields */
+.app .sd-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.app .sd-lbl { font-size: 13px; font-weight: 650; color: var(--muted); }
+.app .sd-lbl-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.app .sd-select, .app .sd-num {
+  height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 11px;
+  background: var(--paper-2); color: var(--ink); font-size: 14.5px; font-variant-numeric: tabular-nums;
+}
+.app .sd-select { width: 100%; min-width: 0; }
+.app .sd-num { width: 76px; text-align: right; font-weight: 650; }
+.app .sd-num.wide { width: 100%; text-align: left; font-weight: 500; }
+.app .sd-select:focus, .app .sd-num:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px var(--green-tint); }
+.app .sd-numwrap { display: inline-flex; align-items: center; gap: 6px; }
+.app .sd-unit { font-size: 14px; color: var(--muted); min-width: 1ch; }
+.app .sd-slider { width: 100%; margin: 8px 0 2px; cursor: pointer; }
+.app .sd-scale { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); }
+
+/* facing: an 8-way compass around an arrow pointing down the slope */
+.app .sd-compass-row { display: flex; align-items: flex-start; gap: 16px; }
+.app .sd-compass { flex: none; display: grid; grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(3, 48px); gap: 5px; }
+.app .sd-dir {
+  border-radius: 11px; border: 1px solid var(--line); background: var(--paper);
+  font-size: 13px; font-weight: 700; color: var(--muted); transition: border-color .15s, color .15s, background .15s;
+}
+.app .sd-dir:hover { border-color: var(--green); color: var(--green); }
+.app .sd-dir.on { background: var(--green); border-color: var(--green); color: var(--sd-on-green); }
+.app .sd-compass-mid { display: grid; place-items: center; border-radius: 50%; border: 1.5px dashed var(--line); color: var(--amber); }
+.app .sd-compass-mid svg { transition: transform .2s; }
+.app .sd-compass-side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding-top: 2px; }
+.app .sd-compass-side > b { font-size: 16px; font-weight: 700; line-height: 1.25; }
+.app .sd-compass-side .sd-field { gap: 6px; }
+.app .sd-note { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+.app .sd-guess { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 11px; background: var(--amber-tint); font-size: 13px; line-height: 1.45; color: var(--ink); }
+.app .sd-guess svg { flex: none; color: var(--amber); margin-top: 1px; }
+
+/* obstacles and electrical points */
+.app .sd-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.app .sd-row {
+  display: flex; align-items: center; gap: 10px; padding: 7px 7px 7px 9px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2); transition: border-color .15s, box-shadow .15s;
+}
+.app .sd-row.on { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-tint); }
+.app .sd-row-ic { flex: none; width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font-size: 10.5px; font-weight: 800; }
+.app .sd-row-ic.ob { background: var(--red-tint); color: var(--red); }
+.app .sd-row-ic.tree { background: var(--green-tint); color: var(--green); }
+.app .sd-row-ic.mk { background: #142A21; color: #fff; }
+.app .sd-row .sd-select { flex: 1; }
+.app .sd-row-name { flex: 1; min-width: 0; min-height: 40px; text-align: left; font-size: 14.5px; font-weight: 600; }
+.app .sd-sub { display: flex; flex-direction: column; gap: 10px; padding-top: 16px; border-top: 1px solid var(--line); }
+.app .sd-sub-h { display: flex; align-items: center; gap: 8px; }
+.app .sd-sub-h h4 { font-size: 15px; font-weight: 700; }
+.app .sd-tag { font-size: 11.5px; font-weight: 650; color: var(--muted); padding: 2px 8px; border-radius: 99px; background: var(--paper); border: 1px solid var(--line); }
+.app .sd-help { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+/* segmented control */
+.app .sd-seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; padding: 4px; border-radius: 12px; background: var(--paper); border: 1px solid var(--line); }
+.app .sd-seg button { min-height: 40px; padding: 4px 6px; border-radius: 9px; font-size: 14px; font-weight: 600; color: var(--muted); line-height: 1.2; }
+.app .sd-seg button:hover { color: var(--ink); }
+.app .sd-seg button.on { background: var(--paper-2); color: var(--ink); box-shadow: var(--shadow); }
+
+.app .sd-more { border-top: 1px solid var(--line); padding-top: 12px; }
+.app .sd-more summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--muted); min-height: 40px; }
+.app .sd-more summary:hover { color: var(--ink); }
+.app .sd-more summary::-webkit-details-marker { display: none; }
+.app .sd-more summary svg { transition: transform .15s; }
+.app .sd-more[open] summary svg { transform: rotate(180deg); }
+.app .sd-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 10px; }
+.app .sd-grid2 .sd-help { grid-column: 1 / -1; }
+
+/* charts (drawn for the PDF, so they keep their light paper) */
+.app .sd-chart { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.app .sd-chart h4 { font-size: 13px; font-weight: 650; color: var(--muted); }
+.app .sd-chart .p-chart { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; background: #FCFBF7; }
+
+/* ------------------------------------------------ the result, pinned below */
+.app .sd-result {
+  flex: none; display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px;
+  background: var(--paper-2); border-top: 1px solid var(--line); box-shadow: 0 -10px 24px -22px rgba(13, 31, 24, .45);
+}
+.app .sd-result-empty { font-size: 14px; color: var(--muted); line-height: 1.5; }
+.app .sd-result-top { display: flex; align-items: flex-end; gap: 22px; }
+.app .sd-big { display: flex; flex-direction: column; }
+.app .sd-big b { font-family: var(--sd-d); font-size: 30px; font-weight: 750; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.app .sd-big span { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
+.app .sd-use { margin-left: auto; font-size: 12.5px; color: var(--muted); text-align: right; line-height: 1.4; max-width: 16ch; }
+.app .sd-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.app .sd-metrics > div { padding: 8px 10px; border-radius: 10px; background: var(--paper); border: 1px solid var(--line); min-width: 0; }
+.app .sd-metrics dt { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .sd-metrics dd { font-size: 14.5px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app .sd-warn { font-size: 13px; color: var(--red); line-height: 1.45; }
+.app .sd-apply { min-height: 54px; }
+
+/* --------------------------------------------------------- tablet & phone */
+@media (max-width: 1280px) {
+  .app .sd-body { grid-template-columns: minmax(0, 1fr) 380px; }
+  .app .sd-tool { padding: 0 12px; font-size: 13.5px; }
+}
+@media (max-width: 1020px) {
+  .app .sd-body { grid-template-columns: minmax(0, 1fr) 350px; }
+  .app .sd-compass { grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 44px); }
+}
+@media (max-width: 860px) {
+  .app .sd-scrim { padding: 0; }
+  .app .sd-shell { border-radius: 0; }
+  .app .sd-head { padding: 10px 10px 10px 14px; padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+  .app .sd-head-ic { display: none; }
+  .app .sd-head-sep { display: none; }
+  .app .sd-body { display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; }
+  .app .sd-stage { flex: none; height: min(56vh, 520px); min-height: 300px; }
+  .app .sd-side { flex: none; border-left: 0; border-top: 1px solid var(--line); }
+  .app .sd-tabs { position: sticky; top: 0; z-index: 6; }
+  .app .sd-scroll { overflow: visible; }
+  .app .sd-result {
+    position: sticky; bottom: 0; z-index: 5; gap: 10px; padding-top: 12px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  .app .sd-big b { font-size: 24px; }
+  .app .sd-use { display: none; }
+  .app .sd-metrics > div { padding: 6px 8px; }
+  .app .sd-metrics dd { font-size: 13px; }
+  .app .sd-apply { min-height: 50px; }
+  .app .sd-hint { top: auto; bottom: 66px; }
+  .app .sd-tools { top: 10px; }
+  .app .sd-tool { height: 42px; padding: 0 11px; font-size: 13px; }
+  .app .sd-select, .app .sd-num { font-size: 16px; }
+}
+@media (max-width: 420px) {
+  .app .sd-tab { font-size: 13px; }
+  .app .sd-compass { grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 44px); }
+  .app .sd-compass-row { gap: 12px; }
+  .app .sd-chip { height: 40px; padding: 0 12px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app .sd-compass-mid svg { transition: none; }
+}

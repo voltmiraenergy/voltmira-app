@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { t } from "../../../lib/i18n.js";
+import { Check, ChevronRight } from "lucide-react";
 
 export default function OnboardingChecklist({ steps, allDone, lang }) {
   // Start hidden so it never flashes on the server render; the effect reveals it
@@ -35,9 +36,9 @@ export default function OnboardingChecklist({ steps, allDone, lang }) {
               width: 22, height: 22, borderRadius: "50%", flex: "none", display: "grid", placeItems: "center", fontSize: 13,
               background: s.done ? "var(--green)" : "var(--paper)", color: s.done ? "#fff" : "var(--muted)",
               border: s.done ? "none" : "1.5px solid var(--line)",
-            }}>{s.done ? "✓" : ""}</span>
+            }}>{s.done ? <Check size={14} strokeWidth={3} /> : null}</span>
             <span style={{ fontSize: 14, fontWeight: 500, opacity: s.done ? 0.55 : 1, textDecoration: s.done ? "line-through" : "none" }}>{s.label}</span>
-            {!s.done && <span style={{ marginLeft: "auto", color: "var(--green)", fontSize: 15 }}>→</span>}
+            {!s.done && <ChevronRight size={17} aria-hidden="true" style={{ marginLeft: "auto", color: "var(--green)", flex: "none" }} />}
           </Link>
         ))}
       </div>

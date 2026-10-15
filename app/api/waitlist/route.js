@@ -13,7 +13,7 @@ import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
 
 const FORMSPREE = process.env.WAITLIST_FORMSPREE_URL || "https://formspree.io/f/xykqqoyo";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const LANGS = ["en", "ro", "ru"];
+const LANGS = ["en", "ro", "ru", "uk"];
 
 export async function POST(req) {
   const ip = clientIp(req);

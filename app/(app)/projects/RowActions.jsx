@@ -6,7 +6,8 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createProposal, markProjectWon, duplicateProject, deleteProject } from "../../../lib/actions.js";
+import { markProjectWon, duplicateProject, deleteProject } from "../../../lib/actions.js";
+import { sendOffer } from "../../../lib/sendOffer.js";
 import { t } from "../../../lib/i18n.js";
 
 const IC = {
@@ -30,7 +31,7 @@ export default function RowActions({ id, status, lang }) {
     if (busy) return;
     setBusy(true);
     try {
-      const code = await createProposal(id);           // idempotent: reuses existing link
+      const code = await sendOffer(id);           // idempotent: reuses existing link
       await navigator.clipboard?.writeText(`${location.origin}/p/${code}`);
       setCopied(true); setTimeout(() => setCopied(false), 1600);
       router.refresh();                                  // status may have flipped draft→sent

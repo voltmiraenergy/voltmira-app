@@ -1,21 +1,30 @@
 "use client";
 // app/p/[code]/tracker.jsx — sends REAL tracking events to the API.
 // open (once) → heartbeat every 15s while visible → accept / request buttons.
-import { useEffect, useRef, useState } from "react";
+// Also the accept-and-sign panel itself: Accept opens it, and the deal only
+// closes once the client has typed their name AND drawn a signature.
+//   listens  "voltmira:sign"      (AcceptLink.jsx: any other "Accept and sign" on the page)
+//   sends    "voltmira:accepted"  (AcceptLink.jsx, StickyCta.jsx: the client has signed)
+// Styles: proposal.css (.pp-act, .pp-sign, .pp-ref).
+import { useEffect, useId, useRef, useState } from "react";
+import { PenLine } from "lucide-react";
 import { t } from "../../../lib/i18n.js";
+import { ppt } from "./text.js";
 import SignaturePad from "./SignaturePad.jsx";
 
 export default function Tracker({ code, accepted: initialAccepted, lang = "en", signedName = null, signedDate = null }) {
   const [accepted, setAccepted] = useState(initialAccepted);
   const [requested, setRequested] = useState(false);
   const [refDone, setRefDone] = useState(false);
-  // signing flow: Accept opens the signature panel; the deal only closes once
-  // the client has typed their name AND drawn a signature.
   const [signing, setSigning] = useState(false);
   const [sig, setSig] = useState("");
   const [signer, setSigner] = useState("");
   const [sending, setSending] = useState(false);
+  const [failed, setFailed] = useState(false);
   const secondsRef = useRef(0);
+  const nameRef = useRef(null);
+  const focusName = useRef(false);
+  const id = useId();
 
   const send = (kind, extra = {}) =>
     fetch(`/api/proposal/${code}`, {
@@ -23,7 +32,7 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ kind, ...extra }),
       keepalive: true,
-    }).catch(() => {});
+    }).catch(() => null);
 
   useEffect(() => {
     send("open");
@@ -47,87 +56,94 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
-  const btn = {
-    width: "100%", padding: "16px", fontSize: 16, fontWeight: 700, borderRadius: 12,
-    border: "none", cursor: "pointer", fontFamily: "Inter, system-ui, sans-serif",
-  };
+  // Another "Accept and sign" on the page was used: open the panel here.
+  useEffect(() => {
+    const open = () => setSigning(true);
+    window.addEventListener("voltmira:sign", open);
+    return () => window.removeEventListener("voltmira:sign", open);
+  }, []);
+
+  // Opened with this section's own button: the name is the next thing to do.
+  useEffect(() => {
+    if (signing && focusName.current) { focusName.current = false; nameRef.current?.focus(); }
+  }, [signing]);
+
+  const ready = Boolean(sig) && Boolean(signer.trim()) && !sending;
+
+  async function confirm() {
+    if (!ready) return;
+    setSending(true); setFailed(false);
+    const res = await send("accept", { signature: sig, signerName: signer.trim() });
+    // Only a confirmed write closes the deal on screen; a dropped connection or a
+    // rate limit used to read as "signed" while nothing reached the installer.
+    if (!res || !res.ok) { setFailed(true); setSending(false); return; }
+    setAccepted(true); setSigning(false); setSending(false);
+    window.dispatchEvent(new CustomEvent("voltmira:accepted"));
+  }
 
   const REF = ["recommend", "google", "social", "installer", "other"];
+  const who = signedName || signer.trim();
+  const signedLine = who
+    ? (signedDate ? ppt("signed_by", lang, { name: who, date: signedDate }) : ppt("signed_by_nd", lang, { name: who }))
+    : ppt("sig_done", lang);
 
   return (
-    <div style={{ display: "grid", gap: 10, marginTop: 4 }}>
-      <button
-        style={{ ...btn, background: "#E89B2D", color: "#142A21", opacity: requested ? 0.6 : 1 }}
-        disabled={requested}
-        onClick={() => { send("request"); setRequested(true); }}>
-        {requested ? t("pp_requested", lang) : t("pp_request", lang)}
-      </button>
-      {!signing && (
-        <button
-          style={{ ...btn, background: "#1E6B4E", color: "#fff", opacity: accepted ? 0.6 : 1 }}
-          disabled={accepted}
-          onClick={() => setSigning(true)}>
-          {accepted ? t("pp_accepted", lang) : t("pp_accept", lang)}
+    <div className="pp-act">
+      {accepted ? (
+        <div className="pp-done" role="status">
+          <PenLine className="pp-ic" aria-hidden="true" />
+          <span>{signedLine}{who ? <><br /><span style={{ fontWeight: 500 }}>{ppt("sig_done", lang)}</span></> : null}</span>
+        </div>
+      ) : !signing ? (
+        <button type="button" className="pp-btn pp-btn-accept pp-btn-block"
+          onClick={() => { focusName.current = true; setSigning(true); }}>
+          {ppt("cta_accept", lang)}
+        </button>
+      ) : (
+        <div className="pp-sign" role="group" aria-labelledby={`${id}-sh`}>
+          <h3 className="pp-h3" id={`${id}-sh`}>{ppt("sig_h", lang)}</h3>
+          <p>{ppt("sig_p", lang)}</p>
+
+          <label className="pp-field-l" htmlFor={`${id}-name`}>{ppt("sig_name", lang)}</label>
+          <input id={`${id}-name`} ref={nameRef} className="pp-input"
+            value={signer} onChange={(e) => setSigner(e.target.value)}
+            placeholder={t("sig_name_ph", lang)} autoComplete="name" maxLength={120} />
+
+          <div style={{ marginTop: 16 }}>
+            <SignaturePad onChange={setSig} label={ppt("sig_draw", lang)} clearLabel={ppt("sig_clear", lang)} hint={ppt("sig_here", lang)} />
+          </div>
+
+          <div className="pp-sign-btns">
+            <button type="button" className="pp-btn pp-btn-accept pp-btn-block" disabled={!ready} onClick={confirm}>
+              {sending ? ppt("sig_sending", lang) : ppt("sig_confirm", lang)}
+            </button>
+            <button type="button" className="pp-btn pp-btn-text" onClick={() => { setSigning(false); setSig(""); setFailed(false); }}>
+              {ppt("sig_cancel", lang)}
+            </button>
+          </div>
+          {failed && <p className="pp-err" role="alert">{ppt("sig_error", lang)}</p>}
+          <p className="pp-legal">{ppt("sig_legal", lang)}</p>
+        </div>
+      )}
+
+      {requested ? (
+        <p className="pp-ok-msg" role="status">{ppt("requested", lang)}</p>
+      ) : (
+        <button type="button" className="pp-btn pp-btn-ghost pp-btn-block"
+          onClick={() => { send("request"); setRequested(true); }}>
+          {ppt("request", lang)}
         </button>
       )}
 
-      {/* Sign-to-accept: draw a signature + type the name, then close the deal. */}
-      {signing && !accepted && (
-        <div style={{ border: "1px solid #E3E1D6", borderRadius: 14, padding: 16, background: "#F6F5F0" }}>
-          <div style={{ fontWeight: 700, fontSize: 15, color: "#142A21", marginBottom: 3 }}>{t("sig_title", lang)}</div>
-          <div style={{ fontSize: 12.5, color: "#66756C", marginBottom: 14 }}>{t("sig_sub", lang)}</div>
-
-          <label style={{ display: "block", fontSize: 12.5, color: "#66756C", marginBottom: 6 }}>{t("sig_name", lang)}</label>
-          <input
-            value={signer} onChange={e => setSigner(e.target.value)}
-            placeholder={t("sig_name_ph", lang)} autoComplete="name" maxLength={120}
-            style={{ width: "100%", padding: "13px 14px", borderRadius: 11, border: "1.5px solid #E3E1D6",
-              background: "#fff", fontSize: 15, color: "#142A21", fontFamily: "inherit", marginBottom: 14,
-              boxSizing: "border-box" }} />
-
-          <SignaturePad onChange={setSig} label={t("sig_draw", lang)} clearLabel={t("sig_clear", lang)} />
-
-          <button
-            style={{ ...btn, marginTop: 14, background: "#1E6B4E", color: "#fff",
-              opacity: (!sig || !signer.trim() || sending) ? 0.5 : 1,
-              cursor: (!sig || !signer.trim() || sending) ? "default" : "pointer" }}
-            disabled={!sig || !signer.trim() || sending}
-            onClick={async () => {
-              setSending(true);
-              await send("accept", { signature: sig, signerName: signer.trim() });
-              setAccepted(true); setSigning(false); setSending(false);
-            }}>
-            {sending ? t("sig_sending", lang) : t("sig_confirm", lang)}
-          </button>
-          <button
-            style={{ width: "100%", marginTop: 8, padding: 12, background: "transparent", border: "none",
-              color: "#66756C", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
-            onClick={() => { setSigning(false); setSig(""); }}>
-            {t("sig_cancel", lang)}
-          </button>
-          <div style={{ fontSize: 11, color: "#8A968D", marginTop: 10, lineHeight: 1.5, textAlign: "center" }}>
-            {t("sig_legal", lang)}
-          </div>
-        </div>
-      )}
-
-      {accepted && (
-        <div style={{ fontSize: 12.5, color: "#1E6B4E", fontWeight: 600, textAlign: "center" }}>
-          ✓ {signedName ? `${t("sig_signed_by", lang)} ${signedName}${signedDate ? " · " + signedDate : ""}` : t("sig_done", lang)}
-        </div>
-      )}
-
-      {/* Referral source — word-of-mouth intelligence for the installer. */}
-      <div style={{ marginTop: 6, padding: "12px 4px 2px", borderTop: "1px solid #E3E1D6", textAlign: "center" }}>
-        <div style={{ fontSize: 13, color: "#66756C", marginBottom: 9 }}>{t("ref_q", lang)}</div>
+      {/* Referral source: word-of-mouth intelligence for the installer. */}
+      <div className="pp-ref">
+        <p id={`${id}-ref`}>{ppt("ref_q", lang)}</p>
         {refDone ? (
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1E6B4E" }}>{t("ref_thanks", lang)}</div>
+          <p className="pp-ok-msg" role="status">{ppt("ref_thanks", lang)}</p>
         ) : (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 7, justifyContent: "center" }}>
-            {REF.map(s => (
-              <button key={s} onClick={() => { send("referral", { source: s }); setRefDone(true); }}
-                style={{ border: "1px solid #E3E1D6", background: "#fff", color: "#142A21", borderRadius: 99,
-                  padding: "7px 13px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, system-ui, sans-serif" }}>
+          <div className="pp-ref-opts" role="group" aria-labelledby={`${id}-ref`}>
+            {REF.map((s) => (
+              <button key={s} type="button" className="pp-pill" onClick={() => { send("referral", { source: s }); setRefDone(true); }}>
                 {t("ref_opt_" + s, lang)}
               </button>
             ))}

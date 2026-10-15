@@ -44,14 +44,14 @@ function extractJson(text) {
 
 export async function POST(req) {
   // installers only
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({
       error: "not_configured",
-      message: "AI BOM builder isn't switched on yet — add ANTHROPIC_API_KEY in Vercel to enable it.",
+      message: "AI BOM builder isn't switched on yet, add ANTHROPIC_API_KEY in Vercel to enable it.",
     }, { status: 503 });
   }
 
@@ -66,7 +66,7 @@ export async function POST(req) {
   // model so it can pick. We re-validate every returned id against this list.
   const catalog = Array.isArray(body?.catalog) ? body.catalog : [];
   if (catalog.length === 0) {
-    return NextResponse.json({ error: "empty_catalog", message: "Add products to your catalog first — the builder picks from your own equipment." }, { status: 400 });
+    return NextResponse.json({ error: "empty_catalog", message: "Add products to your catalog first, the builder picks from your own equipment." }, { status: 400 });
   }
   // Slim, id-keyed view for the model. Cap to keep the prompt bounded.
   const slim = catalog.slice(0, 200).map(c => ({
@@ -78,7 +78,7 @@ export async function POST(req) {
     price: Number(c.unit_price) || 0,
   }));
 
-  const userText = `Target system: ${kwHint > 0 ? kwHint + " kW" : "(size it from the request)"} · market ${market}.
+  const userText = `Target system: ${kwHint > 0 ? kwHint + " kW" : "(size it from the request)"}, market ${market}.
 Installer request: "${prompt || "full recommended system"}"
 
 Catalog (choose only from these ids):
@@ -93,12 +93,12 @@ ${JSON.stringify(slim)}`;
       messages: [{ role: "user", content: userText }],
     });
     if (resp.stop_reason === "refusal") {
-      return NextResponse.json({ error: "declined", message: "The builder declined this request — add the lines manually." }, { status: 422 });
+      return NextResponse.json({ error: "declined", message: "The builder declined this request, add the lines manually." }, { status: 422 });
     }
     const textBlock = (resp.content || []).find(b => b.type === "text");
     const data = extractJson(textBlock?.text);
     if (!data || !Array.isArray(data.lines)) {
-      return NextResponse.json({ error: "parse_failed", message: "Couldn't draft that BOM — try rephrasing, or add the lines manually." }, { status: 502 });
+      return NextResponse.json({ error: "parse_failed", message: "Couldn't draft that BOM, try rephrasing, or add the lines manually." }, { status: 502 });
     }
 
     // Resolve every id back to the REAL catalog row; drop anything hallucinated.
@@ -110,7 +110,7 @@ ${JSON.stringify(slim)}`;
       if (prod && qty > 0) lines.push({ product: prod, qty });
     }
     if (lines.length === 0) {
-      return NextResponse.json({ error: "no_match", message: String(data.notes || "No catalog products fit that request — add or adjust your catalog.").slice(0, 240) }, { status: 200, headers: {} });
+      return NextResponse.json({ error: "no_match", message: String(data.notes || "No catalog products fit that request, add or adjust your catalog.").slice(0, 240) }, { status: 200, headers: {} });
     }
 
     return NextResponse.json({
@@ -121,8 +121,8 @@ ${JSON.stringify(slim)}`;
     });
   } catch (e) {
     const status = e?.status;
-    if (status === 401) return NextResponse.json({ error: "auth", message: "The AI key was rejected — check ANTHROPIC_API_KEY." }, { status: 503 });
-    if (status === 429) return NextResponse.json({ error: "rate", message: "Too many requests right now — try again in a moment." }, { status: 429 });
-    return NextResponse.json({ error: "generate_failed", message: "BOM builder failed — add the lines manually." }, { status: 502 });
+    if (status === 401) return NextResponse.json({ error: "auth", message: "The AI key was rejected, check ANTHROPIC_API_KEY." }, { status: 503 });
+    if (status === 429) return NextResponse.json({ error: "rate", message: "Too many requests right now, try again in a moment." }, { status: 429 });
+    return NextResponse.json({ error: "generate_failed", message: "BOM builder failed, add the lines manually." }, { status: 502 });
   }
 }

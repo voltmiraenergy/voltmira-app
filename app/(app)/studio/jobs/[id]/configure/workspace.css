@@ -1,0 +1,352 @@
+/* app/(app)/studio/jobs/[id]/configure/workspace.css — the Configuration
+ * Workspace, in the app's own design language: the same tokens, cards and
+ * type as the dashboard (app/(app)/dx.css, which this route also imports),
+ * so light and dark mode follow the rest of the product.
+ *
+ * Every selector starts with `.app`: AppTheme's `.app *{margin:0;padding:0}`
+ * and `.app button{background:none;border:none}` load later and would
+ * otherwise win (they did, when this route was built on Tailwind utilities:
+ * every padding in the workspace rendered as zero).
+ */
+
+/* ---------------------------------------------------------------- header */
+.app .ws-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 18px; flex-wrap: wrap; margin-top: 10px; }
+.app .ws-head-tx { flex: 1 1 360px; min-width: 0; }
+.app .ws-head h1 { font-family: var(--dx-d); font-size: 30px; line-height: 1.12; font-weight: 700; letter-spacing: -.03em; color: var(--ink); text-wrap: balance; }
+.app .ws-head-sub { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: 13.5px; color: var(--muted); }
+.app .ws-head-sub span { display: inline-flex; align-items: center; gap: 6px; }
+.app .ws-head-sub b { color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
+.app .ws-head-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ------------------------------------------------- the job, step by step */
+.app .ws-journey { background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--dx-radius); padding: 18px 22px 12px; box-shadow: var(--shadow); }
+.app .ws-journey-head { display: flex; align-items: baseline; gap: 4px 14px; flex-wrap: wrap; }
+.app .ws-journey-head h2 { font-family: var(--dx-d); font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); }
+.app .ws-journey-head p { font-size: 12.5px; color: var(--muted); }
+/* A sideways-scrolling row clips vertically too: it keeps room around the
+   step dots' halos and the underline, and the negative margin keeps the
+   row where it was. */
+.app .ws-line {
+  list-style: none; display: grid; grid-template-columns: repeat(7, minmax(118px, 1fr));
+  margin: 8px 0 0 -8px; padding: 8px 0 10px 8px; overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+}
+.app .ws-stage { position: relative; padding-top: 26px; min-width: 0; }
+.app .ws-node {
+  position: absolute; top: 0; left: 0; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--paper-2); border: 2px solid var(--line); display: grid; place-items: center; z-index: 1; color: #fff;
+}
+.app .ws-stage.done .ws-node { background: var(--green); border-color: var(--green); box-shadow: 0 0 0 4px color-mix(in srgb, var(--green) 16%, transparent); }
+.app .ws-stage.on .ws-node { background: var(--paper-2); border: 4px solid var(--green); width: 16px; height: 16px; top: -1px; left: -1px; box-shadow: 0 0 0 5px color-mix(in srgb, var(--green) 18%, transparent); }
+.app .ws-join { position: absolute; top: 5px; left: 22px; right: 10px; height: 2px; border-radius: 2px; background: var(--line); }
+.app .ws-stage.done .ws-join { background: linear-gradient(90deg, color-mix(in srgb, var(--green) 55%, var(--line)), var(--line)); }
+.app .ws-stage-in {
+  display: flex; flex-direction: column; gap: 1px; width: 100%; text-align: left;
+  padding: 2px 10px 8px 0; border-radius: 10px; cursor: pointer; color: inherit;
+}
+.app .ws-stage-lbl { font-size: 11px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.app .ws-stage-v {
+  font-family: var(--dx-d); font-size: 21px; font-weight: 700; line-height: 1.2; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.app .ws-stage.todo .ws-stage-v { color: color-mix(in srgb, var(--muted) 70%, transparent); }
+.app .ws-stage-sub { font-size: 12px; color: var(--muted); line-height: 1.35; min-height: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app .ws-stage.on .ws-stage-lbl { color: var(--green); }
+.app .ws-stage-in:hover .ws-stage-lbl { color: var(--ink); }
+.app .ws-stage-in:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.app .ws-stage.on::after {
+  content: ""; position: absolute; left: 0; right: 14px; bottom: -6px; height: 3px; border-radius: 3px; background: var(--green);
+}
+
+/* ------------------------------------------------------------ main grid */
+.app .ws-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+.app .ws-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 14px; }
+@media (max-width: 1180px) {
+  .app .ws-grid { grid-template-columns: minmax(0, 1fr); }
+  .app .ws-side { position: static; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; }
+}
+
+/* the open step */
+.app .ws-step { padding: 22px 24px 24px; }
+.app .ws-step-head { display: flex; align-items: flex-start; gap: 14px; padding-bottom: 16px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+.app .ws-step-ic {
+  flex: none; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center;
+  background: var(--green-tint); color: var(--green);
+}
+.app .ws-step-head h2 { font-family: var(--dx-d); font-size: 19px; font-weight: 700; letter-spacing: -.015em; color: var(--ink); }
+.app .ws-step-head p { font-size: 13px; color: var(--muted); line-height: 1.5; margin-top: 3px; max-width: 70ch; }
+.app .ws-step-no { margin-left: auto; flex: none; font-size: 11.5px; font-weight: 650; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 3px; white-space: nowrap; }
+.app .ws-step-body { display: flex; flex-direction: column; gap: 22px; }
+@keyframes ws-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.app .ws-step-body { animation: ws-in .22s ease-out; }
+@media (prefers-reduced-motion: reduce) { .app .ws-step-body { animation: none; } }
+
+/* ---------------------------------------------------------- step parts */
+.app .ws-sec { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.app .ws-sec-h { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.app .ws-sec-h svg { color: var(--muted); flex: none; }
+.app .ws-sec-h .ws-aside { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app .ws-sec-note { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.app .ws-box { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.app .ws-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.app .ws-cols-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px 16px; }
+.app .ws-label { display: block; font-size: 12px; font-weight: 650; color: var(--muted); margin-bottom: 6px; }
+.app .ws-value { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.45; }
+.app .ws-input, .app .ws-select {
+  width: 100%; background: var(--paper-2); border: 1px solid var(--line); border-radius: 9px;
+  padding: 8px 11px; font-size: 14px; color: var(--ink); font-family: inherit;
+}
+.app .ws-select { padding-right: 28px; }
+.app .ws-input:focus, .app .ws-select:focus { border-color: var(--green); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 14%, transparent); }
+.app .ws-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.app .ws-row > .ws-grow { flex: 1 1 160px; width: auto; min-width: 0; }
+.app .ws-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+/* A ghost button would otherwise share the card's own fill. */
+.app .ws-step .btn.ghost { background: var(--paper); }
+
+/* notes and statuses */
+.app .ws-note { display: flex; align-items: flex-start; gap: 10px; border-radius: 11px; padding: 11px 13px; font-size: 13px; line-height: 1.5; color: var(--ink-soft); background: var(--paper); border: 1px solid var(--line); }
+.app .ws-note svg { flex: none; margin-top: 2px; }
+.app .ws-note b { color: var(--ink); }
+.app .ws-note.ok { background: var(--green-tint); border-color: transparent; }
+.app .ws-note.ok svg { color: var(--green); }
+.app .ws-note.warn { background: var(--amber-tint); border-color: transparent; }
+.app .ws-note.warn svg { color: var(--amber-ink); }
+.app .ws-note.err { background: var(--red-tint); border-color: transparent; }
+.app .ws-note.err svg { color: var(--red); }
+.app .ws-err { font-size: 12.5px; font-weight: 600; color: var(--red); }
+.app .ws-good { color: var(--green); }
+.app .ws-bad { color: var(--amber-ink); }
+
+/* segmented control */
+.app .ws-seg { display: inline-grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px; padding: 3px; border-radius: 10px; background: var(--paper); border: 1px solid var(--line); max-width: 100%; }
+.app .ws-seg.full { display: grid; width: 100%; }
+.app .ws-seg button { padding: 7px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background .14s, color .14s; }
+.app .ws-seg button:hover { color: var(--ink); }
+.app .ws-seg button.on { background: var(--green); color: var(--dx-on-green, #fff); box-shadow: 0 2px 8px color-mix(in srgb, var(--green) 30%, transparent); }
+
+/* slider: a real range input with a filled track */
+.app .ws-slider-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.app .ws-slider-top label { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.app .ws-slider-val { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.app .ws-num { width: 70px; text-align: right; background: var(--paper-2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; font-size: 13px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; font-family: inherit; }
+.app .ws-num:focus { border-color: var(--green); outline: none; }
+.app .ws-pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 99px; background: var(--green-tint); color: var(--green); font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.app input.ws-range[type="range"] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 99px; outline: none; cursor: pointer; border: 0;
+  background: linear-gradient(to right, var(--green) var(--fill, 0%), var(--line) var(--fill, 0%));
+}
+.app input.ws-range[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--paper-2); border: 3px solid var(--green); box-shadow: 0 1px 3px rgba(0, 0, 0, .18); cursor: grab;
+}
+.app input.ws-range[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--paper-2); border: 3px solid var(--green); cursor: grab; }
+.app input.ws-range[type="range"]::-moz-range-track { height: 6px; border-radius: 99px; background: var(--line); }
+.app input.ws-range[type="range"]::-moz-range-progress { height: 6px; border-radius: 99px; background: var(--green); }
+.app input.ws-range[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--green) 25%, transparent); }
+
+/* a figure called out */
+.app .ws-callout { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 12px 14px; border-radius: 11px; background: var(--green-tint); }
+.app .ws-callout span { font-size: 12.5px; color: var(--ink-soft); }
+.app .ws-callout b { font-family: var(--dx-d); font-size: 22px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.app .ws-callout b small { font-family: var(--font-b); font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 4px; letter-spacing: 0; }
+
+/* tables (equipment, compare) */
+.app .ws-tbl-wrap { border: 1px solid var(--line); border-radius: 11px; overflow: auto; max-height: 280px; background: var(--paper-2); }
+.app .ws-tbl-wrap.invalid { border-color: color-mix(in srgb, var(--red) 55%, var(--line)); }
+.app .ws-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.app .ws-tbl th {
+  position: sticky; top: 0; background: var(--paper-2); z-index: 1; text-align: left; white-space: nowrap;
+  font-size: 10.5px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+  padding: 9px 10px; border-bottom: 1px solid var(--line);
+}
+.app .ws-tbl th.r, .app .ws-tbl td.r { text-align: right; font-variant-numeric: tabular-nums; }
+.app .ws-tbl th button { display: inline-flex; align-items: center; gap: 4px; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; }
+.app .ws-tbl th button:hover { color: var(--ink); }
+.app .ws-tbl th button.on { color: var(--green); }
+.app .ws-tbl td { padding: 9px 10px; border-bottom: 1px solid var(--line); color: var(--ink-soft); }
+.app .ws-tbl tr:last-child td { border-bottom: 0; }
+.app .ws-tbl tbody tr { cursor: pointer; transition: background .12s; }
+.app .ws-tbl tbody tr:hover { background: var(--paper); }
+.app .ws-tbl tbody tr.sel { background: var(--green-tint); }
+.app .ws-tbl td.name { font-weight: 650; color: var(--ink); white-space: nowrap; }
+.app .ws-tbl td.name svg { color: var(--green); vertical-align: -2px; margin-right: 5px; }
+.app .ws-tbl input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--green); cursor: pointer; }
+.app .ws-tbl td.cb, .app .ws-tbl th.cb { width: 34px; padding-right: 0; }
+.app .ws-compare { border: 1px solid color-mix(in srgb, var(--green) 35%, var(--line)); background: color-mix(in srgb, var(--green-tint) 55%, var(--paper-2)); border-radius: 11px; padding: 12px 14px; overflow-x: auto; }
+.app .ws-compare-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.app .ws-compare table { width: 100%; min-width: 420px; border-collapse: collapse; font-size: 12.5px; }
+.app .ws-compare th { text-align: left; padding: 5px 12px 5px 0; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.app .ws-compare th div { display: flex; align-items: center; gap: 4px; }
+.app .ws-compare td { padding: 6px 12px 6px 0; border-top: 1px solid color-mix(in srgb, var(--green) 18%, var(--line)); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.app .ws-compare td:first-child { color: var(--muted); width: 120px; }
+.app .ws-x { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; color: var(--muted); flex: none; }
+.app .ws-x:hover { background: var(--paper); color: var(--red); }
+
+/* accordions */
+.app .ws-acc { border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2); min-width: 0; }
+.app .ws-acc-top { display: flex; align-items: center; gap: 9px; width: 100%; padding: 13px 14px; text-align: left; font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.app .ws-acc-top svg { color: var(--muted); flex: none; }
+.app .ws-acc-top .ws-aside { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .ws-acc-top .chev { margin-left: 6px; transition: transform .16s; }
+.app .ws-acc-top[aria-expanded="false"] .chev { transform: rotate(-90deg); }
+.app .ws-acc-body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+
+/* choice button ("No battery") */
+.app .ws-choice { width: 100%; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper-2); font-size: 13.5px; font-weight: 600; color: var(--ink-soft); }
+.app .ws-choice.on { border-color: var(--green); background: var(--green-tint); color: var(--ink); }
+
+/* photos */
+.app .ws-photos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.app .ws-photos.gallery { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+.app .ws-photo { position: relative; aspect-ratio: 4 / 3; border-radius: 11px; overflow: hidden; border: 1px solid var(--line); }
+.app .ws-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.app .ws-photo-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 9px 7px; font-size: 11.5px; font-weight: 600; color: #fff; background: linear-gradient(to top, rgba(0, 0, 0, .6), transparent); }
+.app .ws-photo-del { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: rgba(0, 0, 0, .55); color: #fff; opacity: 0; transition: opacity .15s; }
+.app .ws-photo:hover .ws-photo-del, .app .ws-photo-del:focus-visible { opacity: 1; }
+.app .ws-drop {
+  width: 100%; aspect-ratio: 4 / 3; border-radius: 11px; border: 1.5px dashed var(--line); background: var(--paper);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 8px;
+  font-size: 12px; font-weight: 600; color: var(--muted); transition: border-color .15s, background .15s, color .15s;
+}
+.app .ws-drop:hover, .app .ws-drop.over { border-color: var(--green); color: var(--green); background: var(--green-tint); }
+.app .ws-drop i { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--paper-2); border: 1px solid var(--line); font-style: normal; }
+.app .ws-hidden { display: none; }
+
+/* week calendar */
+.app .ws-week { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.app .ws-day { display: flex; flex-direction: column; min-height: 132px; border: 1px solid var(--line); border-radius: 11px; background: var(--paper); overflow: hidden; min-width: 0; }
+.app .ws-day-top { display: flex; align-items: center; justify-content: space-between; padding: 7px 9px; border-bottom: 1px solid var(--line); font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.app .ws-day-top em { font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; display: grid; place-items: center; background: var(--paper-2); border: 1px solid var(--line); font-size: 10px; color: var(--ink); }
+.app .ws-day-list { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 7px; }
+.app .ws-day-empty { flex: 1; display: grid; place-items: center; font-size: 11px; color: var(--muted); opacity: .75; }
+.app .ws-slot { position: relative; padding: 7px 24px 7px 9px; border-radius: 8px; background: var(--paper-2); border: 1px solid var(--line); border-left: 3px solid var(--crew, var(--green)); font-size: 12px; line-height: 1.35; min-width: 0; }
+.app .ws-slot b { display: block; color: var(--ink); overflow-wrap: anywhere; }
+.app .ws-slot span { display: block; color: var(--muted); overflow-wrap: anywhere; }
+.app .ws-slot em { font-style: normal; font-weight: 650; color: var(--crew, var(--green)); }
+.app .ws-slot .ws-x { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; }
+.app .ws-list { display: flex; flex-direction: column; gap: 8px; }
+.app .ws-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); font-size: 13px; }
+.app .ws-item b { display: block; color: var(--ink); }
+.app .ws-item small { display: block; color: var(--muted); font-size: 12px; }
+.app .ws-item .ws-aside { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.app .ws-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.app .ws-mat { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-soft); }
+.app .ws-mat i { width: 18px; height: 18px; border-radius: 50%; flex: none; display: grid; place-items: center; font-style: normal; font-size: 10px; font-weight: 800; }
+.app .ws-mat i.in { background: var(--green-tint); color: var(--green); }
+.app .ws-mat i.ord { background: var(--amber-tint); color: var(--amber-ink); }
+
+/* checklists */
+.app .ws-progress { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.app .ws-progress i { display: block; height: 100%; border-radius: 99px; background: var(--green); transition: width .25s; }
+.app .ws-checks { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--paper-2); }
+.app .ws-check { display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 13px; text-align: left; font-size: 13.5px; color: var(--ink); border-bottom: 1px solid var(--line); }
+.app .ws-check:last-child { border-bottom: 0; }
+.app .ws-check:hover { background: var(--paper); }
+.app .ws-check .box { flex: none; width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--line); display: grid; place-items: center; color: #fff; }
+.app .ws-check.done .box { background: var(--green); border-color: var(--green); }
+.app .ws-check.done .lbl { color: var(--muted); }
+.app .ws-check .go { margin-left: auto; color: var(--muted); flex: none; }
+
+/* signature */
+.app .ws-sign { position: relative; border: 1.5px dashed var(--line); border-radius: 12px; overflow: hidden; background: #fff; }
+.app .ws-sign canvas { display: block; width: 100%; cursor: crosshair; }
+.app .ws-sign-ph { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font-size: 13px; font-weight: 500; color: #8A948E; padding: 0 16px; text-align: center; }
+.app .ws-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 650; color: var(--muted); }
+.app .ws-link:hover { color: var(--ink); }
+
+/* charts */
+.app .ws-chart { width: 100%; height: auto; display: block; overflow: visible; }
+.app .ws-chart .zero { stroke: var(--muted); opacity: .45; }
+.app .ws-chart .tick { fill: var(--muted); font-size: 10px; font-family: var(--font-b); }
+.app .ws-chart .line { stroke: var(--green); }
+.app .ws-chart .area { fill: var(--green); opacity: .08; }
+.app .ws-chart .mark { fill: var(--green); }
+.app .ws-chart .guide { stroke: var(--green); opacity: .5; }
+.app .ws-chart .mlabel { fill: var(--green); font-size: 10.5px; font-weight: 700; font-family: var(--font-b); }
+.app .ws-bars { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 5px; align-items: end; height: 140px; }
+.app .ws-bar { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; min-width: 0; }
+.app .ws-bar-in { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 2px; }
+.app .ws-bar-in span { width: 42%; border-radius: 3px 3px 0 0; min-height: 1px; }
+.app .ws-bar-in .p50 { background: var(--line); }
+.app .ws-bar-in .act { background: var(--green); }
+.app .ws-bar-in .act.low { background: var(--amber); }
+.app .ws-bar-m { font-size: 10px; color: var(--muted); }
+.app .ws-bar-tip { position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); z-index: 3; white-space: nowrap; background: var(--paper-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font-size: 11.5px; line-height: 1.4; color: var(--ink-soft); box-shadow: var(--shadow); pointer-events: none; }
+.app .ws-bar-tip b { color: var(--ink); display: block; }
+.app .ws-legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); }
+.app .ws-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.app .ws-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.app .ws-months { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.app .ws-months label { display: flex; flex-direction: column; gap: 4px; font-size: 10.5px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.app .ws-months .ws-input { padding: 7px 9px; font-size: 13px; }
+.app .ws-kv { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 11px; overflow: hidden; background: var(--paper-2); }
+.app .ws-kv div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--line); }
+.app .ws-kv div:last-child { border-bottom: 0; }
+.app .ws-kv span { color: var(--muted); }
+.app .ws-kv b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.app .ws-ticket { display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper-2); }
+.app .ws-ticket .ic { width: 22px; height: 22px; border-radius: 50%; flex: none; display: grid; place-items: center; }
+.app .ws-ticket.open .ic { background: var(--amber-tint); color: var(--amber-ink); }
+.app .ws-ticket.closed .ic { background: var(--green-tint); color: var(--green); }
+.app .ws-ticket div { min-width: 0; }
+.app .ws-ticket b { display: block; font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app .ws-ticket small { display: block; font-size: 11px; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; }
+.app .ws-ticket.open small { color: var(--amber-ink); }
+.app .ws-ticket.closed small { color: var(--green); }
+
+/* document tiles */
+.app .ws-docs { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.app .ws-doc { display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper-2); transition: border-color .15s, transform .15s; }
+.app .ws-doc:hover { border-color: var(--green); transform: translateY(-1px); }
+.app .ws-doc svg { color: var(--green); margin-bottom: 6px; }
+.app .ws-doc b { font-size: 13.5px; color: var(--ink); }
+.app .ws-doc small { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+/* ------------------------------------------------------------- sidebar */
+.app .ws-card { background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--dx-radius); padding: 18px 20px; box-shadow: var(--shadow); min-width: 0; }
+.app .ws-card h3 { font-family: var(--dx-d); font-size: 15px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); }
+.app .ws-card > p { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
+.app .ws-hero { margin-top: 14px; }
+.app .ws-hero span { font-size: 11px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.app .ws-hero b { display: block; font-family: var(--dx-d); font-size: 44px; line-height: 1.05; font-weight: 700; letter-spacing: -.035em; color: var(--ink); font-variant-numeric: tabular-nums; margin-top: 4px; }
+.app .ws-hero b small { font-size: 16px; font-weight: 650; color: var(--muted); letter-spacing: 0; margin-left: 6px; }
+.app .ws-bands { display: flex; flex-direction: column; gap: 7px; margin-top: 14px; }
+.app .ws-band { display: grid; grid-template-columns: 82px minmax(0, 1fr) 54px; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted); }
+.app .ws-band b { text-align: right; font-weight: 650; color: var(--ink); font-variant-numeric: tabular-nums; }
+.app .ws-band i { display: block; height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.app .ws-band i s { display: block; height: 100%; border-radius: 99px; background: var(--c, var(--green)); }
+.app .ws-facts { display: flex; flex-direction: column; margin-top: 16px; border-top: 1px solid var(--line); }
+.app .ws-facts div { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.app .ws-facts div:last-child { border-bottom: 0; padding-bottom: 0; }
+.app .ws-facts span { color: var(--muted); }
+.app .ws-facts b { color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
+.app .ws-cost { display: flex; flex-direction: column; margin-top: 12px; }
+.app .ws-cost div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 7px 0; font-size: 13px; }
+.app .ws-cost span { color: var(--ink-soft); }
+.app .ws-cost b { color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
+.app .ws-cost i { grid-column: 1 / -1; display: block; height: 4px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.app .ws-cost i s { display: block; height: 100%; border-radius: 99px; background: var(--green); opacity: .75; }
+.app .ws-cost .total { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 12px; align-items: baseline; }
+.app .ws-cost .total span { font-weight: 700; color: var(--ink); }
+.app .ws-cost .total b { font-family: var(--dx-d); font-size: 18px; font-weight: 700; }
+.app .ws-status { display: flex; align-items: flex-start; gap: 11px; }
+.app .ws-status .ic { width: 32px; height: 32px; border-radius: 50%; flex: none; display: grid; place-items: center; }
+.app .ws-status.ok .ic { background: var(--green-tint); color: var(--green); }
+.app .ws-status.warn .ic { background: var(--amber-tint); color: var(--amber-ink); }
+.app .ws-status.err .ic { background: var(--red-tint); color: var(--red); }
+.app .ws-status small { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.app .ws-status b { display: block; font-size: 13.5px; color: var(--ink); margin-top: 1px; }
+.app .ws-status p { font-size: 12px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------- phones */
+@media (max-width: 720px) {
+  .app .ws-head h1 { font-size: 24px; }
+  .app .ws-journey { padding: 16px 16px 10px; }
+  .app .ws-step { padding: 18px 16px 20px; }
+  .app .ws-step-no { display: none; }
+  .app .ws-photos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app .ws-week { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app .ws-months { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .app .ws-bars { gap: 3px; height: 120px; }
+  .app .ws-side { grid-template-columns: minmax(0, 1fr); }
+}

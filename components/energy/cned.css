@@ -1,0 +1,138 @@
+/* components/energy/cned.css: the CNED part of /energy (CnedExplorer.jsx and
+ * the prosumer, production and storage cards in the page). Cards, KPI tiles
+ * and tables reuse app/(app)/dx.css and app/(app)/energy/energy.css.
+ *
+ * The map shades areas in one green ramp (pale to deep, six steps, the
+ * palest for zero), areas without data in a neutral grey; plants are amber
+ * (solar), blue (wind) and teal (hydro). One set per theme. */
+
+.app .cn, .app .en {
+  --cn-c0: #EEF4F0; --cn-c1: #D2E7DA; --cn-c2: #A6D1B6; --cn-c3: #6DB28B; --cn-c4: #2F8A5F; --cn-c5: #145C3E;
+  --cn-nd: #C9CCC6; --cn-edge: #FFFFFF; --cn-sel: #142A21; --cn-mine: #B46A00;
+  --cn-pv: #E89B2D; --cn-wind: #2A6FC0; --cn-hydro: #0FA3B1; --cn-ring: #FFFFFF;
+  --cn-a: #1E6B4E; --cn-b: #A6D1B6; --cn-c: #8A938C; --cn-d: #E89B2D;
+}
+html[data-theme="dark"] .app .cn, html[data-theme="dark"] .app .en {
+  --cn-c0: #1A2620; --cn-c1: #1F3B2D; --cn-c2: #24573F; --cn-c3: #2D7A55; --cn-c4: #3FA170; --cn-c5: #7BD3A3;
+  --cn-nd: #3A403B; --cn-edge: #0F1310; --cn-sel: #F1EFE8; --cn-mine: #F2B85F;
+  --cn-pv: #F2B85F; --cn-wind: #5C9BE6; --cn-hydro: #4FD0DC; --cn-ring: #0F1310;
+  --cn-a: #3FA170; --cn-b: #24573F; --cn-c: #7C867E; --cn-d: #EBA542;
+}
+
+.app .cn { display: flex; flex-direction: column; gap: 18px; }
+.app .cn .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.app .cn .dx-card-head h2 { display: flex; align-items: center; gap: 9px; }
+.app .cn .dx-card-head h2 svg { flex: none; color: var(--green); }
+
+/* the local-only note */
+.app .cn-local { display: flex; gap: 10px; align-items: flex-start; padding: 11px 14px; border-radius: 12px; background: var(--amber-tint); color: var(--ink); font-size: 13px; line-height: 1.5; }
+.app .cn-local svg { flex: none; margin-top: 2px; color: var(--amber-ink, #955F0B); }
+
+/* ---- your market */
+.app .cn-mine { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+.app .cn-chip { display: inline-flex; align-items: center; border: 1.5px solid var(--line); border-radius: 999px; background: var(--paper-2); overflow: hidden; }
+.app .cn-chip.on { border-color: var(--green); background: var(--green-tint); }
+.app .cn-chip button { border: 0; background: none; color: var(--ink); cursor: pointer; font: inherit; }
+.app .cn-chip-n { padding: 6px 4px 6px 13px; font-size: 13px; font-weight: 600; }
+.app .cn-chip-x { display: grid; place-items: center; padding: 6px 10px 6px 6px; color: var(--muted) !important; }
+.app .cn-chip-x:hover { color: var(--ink) !important; }
+.app .cn-add { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 0 0 12px; border: 1.5px dashed var(--line); border-radius: 999px; color: var(--green); }
+.app .cn-add select { border: 0; background: transparent; color: var(--green); font: inherit; font-size: 13px; font-weight: 600; padding: 7px 12px 7px 0; cursor: pointer; max-width: 200px; }
+.app .cn-add:focus-within { border-color: var(--green); }
+.app .cn-kept { font-size: 12px; color: var(--muted); }
+.app .cn-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.app .cn-rank { list-style: none; display: flex; flex-direction: column; }
+.app .cn-rank li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.app .cn-rank li > button:first-child { justify-self: start; border: 0; background: none; padding: 0; font: inherit; font-weight: 650; color: var(--ink); cursor: pointer; text-align: left; }
+.app .cn-rank li > button:first-child:hover { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+.app .cn-rank span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.app .cn-rank em { font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 42px; text-align: right; display: flex; flex-direction: column; line-height: 1.2; }
+.app .cn-rank em small { font-size: 10.5px; font-weight: 500; color: var(--muted); }
+.app .cn-rank .btn.sm { padding: 5px 8px; }
+
+/* ---- the map */
+.app .cn-controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.app .cn-seg { margin-top: 0; flex-wrap: wrap; }
+.app .cn-seg button { flex: 1 1 auto; font-size: 12.5px; padding: 7px 11px; white-space: nowrap; }
+.app .cn-seg.sm { display: inline-flex; flex: 0 0 auto; }
+.app .cn-row { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.app .cn-check { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); cursor: pointer; }
+.app .cn-check input { width: 16px; height: 16px; accent-color: var(--green); }
+.app .cn-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(260px, 1fr); gap: 20px; align-items: start; }
+.app .cn-map { height: 600px; border-radius: 14px; border: 1px solid var(--line); overflow: hidden; background: var(--paper); z-index: 0; }
+.app .cn-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 10px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app .cn-legend i { width: 22px; height: 12px; border-radius: 3px; display: inline-block; }
+.app .cn-legend i.c0 { background: var(--cn-c0); } .app .cn-legend i.c1 { background: var(--cn-c1); } .app .cn-legend i.c2 { background: var(--cn-c2); }
+.app .cn-legend i.c3 { background: var(--cn-c3); } .app .cn-legend i.c4 { background: var(--cn-c4); } .app .cn-legend i.c5 { background: var(--cn-c5); }
+.app .cn-legend i.nd { background: var(--cn-nd); margin-left: 12px; width: 14px; }
+.app .cn-legend span { margin: 0 4px; }
+.app .cn-dot-l { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px !important; }
+.app .cn-dot-l b { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.app .d-pv { background: var(--cn-pv); } .app .d-wind { background: var(--cn-wind); } .app .d-hydro { background: var(--cn-hydro); }
+.leaflet-tooltip.cn-tip { font: 12.5px/1.45 Inter, system-ui, sans-serif; padding: 7px 10px; border-radius: 9px; border: 1px solid rgba(20, 42, 33, .14); box-shadow: 0 6px 20px rgba(20, 42, 33, .16); }
+
+/* the picked area */
+.app .cn-panel { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.app .cn-pick { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.app .cn-panel select.input { width: 100%; margin-bottom: 8px; }
+.app .cn-p-name { font-family: var(--dx-d); font-size: 22px !important; letter-spacing: -.02em; margin: 4px 0 0 !important; }
+.app .cn-p-meta { font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+.app .cn-facts { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.app .cn-facts > div { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.app .cn-facts dt { font-size: 12.5px; color: var(--muted); }
+.app .cn-facts dd { font-size: 13.5px; font-weight: 650; color: var(--ink); font-variant-numeric: tabular-nums; display: flex; flex-direction: column; gap: 2px; }
+.app .cn-facts dd small { font-size: 12px; font-weight: 500; color: var(--muted); }
+.app .cn-split-h { font-size: 12px; font-weight: 700; color: var(--ink); margin-top: 12px; }
+.app .cn-split { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 6px; background: var(--line); }
+.app .cn-split i { display: block; height: 100%; }
+.app .cn-split i.a { background: var(--cn-a); } .app .cn-split i.b { flex: 1; background: var(--cn-b); }
+.app .cn-split i.c { background: var(--cn-c); } .app .cn-split i.d { flex: 1; background: var(--cn-d); }
+.app .cn-split-l { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink); margin-top: 6px; font-variant-numeric: tabular-nums; }
+.app .cn-split-l span { display: inline-flex; align-items: center; gap: 6px; }
+.app .cn-split-l b { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.app .cn-split-l b.a { background: var(--cn-a); } .app .cn-split-l b.b { background: var(--cn-b); }
+.app .cn-split-l b.c { background: var(--cn-c); } .app .cn-split-l b.d { background: var(--cn-d); }
+.app .cn-trend { width: 100%; height: 64px; margin-top: 8px; display: block; }
+.app .cn-trend rect { fill: var(--cn-c4); }
+.app .cn-trend-l { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app .cn-p-add { margin-top: 12px; align-self: flex-start; display: inline-flex; gap: 6px; align-items: center; }
+
+/* ---- every area */
+.app .cn-table-wrap { max-height: 480px; }
+.app .cn-sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+.app .cn-table th.r .cn-sort { justify-content: flex-end; width: 100%; }
+.app .cn-table tr.on td { background: var(--green-tint); }
+.app .cn-rowbtn { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--ink); cursor: pointer; text-align: left; }
+.app .cn-rowbtn:hover { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---- prosumers by scheme, production, storage (server-drawn in the page) */
+.app .cn-stack { list-style: none; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; align-items: end; height: 220px; padding-top: 6px; }
+.app .cn-stack li { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; min-width: 0; }
+.app .cn-stack b { font-size: 11px; font-weight: 650; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app .cn-stack .col { width: 100%; max-width: 38px; display: flex; flex-direction: column-reverse; border-radius: 5px 5px 0 0; overflow: hidden; min-height: 2px; }
+.app .cn-stack .col i { display: block; width: 100%; }
+.app .cn-stack small { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app .cn-key { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink); margin-top: 10px; }
+.app .cn-key li { display: inline-flex; align-items: center; gap: 7px; }
+.app .cn-key i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.app .s-cn { background: var(--cn-c); } .app .s-fn { background: var(--cn-d); }
+.app .s-pv { background: var(--cn-pv); } .app .s-wind { background: var(--cn-wind); } .app .s-hydro { background: var(--cn-hydro); } .app .s-pros { background: var(--cn-a); }
+.app .cn-bess { list-style: none; display: flex; flex-direction: column; margin-top: 8px; }
+.app .cn-bess li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; font-variant-numeric: tabular-nums; }
+.app .cn-bess li span { color: var(--muted); }
+
+@media (max-width: 1100px) {
+  .app .cn-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app .cn-grid { grid-template-columns: minmax(0, 1fr); }
+  .app .cn-map { height: 440px; }
+}
+@media (max-width: 640px) {
+  .app .cn-kpis { gap: 8px; }
+  .app .cn-kpis .en-kpi { padding: 12px; }
+  .app .cn-kpis .en-kpi b { font-size: 21px; }
+  .app .cn-map { height: 380px; }
+  .app .cn-seg button { flex: 1 1 45%; white-space: normal; }
+  .app .cn-facts > div { grid-template-columns: 104px minmax(0, 1fr); }
+  .app .cn-rank li { grid-template-columns: minmax(0, 1fr) auto; }
+  .app .cn-rank li > em, .app .cn-rank li > .btn { grid-column: 2; }
+}

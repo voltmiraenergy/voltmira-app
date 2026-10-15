@@ -1,8 +1,27 @@
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
-  title: "VoltMira — Solar quoting your clients can fact-check",
+  // Resolves every relative canonical and og:image to the public site, so the
+  // same page reached on app.voltmira.com or *.vercel.app still names
+  // voltmira.com as the copy to index.
+  metadataBase: new URL("https://voltmira.com"),
+  title: "VoltMira: Solar quoting your clients can fact-check",
   description: "Honest three-band payback estimates, tracked proposals, and real PVGIS data for solar installers.",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "VoltMira" },
+};
+
+// viewportFit:"cover" is the actual fix for the bottom-tab-bar/safe-area
+// issue: without it, env(safe-area-inset-bottom) is always 0 (the OS quietly
+// keeps the page above the home-indicator strip for you, so there's nothing
+// to inset for) — but a Home Screen icon opened without appleWebApp above
+// still runs inside Safari's own minimal-UI chrome, which can visually
+// collide with a fixed bottom bar as it shows/hides on scroll. Both changes
+// together make it a true standalone app (no Safari chrome to collide with)
+// AND give the CSS a real inset value to push its own bottom nav clear of the
+// home indicator. Existing bookmarks need to be re-added to the Home Screen
+// to pick up standalone mode — this can't retrofit an icon someone already added.
+export const viewport = {
+  width: "device-width", initialScale: 1, viewportFit: "cover",
 };
 
 // App-wide theme tokens. The authenticated app (sidebar + pages) reads these via
@@ -16,6 +35,7 @@ const THEME_VARS = `
     --app-ok:#1E6B4E; --app-ok-tint:#E4EFE9;
     --app-warn-ink:#8A5A0F; --app-warn-tint:#FBF0DD;
     --app-bad:#C4543B; --app-bad-tint:#F7E6E1;
+    --logo-plate:transparent;
   }
   html{color-scheme:light}
   html[data-theme="dark"]{
@@ -25,6 +45,7 @@ const THEME_VARS = `
     --app-ok:#4FB584; --app-ok-tint:rgba(79,181,132,.16);
     --app-warn-ink:#F2B85F; --app-warn-tint:rgba(232,155,45,.14);
     --app-bad:#E0725A; --app-bad-tint:rgba(196,84,59,.18);
+    --logo-plate:#F6F5F0;
   }
   body{background:var(--app-bg);transition:background .2s}
 
@@ -62,19 +83,50 @@ const THEME_VARS = `
       order:3;flex-basis:100%;border-top:1px solid rgba(255,255,255,.12);padding-top:8px!important;margin-top:4px!important}
     .app-side-foot .foot-co,.app-side-foot .foot-plan{display:none}
   }
+
+  /* ---- phones and tablets: the tool is used mostly on a phone ---- */
+  @media (max-width:760px),(pointer:coarse){
+    /* iOS Safari zooms the whole page into any field under 16px the moment it
+       is tapped, and the installer then has to pinch back out after every
+       entry. 16px is the threshold; !important because many fields set their
+       size inline. Checkboxes, radios and sliders have no text to zoom to. */
+    input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=button]):not([type=submit]):not([type=hidden]),
+    select,textarea{font-size:16px!important}
+    /* Small text links keep their look; an invisible halo makes them a
+       finger-sized target (about 40px tall) without moving anything. */
+    .demo-cta,.sample-cta,.app .dx-link,.lg-back,.lg-foot-in a{position:relative}
+    .demo-cta::after,.sample-cta::after,.app .dx-link::after,.lg-back::after,.lg-foot-in a::after{
+      content:"";position:absolute;inset:-12px -6px}
+    .bom-del{min-width:36px;min-height:36px;font-size:15px!important}
+    .app .ws-seg button{padding-top:10px!important;padding-bottom:10px!important}
+    .pv-seg button{min-height:36px}
+    .lead-chan select{padding-top:5px;padding-bottom:5px}
+  }
 `;
 
 // Runs before paint to set the theme attribute — prevents a light-then-dark flash.
-const NO_FLASH = `(function(){try{var t=localStorage.getItem("voltmira_theme");if(t!=="dark"&&t!=="light"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`;
+// Also syncs <meta name="theme-color">, same as the landing page: in standalone
+// (Home Screen) mode that color paints the status bar strip itself, so a
+// stale light value behind a dark-mode page reads as a visible seam, not just
+// a missed nicety.
+const NO_FLASH = `(function(){try{var t=localStorage.getItem("voltmira_theme");if(t!=="dark"&&t!=="light"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0F1310":"#142A21");}catch(e){}})();`;
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: NO_FLASH stamps data-theme on <html> before
+    // React hydrates, by design, so the attribute never matches the server's.
+    // It applies to this element's own attributes only, not to the tree below.
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="theme-color" content="#142A21" />
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH }} />
         <style dangerouslySetInnerHTML={{ __html: THEME_VARS }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* Inter Tight is the display face on /login and the legal pages; Google
+            only ships the woff2 for faces a page actually renders, so pages that
+            never use it pay nothing beyond a slightly longer stylesheet URL. */}
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body style={{ margin: 0 }}>{children}<Analytics /></body>
     </html>

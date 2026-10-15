@@ -1,81 +1,154 @@
 "use client";
 // app/p/[code]/ClientAudit.jsx — the honesty engine, in the client's hands.
-// The homeowner drags the electricity price and yearly price-rise sliders and
-// watches their own payback recompute LIVE, using the exact same engine the
-// installer used. Nothing to hide — that's the whole brand.
-import { useMemo, useState } from "react";
+// The homeowner drags the electricity price and yearly price-rise sliders (or
+// types the figures from their own bill) and watches their payback recompute
+// LIVE, using the exact same engine the installer used. Nothing to hide,
+// that's the whole brand. Styles: proposal.css (.ca-*).
+import { useId, useMemo, useState } from "react";
+import { SlidersHorizontal } from "lucide-react";
 import { quote } from "@voltmira/engine";
 import { t } from "../../../lib/i18n.js";
+import { moneyFormatter, numFor } from "../../../lib/money.js";
+import { ppt } from "./text.js";
+import { CHART } from "./charts.jsx";
 
-export default function ClientAudit({ inputs, assumptions: E, lang }) {
+// A figure the client types (from their own bill). The text they are typing is
+// kept as typed while the field has focus, and committed whenever it parses:
+// re-formatting on every keystroke (the old toFixed value) turned "2.50" into
+// "2.00." and then 0.01. Text with a decimal keypad, so a Romanian, Russian or
+// Ukrainian reader's comma works as well as a dot.
+function NumField({ value, decimals, lang, onCommit, label }) {
+  const [draft, setDraft] = useState(null);
+  const shown = (v) => v.toLocaleString({ en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB",
+    { minimumFractionDigits: decimals, maximumFractionDigits: decimals, useGrouping: false });
+  const parse = (s) => parseFloat(String(s).replace(/\s/g, "").replace(",", "."));
+  return (
+    <input type="text" inputMode="decimal" autoComplete="off" className="ca-num" aria-label={label}
+      value={draft ?? shown(value)}
+      onFocus={() => setDraft(shown(value))}
+      onBlur={() => setDraft(null)}
+      onChange={(e) => { setDraft(e.target.value); const v = parse(e.target.value); if (Number.isFinite(v)) onCommit(v); }} />
+  );
+}
+
+// currency/rate: the proposal's own (lib/money.js). Every currency other than
+// EUR is local (lei, hryvnia): the client reads and types the electricity
+// price in it, at the rate frozen with the proposal; the engine keeps EUR.
+// The unit comes from moneyFormatter, so a UAH offer reads "грн/кВт·год" in
+// Ukrainian and "UAH/kWh" in English, never a hard-coded "lei".
+export default function ClientAudit({ inputs, assumptions: E, lang, currency = "EUR", rate = 1 }) {
+  const fmt = moneyFormatter({ currency, lang, fx: currency && currency !== "EUR" ? { [currency]: rate } : null });
+  const local = fmt.local;
+  const k = fmt.rate;
+  const nf = numFor(lang);
+  const id = useId();
   const basePrice = Number(inputs.price) || 0.21;
   const [priceMul, setPriceMul] = useState(1);
   const [inflDelta, setInflDelta] = useState(0);
 
-  const q = useMemo(() => {
-    const p = {
-      kw: Number(inputs.kw), price: basePrice * priceMul, cons: Number(inputs.cons) || 5000,
-      batt: inputs.batt, market: inputs.market, useMonthly: inputs.useMonthly,
-      consMonthly: inputs.consMonthly, afmSubsidy: inputs.afmSubsidy,
-      yieldOverride: inputs.yieldOverride, monthlyYieldShape: inputs.monthlyYieldShape,
-      // Carry the real battery capacity and the frozen BOM total, otherwise this
-      // panel priced a 20 kWh battery as 10 kWh (engine fallback) and ignored the
-      // bill of materials — so the audit contradicted the headline proposal.
-      battKwh: inputs.battKwh,
-      costOverride: Number(inputs.costOverride) || 0,
-      bomHasBattery: !!inputs.bomHasBattery,
-    };
-    const bend = (b) => ({ ...b, infl: Math.max(0, b.infl + inflDelta) });
-    const E2 = { ...E, bands: { pess: bend(E.bands.pess), expc: bend(E.bands.expc), opti: bend(E.bands.opti) } };
-    return quote(p, E2);
-  }, [priceMul, inflDelta, inputs, E, basePrice]);
+  const params = useMemo(() => ({
+    kw: Number(inputs.kw), cons: Number(inputs.cons) || 5000,
+    batt: inputs.batt, market: inputs.market, useMonthly: inputs.useMonthly,
+    consMonthly: inputs.consMonthly, afmSubsidy: inputs.afmSubsidy,
+    yieldOverride: inputs.yieldOverride, monthlyYieldShape: inputs.monthlyYieldShape,
+    // Carry the real battery capacity and the frozen BOM total, otherwise this
+    // panel priced a 20 kWh battery as 10 kWh (engine fallback) and ignored the
+    // bill of materials, so the audit contradicted the headline proposal.
+    battKwh: inputs.battKwh,
+    costOverride: Number(inputs.costOverride) || 0,
+    bomHasBattery: !!inputs.bomHasBattery,
+  }), [inputs]);
 
-  const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-IE";
-  const yrs = (n) => n === null ? "25+" : n === 0 ? t("pp_immediate", lang) : n.toFixed(1);
+  // The proposal's own figures (q0), to show what the client's changes moved.
+  const [q0, q] = useMemo(() => {
+    const run = (mul, delta) => {
+      const bend = (b) => ({ ...b, infl: Math.max(0, b.infl + delta) });
+      const E2 = { ...E, bands: { pess: bend(E.bands.pess), expc: bend(E.bands.expc), opti: bend(E.bands.opti) } };
+      return quote({ ...params, price: basePrice * mul }, E2);
+    };
+    return [run(1, 0), run(priceMul, inflDelta)];
+  }, [priceMul, inflDelta, params, E, basePrice]);
+
+  const yrs = (n) => n === null ? "25+" : n === 0 ? t("pp_immediate", lang) : nf(n, 1);
+  const unit = (n) => (n === 0 ? "" : t("pp_years", lang));
   const touched = priceMul !== 1 || inflDelta !== 0;
 
-  const bands = [["pp_pess", q.p, "#C4543B"], ["pp_expc", q.e, "#E89B2D"], ["pp_opti", q.o, "#1E6B4E"]];
-  const slider = { width: "100%", accentColor: "#E89B2D", height: 6, cursor: "pointer" };
-  const lbl = { display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13, color: "#66756C", marginBottom: 8, fontWeight: 500 };
-  const val = { fontFamily: "Inter, system-ui, sans-serif", fontWeight: 700, color: "#1E6B4E", fontSize: 15 };
+  const bands = [
+    ["sc_pess", q.p, q0.p, CHART.pess, true],
+    ["sc_expc", q.e, q0.e, CHART.expc, false],
+    ["sc_opti", q.o, q0.o, CHART.opti, true],
+  ];
+  const fillPct = (v, min, max) => `${Math.min(100, Math.max(0, ((v - min) / (max - min)) * 100))}%`;
+  const localPrice = basePrice * priceMul * k;
 
   return (
-    <section style={{ background: "#fff", border: "1px solid #E89B2D", borderRadius: 14, padding: 20, margin: "16px 0",
-      boxShadow: "0 2px 14px rgba(232,155,45,.1)" }}>
-      <h2 style={{ fontSize: 15, margin: "0 0 4px", fontFamily: "Inter, system-ui, sans-serif", color: "#B4700F" }}>{t("audit_title", lang)}</h2>
-      <p style={{ fontSize: 13, color: "#66756C", margin: "0 0 18px", lineHeight: 1.5 }}>{t("audit_sub", lang)}</p>
-
-      <div style={{ display: "grid", gap: 18, marginBottom: 18 }}>
+    <section className="ca pp-card" aria-labelledby={`${id}-h`}>
+      <div className="ca-head">
+        <span className="pp-tile" aria-hidden="true"><SlidersHorizontal className="pp-ic" /></span>
         <div>
-          <div style={lbl}><span>{t("audit_price", lang)}</span><output style={val}>€{(basePrice * priceMul).toFixed(3)}/kWh</output></div>
-          <input type="range" min="0.6" max="1.8" step="0.05" value={priceMul} style={slider}
-            onChange={e => setPriceMul(+e.target.value)} aria-label={t("audit_price", lang)} />
-        </div>
-        <div>
-          <div style={lbl}><span>{t("audit_infl", lang)}</span><output style={val}>{(E.bands.expc.infl + inflDelta).toFixed(1)}%/yr</output></div>
-          <input type="range" min="-3" max="6" step="0.5" value={inflDelta} style={slider}
-            onChange={e => setInflDelta(+e.target.value)} aria-label={t("audit_infl", lang)} />
+          <h3 className="pp-h3" id={`${id}-h`}>{ppt("audit_h", lang)}</h3>
+          <p>{ppt("audit_p", lang)}</p>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
-        {bands.map(([key, b, c]) => (
-          <div key={key} style={{ background: "#F6F5F0", borderLeft: `4px solid ${c}`, borderRadius: 10, padding: "12px 12px" }}>
-            <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: c }}>{t(key, lang)}</div>
-            <div style={{ fontSize: 22, fontFamily: "Inter, system-ui, sans-serif", fontWeight: 700, lineHeight: 1.1 }}>
-              {yrs(b.payback)} <small style={{ fontSize: 12, color: "#66756C", fontWeight: 500 }}>{t("pp_years", lang)}</small></div>
+      <div className="ca-fields">
+        <div>
+          <div className="ca-lbl">
+            <label htmlFor={`${id}-p`}>{ppt("audit_price", lang)}</label>
+            <output htmlFor={`${id}-p`}>{fmt.perKwh(basePrice * priceMul)}</output>
           </div>
-        ))}
+          <div className="ca-row">
+            <input id={`${id}-p`} type="range" className="ca-slider" min="0.6" max="1.8" step="0.05" value={priceMul}
+              style={{ "--fill": fillPct(priceMul, 0.6, 1.8) }}
+              onChange={(e) => setPriceMul(+e.target.value)} />
+            <NumField value={localPrice} decimals={local ? 2 : 3} lang={lang} label={`${ppt("audit_price", lang)}, ${fmt.unit}`}
+              onCommit={(v) => { if (v >= 0 && basePrice > 0) setPriceMul(v / k / basePrice); }} />
+          </div>
+        </div>
+        <div>
+          <div className="ca-lbl">
+            <label htmlFor={`${id}-i`}>{ppt("audit_infl", lang)}</label>
+            <output htmlFor={`${id}-i`}>{t("pp_pct_yr", lang, { v: nf(E.bands.expc.infl + inflDelta, 1) })}</output>
+          </div>
+          <div className="ca-row">
+            <input id={`${id}-i`} type="range" className="ca-slider" min="-3" max="6" step="0.5" value={inflDelta}
+              style={{ "--fill": fillPct(inflDelta, -3, 6) }}
+              onChange={(e) => setInflDelta(+e.target.value)} />
+            <NumField value={E.bands.expc.infl + inflDelta} decimals={1} lang={lang} label={`${ppt("audit_infl", lang)}, %`}
+              onCommit={(v) => setInflDelta(v - E.bands.expc.infl)} />
+          </div>
+        </div>
       </div>
 
-      {touched && (
-        <button onClick={() => { setPriceMul(1); setInflDelta(0); }}
-          style={{ marginTop: 14, background: "none", border: "1px solid #E3E1D6", borderRadius: 9, padding: "7px 13px",
-            fontSize: 12.5, fontWeight: 600, color: "#66756C", cursor: "pointer", fontFamily: "Inter, system-ui, sans-serif" }}>
-          {t("audit_reset", lang)}
-        </button>
-      )}
-      <p style={{ fontSize: 11.5, color: "#8A8F88", margin: "14px 0 0", lineHeight: 1.5 }}>{t("audit_note", lang)}</p>
+      <div className="ca-res" aria-live="polite">
+        <div className="ca-res-h">{ppt("audit_result", lang)}</div>
+        <div className="ca-bands">
+          {bands.map(([key, b, b0, color, dashed]) => (
+            <div key={key} className="ca-band">
+              <span className="ca-band-k">
+                <i className={"pp-ln" + (dashed ? " is-dash" : "")} style={{ color }} aria-hidden="true" />
+                {ppt(key, lang)}
+              </span>
+              <span>
+                <span className="ca-band-v">{yrs(b.payback)}<small>{unit(b.payback)}</small></span>
+                {touched && b.payback !== b0.payback && (
+                  <span className="ca-was">{ppt("audit_was", lang, { v: `${yrs(b0.payback)} ${unit(b0.payback)}`.trim() })}</span>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="ca-foot">
+        <p>{ppt("audit_note", lang)}</p>
+        {touched && (
+          <button type="button" className="pp-btn pp-btn-ghost" style={{ minHeight: 42, fontSize: 14 }}
+            onClick={() => { setPriceMul(1); setInflDelta(0); }}>
+            {ppt("audit_reset", lang)}
+          </button>
+        )}
+      </div>
     </section>
   );
 }

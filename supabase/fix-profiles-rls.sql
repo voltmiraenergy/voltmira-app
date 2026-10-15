@@ -1,6 +1,8 @@
 -- =====================================================================
 -- FIX: "infinite recursion detected in policy for relation profiles"
--- (run once in the Supabase SQL editor)
+-- SUPERSEDED: run lock-down-2026-09-28.sql instead. Dropping this policy on
+-- its own lets a signed-in user rewrite their own role and company_id; that
+-- file drops it AND adds the guard.
 --
 -- Cause: profiles_owner_all's USING clause ran `exists (select ... from
 -- profiles ...)` — a subquery on the very table the policy guards — which

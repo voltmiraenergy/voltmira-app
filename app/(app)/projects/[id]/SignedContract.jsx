@@ -9,9 +9,9 @@ import { fmtDate, fmtTime } from "../../../../lib/tz.js";
 
 export default function SignedContract({ signed, lang = "en" }) {
   if (!signed || (!signed.signature && !signed.signerName)) return null;
-  const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU" }[lang] || "en-GB";
+  const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB";
   const when = signed.acceptedAt
-    ? `${fmtDate(signed.acceptedAt, locale, { day: "numeric", month: "short", year: "numeric" })} · ${fmtTime(signed.acceptedAt, locale)}`
+    ? `${fmtDate(signed.acceptedAt, locale, { day: "numeric", month: "short", year: "numeric" })}, ${fmtTime(signed.acceptedAt, locale)}`
     : "";
   // Trim the UA down to a readable device/browser hint.
   const device = String(signed.signedUa || "").replace(/^Mozilla\/[\d.]+ \(/, "").split(")")[0].slice(0, 60);
@@ -30,11 +30,11 @@ export default function SignedContract({ signed, lang = "en" }) {
       )}
 
       <div style={{ marginTop: 12, fontSize: 14 }}>
-        <b>{t("sig_signed_by", lang)}:</b> {signed.signerName || "—"}{when ? ` · ${when}` : ""}
+        <b>{t("sig_signed_by", lang)}:</b> {signed.signerName || "—"}{when ? `, ${when}` : ""}
       </div>
       {(signed.signedIp || device) && (
         <div style={{ marginTop: 4, fontSize: 12, color: "var(--muted)" }}>
-          {t("sc_audit", lang, { ip: signed.signedIp || "—" })}{device ? ` · ${device}` : ""}
+          {t("sc_audit", lang, { ip: signed.signedIp || "—" })}{device ? `, ${device}` : ""}
         </div>
       )}
       {signed.signature && (

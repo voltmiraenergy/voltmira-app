@@ -1,8 +1,11 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
+import { CHROMIUM_ROUTES, traceKey } from "./lib/pdfRoutes.mjs";
+
 /** @type {import('next').NextConfig} */
 
 // Security headers applied to every response. The CSP is intentionally
 // permissive enough for the inline styles/scripts the marketing homepage uses
-// and the Supabase/PVGIS/Stripe endpoints the app calls, while blocking
+// and the Supabase/PVGIS/Paddle endpoints the app calls, while blocking
 // framing (clickjacking) and enforcing HTTPS.
 // Shared directives. `frame-ancestors` is appended per-context: 'none' everywhere
 // so the app can't be clickjacked, but the /widget lead form is MEANT to be
@@ -20,7 +23,11 @@ const cspCommon = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.paddle.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: https:",
-  "connect-src 'self' https://*.supabase.co https://re.jrc.ec.europa.eu https://nominatim.openstreetmap.org https://*.paddle.com https://plausible.io",
+  // *.ingest.sentry.io/us.sentry.io: error/performance events from the
+  // Sentry SDK (lib/sentry setup, see instrumentation.js) — inert with no
+  // NEXT_PUBLIC_SENTRY_DSN set, but the CSP has to allow the endpoint before
+  // that, or the browser blocks the SDK's own reporting request outright.
+  "connect-src 'self' https://*.supabase.co https://re.jrc.ec.europa.eu https://nominatim.openstreetmap.org https://*.paddle.com https://plausible.io https://*.ingest.sentry.io https://*.sentry.io",
   "frame-src https://challenges.cloudflare.com https://*.paddle.com",
   "base-uri 'self'",
   "form-action 'self'",
@@ -54,25 +61,38 @@ const widgetHeaders = [
   ...commonHeaders,
 ];
 
-export default {
+const nextConfig = {
   transpilePackages: ["@voltmira/engine"],
   // Don't advertise the framework/version in a response header (fingerprinting).
   poweredByHeader: false,
-  // The homepage route reads app/_landing/landing.html with fs at runtime;
-  // make sure Vercel's file tracer bundles it into the serverless function.
-  experimental: {
-    outputFileTracingIncludes: {
-      "/": ["./app/_landing/**"],
-      // The PDF route shells out to a real Chromium binary that ships brotli-
-      // compressed inside the package's bin/ directory. Nothing imports those
-      // files, so the tracer has no reason to keep them and the function
-      // deployed without them ("The input directory .../bin does not exist").
-      "/api/proposal/[code]/pdf": ["./node_modules/@sparticuz/chromium/bin/**"],
-    },
-    // Leave these two unbundled: webpack relocates the package and then
-    // chromium can no longer find its own binary relative to __dirname.
-    serverComponentsExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
+  // The round "N" button Next.js shows in `next dev` sat on top of the phone
+  // navigation. Errors still open the dev overlay; production never had it.
+  devIndicators: false,
+  // The homepage route reads app/_landing/*.html with fs at runtime; make sure
+  // Vercel's file tracer bundles it into the serverless function.
+  outputFileTracingIncludes: {
+    "/": ["./app/_landing/**"],
+    "/ro": ["./app/_landing/**"],
+    "/ru": ["./app/_landing/**"],
+    "/uk": ["./app/_landing/**"],
+    // Every route that launches Chromium needs its binary, which ships brotli-
+    // compressed inside the package's bin/ directory. Nothing imports those
+    // files, so the tracer has no reason to keep them and a function deploys
+    // without them ("The input directory .../bin does not exist"): on Vercel
+    // that route then answers {"error":"pdf_failed"}, while a local run works
+    // (it uses the installed browser). The list is in lib/pdfRoutes.mjs;
+    // lib/pdfRoutes.test.js fails if a route that renders a PDF is missing.
+    //
+    // The keys are globs, and the Turbopack build does not match a dynamic
+    // segment written as "[code]": the old key "/api/proposal/[code]/pdf"
+    // silently matched nothing, so even the proposal PDF shipped without the
+    // binary. Each dynamic segment is written as "*" instead (checked against
+    // .next/server/app/**/route.js.nft.json after a build).
+    ...Object.fromEntries(CHROMIUM_ROUTES.map((r) => [traceKey(r), ["./node_modules/@sparticuz/chromium/bin/**"]])),
   },
+  // Leave these two unbundled: the bundler relocates the package and then
+  // chromium can no longer find its own binary relative to __dirname.
+  serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
   async headers() {
     return [
       // /widget is embeddable — give it the framing-friendly header set.
@@ -85,6 +105,9 @@ export default {
       // any crawler. Indexing one is a GDPR exposure and the exact opposite of
       // what a trust-based product should do with a client's data.
       { source: "/p/:path*", headers: noIndexHeaders },
+      // a bank's deal room link: a private plant's figures and documents (its
+      // pages also send no referrer, so the link never leaves in a Referer header)
+      { source: "/d/:path*", headers: noIndexHeaders },
 
       // Auth surfaces and the signed-in app: thin, duplicate, or private.
       { source: "/login", headers: noIndexHeaders },
@@ -97,8 +120,22 @@ export default {
       { source: "/team/:path*", headers: noIndexHeaders },
       { source: "/settings/:path*", headers: noIndexHeaders },
       { source: "/profile/:path*", headers: noIndexHeaders },
-      { source: "/refer/:path*", headers: noIndexHeaders },
       { source: "/guide/:path*", headers: noIndexHeaders },
+      { source: "/studio/:path*", headers: noIndexHeaders },
+      { source: "/documents/:path*", headers: noIndexHeaders },
+      { source: "/traction/:path*", headers: noIndexHeaders },
+      { source: "/portfolios/:path*", headers: noIndexHeaders },
+      { source: "/energy/:path*", headers: noIndexHeaders },
+      { source: "/auth/:path*", headers: noIndexHeaders },
+      // /demo used to be a robots.txt Disallow, which Search Console reports as
+      // "Blocked by robots.txt" for every page that links to it. It is now
+      // crawlable but served noindex, and app/demo/route.js answers known
+      // crawlers with a plain page instead of provisioning a workspace.
+      { source: "/demo", headers: noIndexHeaders },
+      // Preview and project URLs on *.vercel.app serve the same pages as
+      // voltmira.com. The canonical tags already point at voltmira.com; this
+      // keeps those hosts out of the index outright.
+      { source: "/:path*", has: [{ type: "host", value: "(?<vhost>.+)\\.vercel\\.app" }], headers: noIndexHeaders },
       // Everything else (the negative lookahead keeps /widget from also matching
       // here and inheriting X-Frame-Options: DENY).
       { source: "/((?!widget).*)", headers: securityHeaders },
@@ -109,12 +146,51 @@ export default {
     return [{ source: "/.well-known/security.txt", destination: "/api/security-txt" }];
   },
   async redirects() {
-    // Canonicalize www → apex with a permanent 308 (preserves method + body).
-    return [{
-      source: "/:path*",
-      has: [{ type: "host", value: "www.voltmira.com" }],
-      destination: "https://voltmira.com/:path*",
-      permanent: true,
-    }];
+    return [
+      // Canonicalize www → apex with a permanent 308 (preserves method + body).
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.voltmira.com" }],
+        destination: "https://voltmira.com/:path*",
+        permanent: true,
+      },
+      // URLs Google still requests from older versions of the site. Each one
+      // used to answer 404 or bounce through /login; now each lands on the page
+      // that replaced it.
+      { source: "/en", destination: "/", permanent: true },
+      { source: "/index.html", destination: "/", permanent: true },
+      { source: "/pricing", destination: "/#pricing", permanent: true },
+      // The referral programme was retired; its page now only bounced to /login.
+      { source: "/refer", destination: "/", permanent: true },
+      { source: "/refer/:path*", destination: "/", permanent: true },
+      // The Studio offer preview was retired — building an offer now happens on
+      // the real project, which carries everything the preview had. Temporary
+      // (307) rather than permanent so a bookmark isn't cached forever against
+      // a path we may reuse.
+      { source: "/studio/quote", destination: "/projects", permanent: false },
+      // Survey/Annex/Schedule were retired as standalone pages — their real
+      // logic now lives as steps inside the per-job Configuration Workspace
+      // (app/(app)/studio/jobs/[id]/configure), so a job's roof pitch,
+      // equipment and paperwork state stop having two disagreeing copies.
+      // These have no job-id context of their own, so they land on the Job
+      // Hub rather than guessing which job to deep-link into. /studio/monitoring
+      // is live again as the fleet view; it reads the workspace's own readings.
+      { source: "/studio/survey", destination: "/studio", permanent: false },
+      { source: "/studio/annex", destination: "/studio", permanent: false },
+      { source: "/studio/schedule", destination: "/studio", permanent: false },
+    ];
   },
 };
+
+// Sentry's webpack plugin only actually DOES anything (uploads source maps,
+// creates a release) when SENTRY_AUTH_TOKEN is set — every option below is
+// safe with no Sentry account at all: the plugin just skips its extra work
+// and the build proceeds exactly as it did before this was added. The
+// runtime SDK (instrumentation.js, sentry.*.config.js) is separately inert
+// with no NEXT_PUBLIC_SENTRY_DSN — see their own comments.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+});

@@ -1,0 +1,33 @@
+/* app/(app)/team/team.css — the Team page in the shared workspace look: the
+ * seats / members / quotes / won strip and the two cards below it. The member
+ * rows and invite form keep their AppTheme styling. Same `.app` prefix rule as
+ * app/(app)/dx.css.
+ */
+
+.app .tmx .team-hero {
+  border-radius: 16px; padding: 18px 4px; margin-bottom: 0; box-shadow: var(--shadow);
+}
+.app .tmx .th-item { padding: 0 22px; }
+.app .tmx .th-lbl { font-size: 11px; font-weight: 650; letter-spacing: .07em; }
+.app .tmx .th-val { font-family: var(--dx-d); font-size: 28px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.app .tmx .th-val .th-of { font-family: var(--font-b); }
+.app .tmx .th-sub { font-size: 12px; }
+.app .tmx .seat-pips .pip { height: 7px; }
+
+.app .tmx .team-grid { gap: 18px; }
+.app .tmx .ch-row h3 { margin: 0; }
+.app .tmx .ch-count {
+  font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+  padding: 2px 8px; border-radius: 99px; background: var(--paper); border: 1px solid var(--line); color: var(--muted);
+}
+.app .tmx .member-wrap.open { border-radius: 14px; }
+.app .tmx .m-name { font-family: var(--dx-d); font-weight: 700; letter-spacing: -.005em; }
+.app .tmx .invite-card { position: sticky; top: 18px; }
+
+@media (max-width: 900px) {
+  .app .tmx .invite-card { position: static; }
+}
+@media (max-width: 768px) {
+  .app .tmx .th-item { padding: 0 16px; }
+  .app .tmx .th-val { font-size: 24px; }
+}
