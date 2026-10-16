@@ -9,6 +9,7 @@
 // of the credit summary, inside each plant of the report, and on the plant's
 // card. Server-renderable; nothing for a plant with no plot.
 import { fitView } from "../../lib/portfolioMap.js";
+import { LABEL_TILES } from "../../lib/mapLabels.js";
 import { layoutFor } from "../../lib/plantLayout.js";
 import { moduleSides } from "../../lib/siteLayout.js";
 import { plt } from "../../lib/plantText.js";
@@ -107,6 +108,12 @@ export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 
           // eslint-disable-next-line @next/next/no-img-element
           <img key={t.key} src={t.src} alt="" width={256} height={256} style={{ left: pc(t.left, width), top: pc(t.top, height), width: pc(t.size, width) }} />
         ))}
+        {/* roads, towns and villages over the imagery (lib/mapLabels.js), on the same tiles */}
+        {LABEL_TILES.flatMap((tpl, k) => v.tiles.map((t) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={`l${k}-${t.key}`} src={tpl.replace("{z}", t.z).replace("{y}", t.y).replace("{x}", t.x)} alt="" width={256} height={256}
+            style={{ left: pc(t.left, width), top: pc(t.top, height), width: pc(t.size, width) }} />
+        )))}
         <svg className="gr-smap-svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
           <defs>
             <pattern id="lyHatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill={COLOR.excl} fillOpacity="0.28" /><line x1="0" y1="0" x2="0" y2="7" stroke={COLOR.excl} strokeWidth="2" /></pattern>

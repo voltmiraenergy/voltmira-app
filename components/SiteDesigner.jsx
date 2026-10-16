@@ -26,8 +26,9 @@ import "leaflet/dist/leaflet.css";
 import "./SiteDesigner.css";
 import {
   X, Undo2, Redo2, Pentagon, Box, TreeDeciduous, Ruler, Plug, Move, LocateFixed, Trash2, Check,
-  House, ChevronDown, ChevronRight, Info, Eye,
+  House, ChevronDown, ChevronRight, Info, Eye, Signpost,
 } from "lucide-react";
+import { labelLayer } from "../lib/mapLabels.js";
 import { fitPanels, compassLabel, project, polygonAreaM2, facingFromShape, fitOptions } from "../lib/roofLayout.js";
 import { PANELS, findPanel, recommendPanel } from "../lib/supplierCatalog.js";
 import { designCheck } from "../lib/designCheck.js";
@@ -58,6 +59,7 @@ const TX = {
   cancel: { en: "Cancel", ro: "Anulează", ru: "Отмена", uk: "Скасувати" },
   done: { en: "Done", ro: "Gata", ru: "Готово", uk: "Готово" },
   lengths: { en: "Edge lengths", ro: "Lungimi laturi", ru: "Длины сторон", uk: "Довжини сторін" },
+  names: { en: "Street names", ro: "Nume de străzi", ru: "Названия улиц", uk: "Назви вулиць" },
   recenter: { en: "Back to the house", ro: "Înapoi la casă", ru: "К дому", uk: "До будинку" },
   loading: { en: "Loading satellite imagery", ro: "Se încarcă imaginea din satelit", ru: "Загружаем спутниковый снимок", uk: "Завантажуємо супутниковий знімок" },
   loadError: { en: "The map could not load. Check the connection, then close and open the roof design again.", ro: "Harta nu s-a putut încărca. Verifică conexiunea, apoi închide și redeschide proiectarea.", ru: "Карта не загрузилась. Проверьте соединение, затем закройте и снова откройте проект крыши.", uk: "Мапа не завантажилася. Перевірте з’єднання, потім закрийте й знову відкрийте проєкт даху." },
@@ -341,6 +343,9 @@ export default function SiteDesigner({
   const [markerType, setMarkerType] = useState("mainPanel");
   const [measureResult, setMeasureResult] = useState(null);
   const [showDimensions, setShowDimensions] = useState(true);
+  // roads, towns and villages over the imagery (lib/mapLabels.js)
+  const [showNames, setShowNames] = useState(true);
+  const namesLayer = useRef(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [shapes, setShapes] = useState({ planes: [], obstacles: [], markers: [] });
@@ -647,6 +652,7 @@ export default function SiteDesigner({
           { maxZoom: 21, maxNativeZoom: 18, attribution: "Tiles &copy; Esri" }).addTo(map);
       }
       if (cancelled || !mapEl.current) return;
+      namesLayer.current = labelLayer(L).addTo(map);
       L.marker([lat, lon], {
         icon: L.divIcon({ className: "sd-pin-wrap", html: PIN_SVG, iconSize: [32, 40], iconAnchor: [16, 39] }),
         interactive: false, keyboard: false, pmIgnore: true, zIndexOffset: -100,
@@ -1030,6 +1036,14 @@ export default function SiteDesigner({
                 <button type="button" className={"sd-chip" + (showDimensions ? " on" : "")} aria-pressed={showDimensions}
                   onClick={() => { const on = !showDimensions; setShowDimensions(on); api.current.setDimensions?.(on); }}>
                   <Eye size={16} aria-hidden="true" />{tr("lengths")}
+                </button>
+                <button type="button" className={"sd-chip" + (showNames ? " on" : "")} aria-pressed={showNames}
+                  onClick={() => {
+                    const on = !showNames, m = mapRef.current, l = namesLayer.current;
+                    setShowNames(on);
+                    if (m && l) { if (on) l.addTo(m); else m.removeLayer(l); }
+                  }}>
+                  <Signpost size={16} aria-hidden="true" />{tr("names")}
                 </button>
                 <button type="button" className="sd-chip" onClick={() => api.current.recenter?.()}>
                   <LocateFixed size={16} aria-hidden="true" />{tr("recenter")}
