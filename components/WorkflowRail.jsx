@@ -46,7 +46,7 @@ import "./workflow.css";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getProjectWorkflow } from "../lib/workflowActions.js";
+import { getProjectWorkflow, addReading } from "../lib/workflowActions.js";
 import { setInstallStep, setGridFile, markProjectWon } from "../lib/actions.js";
 import { sendOffer } from "../lib/sendOffer.js";
 import { wt, describe, stageName, actLabel } from "../lib/workflowText.js";
@@ -66,6 +66,9 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [invOpen, setInvOpen] = useState(false);
+  const [readOpen, setReadOpen] = useState(false);   // "Enter a reading" form
+  const [readMonth, setReadMonth] = useState(() => mdDayKey(Date.now()).slice(0, 7));
+  const [readKwh, setReadKwh] = useState("");
   // the step whose panel is open; null = the step that is next
   const [sel, setSel] = useState(null);
 
@@ -98,6 +101,7 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
       if (handled) { await load(); if (a.type === "won") setMsg({ ok: true, text: wt("rl_saved", lang) }); return; }
     }
     if (a.type === "invoice") { setInvOpen((v) => !v); return; }
+    if (a.type === "reading") { setReadOpen((v) => !v); return; }
     if (a.type === "portfolio") {
       const el = document.getElementById("portfolio");
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -190,7 +194,7 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
   // follow-up), then any other way to record the step. Elsewhere: the step's
   // own fixes, or, on a done step, the undo.
   const buttons = [];
-  if (open && onTarget && w.next) {
+  if (onTarget && w.next) {
     if (w.next.act) buttons.push({ a: w.next.act, label: d.next });
     if (w.next.alt) buttons.push({ a: w.next.alt, label: d.alt || actLabel(w.next.altKey, null, lang) });
   }
@@ -269,6 +273,31 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
         </div>
       </div>
 
+      {readOpen && (
+        <form className="wfr-read" onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true); setMsg(null);
+          const r = await addReading(projectId, readMonth, readKwh).catch(() => ({ ok: false }));
+          setBusy(false);
+          if (!r?.ok) { setMsg({ ok: false, text: wt("rl_failed", lang) }); return; }
+          setReadOpen(false); setReadKwh("");
+          setMsg({ ok: true, text: wt("rd_saved", lang) });
+          await load(); router.refresh();
+        }}>
+          <b>{wt("rd_h", lang)}</b>
+          <label htmlFor={`rd-m-${projectId}`}>{wt("rd_month", lang)}
+            <input id={`rd-m-${projectId}`} className="input" type="month" value={readMonth} max={mdDayKey(Date.now()).slice(0, 7)} onChange={(e) => setReadMonth(e.target.value)} required />
+          </label>
+          <label htmlFor={`rd-k-${projectId}`}>{wt("rd_kwh", lang)}
+            <input id={`rd-k-${projectId}`} className="input" inputMode="decimal" value={readKwh} onChange={(e) => setReadKwh(e.target.value.replace(/[^\d.,]/g, ""))} required />
+          </label>
+          <small>{wt("rd_hint", lang)}</small>
+          <span className="wfr-read-acts">
+            <button type="submit" className="btn primary sm" disabled={busy || !readKwh}>{wt("rd_save", lang)}</button>
+            <button type="button" className="btn ghost sm" onClick={() => setReadOpen(false)}>{wt("rd_cancel", lang)}</button>
+          </span>
+        </form>
+      )}
       {invOpen && (
         <div className="wfr-inv" role="group" aria-label={wt("rl_inv_pick", lang)}>
           <b>{wt("rl_inv_pick", lang)}</b>

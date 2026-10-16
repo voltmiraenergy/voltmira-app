@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "../../../../../lib/supabase.js";
 import { currentUser, currentCompany } from "../../../../../lib/session.js";
 import { fillRacordarePdf } from "../../../../../lib/racordarePdf.js";
+import { gridApplicant } from "../../../../../lib/gridDetails.js";
 import { fillRedNordPdf } from "../../../../../lib/racordareRedNordPdf.js";
 import { suggestOperator, OPERATORS } from "../../../../../lib/mdGrid.js";
 import { designCheck } from "../../../../../lib/designCheck.js";
@@ -52,6 +53,9 @@ export async function GET(req, props) {
   // The title usually names the town ("Casa Rusu, Bălți") when the address is short.
   const op = OPERATORS[want] ? want : OPERATORS[saved] ? saved : suggestOperator([project.address, project.title].filter(Boolean).join(", "));
 
+  // the applicant's saved details (GridDetails.jsx), with the quote filling the rest
+  const applicant = gridApplicant(project.install_progress?.gridFile?.details, project);
+
   try {
     let bytes;
     if (op === "rednord") {
@@ -61,6 +65,7 @@ export async function GET(req, props) {
       const dc = designCheck({ bom, kw: Number(project.kw) || 0, battKwh: project.batt ? Number(project.batt_kwh) || 0 : 0, market: "MD" });
       const known = Boolean(dc.fromBom?.inverter);
       bytes = await fillRedNordPdf({
+        applicant,
         clientName: project.client_name, clientEmail: project.client_email || "",
         siteAddress: project.address,
         productionKw: known ? dc.acKw : project.kw,
@@ -69,8 +74,7 @@ export async function GET(req, props) {
       });
     } else {
       bytes = await fillRacordarePdf({
-        clientName: project.client_name, clientAddress: project.address,
-        systemKw: project.kw, hasBattery: !!project.batt, battKwh: project.batt_kwh,
+        applicant, systemKw: project.kw, hasBattery: !!project.batt, battKwh: project.batt_kwh,
       });
     }
     // taken only once the file exists, so a failed fill costs nothing

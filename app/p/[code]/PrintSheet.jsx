@@ -27,6 +27,7 @@ import { CashflowSVG, MonthlySVG, CHART } from "./charts.jsx";
 import { ppt, yearsN } from "./text.js";
 import { Moon, Scale, Snowflake, ThermometerSun, TriangleAlert } from "lucide-react";
 import UaSection from "./UaSection.jsx";
+import RoofSatellite from "../../../components/RoofSatellite.jsx";
 
 // Per-market export data (same table as the demo's MARKETS).
 const MKT = {
@@ -231,7 +232,7 @@ const CSS = `
   }
 `;
 
-export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, acceptUrl = "", fx = null }) {
+export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, acceptUrl = "", fx = null }) {
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
   // Minus ahead of the currency symbol: "€-31" reads as a broken string.
   // Lei for a Moldovan installer at the rate frozen with the proposal, with
@@ -418,7 +419,14 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
               </>
             )}
           </tbody></table>
-          {hasRoof && (
+          {/* the real roof from above when the offer carries its position;
+              offers sent before that keep the plain drawing */}
+          {roofSat ? (
+            <div className="p-roof">
+              <RoofSatellite roof={roofSat} />
+              <small>{tr("pdf_roof_sat_note", { n: roofSat.quoted || roofSat.planes.reduce((s, pl) => s + pl.panels.length, 0) })}</small>
+            </div>
+          ) : hasRoof && (
             <div className="p-roof">
               <RoofSnapshotSVG planes={roofPlanes} />
               <small>{tr("pdf_roof_snap_note", { n: roofPlanes.reduce((s, pl) => s + pl.panels.length, 0) })}</small>

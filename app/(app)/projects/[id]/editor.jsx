@@ -1386,7 +1386,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           {(isMD || isUA) && (p.status !== "draft" || initial.install_progress?.gridFile) && (
             <GridFile key={p.market + (railProg?.gridFile ? JSON.stringify(railProg.gridFile) : "")} projectId={initial.id}
               market={p.market} address={[p.address, p.title].filter(Boolean).join(", ")}
-              initial={(railProg || initial.install_progress)?.gridFile} lang={lang} />
+              initial={(railProg || initial.install_progress)?.gridFile} lang={lang}
+              client={{ client_name: p.client || "", client_email: p.clientEmail || "", address: p.address || "" }} />
           )}
 
           {/* A signed job in Moldova or Ukraine goes into a portfolio for a

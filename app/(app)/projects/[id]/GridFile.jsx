@@ -16,8 +16,9 @@ import { t } from "../../../../lib/i18n.js";
 import { gridFileStatus } from "../../../../lib/mdGrid.js";
 import { gridFor } from "../../../../lib/gridFile.js";
 import { mdDayKey } from "../../../../lib/tz.js";
+import GridDetails from "./GridDetails.jsx";
 
-export default function GridFile({ projectId, address, initial, lang, market = "MD" }) {
+export default function GridFile({ projectId, address, initial, lang, market = "MD", client = {} }) {
   const [file, setFile] = useState(() => ({ operator: null, stages: {}, ...(initial || {}) }));
   const [pending, start] = useTransition();
   const [failed, setFailed] = useState(false);
@@ -95,10 +96,15 @@ export default function GridFile({ projectId, address, initial, lang, market = "
           </ul>
         </div>
       ) : (
+        <>
+        {/* what the form needs that the quote does not hold: entered once, printed on the application */}
+        <GridDetails projectId={projectId} client={client} details={file.details} lang={lang}
+          onSaved={(fresh) => fresh && typeof fresh === "object" && setFile({ operator: null, stages: {}, ...fresh })} />
         <a className="gf-dl" href={`/api/projects/${projectId}/racordare-pdf?op=${op}`} target="_blank" rel="noopener noreferrer">
           <Download size={16} aria-hidden="true" />
           <span><b>{t("gf_download", lang)}</b><small>{t("gf_download_h", lang)}</small></span>
         </a>
+        </>
       )}
 
       {status.chase && (

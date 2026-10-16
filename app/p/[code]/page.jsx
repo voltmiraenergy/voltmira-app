@@ -16,6 +16,7 @@ import "./proposal.css";
 import Tracker from "./tracker.jsx";
 import AutoPrint from "./AutoPrint.jsx";
 import PrintSheet, { RoofSnapshotSVG } from "./PrintSheet.jsx";
+import RoofSatellite from "../../../components/RoofSatellite.jsx";
 import ClientAudit from "./ClientAudit.jsx";
 import { MonthlySVG, CashflowSVG, CHART, monthNames } from "./charts.jsx";
 import FinanceToggle from "./FinanceToggle.jsx";
@@ -93,7 +94,7 @@ export default async function ProposalPage(props) {
   }
   const { company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
     offer = null, chosenOption = null, cned = null,
-    roofAreaM2 = null, roofOrientation = null, roofPlanes = null } = data;
+    roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
   const signedDate = signedAt
@@ -111,7 +112,7 @@ export default async function ProposalPage(props) {
       <main lang={lang} style={{ background: "#fff", minHeight: "100vh" }}>
         <HtmlLang lang={lang} />
         <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom}
-          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes}
+          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat}
           acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} />
         {/* The PDF route drives printing through CDP and passes auto=0:
             window.print() inside headless Chromium blocks rather than returns. */}
@@ -396,7 +397,12 @@ export default async function ProposalPage(props) {
                 </div>
               )}
 
-              {hasRoof && (
+              {roofSat ? (
+                <figure className="pp-roof pp-card">
+                  <RoofSatellite roof={roofSat} />
+                  <figcaption>{t("pdf_roof_sat_note", lang, { n: roofSat.quoted || roofSat.planes.reduce((s, pl) => s + pl.panels.length, 0) })}</figcaption>
+                </figure>
+              ) : hasRoof && (
                 <figure className="pp-roof pp-card">
                   <RoofSnapshotSVG planes={roofPlanes} />
                   <figcaption>{t("pdf_roof_snap_note", lang, { n: roofPlanes.reduce((s, pl) => s + pl.panels.length, 0) })}</figcaption>
