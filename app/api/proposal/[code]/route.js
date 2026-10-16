@@ -310,6 +310,7 @@ export async function GET(req, props) {
     // proposal made before this existed or where nothing was ever drawn.
     roofPlanes: Array.isArray(prop.snapshot.roofPlanes) ? prop.snapshot.roofPlanes : undefined,
     roofSat: prop.snapshot.roofSat && Array.isArray(prop.snapshot.roofSat.planes) ? prop.snapshot.roofSat : undefined,
+    roofPhoto: /^https:\/\//.test(String(prop.snapshot.roofPhoto || "")) ? prop.snapshot.roofPhoto : undefined,
   });
 }
 

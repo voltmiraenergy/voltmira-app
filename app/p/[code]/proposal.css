@@ -614,3 +614,6 @@
   .pp-sec, .pp-card, .pp-accept { break-inside: avoid; box-shadow: none !important; }
   .pp-cn { display: none !important; } .pp-cw { display: block !important; }
 }
+
+/* the installer's own roof photo, the offer's picture */
+.pp-roof-photo { display: block; width: 100%; border-radius: 10px; aspect-ratio: 16 / 10; object-fit: cover; }

@@ -28,6 +28,7 @@ import SurplusPanel, { useBuyback } from "../../../../components/SurplusPanel.js
 import UaPanel from "../../../../components/UaPanel.jsx";
 import InstallChecklist from "./InstallChecklist.jsx";
 import GridFile from "./GridFile.jsx";
+import RoofPhoto from "./RoofPhoto.jsx";
 import WorkflowRail from "../../../../components/WorkflowRail.jsx";
 import AddToPortfolio from "../../../../components/AddToPortfolio.jsx";
 import SupportCard from "../../../../components/SupportCard.jsx";
@@ -880,6 +881,9 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 </span>
                 <Qi d="chev" size={15} />
               </button>
+              {/* the installer's own roof photo, the offer's picture */}
+              <RoofPhoto projectId={initial.id} url={p.siteDesign?.photoUrl || null} lang={lang}
+                onChange={(url) => { const sd = { ...(p.siteDesign || {}) }; if (url) sd.photoUrl = url; else delete sd.photoUrl; update({ siteDesign: sd }); }} />
             </div>
             {p.yieldOverride && (
               <div className="pvgis-data">

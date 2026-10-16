@@ -150,3 +150,9 @@ html[data-theme="dark"] .app .qb { --amber-ink: #EBA542; --dx-on-green: #07130D;
 @media (prefers-reduced-motion: reduce) {
   .app .qb-saved.s-saving i { animation: none; }
 }
+
+/* the roof photo tool (RoofPhoto.jsx): a tool row with its own buttons */
+.app .qb-photo { cursor: default; flex-wrap: wrap; }
+.app .qb-photo-img { width: 44px; height: 44px; object-fit: cover; border-radius: 9px; flex: none; }
+.app .qb-photo .qb-tool-tx { flex: 1; min-width: 0; }
+.app .qb-photo-acts { display: flex; gap: 6px; flex-basis: 100%; padding-left: 56px; }

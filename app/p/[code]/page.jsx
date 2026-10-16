@@ -94,7 +94,7 @@ export default async function ProposalPage(props) {
   }
   const { company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
     offer = null, chosenOption = null, cned = null,
-    roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null } = data;
+    roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
   const signedDate = signedAt
@@ -112,7 +112,7 @@ export default async function ProposalPage(props) {
       <main lang={lang} style={{ background: "#fff", minHeight: "100vh" }}>
         <HtmlLang lang={lang} />
         <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom}
-          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat}
+          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat} roofPhoto={roofPhoto}
           acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} />
         {/* The PDF route drives printing through CDP and passes auto=0:
             window.print() inside headless Chromium blocks rather than returns. */}
@@ -397,7 +397,13 @@ export default async function ProposalPage(props) {
                 </div>
               )}
 
-              {roofSat ? (
+              {roofPhoto ? (
+                <figure className="pp-roof pp-card">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="pp-roof-photo" src={roofPhoto} alt={t("pdf_roof_photo_note", lang)} />
+                  <figcaption>{t("pdf_roof_photo_note", lang)}</figcaption>
+                </figure>
+              ) : roofSat ? (
                 <figure className="pp-roof pp-card">
                   <RoofSatellite roof={roofSat} />
                   <figcaption>{t("pdf_roof_sat_note", lang, { n: roofSat.quoted || roofSat.planes.reduce((s, pl) => s + pl.panels.length, 0) })}</figcaption>
