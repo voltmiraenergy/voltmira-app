@@ -82,6 +82,16 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
   ), [projectId]);
 
   useEffect(() => { load(); }, [load, status, refreshKey]);
+  // "Enter the reading" from the reading alert (?reading=1): the form opens once the rail is in
+  useEffect(() => {
+    let alive = true;
+    try {
+      if (new URLSearchParams(location.search).get("reading") === "1") {
+        load().then(() => { if (alive) { setReadOpen(true); document.getElementById("workflow")?.scrollIntoView({ block: "start" }); } });
+      }
+    } catch { /* no window */ }
+    return () => { alive = false; };
+  }, [load]);
   // Back from the invoice tab (the number is drawn there) or another window,
   // or the portfolio card changed this quote: re-read.
   useEffect(() => {

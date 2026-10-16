@@ -17,6 +17,7 @@ import { logActivity } from "../../../../lib/activity.js";
 import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
 import { sendEmail, proposalOpenedEmail, emailConfigured, ownerAlertEmail } from "../../../../lib/email.js";
 import { sendCrmWebhook } from "../../../../lib/crmWebhook.js";
+import { openNow } from "../../../../lib/openDigest.js";
 import { quote } from "@voltmira/engine";
 import { snapshotEngine } from "../../../../lib/engineSettings.js";
 import { bomHasBattery } from "../../../../lib/quoteInput.js";
@@ -105,6 +106,9 @@ const NOTIFY_THROTTLE_MS = 4 * 60 * 60 * 1000;
 async function notifyProposalOpened(db, prop) {
   try {
     if (!emailConfigured()) return;
+    // the morning email (lib/openDigest.js) takes it when the company chose one, or in quiet hours
+    const { data: pref } = await db.from("companies").select("*").eq("id", prop.company_id).maybeSingle();
+    if (!openNow(pref)) return;
 
     // Throttle check + claim in one update: only proceed if we win the row.
     const cutoff = new Date(Date.now() - NOTIFY_THROTTLE_MS).toISOString();

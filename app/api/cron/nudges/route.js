@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../lib/supabase.js";
 import { dueNudges, sendNudge } from "../../../../lib/nudgeRun.js";
+import { sendOpenDigests } from "../../../../lib/openDigest.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,8 @@ export async function GET(req) {
   }
   const db = supabaseAdmin();
   const started = Date.now();
+  // the morning "offers opened" email, for companies that chose it or keep quiet hours
+  const digests = await sendOpenDigests(db, { budgetMs: 15_000 });
   const due = await dueNudges(db);
   const tally = { due: due.length, sent: 0, skipped: 0, failed: 0 };
   for (const n of due) {
@@ -27,5 +30,5 @@ export async function GET(req) {
     else if (r.skipped) tally.skipped++;
     else tally.failed++;
   }
-  return NextResponse.json({ ok: true, ...tally });
+  return NextResponse.json({ ok: true, ...tally, digests });
 }

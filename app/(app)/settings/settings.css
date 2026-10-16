@@ -45,6 +45,8 @@
 .app .st-test-msg.ok { color: var(--green); }
 .app .st-test-msg.bad { color: var(--red); }
 @media (max-width: 560px) { .app .st-test { margin-left: 0; } }
+.app .st-sub { display: grid; gap: 10px; margin: -4px 0 2px 52px; justify-items: start; }
+@media (max-width: 560px) { .app .st-sub { margin-left: 0; } }
 .app .st-indent { padding-left: 54px; }
 
 /* logo */

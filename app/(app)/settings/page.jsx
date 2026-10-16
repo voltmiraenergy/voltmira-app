@@ -221,6 +221,8 @@ export default function Settings() {
         notify_open: co.notify_open !== false,
         notify_deadlines: co.notify_deadlines !== false,
         notify_calls: co.notify_calls !== false,
+        notify_open_mode: co.notify_open_mode === "digest" ? "digest" : "instant",
+        notify_quiet: co.notify_quiet === true,
         notify_accepted: co.notify_accepted !== false,
         notify_readings: co.notify_readings !== false,
         nudge_enabled: co.nudge_enabled === true,
@@ -637,6 +639,18 @@ export default function Settings() {
           <div className="st-toggles">
             <Toggle checked={co.notify_open !== false} onChange={e => { setCo({ ...co, notify_open: e.target.checked }); touch(); }}
               title={t("s_notify", lang)} note={t("s_notify_note", lang)} />
+            {co.notify_open !== false && (
+              <div className="st-sub">
+                <div className="seg2" role="group" aria-label={t("s_open_when", lang)}>
+                  <button type="button" className={co.notify_open_mode !== "digest" ? "on" : ""} aria-pressed={co.notify_open_mode !== "digest"}
+                    onClick={() => { setCo({ ...co, notify_open_mode: "instant" }); touch(); }}>{t("s_open_instant", lang)}</button>
+                  <button type="button" className={co.notify_open_mode === "digest" ? "on" : ""} aria-pressed={co.notify_open_mode === "digest"}
+                    onClick={() => { setCo({ ...co, notify_open_mode: "digest" }); touch(); }}>{t("s_open_digest", lang)}</button>
+                </div>
+                <Toggle checked={co.notify_quiet === true} onChange={e => { setCo({ ...co, notify_quiet: e.target.checked }); touch(); }}
+                  title={t("s_quiet", lang)} note={t("s_quiet_note", lang)} />
+              </div>
+            )}
             <TestEmail kind="open" lang={lang} />
             <Toggle checked={co.notify_calls !== false} onChange={e => { setCo({ ...co, notify_calls: e.target.checked }); touch(); }}
               title={t("s_notify_calls", lang)} note={t("s_notify_calls_note", lang)} />
