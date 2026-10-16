@@ -76,11 +76,8 @@ export default async function AppLayout({ children }) {
   return (
     <div className="app">
       <AppTheme />
-      <HtmlLang lang={lang} />
-      {/* Persist the workspace language so the client error boundary (which can't
-          read the server-side company lang) can localize itself, and as a cookie
-          so /login greets a signed-out user in the same language. */}
-      <script dangerouslySetInnerHTML={{ __html: `try{localStorage.setItem('voltmira_lang',${JSON.stringify(lang)})}catch(e){}document.cookie='voltmira_lang='+${JSON.stringify(lang)}+'; path=/; max-age=31536000; samesite=lax'` }} />
+      {/* also keeps the workspace language on the device, for the error page and /login (lib/HtmlLang.jsx) */}
+      <HtmlLang lang={lang} persist />
       <a className="skip-link" href="#main">{lang === "ro" ? "Sari la conținut" : lang === "ru" ? "К содержимому" : lang === "uk" ? "До вмісту" : "Skip to content"}</a>
       <aside className="sidebar">
         <Link className="logo" href="/dashboard" aria-label="VoltMira"><Logo size={32} /></Link>
