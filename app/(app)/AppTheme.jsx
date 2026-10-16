@@ -268,6 +268,15 @@ const CSS = `
   .offline-bar .offline-waiting{display:block;margin-top:2px}
   .offline-bar{margin-bottom:14px;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.45;color:var(--ink);
     background:var(--paper-2);border:1px solid var(--line)}
+  /* a long page folded on a phone (components/FoldColumn.jsx) */
+  .fold-wrap{display:grid;gap:6px}
+  .fold-wrap:has(> .fold-body:empty){display:none}
+  .fold-body.closed{overflow:hidden;position:relative;border-radius:16px}
+  .fold-body.closed::after{content:"";position:absolute;inset:auto 0 0 0;height:64px;pointer-events:none;
+    background:linear-gradient(to bottom,transparent,var(--paper))}
+  .fold-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:6px 14px;
+    border:1px solid var(--line);border-radius:10px;background:var(--paper-2);color:var(--ink);font:600 13.5px/1 inherit;cursor:pointer}
+  .fold-btn:hover,.fold-btn:focus-visible{border-color:var(--ink)}
   /* the back bar on inner pages (components/MobileBack.jsx): phones and the installed app only */
   .m-back{display:none}
   @media (max-width: 900px){.m-back{display:flex}}

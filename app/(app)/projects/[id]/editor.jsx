@@ -29,6 +29,7 @@ import UaPanel from "../../../../components/UaPanel.jsx";
 import InstallChecklist from "./InstallChecklist.jsx";
 import GridFile from "./GridFile.jsx";
 import RoofPhoto from "./RoofPhoto.jsx";
+import FoldColumn from "../../../../components/FoldColumn.jsx";
 import WorkflowRail from "../../../../components/WorkflowRail.jsx";
 import AddToPortfolio from "../../../../components/AddToPortfolio.jsx";
 import SupportCard from "../../../../components/SupportCard.jsx";
@@ -837,7 +838,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       <LinkLabels root=".editor" />
       <div className="editor">
         {/* left: inputs */}
-        <div className="stack">
+        <FoldColumn className="stack" lang={lang}>
           <section className="card">
             <h3>{tr("client_site")}</h3>
             <div className="field"><label>{tr("client_name")}</label>
@@ -1162,10 +1163,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             </div>
           )}
 
-        </div>
+        </FoldColumn>
 
         {/* right: results */}
-        <div className="stack">
+        <FoldColumn className="stack" lang={lang}>
           <section className="card">
             <h3>{tr("sys_investment")}</h3>
             <div className="cost-line">
@@ -1398,7 +1399,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           {/* A signed job in Moldova or Ukraine goes into a portfolio for a
               lender (renders nothing otherwise). */}
           <AddToPortfolio projectId={initial.id} lang={lang} status={p.status} market={p.market} />
-        </div>
+        </FoldColumn>
       </div>
 
       {/* site designer: draw the roof on satellite imagery, full screen */}
