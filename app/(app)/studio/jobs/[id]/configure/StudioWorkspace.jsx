@@ -8,7 +8,7 @@
 // payments immediately.
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { AlertTriangle, MapPin, Zap, Sun } from "lucide-react";
 import { PREVIEW_BASE } from "../../../features.js";
 import {
@@ -16,7 +16,7 @@ import {
 } from "../../../studio-kit.jsx";
 import { quote, effectiveYield } from "../../../_engine.js";
 import LiveEngineSidebar from "./LiveEngineSidebar.jsx";
-import WizardSteps, { JobJourney } from "./WizardSteps.jsx";
+import WizardSteps, { JobJourney, STEPS } from "./WizardSteps.jsx";
 
 export default function StudioWorkspace({ jobId }) {
   const { NUM } = useFmt();
@@ -25,17 +25,18 @@ export default function StudioWorkspace({ jobId }) {
   const { jobs, updateJob, hydrated } = useStudioJobs();
   const job = jobs.find((j) => j.id === jobId);
   const searchParams = useSearchParams();
-  const [step, setStep] = useState(0);
+  const router = useRouter();
+  const pathname = usePathname();
+  // the open step is the URL's (?step=): each one a history entry, so back returns to the step before
+  const asked = +(searchParams.get("step") || 0);
+  const step = Number.isInteger(asked) && asked >= 0 && asked <= 6 ? asked : 0;
+  const setStep = (n) => { if (n !== step) router.push(`${pathname}?step=${n}`, { scroll: false }); };
   // Steps that save straight to storage (checklist ticks, readings) bump this
   // so the journey line above them updates as they happen.
   const [rev, setRev] = useState(0);
   const touch = () => setRev((r) => r + 1);
-  // Deep-link from the Job Hub's outstanding-items list ("this job's
-  // paperwork isn't filed" -> straight to Grid Connection).
-  useEffect(() => {
-    const n = +searchParams.get("step");
-    if (Number.isInteger(n) && n >= 0 && n <= 6) setStep(n);
-  }, [searchParams]);
+  // A deep link from the Job Hub's outstanding-items list ("this job's
+  // paperwork isn't filed") opens straight on its step, the same way.
 
   // Only updateJob on THIS page changes the engine inputs, so [job] is the
   // right dependency (and keeps simulate() off unrelated renders).
@@ -79,10 +80,13 @@ export default function StudioWorkspace({ jobId }) {
   return (
     <div className="dx ws">
       <div>
-        <Link href={`${PREVIEW_BASE}/jobs/${job.id}`} className="pv-back">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-          {t({ en: "Job overview", ro: "Rezumatul lucrării", ru: "Обзор объекта", uk: "Огляд об’єкта" })}
-        </Link>
+        <nav className="ws-crumbs" aria-label={t({ en: "Where you are", ro: "Unde ești", ru: "Где вы", uk: "Де ви" })}>
+          <Link href={PREVIEW_BASE}>Studio</Link>
+          <span aria-hidden="true">›</span>
+          <Link href={`${PREVIEW_BASE}/jobs/${job.id}`}>{job.name || t({ en: "New job", ro: "Lucrare nouă", ru: "Новый объект", uk: "Новий об’єкт" })}</Link>
+          <span aria-hidden="true">›</span>
+          <span aria-current="page">{t(STEPS[step]?.label || STEPS[0].label)} <small>{t({ en: `step ${step + 1} of ${STEPS.length}`, ro: `pasul ${step + 1} din ${STEPS.length}`, ru: `шаг ${step + 1} из ${STEPS.length}`, uk: `крок ${step + 1} з ${STEPS.length}` })}</small></span>
+        </nav>
         <header className="ws-head">
           <div className="ws-head-tx">
             <h1>{job.name || "—"}</h1>

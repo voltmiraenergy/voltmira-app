@@ -171,7 +171,7 @@ export function protRows(lang) {
 // bankability need no changes at all; `useStudioJobs()` is the new multi-job
 // access point for the job hub and payments.
 const StudioJobsCtx = createContext(null);
-export function StudioClientProvider({ children }) {
+export function StudioClientProvider({ demo = false, children }) {
   // Start from the presets on both server AND first client render (identical
   // HTML, no hydration mismatch), then hydrate from localStorage in an effect.
   const [jobs, setJobs] = useState(() => CLIENT_PRESETS.map((p) => ({ ...p })));
@@ -184,7 +184,7 @@ export function StudioClientProvider({ children }) {
   // hold off on stage-dependent UI until the real saved state is in.
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    const loaded = loadJobsState();
+    const loaded = loadJobsState({ demo });
     if (loaded.jobs.length) setJobs(loaded.jobs);
     setActiveId(loaded.activeId || loaded.jobs[0]?.id);
     setHydrated(true);
@@ -571,6 +571,11 @@ export const PREVIEW_CSS = `
 .pv-back{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:13px;font-weight:600;
   text-decoration:none;padding:7px 11px 7px 8px;border-radius:9px;transition:background .15s,color .15s}
 .pv-back:hover{background:var(--paper-2);color:var(--ink)}
+.ws-crumbs{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 8px;font-size:13px;color:var(--muted);margin:0 0 6px}
+.ws-crumbs a{color:var(--muted);font-weight:600;text-decoration:none;border-radius:6px;padding:2px 4px;margin:-2px -4px}
+.ws-crumbs a:hover{color:var(--ink);background:var(--paper-2)}
+.ws-crumbs [aria-current]{color:var(--ink);font-weight:700}
+.ws-crumbs small{font-weight:500;color:var(--muted);margin-left:4px}
 .pv-badge{flex:none;font-family:var(--font-d);font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
   color:var(--ink);background:var(--amber);border-radius:99px;padding:3px 9px}
 .pv-kicker{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}

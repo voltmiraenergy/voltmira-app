@@ -265,8 +265,18 @@ const CSS = `
   .email-msg.bad{color:var(--red)}
 
   /* no signal (OfflineReady.jsx): a plain strip, no dot, no motion */
+  .offline-bar .offline-waiting{display:block;margin-top:2px}
   .offline-bar{margin-bottom:14px;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.45;color:var(--ink);
     background:var(--paper-2);border:1px solid var(--line)}
+  /* the back bar on inner pages (components/MobileBack.jsx): phones and the installed app only */
+  .m-back{display:none}
+  @media (max-width: 900px){.m-back{display:flex}}
+  .m-back.is-app{display:flex}
+  .m-back{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;margin:-6px 0 10px;padding:4px 0;
+    background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(6px)}
+  .m-back-btn{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:6px 12px 6px 6px;border:0;border-radius:10px;
+    background:transparent;color:var(--ink);font:600 15px/1 inherit;cursor:pointer}
+  .m-back-btn:hover,.m-back-btn:focus-visible{background:var(--paper-2)}
   .demo-bar{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:18px;
     padding:10px 14px;border-radius:12px;background:var(--amber-tint);
     border:1px solid color-mix(in srgb,var(--amber) 38%,transparent)}

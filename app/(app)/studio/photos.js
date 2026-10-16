@@ -4,11 +4,15 @@
 // actual file. This reads a real file, resizes it client-side to a small JPEG
 // before storing (a handful of full-resolution photos would blow past
 // localStorage's quota fast; a 480px-wide JPEG is typically 20-60KB), and
-// persists it per job through the same readJSON/writeJSON as the rest of
-// Studio, so the photos are saved to the workspace along with the job.
+// keeps it per job in IndexedDB on the device (lib/idbStore.js: room for
+// hundreds, where localStorage holds a few megabytes for all of Studio), and
+// sends it to the workspace like the rest of Studio (studio-sync.js), so a
+// photo taken on a roof with no signal is kept and reaches the office later.
 import { readJSON, writeJSON } from "./jobs-data.js";
+import { queueWrite, PHOTO_PREFIX } from "./studio-sync.js";
+import { idbGet, idbSet } from "../../../lib/idbStore.js";
 
-export const photoKey = (jobId, group) => `voltmira_studio_photos_${jobId}_${group}`;
+export const photoKey = (jobId, group) => `${PHOTO_PREFIX}${jobId}_${group}`;
 
 export function readImageAsDataUrl(file, maxDim = 480) {
   return new Promise((resolve, reject) => {
@@ -34,10 +38,25 @@ export function readImageAsDataUrl(file, maxDim = 480) {
   });
 }
 
-export function loadPhotos(jobId, group) {
-  const v = readJSON(photoKey(jobId, group), []);
-  return Array.isArray(v) ? v : [];
+/** A job's photos in one group: from IndexedDB, moving an older localStorage copy there on the way. */
+export async function loadPhotos(jobId, group) {
+  const key = photoKey(jobId, group);
+  const v = await idbGet(key);
+  if (Array.isArray(v)) return v;
+  const legacy = readJSON(key, null);
+  if (Array.isArray(legacy)) {
+    if (await idbSet(key, legacy)) { try { localStorage.removeItem(key); } catch { /* storage disabled */ } }
+    return legacy;
+  }
+  return [];
 }
+
+/** Keep the photos on the device and send them to the workspace; without IndexedDB, as before. */
 export function savePhotos(jobId, group, list) {
-  writeJSON(photoKey(jobId, group), list);
+  const key = photoKey(jobId, group);
+  idbSet(key, list).then((ok) => {
+    if (!ok) { writeJSON(key, list); return; }
+    try { localStorage.removeItem(key); } catch { /* storage disabled */ }
+    queueWrite(key, list);
+  });
 }

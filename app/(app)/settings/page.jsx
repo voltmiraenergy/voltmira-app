@@ -151,6 +151,18 @@ export default function Settings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Back and forward walk through the tabs (setTab pushes each one).
+  useEffect(() => {
+    const onPop = () => {
+      try {
+        const want = new URLSearchParams(location.search).get("tab") || "company";
+        if (TAB_IDS.includes(want)) setTabState(want);
+      } catch {}
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   // The tab title in the workspace language once the company row is in.
   const coLang = co?.lang;
   useEffect(() => {
@@ -177,7 +189,7 @@ export default function Settings() {
     try {
       const u = new URL(location.href);
       u.searchParams.set("tab", id);
-      history.replaceState(null, "", u.pathname + u.search);
+      if (u.search !== location.search) history.pushState(null, "", u.pathname + u.search);
     } catch {}
     if (typeof window !== "undefined" && window.innerWidth < 900) window.scrollTo({ top: 0, behavior: "smooth" });
   }

@@ -7,6 +7,8 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { setInstallStep } from "../../../lib/actions.js";
+import { queueAction } from "../../../lib/offlineQueue.js";
+import { isNetworkError } from "../../../lib/offline.js";
 import { INSTALL_STEPS } from "../../../lib/dashboardMoves.js";
 
 export default function InstallBoard({ jobs, stepLabels, labels }) {
@@ -23,7 +25,9 @@ export default function InstallBoard({ jobs, stepLabels, labels }) {
         const server = await setInstallStep(id, step, true);
         if (server) setProg((p) => ({ ...p, [id]: server }));
         router.refresh();
-      } catch {
+      } catch (e) {
+        // no signal: the tick stays and is sent when the signal is back (lib/offlineQueue.js)
+        if (isNetworkError(e) && queueAction("installStep", [id, step, true])) { setProg((p) => ({ ...p, [id]: { ...p[id], [step]: new Date().toISOString().slice(0, 10) } })); return; }
         setProg((p) => { const c = { ...p[id] }; delete c[step]; return { ...p, [id]: c }; });
       } finally { setBusy(null); }
     });

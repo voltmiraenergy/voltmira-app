@@ -47,9 +47,12 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getProjectWorkflow, addReading } from "../lib/workflowActions.js";
+import { queueAction } from "../lib/offlineQueue.js";
+import { isNetworkError } from "../lib/offline.js";
 import { setInstallStep, setGridFile, markProjectWon } from "../lib/actions.js";
 import { sendOffer } from "../lib/sendOffer.js";
 import { wt, describe, stageName, actLabel } from "../lib/workflowText.js";
+import { t } from "../lib/i18n.js";
 import { mdDayKey, fmtDate } from "../lib/tz.js";
 import { LOCALE } from "../lib/relTime.js";
 
@@ -131,8 +134,12 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
       await load();
       router.refresh();
       if (a.type === "step" || a.type === "grid" || a.type === "won") setMsg({ ok: true, text: wt(undo ? "rl_undone" : "rl_saved", lang) });
-    } catch {
-      setMsg({ ok: false, text: wt("rl_failed", lang) });
+    } catch (e) {
+      // no signal: a step or a grid stage waits on the device and is sent when the signal is back
+      const queued = isNetworkError(e) && (a.type === "step"
+        ? queueAction("installStep", [projectId, a.step, a.done !== false])
+        : a.type === "grid" ? queueAction("gridFile", [projectId, a.clear ? { stage: a.stage, date: null } : { stage: a.stage, date: today(), ...(a.operator ? { operator: a.operator } : {}) }]) : false);
+      setMsg(queued ? { ok: true, text: t("offline_queued", lang) } : { ok: false, text: wt("rl_failed", lang) });
     } finally {
       setBusy(false);
     }

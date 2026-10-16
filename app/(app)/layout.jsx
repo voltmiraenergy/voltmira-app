@@ -9,6 +9,7 @@ import ThemeToggle from "./ThemeToggle.jsx";
 import SideNav from "./SideNav.jsx";
 import AppTheme from "./AppTheme.jsx";
 import OfflineReady from "./OfflineReady.jsx";
+import MobileBack from "../../components/MobileBack.jsx";
 import Logo from "../../lib/Logo.jsx";
 import HtmlLang from "../../lib/HtmlLang.jsx";
 import { t, normLang } from "../../lib/i18n.js";
@@ -146,6 +147,7 @@ export default async function AppLayout({ children }) {
         {/* Offline mode: keeps opened pages and recent quotes for places
             with no signal, and says so when there is none. */}
         <OfflineReady lang={lang} demo={isDemoEmail(user.email)} />
+        <MobileBack lang={lang} />
         {isDemoEmail(user.email) && (
           <div className="demo-bar">
             <span className="demo-badge">{t("demo_badge", lang)}</span>

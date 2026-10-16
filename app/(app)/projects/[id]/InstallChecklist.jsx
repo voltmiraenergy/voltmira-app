@@ -5,6 +5,8 @@
 // the date it was completed.
 import { useState, useTransition } from "react";
 import { setInstallStep } from "../../../../lib/actions.js";
+import { queueAction } from "../../../../lib/offlineQueue.js";
+import { isNetworkError } from "../../../../lib/offline.js";
 import { t } from "../../../../lib/i18n.js";
 import { Check } from "lucide-react";
 
@@ -32,7 +34,9 @@ export default function InstallChecklist({ projectId, initial = {}, lang }) {
         // here instead of being silently overwritten on the next toggle.
         const fresh = await setInstallStep(projectId, step, done);
         if (fresh && typeof fresh === "object") setProg(fresh);
-      } catch {
+      } catch (e) {
+        // no signal: the tick stays and is sent when the signal is back (lib/offlineQueue.js)
+        if (isNetworkError(e) && queueAction("installStep", [projectId, step, done])) return;
         setProg(before);
         setFailed(step);
         setTimeout(() => setFailed(null), 4000);

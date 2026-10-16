@@ -8,7 +8,7 @@ import { PREVIEW_CSS, PreviewNav, StudioClientProvider, tx } from "./studio-kit.
 import { PREVIEW_BASE } from "./features.js";
 import { hydrate } from "./studio-sync.js";
 
-export default function StudioShell({ lang, children }) {
+export default function StudioShell({ lang, demo = false, children }) {
   // The hub carries its own "Studio" header, so the kicker only shows on the tools.
   const onHub = (usePathname() || "") === PREVIEW_BASE;
   // The tools read their data synchronously from the local cache, so the
@@ -28,7 +28,7 @@ export default function StudioShell({ lang, children }) {
     );
   }
   return (
-    <StudioClientProvider>
+    <StudioClientProvider demo={demo}>
       <div className="pv-wrap">
         {/* AppTheme.jsx already defines the palette, so the bundled TOKENS_CSS
             is not re-injected here. */}

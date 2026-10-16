@@ -3,7 +3,7 @@
 // named slot (Site & Roof: roof, board, meter, access; one photo each) and an
 // open gallery (Installation: as many as the fitter takes). Tap to take or
 // pick a photo, or drop one on the tile.
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, X, Upload } from "lucide-react";
 import { readImageAsDataUrl, loadPhotos, savePhotos } from "../../../photos.js";
 
@@ -19,8 +19,19 @@ function useDrop(ingest) {
   };
 }
 
+/** The photos of one group, read from the device once the component is on screen. */
+function useJobPhotos(jobId, group) {
+  const [list, setList] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    loadPhotos(jobId, group).then((v) => { if (alive) setList(v); });
+    return () => { alive = false; };
+  }, [jobId, group]);
+  return [list, setList];
+}
+
 export function PhotoSlot({ jobId, group, label, icon: Icon = Camera }) {
-  const [list, setList] = useState(() => loadPhotos(jobId, group));
+  const [list, setList] = useJobPhotos(jobId, group);
   const inputRef = useRef(null);
   const photo = list[0] || null;
 
@@ -58,7 +69,7 @@ export function PhotoSlot({ jobId, group, label, icon: Icon = Camera }) {
 }
 
 export function PhotoGallery({ jobId, group, addLabel }) {
-  const [list, setList] = useState(() => loadPhotos(jobId, group));
+  const [list, setList] = useJobPhotos(jobId, group);
   const inputRef = useRef(null);
 
   async function ingest(file) {

@@ -16,7 +16,28 @@
 // working exactly as before, browser-only, and says so.
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "../../../lib/supabase-browser.js";
-import { planHydration, isSyncedKey, OWNER_KEY } from "../../../lib/studioSyncPlan.js";
+import { planHydration, isSyncedKey, OWNER_KEY, DIRTY_KEY } from "../../../lib/studioSyncPlan.js";
+import { idbSet, idbDel, idbEntries } from "../../../lib/idbStore.js";
+
+/** Studio's photos live in IndexedDB on the device (photos.js), not in localStorage. */
+export const PHOTO_PREFIX = "voltmira_studio_photos_";
+const isPhoto = (k) => typeof k === "string" && k.startsWith(PHOTO_PREFIX);
+
+// The keys changed here and not yet sent, kept on the device so an edit made
+// with no signal survives Studio being closed (lib/studioSyncPlan.js).
+function readDirty() {
+  try { const v = JSON.parse(localStorage.getItem(DIRTY_KEY) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+function markDirty(key) {
+  try { const d = new Set(readDirty()); d.add(key); localStorage.setItem(DIRTY_KEY, JSON.stringify([...d])); } catch { /* storage disabled */ }
+}
+function clearDirty(keys) {
+  try {
+    const sent = new Set(keys);
+    const d = readDirty().filter((k) => !sent.has(k) || pending.has(k));
+    if (d.length) localStorage.setItem(DIRTY_KEY, JSON.stringify(d)); else localStorage.removeItem(DIRTY_KEY);
+  } catch { /* storage disabled */ }
+}
 
 // "loading" until hydrate() settles; then:
 //   cloud    saved to the workspace
@@ -90,14 +111,27 @@ export function hydrate() {
       let cacheOwner = null;
       try { cacheOwner = localStorage.getItem(OWNER_KEY); } catch { /* storage disabled */ }
 
-      const plan = planHydration(rows || [], localSyncedEntries(), { companyId, cacheOwner });
+      // the photos on this device count as this browser's copy too
+      const photos = await idbEntries(PHOTO_PREFIX);
+      const plan = planHydration(rows || [], [...localSyncedEntries(), ...photos], { companyId, cacheOwner, dirty: readDirty() });
       try {
-        for (const k of plan.removeLocal) localStorage.removeItem(k);
+        for (const k of plan.removeLocal) { if (isPhoto(k)) await idbDel(k); else localStorage.removeItem(k); }
         // An edit still waiting to be sent is newer than the workspace copy.
-        for (const [k, v] of plan.writeLocal) if (!pending.has(k)) localStorage.setItem(k, JSON.stringify(v));
+        for (const [k, v] of plan.writeLocal) {
+          if (pending.has(k)) continue;
+          if (isPhoto(k) && await idbSet(k, v)) continue;
+          localStorage.setItem(k, JSON.stringify(v));
+        }
         if (companyId) localStorage.setItem(OWNER_KEY, companyId);
       } catch { /* quota / storage disabled: the tools fall back to their defaults */ }
       if (plan.upload.length) await upsert(sb, plan.upload);
+      if (plan.removeRemote.length) {
+        const { error: delErr } = await sb.from("studio_state").delete().in("key", plan.removeRemote);
+        if (delErr) throw delErr;
+      }
+      clearDirty([...plan.upload.map((r) => r.key), ...plan.removeRemote]);
+      // another workspace's cache: its unsent marks go with it
+      if (cacheOwner && companyId && cacheOwner !== companyId) { try { localStorage.removeItem(DIRTY_KEY); } catch { /* storage disabled */ } }
       setMode("cloud");
     } catch (e) {
       setMode(isMissingTable(e) ? "local" : "offline");
@@ -124,6 +158,7 @@ async function flush() {
       if (error) throw error;
     }
     retryMs = 4000;
+    clearDirty(batch.map(([k]) => k));
     setMode(pending.size ? "saving" : "cloud");
     if (pending.size) schedule(300);
   } catch (e) {
@@ -145,6 +180,7 @@ function schedule(ms = 500) {
 export function queueWrite(key, value) {
   if (!isSyncedKey(key) || mode === "local") return;
   pending.set(key, value);
+  markDirty(key);
   if (mode !== "loading") schedule();
 }
 
@@ -152,6 +188,7 @@ export function queueWrite(key, value) {
 export function queueDelete(key) {
   if (!isSyncedKey(key) || mode === "local") return;
   pending.set(key, undefined);
+  markDirty(key);
   if (mode !== "loading") schedule();
 }
 

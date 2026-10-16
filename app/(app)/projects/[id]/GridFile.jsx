@@ -12,6 +12,8 @@ import "./gridfile.css";
 import { useState, useTransition } from "react";
 import { Download, Phone, Check, RotateCcw } from "lucide-react";
 import { setGridFile } from "../../../../lib/actions.js";
+import { queueAction } from "../../../../lib/offlineQueue.js";
+import { isNetworkError } from "../../../../lib/offline.js";
 import { t } from "../../../../lib/i18n.js";
 import { gridFileStatus } from "../../../../lib/mdGrid.js";
 import { gridFor } from "../../../../lib/gridFile.js";
@@ -39,7 +41,9 @@ export default function GridFile({ projectId, address, initial, lang, market = "
       try {
         const fresh = await setGridFile(projectId, patch);
         if (fresh && typeof fresh === "object") setFile({ operator: null, stages: {}, ...fresh });
-      } catch {
+      } catch (e) {
+        // no signal: the stage stays and is sent when the signal is back (lib/offlineQueue.js)
+        if (isNetworkError(e) && queueAction("gridFile", [projectId, patch])) return;
         setFile(before);
         setFailed(true);
       }
