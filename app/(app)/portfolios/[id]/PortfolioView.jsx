@@ -80,7 +80,7 @@ const ES_STATUSES = ["open", "yes", "no", "na"];
 // a preset sets the lender's terms; the repayment profile, the construction
 // period, the grace and the reserve are kept as the user set them
 // the tax is the company's, not the lender's: a preset keeps it too
-const KEEP_KEYS = ["compare", "sizing", "displayCurrency", "repayment", "constructionMonths", "graceYears", "dsraMonths", "taxPct", "taxLifeYears", "taxLossYears"];
+const KEEP_KEYS = ["compare", "sizing", "displayCurrency", "repayment", "constructionMonths", "graceYears", "dsraMonths", "taxPct", "taxLifeYears", "taxLossYears", "quoteInvYear", "quoteInvEurPerKw", "endCostPct", "endValuePct"];
 const METRICS = ["dscrMin", "equityIrr", "irr", "npv"];
 // an id for a saved structure (event handlers only)
 const newId = () => "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -587,6 +587,10 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
                 <Num id="fCap" label={pt("f_grant_cap", lang)} value={p.finance.grantCapEur ?? ""} onChange={(v) => setFin("grantCapEur", v)} min="0" />
                 <Num id="fComp" label={pt("f_comp", lang)} hint={pt("f_comp_h", lang)} value={p.finance.principalCompensationPct ?? ""} onChange={(v) => setFin("principalCompensationPct", v)} min="0" max="100" />
                 <Num id="fFee" label={pt("f_fee", lang)} hint={pt("f_fee_h", lang)} value={p.finance.feePct ?? ""} onChange={(v) => setFin("feePct", v)} min="0" max="10" step="0.1" />
+                <Num id="fQInvY" label={pt("f_qinv_year", lang)} hint={pt("f_qinv_h", lang)} value={p.finance.quoteInvYear ?? ""} onChange={(v) => setFin("quoteInvYear", v)} min="0" max="30" step="1" />
+                <Num id="fQInvE" label={pt("f_qinv_eur", lang)} value={p.finance.quoteInvEurPerKw ?? ""} onChange={(v) => setFin("quoteInvEurPerKw", v)} min="0" step="5" />
+                <Num id="fEndC" label={pt("f_end_cost", lang)} hint={pt("f_end_h", lang)} value={p.finance.endCostPct ?? ""} onChange={(v) => setFin("endCostPct", v)} min="0" max="50" step="0.5" />
+                <Num id="fEndV" label={pt("f_end_value", lang)} value={p.finance.endValuePct ?? ""} onChange={(v) => setFin("endValuePct", v)} min="0" max="100" step="0.5" />
               </div>
               {/* one line: a ticked box says these terms come from a lender's own offer (it counts in readiness) */}
               <label className="pf-ts" title={pt("f_termsheet_h", lang)}>
