@@ -1,7 +1,8 @@
 // app/(app)/portfolios/deadlines/page.jsx — permits and deadlines across all
-// the company's plants: what is late and what is due in the next 30 days
-// (lib/deadlines.js), each row linking to its plant's checklist. The same
-// list goes out by email on Mondays (lib/deadlineRun.js).
+// the company's plants, and the won quotes' grid files waiting on the
+// operator: what is late and what is due in the next 30 days
+// (lib/deadlines.js), each row linking to its plant's checklist or its quote.
+// The same list goes out by email on Mondays (lib/deadlineRun.js).
 import "../../dx.css";
 import "../portfolio.css";
 import Link from "next/link";
@@ -10,7 +11,7 @@ import { currentCompany } from "../../../../lib/session.js";
 import { normLang } from "../../../../lib/i18n.js";
 import { dlt, whenText } from "../../../../lib/deadlineText.js";
 import { plt } from "../../../../lib/plantText.js";
-import { collectDeadlines, SOON_DAYS } from "../../../../lib/deadlines.js";
+import { collectDeadlines, quoteGridDeadlines, SOON_DAYS } from "../../../../lib/deadlines.js";
 import { itemName } from "../../../../lib/deadlineEmail.js";
 import { PLANTS_KEY } from "../../../../lib/portfolioModel.js";
 import { mdDayKey, fmtDate } from "../../../../lib/tz.js";
@@ -41,7 +42,7 @@ function Table({ rows, lang }) {
               <td>{r.ref}</td>
               <td className="r nw">{fmtDate(r.due, loc, { day: "numeric", month: "short", year: "numeric" })}</td>
               <td className="r nw dd-when">{whenText(r.days, lang)}</td>
-              <td className="r"><Link className="btn ghost sm" href={`/portfolios/${r.portfolioId}#plants`}>{dlt("open", lang)}</Link></td>
+              <td className="r"><Link className="btn ghost sm" href={r.projectId ? `/projects/${r.projectId}#workflow` : `/portfolios/${r.portfolioId}#plants`}>{dlt(r.projectId ? "open_quote" : "open", lang)}</Link></td>
             </tr>
           ))}
         </tbody>
@@ -56,8 +57,12 @@ export default async function DeadlinesPage() {
   const lang = normLang(co?.lang);
   const { data: portfolios, error } = await sb.from("portfolios").select("id, name, assets").order("updated_at", { ascending: false });
   const needsDb = !!error && /portfolios|schema cache|does not exist/i.test(error.message || "");
-  const d = collectDeadlines(portfolios || [], todayKey());
-  const hasPlants = (portfolios || []).some((p) => Array.isArray(p.assets?.[PLANTS_KEY]) && p.assets[PLANTS_KEY].length);
+  const plants = collectDeadlines(portfolios || [], todayKey());
+  // the won quotes whose grid file waits on the operator
+  const { data: quotes } = await sb.from("projects").select("id, title, status, market, install_progress").eq("status", "won");
+  const grid = quoteGridDeadlines((quotes || []).filter((q) => q.install_progress?.gridFile), todayKey());
+  const d = { rows: [...plants.rows, ...grid.rows].sort((a, b) => a.due.localeCompare(b.due) || a.plantName.localeCompare(b.plantName)), undated: plants.undated };
+  const hasPlants = grid.rows.length > 0 || (portfolios || []).some((p) => Array.isArray(p.assets?.[PLANTS_KEY]) && p.assets[PLANTS_KEY].length);
   const late = d.rows.filter((r) => r.overdue);
   const soon = d.rows.filter((r) => !r.overdue);
 

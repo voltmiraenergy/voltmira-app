@@ -11,7 +11,7 @@ import { NextResponse } from "next/server";
 import { nt, CALL_TIMES } from "../../../../lib/notifyText.js";
 import { cnedEnabled } from "../../../../lib/cnedData.js";
 import { isCnedQualified } from "../../../../lib/cnedInstallers.js";
-import { supabaseAdmin } from "../../../../lib/supabase.js";
+import { supabaseAdmin, supabaseServer } from "../../../../lib/supabase.js";
 import { escapeHtml } from "../../../../lib/safe.js";
 import { logActivity } from "../../../../lib/activity.js";
 import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
@@ -47,6 +47,51 @@ async function notifyCallRequested(db, prop, { who, title, phone, when, lang }) 
     await sendEmail({ to: owner.email, subject: nt("call_subject", lang, { client: who }), html });
   } catch (err) {
     console.error("call-request notify failed", err?.message);
+  }
+}
+
+/**
+ * Email the company owner that a client accepted the offer online. Never
+ * breaks the acceptance: a missing email setup only means no email.
+ */
+async function notifyAccepted(db, prop, { who, title, signer, pct }) {
+  try {
+    if (!emailConfigured()) return;
+    const [{ data: co }, { data: owner }] = await Promise.all([
+      db.from("companies").select("*").eq("id", prop.company_id).single(),
+      db.from("profiles").select("email").eq("company_id", prop.company_id)
+        .eq("role", "owner").not("email", "eq", "").limit(1).single(),
+    ]);
+    // its own switch once add-notify-more.sql has run; until then it is on
+    if (!co || co.notify_accepted === false || !owner?.email) return;
+    const lang = co.lang || "ro";
+    const loc = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "ro-RO";
+    const when = new Date().toLocaleString(loc, { timeZone: "Europe/Chisinau", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+    const { html } = ownerAlertEmail({
+      lang, kicker: nt("acc_kicker", lang), heading: nt("acc_heading", lang, { client: who, title }),
+      rows: [[nt("acc_signer", lang), signer || who], [nt("acc_when", lang), when], ...(pct ? [[nt("acc_discount", lang), `${pct}%`]] : [])],
+      lead: nt("acc_lead", lang), cta: { label: nt("acc_cta", lang), href: `/projects/${prop.project_id}` },
+      foot: nt("foot", lang), appUrl: process.env.NEXT_PUBLIC_APP_URL,
+    });
+    await sendEmail({ to: owner.email, subject: nt("acc_subject", lang, { client: who }), html });
+  } catch (err) {
+    console.error("accept notify failed", err?.message);
+  }
+}
+
+/**
+ * The installer looking at their own offer (signed in to the company that
+ * sent it): not a client's view, so it is neither counted nor emailed about.
+ */
+async function isOwnView(db, companyId) {
+  try {
+    const sb = await supabaseServer();
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return false;
+    const { data: me } = await db.from("profiles").select("company_id").eq("id", user.id).maybeSingle();
+    return !!me && me.company_id === companyId;
+  } catch {
+    return false;
   }
 }
 
@@ -291,6 +336,11 @@ export async function POST(req, props) {
     return NextResponse.json({ ok: true });
   }
 
+  // the installer previewing their own offer is not the client reading it
+  if (["open", "heartbeat", "toggle_batt"].includes(kind) && await isOwnView(db, prop.company_id)) {
+    return NextResponse.json({ ok: true, own: true });
+  }
+
   const seconds = Math.max(0, Math.min(3600, parseInt(body.seconds || 0, 10) || 0));
   await db.from("proposal_events").insert({
     code: prop.code, company_id: prop.company_id, kind, seconds,
@@ -370,6 +420,8 @@ export async function POST(req, props) {
         : `<b>${escapeHtml(who)}</b> accepted your proposal`,
       link: `/projects/${prop.project_id}`,
     });
+    await notifyAccepted(db, prop, { who, title: proj?.title || prop.code, signer: signerName, pct });
+    await sendCrmWebhook(prop.company_id, "proposal.won", { projectId: prop.project_id, title: proj?.title || "", client_name: proj?.client_name || "", via: "client" });
   }
   if (kind === "request") {
     // A call request: one per offer per day (a second tap only updates the
