@@ -17,11 +17,18 @@
  *   - only signed-in app pages are kept: never the client proposal (/p/), the
  *     API, sign-in, the demo or the landing page; a redirect (an expired
  *     session) is never stored;
- *   - signing out deletes everything this worker saved (lib/offline.js).
+ *   - signing out deletes everything this worker saved (lib/offline.js);
+ *   - map tiles: only the Esri tiles a designer asked for around its site
+ *     (lib/tileWarm.js), fetched with CORS (Esri allows any origin) so they
+ *     are stored at their real size, and served from the saved copy first;
+ *     tiles nobody asked for are never stored. Google's never are.
  * Registered from app/(app)/OfflineReady.jsx, in production builds only.
  */
 const PAGES = "vm-pages-v1";
 const STATIC = "vm-static-v1";
+const TILES = "vm-tiles-v1";
+const TILE_HOST = "server.arcgisonline.com";
+const MAX_TILES = 4000;
 const OFFLINE_URL = "/offline.html";
 const APP = /^\/(dashboard|leads|projects|documents|activity|catalog|settings|team|guide|studio|profile|traction|portfolios|energy)(\/|$)/;
 const STATIC_RE = /^\/_next\/static\//;
@@ -42,7 +49,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     // Anything this origin cached before (the old app's caches included).
-    const keep = [PAGES, STATIC];
+    const keep = [PAGES, STATIC, TILES];
     for (const name of await caches.keys()) if (!keep.includes(name)) await caches.delete(name);
     await self.clients.claim();
   })());
@@ -52,6 +59,7 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  if (url.hostname === TILE_HOST && url.pathname.includes("/tile/")) { event.respondWith(tile(req)); return; }
   if (url.origin !== self.location.origin) return;
   if (STATIC_RE.test(url.pathname)) { event.respondWith(cacheFirst(req)); return; }
   if (req.mode === "navigate" && APP.test(url.pathname)) { event.respondWith(networkFirst(req, url)); return; }
@@ -64,6 +72,7 @@ self.addEventListener("message", (event) => {
   const msg = event.data || {};
   if (msg.type === "warm" && Array.isArray(msg.urls)) event.waitUntil(warm(msg.urls));
   if (msg.type === "clear") event.waitUntil(clearAll());
+  if (msg.type === "tiles" && Array.isArray(msg.urls)) event.waitUntil(keepTiles(msg.urls));
 });
 
 const isHtml = (res) => (res.headers.get("content-type") || "").includes("text/html");
@@ -92,6 +101,31 @@ async function networkFirst(req, url) {
   }
 }
 
+// A map tile: the saved copy when there is one (a designer asked for it),
+// else the network, untouched.
+async function tile(req) {
+  const cache = await caches.open(TILES);
+  const hit = await cache.match(req.url);
+  if (hit) return hit;
+  return fetch(req);
+}
+
+// Save the tiles around a site while there is a signal (lib/tileWarm.js).
+async function keepTiles(urls) {
+  const cache = await caches.open(TILES);
+  for (const u of urls.slice(0, 800)) {
+    let url;
+    try { url = new URL(u); } catch { continue; }
+    if (url.hostname !== TILE_HOST || !url.pathname.includes("/tile/")) continue;
+    if (await cache.match(url.href)) continue;
+    try {
+      const res = await fetch(url.href, { mode: "cors", credentials: "omit" });
+      if (res.ok) await cache.put(url.href, res);
+    } catch { return; } // the signal went: stop quietly
+  }
+  trim(cache, MAX_TILES);
+}
+
 async function cacheFirst(req) {
   const cache = await caches.open(STATIC);
   const hit = await cache.match(req, { ignoreSearch: true });
@@ -107,7 +141,7 @@ async function cacheFirst(req) {
 // a signal. The projects list also brings its most recent quotes.
 async function warm(urls) {
   const pages = await caches.open(PAGES);
-  const queue = urls.slice(0, 20);
+  const queue = urls.slice(0, 40);
   const seen = new Set();
   let projects = 0;
   while (queue.length) {

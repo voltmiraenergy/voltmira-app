@@ -18,7 +18,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import "../SiteDesigner.css";
 import { X, Undo2, Redo2, Pentagon, Ban, Ruler, Move, LocateFixed, Trash2, Check, Eye, ChevronRight, Sun, Info, Signpost } from "lucide-react";
-import { labelLayer } from "../../lib/mapLabels.js";
+import { labelLayer, LABEL_TILES, namesPref, setNamesPref } from "../../lib/mapLabels.js";
+import { loadGoogleSatelliteLayer } from "../../lib/googleSatellite.js";
+import { tilesAround, postTiles } from "../../lib/tileWarm.js";
 import { layoutInputs, layoutPlots } from "../../lib/plantLayout.js";
 import { rotorDiameterM, turbineAt } from "../../lib/windLayout.js";
 import { plotHectares, EXCLUSION_KINDS, TABLE_FORMATS, TRACKER_GCR_DEFAULT, TRACKER_GCR_RANGE, tableGeometry } from "../../lib/siteLayout.js";
@@ -476,9 +478,16 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       mapRef.current = map;
       L.control.zoom({ position: "bottomright" }).addTo(map);
       map.pm.setLang(lang === "ru" ? "ru" : lang === "uk" ? "ua" : lang === "ro" ? "ro" : "en");
-      // Esri has nothing past about z18 over most of Moldova: it upscales the last real tile instead
-      L.tileLayer(SAT, { maxZoom: 20, maxNativeZoom: 18, attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics" }).addTo(map);
-      namesLayer.current = labelLayer(L, { maxZoom: 20 }).addTo(map);
+      // Google's satellite when the installer's key is set (sharper over most of Moldova); else Esri,
+      // which has nothing past about z18 there, so it upscales the last real tile instead
+      const google = await loadGoogleSatelliteLayer(L, undefined, { maxZoom: 20 });
+      if (cancelled || !mapEl.current) return;
+      if (google) google.addTo(map);
+      else L.tileLayer(SAT, { maxZoom: 20, maxNativeZoom: 18, attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics" }).addTo(map);
+      namesLayer.current = labelLayer(L, { maxZoom: 20 });
+      { const on = namesPref(); setShowNames(on); if (on) namesLayer.current.addTo(map); }
+      // the imagery and names around the site, kept for a field with no signal (Esri's: Google's may not be stored)
+      if (site) postTiles(tilesAround({ lat: site.lat, lon: site.lon }, 900, [15, 16, 17, 18], [SAT, ...LABEL_TILES], 600));
       if (site) {
         map.setView([site.lat, site.lon], 16);
         L.marker([site.lat, site.lon], { icon: L.divIcon({ className: "sd-pin-wrap", html: PIN_SVG, iconSize: [32, 40], iconAnchor: [16, 39] }), interactive: false, keyboard: false, pmIgnore: true, zIndexOffset: -100 }).addTo(map);
@@ -645,7 +654,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                 <button type="button" className={"sd-chip" + (showNames ? " on" : "")} aria-pressed={showNames}
                   onClick={() => {
                     const on = !showNames, m = mapRef.current, l = namesLayer.current;
-                    setShowNames(on);
+                    setShowNames(on); setNamesPref(on);
                     if (m && l) { if (on) l.addTo(m); else m.removeLayer(l); }
                   }}>
                   <Signpost size={16} aria-hidden="true" />{tr("names")}
