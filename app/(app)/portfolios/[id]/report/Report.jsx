@@ -9,7 +9,7 @@
 import { pt } from "../../../../../lib/portfolioText.js";
 import { bt } from "../../../../../lib/bankText.js";
 import { pct, dscr, num, mwhUnit, kwpUnit, dscrTone, capacity } from "../../../../../lib/portfolioFormat.js";
-import { caseLabel, riskRows, documentRows, esRows, presetSources } from "../../../../../lib/portfolioExport.js";
+import { caseLabel, caseNote, riskRows, documentRows, esRows, presetSources } from "../../../../../lib/portfolioExport.js";
 import { keyMessages, fxNote, structureName, termsLine, taxLine } from "../../../../../lib/portfolioDisplay.js";
 import { sortTornado } from "../../../../../lib/portfolioSensitivity.js";
 import { SIGMA_PCT, Z } from "../../../../../lib/projectFinance.js";
@@ -17,6 +17,7 @@ import { GRID_EMISSION_FACTOR } from "../../../../../lib/esScreening.js";
 import { FINANCING_PRESETS } from "../../../../../lib/financingPresets.js";
 import { TILE_ATTRIBUTION } from "../../../../../lib/portfolioMap.js";
 import CashflowChart from "../../../../../components/CashflowChart.jsx";
+import { cashflowEvents } from "../../../../../lib/cashflowEvents.js";
 import DscrChart from "../../../../../components/portfolio/DscrChart.jsx";
 import TornadoChart from "../../../../../components/portfolio/TornadoChart.jsx";
 import SourcesUses from "../../../../../components/portfolio/SourcesUses.jsx";
@@ -127,6 +128,8 @@ export default function Report({ model, lang, company, date, money, fx, rid = ""
         </div>
         <table className="rp-kv"><tbody>
           <Row k={pt("k_weakest", lang)} v={agg.weakest ? `${agg.weakest.name}, DSCR ${dscr(agg.weakest.dscrMin, lang)}` : none} />
+          {agg.llcr != null && <Row k={pt("k_llcr", lang)} v={`${fd(agg.llcr)}, P90 ${fd(model.p90.llcr)}`} />}
+          {agg.dscrIo != null && <Row k={pt("k_dscr_p50", lang)} v={`${pt("k_repay", lang, { v: fd(agg.dscrMinRepay) })}, ${pt("k_io", lang, { v: fd(agg.dscrIo) })}`} />}
           <Row k={pt("k_energy", lang)} v={`${num(agg.year1Mwh, lang, 0)} ${mwhUnit(lang)}, ${pt("k_co2", lang)} ${num(model.co2.tPerYear, lang, 0)} t`} />
           <Row k={pt("k_readiness", lang)} v={`${Math.round(model.readiness.docsPct)}%`} />
           <Row k={pt("k_screening", lang)} v={`${model.esProgress.answered}/${model.esProgress.total}`} />
@@ -294,8 +297,9 @@ export default function Report({ model, lang, company, date, money, fx, rid = ""
       <section className="rp-page">
         <H2 sections={sections} id="r_cover_cf" lang={lang} />
         <h3>{pt("r_cashflow", lang)}, {cur}</h3>
-        <CashflowChart cfads={agg.cfads} debtService={agg.debtService} lang={lang} years={years} bare rate={money.rate} />
-        {hasDebt && <><h3>{pt("ch_dscr", lang)}</h3><DscrChart p50={agg.dscrByYear} p90={p90Dscr} targets={{ p50: sizing.p50Dscr, p90: sizing.p90Dscr }} lang={lang} bare /></>}
+        <CashflowChart cfads={agg.cfads} debtService={agg.debtService} lang={lang} years={years} bare rate={money.rate}
+          events={cashflowEvents({ agg, fin: model.fin, scenario: model.scenario, assets: model.assets, E: model.E })} />
+        {hasDebt && <><h3>{pt("ch_dscr", lang)}</h3><DscrChart p50={agg.dscrByYear} p90={p90Dscr} targets={{ p50: sizing.p50Dscr, p90: sizing.p90Dscr }} lang={lang} bare span={years} /></>}
         <table className="rp-t rp-cf"><thead><tr>
           <th>{pt("r_year", lang)}</th><th className="r">{pt("r_cfads", lang)}</th><th className="r">{pt("r_ds", lang)}</th><th className="r">DSCR P50</th><th className="r">DSCR P90</th>
         </tr></thead><tbody>
@@ -320,7 +324,7 @@ export default function Report({ model, lang, company, date, money, fx, rid = ""
           {showShort && <th className="r">{pt(fin.dsraMonths > 0 ? "st_short_dsra" : "st_short", lang)}, {cur}</th>}
         </tr></thead><tbody>
           {suite.map((s) => (
-            <tr key={s.id}><td>{caseLabel(s.id, lang, market)}</td>
+            <tr key={s.id}><td>{caseLabel(s.id, lang, market)}{caseNote(s, suite[0], lang) && <small className="rp-small" style={{ display: "block" }}>{caseNote(s, suite[0], lang)}</small>}</td>
               <td className={"r t-" + dscrTone(s.agg.dscrMin)}>{fd(s.agg.dscrMin)}</td>
               <td className="r">{f(s.agg.irr)}</td><td className="r">{money.full(s.agg.npv)}</td>
               <td className="r">{s.id === "base" ? "" : `${s.agg.npv - suite[0].agg.npv >= 0 ? "+" : "−"}${money.full(Math.abs(s.agg.npv - suite[0].agg.npv))}`}</td>

@@ -340,7 +340,13 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
             {raw.bess && <Field id={`kob-${id}`} label={plt("k_opb", lang)} value={raw.costs?.opexBessEurPerKwhYr} onChange={(v) => setIn("costs", { opexBessEurPerKwhYr: v })} min="0" />}
             <Field id={`kl-${id}`} label={plt("k_land", lang)} value={raw.costs?.landEurYr} onChange={(v) => setIn("costs", { landEurYr: v })} min="0" />
             <Field id={`ki-${id}`} label={plt("k_ins", lang)} value={raw.costs?.insurancePct} onChange={(v) => setIn("costs", { insurancePct: v })} step="0.05" min="0" max="5" />
+            {raw.solar && <Field id={`kiy-${id}`} label={plt("k_inv_year", lang)} value={raw.costs?.invReplaceYear} onChange={(v) => setIn("costs", { invReplaceYear: v })} step="1" min="0" max="30" />}
+            {raw.solar && <Field id={`kie-${id}`} label={plt("k_inv_eur", lang)} value={raw.costs?.invReplaceEurPerKw} onChange={(v) => setIn("costs", { invReplaceEurPerKw: v })} min="0" />}
+            {raw.bess && <Field id={`kay-${id}`} label={plt("k_aug_year", lang)} value={raw.costs?.bessAugYear} onChange={(v) => setIn("costs", { bessAugYear: v })} step="1" min="0" max="30" />}
+            {raw.bess && <Field id={`kae-${id}`} label={plt("k_aug_eur", lang)} value={raw.costs?.bessAugEurPerKwh} onChange={(v) => setIn("costs", { bessAugEurPerKwh: v })} min="0" />}
           </div>
+          {(raw.solar || raw.bess) && <p className="pf-hint">{plt("k_repl_h", lang)}</p>}
+          {raw.solar && !(Number(raw.costs?.invReplaceYear) > 0 && Number(raw.costs?.invReplaceEurPerKw) > 0) && <p className="pf-hint warn">{plt("k_repl_none", lang)}</p>}
         </section>
       </div>
 

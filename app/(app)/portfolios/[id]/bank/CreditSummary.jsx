@@ -186,6 +186,7 @@ export default function CreditSummary({ model, lang, company, date, money, fx, t
             <table className="rp-kv"><tbody>
               <Row k={pt("ds_capacity", lang)} v={cap == null ? none : m(cap)} />
               <Row k={bt("k_avg", lang)} v={fd(agg.dscrAvg)} />
+              {agg.dscrIo != null && <Row k={pt("k_dscr_p50", lang)} v={`${pt("k_repay", lang, { v: fd(agg.dscrMinRepay) })}, ${pt("k_io", lang, { v: fd(agg.dscrIo) })}`} />}
             </tbody></table>
           </div>
         </div>

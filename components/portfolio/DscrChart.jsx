@@ -13,14 +13,16 @@
 import { useEffect, useRef, useState } from "react";
 import { dscr as fx } from "../../lib/portfolioFormat.js";
 import { pt } from "../../lib/portfolioText.js";
+import { CHART_PL, CHART_PR } from "../CashflowChart.jsx";
 
-const PL = 44, PR = 58, PT = 12, PB = 28;
+// the cash-flow chart's margins, so with the same `span` the years line up
+const PL = CHART_PL, PR = CHART_PR, PT = 12, PB = 28;
 
 function niceStep(max) {
   return max <= 3 ? 0.5 : max <= 6 ? 1 : max <= 15 ? 2.5 : 5;
 }
 
-export default function DscrChart({ p50 = [], p90 = [], targets = { p50: 1.3, p90: 1.2 }, lang = "en", bare = false, height = 230 }) {
+export default function DscrChart({ p50 = [], p90 = [], targets = { p50: 1.3, p90: 1.2 }, lang = "en", bare = false, height = 230, span = 0 }) {
   const H = height;
   const [hover, setHover] = useState(null);
   // the drawing is as wide as its box (720 when there is no script, as in the PDF)
@@ -43,7 +45,9 @@ export default function DscrChart({ p50 = [], p90 = [], targets = { p50: 1.3, p9
   const step = niceStep(top);
   const max = Math.ceil(top / step) * step;
   const ticks = Array.from({ length: Math.round(max / step) + 1 }, (_, k) => k * step);
-  const slot = (W - PL - PR) / n;
+  // `span`: the years the axis holds (the cash-flow chart's), the cover drawn over its own years
+  const slots = Math.max(n, Math.round(Number(span)) || 0);
+  const slot = (W - PL - PR) / slots;
   const X = (i) => PL + slot * (i + 0.5);
   const Y = (v) => PT + (1 - v / max) * (H - PT - PB);
   const path = (arr) => arr.slice(0, n).map((v, i) => (v == null ? null : `${X(i)},${Y(v)}`)).filter(Boolean).map((p, k) => (k ? "L" : "M") + p).join(" ");
@@ -52,7 +56,7 @@ export default function DscrChart({ p50 = [], p90 = [], targets = { p50: 1.3, p9
   // target values at the right edge, nudged apart only as far as they must be to stay legible
   let y50 = Y(targets.p50), y90 = Y(targets.p90);
   if (Math.abs(y50 - y90) < 12) { const mid = (y50 + y90) / 2, s = y50 <= y90 ? -1 : 1; y50 = mid + s * 6; y90 = mid - s * 6; }
-  const xLabel = (i) => n <= 12 || i === 0 || (i + 1) % 5 === 0;
+  const xLabel = (i) => slots <= 12 || i === 0 || (i + 1) % 5 === 0 || (slot >= 22 && slots <= 30);
   const h = hover;
   const tipLeft = h != null ? Math.min(Math.max(X(h) / W, 0.14), 0.86) * 100 : 0;
   const label = pt("ch_dscr", lang);
@@ -73,7 +77,7 @@ export default function DscrChart({ p50 = [], p90 = [], targets = { p50: 1.3, p9
               <text x={PL - 8} y={Y(t) + 4} textAnchor="end" className="pf-axis">{fx(t, lang)}</text>
             </g>
           ))}
-          {Array.from({ length: n }, (_, i) => xLabel(i) && (
+          {Array.from({ length: slots }, (_, i) => xLabel(i) && (
             <text key={i} x={X(i)} y={H - 8} textAnchor="middle" className="pf-axis">{i + 1}</text>
           ))}
           <line x1={PL} x2={W - PR} y1={Y(targets.p50)} y2={Y(targets.p50)} className="pf-target pf-sa" />
