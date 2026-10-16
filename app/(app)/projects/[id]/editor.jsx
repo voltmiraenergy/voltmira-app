@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
 import { regenerateProposal, saveQuoteTemplate, markProjectWon } from "../../../../lib/actions.js";
 import { sendOffer } from "../../../../lib/sendOffer.js";
+import { aiOn } from "../../../../lib/featureFlags.js";
 import AddressField from "../../../../components/AddressField.jsx";
 import SiteDesigner from "../../../../components/SiteDesigner.jsx";
 import BackLink from "../../../../components/BackLink.jsx";
@@ -1047,14 +1048,17 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 </div>
               </div>
             )}
-            {/* AI energy-bill extractor — snap the client's bill, review, apply */}
-            <input ref={billInput} type="file" accept="image/*,application/pdf" hidden onChange={handleBill} />
-            <button type="button" className="qb-tool" style={{ marginTop: 10 }}
-              onClick={() => billInput.current && billInput.current.click()} disabled={billBusy} aria-busy={billBusy}>
-              <span className="qb-tool-ic"><Qi d="upload" size={17} /></span>
-              <span className="qb-tool-tx"><b>{billBusy ? tr("bill_reading") : tr("bill_upload")}</b><small>{tr("qb_tool_bill_sub")}</small></span>
-              <Qi d="chev" size={15} />
-            </button>
+            {/* AI energy-bill extractor — snap the client's bill, review, apply.
+                Hidden until AI is switched on (lib/featureFlags.js). */}
+            {aiOn() && <>
+              <input ref={billInput} type="file" accept="image/*,application/pdf" hidden onChange={handleBill} />
+              <button type="button" className="qb-tool" style={{ marginTop: 10 }}
+                onClick={() => billInput.current && billInput.current.click()} disabled={billBusy} aria-busy={billBusy}>
+                <span className="qb-tool-ic"><Qi d="upload" size={17} /></span>
+                <span className="qb-tool-tx"><b>{billBusy ? tr("bill_reading") : tr("bill_upload")}</b><small>{tr("qb_tool_bill_sub")}</small></span>
+                <Qi d="chev" size={15} />
+              </button>
+            </>}
             {billErr && <div style={{ fontSize: 12.5, color: "var(--red)", marginTop: 6 }}>{billErr}</div>}
             {billRes && (
               <div className="pvgis-data" style={{ marginTop: 8 }}>

@@ -9,8 +9,9 @@ import { productImage, placeholderImage } from "../../../lib/catalogImages.js";
 import { compareRows, formatRowValue } from "../../../lib/catalogCompare.js";
 import { findSupplier } from "../../../lib/supplierCatalog.js";
 import { t } from "../../../lib/i18n.js";
+import AppPortal from "../../../components/AppPortal.jsx";
 
-export default function ProductDetailModal({ p, lang, isAdded, addPending, onAdd, onClose }) {
+function ProductDetailModalSheet({ p, lang, isAdded, addPending, onAdd, onClose }) {
   if (!p) return null;
   const sup = findSupplier(p.supplierId);
   const rows = compareRows(p.kind, lang);
@@ -67,4 +68,9 @@ export default function ProductDetailModal({ p, lang, isAdded, addPending, onAdd
       ` }} />
     </div>
   );
+}
+
+/** Drawn at the app root (components/AppPortal.jsx), so no animated section can trap it. */
+export default function ProductDetailModal(props) {
+  return <AppPortal><ProductDetailModalSheet {...props} /></AppPortal>;
 }

@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState, useRef, createContext, useContext } from 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { defaultEngineSettings } from "./_engine.js";
-import { PREVIEW_FEATURES, PREVIEW_BASE } from "./features.js";
+import { visibleFeatures, PREVIEW_BASE } from "./features.js";
 import { systemFor } from "./catalog-data.js";
 import {
   CLIENT_PRESETS, STAGES, stageIndex, jobProgress, newJobId,
@@ -348,7 +348,7 @@ export function PreviewNav({ lang }) {
       <Link href={PREVIEW_BASE} className="pv-tab pv-tab-home">
         <FeatureIcon slug="overview" /><span>{tx({ en: "Studio", ro: "Studio", ru: "Studio", uk: "Studio" }, lang)}</span>
       </Link>
-      {PREVIEW_FEATURES.map((f, i) => (
+      {visibleFeatures().map((f, i) => (
         <Link key={f.slug} href={`${PREVIEW_BASE}/${f.slug}`} className={"pv-tab" + (active(f.slug) ? " on" : "")}
           aria-current={active(f.slug) ? "page" : undefined}>
           <i className="pv-tab-n">{i + 1}</i>

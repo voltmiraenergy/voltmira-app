@@ -26,6 +26,7 @@ import { bt } from "../../lib/bankText.js";
 import { stillMissing, PACK_LANGS } from "../../lib/bankPack.js";
 import { namesList } from "../../lib/portfolioDisplay.js";
 import StudyReader from "./StudyReader.jsx";
+import { aiOn } from "../../lib/featureFlags.js";
 import { P90Basis, WeatherReplay, SeasonalCover, ExportLimit } from "./EnergyBasis.jsx";
 import { monthlyCover } from "../../lib/monthlyCover.js";
 import { weatherReplay } from "../../lib/weatherReplay.js";
@@ -229,8 +230,10 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
               ) : en.wind && en.wind.source === "none" ? <p className="pf-hint">{plt("w_no_data", lang)}</p> : null}
               {en.wind && en.wind.source !== "study" && <p className="pf-hint">{plt("w_screen_note", lang)}</p>}
               <h5>{plt("study_h", lang)}</h5>
-              <StudyReader kind="wind" id={id} lang={lang} plantMw={pl.wind.mw}
-                onApply={({ study, extra }) => setIn("wind", { ...extra, study: { ...(raw.wind.study || {}), ...study } })} />
+              {aiOn() && (
+                <StudyReader kind="wind" id={id} lang={lang} plantMw={pl.wind.mw}
+                  onApply={({ study, extra }) => setIn("wind", { ...extra, study: { ...(raw.wind.study || {}), ...study } })} />
+              )}
               <div className="pl-grid">
                 <Field id={`wp5-${id}`} label={plt("s_p50", lang)} value={raw.wind.study?.p50Mwh} onChange={(v) => setIn("wind", { study: { ...(raw.wind.study || {}), p50Mwh: v } })} min="0" />
                 <Field id={`wp9-${id}`} label={plt("s_p90", lang)} value={raw.wind.study?.p90Mwh} onChange={(v) => setIn("wind", { study: { ...(raw.wind.study || {}), p90Mwh: v } })} min="0" />
@@ -266,8 +269,10 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
               {msg?.k === "solar" && <p className="pf-warn" role="alert">{msg.t}</p>}
               {drift.solar != null && <p className="pf-warn">{plt("moved_solar", lang, { km: fnum(drift.solar, lang, 1) })}</p>}
               <h5>{plt("study_h", lang)}</h5>
-              <StudyReader kind="solar" id={id} lang={lang} plantMw={pl.solar.mwp}
-                onApply={({ study, extra }) => setIn("solar", { ...extra, study: { ...(raw.solar.study || {}), ...study } })} />
+              {aiOn() && (
+                <StudyReader kind="solar" id={id} lang={lang} plantMw={pl.solar.mwp}
+                  onApply={({ study, extra }) => setIn("solar", { ...extra, study: { ...(raw.solar.study || {}), ...study } })} />
+              )}
               <div className="pl-grid">
                 <Field id={`sp5-${id}`} label={plt("s_p50", lang)} value={raw.solar.study?.p50Mwh} onChange={(v) => setIn("solar", { study: { ...(raw.solar.study || {}), p50Mwh: v } })} min="0" />
                 <Field id={`sp9-${id}`} label={plt("s_p90", lang)} value={raw.solar.study?.p90Mwh} onChange={(v) => setIn("solar", { study: { ...(raw.solar.study || {}), p90Mwh: v } })} min="0" />

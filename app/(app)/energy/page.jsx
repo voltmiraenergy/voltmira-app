@@ -209,7 +209,6 @@ export default async function EnergyPage() {
             <Link className="dx-link" href="/projects">{et("open_quotes", lang)}</Link>
           </header>
           <ul className="en-prog">
-            <li><b>{et("pg_casa_verde", lang)}</b><span>{et("cv_line", lang, { pct: P.casa_verde.sharePct, cap: lei(P.casa_verde.cap.amount) })}</span></li>
             <li><b>{et("pg_bess_guarantee", lang)}</b><span>{et("g_line", lang, { pct: P.bess_guarantee.sharePct, cap: lei(P.bess_guarantee.cap.amount), months: P.bess_guarantee.maxMonths, fee: P.bess_guarantee.feePctYear })}</span></li>
             <li><b>{et("mk_sup_law", lang)}</b><span>{et("mk_sup_law_v", lang, { from: P.law112_customs.dutyFromPct, to: P.law112_customs.dutyToPct })}</span></li>
             <li><b>{et("pg_facem_373", lang)}</b><span>{et("facem_line", lang, { pct: P.facem_373.upToPct })}</span></li>

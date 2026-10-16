@@ -28,12 +28,14 @@ import LeadAssistant from "./LeadAssistant.jsx";
 import MonitoringBill from "./MonitoringBill.jsx";
 import CreditsPanel from "./CreditsPanel.jsx";
 import { clearOfflineData } from "../../../lib/offline.js";
+import { aiOn } from "../../../lib/featureFlags.js";
 
+// the assistants and the website widget are hidden until AI is switched on (lib/featureFlags.js)
 const TABS = [
   { id: "company", Icon: Building2, label: "st_tab_company", hint: "st_tab_company_h" },
   { id: "documents", Icon: Receipt, label: "st_tab_docs", hint: "st_tab_docs_h" },
   { id: "calculations", Icon: Calculator, label: "st_tab_calc", hint: "st_tab_calc_h" },
-  { id: "assistants", Icon: Bot, label: "st_tab_ai", hint: "st_tab_ai_h" },
+  ...(aiOn() ? [{ id: "assistants", Icon: Bot, label: "st_tab_ai", hint: "st_tab_ai_h" }] : []),
   { id: "notifications", Icon: Bell, label: "st_tab_alerts", hint: "st_tab_alerts_h" },
   { id: "plan", Icon: CreditCard, label: "st_tab_plan", hint: "st_tab_plan_h" },
 ];

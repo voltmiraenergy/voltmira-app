@@ -14,7 +14,6 @@
 // (formal address in every language). Styles: ./proposal.css.
 import "./proposal.css";
 import Tracker from "./tracker.jsx";
-import QaWidget from "./QaWidget.jsx";
 import AutoPrint from "./AutoPrint.jsx";
 import PrintSheet, { RoofSnapshotSVG } from "./PrintSheet.jsx";
 import ClientAudit from "./ClientAudit.jsx";
@@ -238,28 +237,6 @@ export default async function ProposalPage(props) {
     ["sc_pess", bands.pess, E?.bands?.pess, CHART.pess, true, false],
     ["sc_expc", bands.expc, E?.bands?.expc, CHART.expc, false, true],
     ["sc_opti", bands.opti, E?.bands?.opti, CHART.opti, true, false],
-  ];
-
-  // Questions with answers this proposal can actually back up.
-  const warrItems = bomLines.map((l, i) => (bomWarranty[i]
-    ? `${kindLabel(l.kind, lang)}, ${[l.brand, l.model].filter(Boolean).join(" ")}: ${yearsN(bomWarranty[i].warrantyYears, lang)}`
-    : null)).filter(Boolean);
-  const surplusKey = { MD: "a_surplus_md", RO: "a_surplus_ro", UA: "a_surplus_ua" }[inputs.market];
-  const faqs = [
-    ["guar", ppt("q_guar", lang), ppt("a_guar", lang)],
-    ["sign", ppt("q_sign", lang), ppt("a_sign", lang, { co: coShort })],
-    ...(warrItems.length || installWarrantyYears ? [["warr", ppt("q_warr", lang), (
-      <>
-        {warrItems.length > 0 && ppt("a_warr", lang)}
-        <ul>
-          {warrItems.map((w) => <li key={w}>{w}</li>)}
-          {installWarrantyYears > 0 && <li>{ppt("install_warr", lang, { co: coName, y: yearsN(installWarrantyYears, lang) })}</li>}
-        </ul>
-      </>
-    )]] : []),
-    ...(surplusKey ? [["surplus", ppt("q_surplus", lang), ppt(surplusKey, lang)]] : []),
-    ...(hasFinance ? [["loan", ppt("q_loan", lang), ppt("a_loan", lang, { r: rateTxt, y: yearsN(financeTerm, lang) })]] : []),
-    ["change", ppt("q_change", lang), ppt("a_change", lang)],
   ];
 
   const priceProps = { costEur: q.cost, offer, currency: fmt.currency, rate: fmt.rate, lang };
@@ -653,28 +630,8 @@ export default async function ProposalPage(props) {
                       <Phone className="pp-ic" aria-hidden="true" /><span className="pp-num">{phone}</span>
                     </a>
                   )}
-                  {/* From 3 up: "1 system installed" undersells a new installer.
-                      Computed from real won projects, never typed. */}
-                  {company.wonCount >= 3 && <p className="pp-proof">{t("pdf_installed", lang, { n: company.wonCount, co: coName })}</p>}
                 </div>
               </div>
-            </section>
-
-            {/* Questions: the answers this proposal can back up, then the
-                assistant grounded in its real, frozen numbers (VoltMira's own,
-                or the installer's Make.com scenario; see
-                app/api/proposal/[code]/qa). Live view only, never on the PDF. */}
-            <section className="pp-sec" aria-labelledby="pp-faq-h">
-              <h2 className="pp-h2" id="pp-faq-h" style={{ marginBottom: 14 }}>{ppt("faq_h", lang)}</h2>
-              <div className="pp-faq">
-                {faqs.map(([k, qText, aText]) => (
-                  <details key={k}>
-                    <summary>{qText}<ChevronDown className="pp-ic" aria-hidden="true" /></summary>
-                    <div className="pp-faq-a">{aText}</div>
-                  </details>
-                ))}
-              </div>
-              <QaWidget code={params.code} lang={lang} preparedBy={preparedBy} />
             </section>
           </div>
 

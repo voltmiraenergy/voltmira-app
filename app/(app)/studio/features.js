@@ -9,6 +9,8 @@
 //   nav   — short label (tab pills on a surface page)
 //   short — 1–2 sentence description (Studio landing rows)
 
+import { aiOn } from "../../../lib/featureFlags.js";
+
 export const PREVIEW_FEATURES = [
   {
     slug: "payments",
@@ -41,6 +43,9 @@ export const PREVIEW_FEATURES = [
 ];
 
 export const PREVIEW_BASE = "/studio";
+
+/** The Studio tools shown now: the widget page is hidden until AI is switched on. */
+export const visibleFeatures = () => PREVIEW_FEATURES.filter((f) => f.slug !== "lead-widget" || aiOn());
 
 export function featureBySlug(slug) {
   return PREVIEW_FEATURES.find((f) => f.slug === slug) || null;

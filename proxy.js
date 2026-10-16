@@ -2,6 +2,7 @@
 // gate the app, keep /p/* public.
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
+import { aiOn, isAiPath } from "./lib/featureFlags.js";
 
 // The public site lives on voltmira.com only. app.voltmira.com serves the same
 // Next app (it is where email links point), so without this its copies of the
@@ -15,6 +16,14 @@ export async function proxy(req) {
 
   const path = req.nextUrl.pathname;
   const host = (req.headers.get("host") || "").toLowerCase();
+
+  // AI and widgets are hidden until NEXT_PUBLIC_VOLTMIRA_AI=on (lib/featureFlags.js):
+  // their pages and routes answer a plain 404, as if they did not exist.
+  if (!aiOn() && isAiPath(path)) {
+    return path.startsWith("/api/")
+      ? NextResponse.json({ error: "not_found" }, { status: 404 })
+      : NextResponse.rewrite(new URL("/_not-found", req.url), { status: 404 });
+  }
 
   if (PUBLIC_PAGES.has(path)) {
     // Old homepage URLs: each language was once /?lang=xx. Google still has

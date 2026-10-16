@@ -91,10 +91,9 @@ const HTML = {
   <div class="g-h"><span class="g-n">1</span><h2>The Leads inbox &amp; where leads come from</h2></div>
   <p class="g-lede">Leads are people who might buy. VoltMira keeps them in one place so none slip through.</p>
   <div class="g-card">
-    <p><b>Three ways leads arrive:</b></p>
-    <p><b>1. Your website widget.</b> In <b>Settings</b> you get a small snippet of code. Paste it onto your site once: every "free estimate" a visitor requests becomes a lead, automatically.</p>
-    <p><b>2. By hand.</b> After a call or a fair, add the person yourself so you don't forget to follow up.</p>
-    <p><b>3. From a proposal.</b> When someone asks for changes on a proposal you sent, that returns as a lead too.</p>
+    <p><b>Two ways leads arrive:</b></p>
+    <p><b>1. By hand.</b> After a call or a fair, add the person yourself so you don't forget to follow up.</p>
+    <p><b>2. From a proposal.</b> When a client asks for a call from a proposal you sent, it arrives as a hot lead and you get an email.</p>
   </div>
   <div class="g-card">
     <p><b>Working the inbox</b>: move each lead through its status as you work it:</p>
@@ -165,7 +164,7 @@ const HTML = {
   <div class="g-h"><span class="g-n">6</span><h2>Plans</h2></div>
   <p class="g-lede">Free during beta, no card required. Founder pricing is locked for the first 50 installers.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Pro: €49/mo</div><div class="pd">Your logo on every proposal &amp; PDF, tracked links + open alerts, website lead widget, full pipeline.</div></div>
+    <div class="plan hot"><div class="pn">Pro: €49/mo</div><div class="pd">Your logo on every proposal &amp; PDF, tracked links + open alerts, grid forms filled from the quote, full pipeline.</div></div>
     <div class="plan"><div class="pn">Team: €119/mo</div><div class="pd">Everything in Pro, up to 5 people on one pipeline, win-rate analytics, priority support.</div></div>
     <div class="plan"><div class="pn">Enterprise: custom pricing</div><div class="pd">Unlimited seats for multi-branch installers, full audit log, a dedicated manager.</div></div>
   </div>
@@ -201,10 +200,9 @@ const HTML = {
   <div class="g-h"><span class="g-n">1</span><h2>Inbox-ul Contacte &amp; de unde vin contactele</h2></div>
   <p class="g-lede">Contactele sunt oameni care ar putea cumpăra. VoltMira îi ține într-un singur loc, ca să nu-ți scape niciunul.</p>
   <div class="g-card">
-    <p><b>Trei feluri în care apar contactele:</b></p>
-    <p><b>1. Widgetul de pe site.</b> În <b>Setări</b> primești un mic fragment de cod. Lipește-l o dată pe site: fiecare „estimare gratuită" cerută de un vizitator devine automat un contact.</p>
-    <p><b>2. Manual.</b> După un apel sau un târg, adaugă tu persoana ca să nu uiți să revii.</p>
-    <p><b>3. Dintr-o propunere.</b> Când cineva cere modificări la o propunere trimisă, revine tot ca un contact.</p>
+    <p><b>Două feluri în care apar contactele:</b></p>
+    <p><b>1. Manual.</b> După un apel sau un târg, adaugă tu persoana ca să nu uiți să revii.</p>
+    <p><b>2. Dintr-o propunere.</b> Când un client cere un apel dintr-o propunere trimisă, apare ca un contact fierbinte și primești un e-mail.</p>
   </div>
   <div class="g-card">
     <p><b>Lucrează inbox-ul</b>: mută fiecare contact prin statusuri pe măsură ce lucrezi:</p>
@@ -275,7 +273,7 @@ const HTML = {
   <div class="g-h"><span class="g-n">6</span><h2>Planuri</h2></div>
   <p class="g-lede">Gratuit în beta: fără card. Prețul de fondator e blocat pentru primii 50 de instalatori.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Pro: €49/lună</div><div class="pd">Logo-ul tău pe fiecare propunere și PDF, linkuri urmărite + alerte de deschidere, widget de contacte pe site, pipeline complet.</div></div>
+    <div class="plan hot"><div class="pn">Pro: €49/lună</div><div class="pd">Logo-ul tău pe fiecare propunere și PDF, linkuri urmărite + alerte de deschidere, cererile de racordare completate din ofertă, pipeline complet.</div></div>
     <div class="plan"><div class="pn">Team: €119/lună</div><div class="pd">Tot ce e în Pro, până la 5 persoane pe un pipeline, analiză a ratei de câștig, suport prioritar.</div></div>
     <div class="plan"><div class="pn">Enterprise: preț personalizat</div><div class="pd">Locuri nelimitate pentru instalatori cu mai multe filiale, jurnal complet de audit, manager dedicat.</div></div>
   </div>

@@ -330,7 +330,6 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   const mktLine = t("market_" + (inputs.market || "RO").toLowerCase(), lang);
   const who = [inputs.client ? tr("pdf2_for", { c: inputs.client }) : "", inputs.address || ""].filter(Boolean).join(", ");
   const hasLogo = company.logoUrl && /^(https?:\/\/|data:image\/)/i.test(company.logoUrl);
-  const acceptShort = acceptUrl.replace(/^https?:\/\//, "");
 
   let n = 0;
   const num = () => ++n;
@@ -530,14 +529,6 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
           <li>{ppt("step3", lang)}</li>
           <li>{ppt("step4", lang)}</li>
         </ol>
-        {acceptShort && (
-          <div className="p-cta">
-            {ppt("pdf_go", lang, { url: "" })}<b>{acceptShort}</b>
-            {preparedBy?.name && preparedBy?.phone ? <> {ppt("pdf_call", lang, { who: preparedBy.name, phone: preparedBy.phone })}</> : "."}
-          </div>
-        )}
-        {/* From 3 up: "1 system installed" undersells a new installer. */}
-        {company.wonCount >= 3 && <div className="p-proof">{tr("pdf_installed", { n: company.wonCount, co: company.name })}</div>}
         {fit.length === 0 && <p className="p-eco">{co2(tr("pdf2_eco", { kg: Math.round(co2Year).toLocaleString(loc), t: trees }))}</p>}
       </section>
 

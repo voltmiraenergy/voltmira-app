@@ -581,9 +581,12 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
                 <Num id="fComp" label={pt("f_comp", lang)} hint={pt("f_comp_h", lang)} value={p.finance.principalCompensationPct ?? ""} onChange={(v) => setFin("principalCompensationPct", v)} min="0" max="100" />
                 <Num id="fFee" label={pt("f_fee", lang)} hint={pt("f_fee_h", lang)} value={p.finance.feePct ?? ""} onChange={(v) => setFin("feePct", v)} min="0" max="10" step="0.1" />
               </div>
-              <div className="pf-ts">
-                <Toggle checked={p.finance.termSheet === true} onChange={(v) => setFin("termSheet", v)} hint={pt("f_termsheet_h", lang)}>{pt("f_termsheet", lang)}</Toggle>
-              </div>
+              {/* one line: a ticked box says these terms come from a lender's own offer (it counts in readiness) */}
+              <label className="pf-ts" title={pt("f_termsheet_h", lang)}>
+                <input id="fTermSheet" type="checkbox" checked={p.finance.termSheet === true} onChange={(e) => setFin("termSheet", e.target.checked)} />
+                <span>{pt("f_termsheet", lang)}</span>
+                <small>{pt("f_termsheet_h", lang)}</small>
+              </label>
             </section>
 
             <section className="card">
