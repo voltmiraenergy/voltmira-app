@@ -30,6 +30,7 @@ import InstallChecklist from "./InstallChecklist.jsx";
 import GridFile from "./GridFile.jsx";
 import RoofPhoto from "./RoofPhoto.jsx";
 import FoldColumn from "../../../../components/FoldColumn.jsx";
+import StudioJobLine from "./StudioJobLine.jsx";
 import WorkflowRail from "../../../../components/WorkflowRail.jsx";
 import AddToPortfolio from "../../../../components/AddToPortfolio.jsx";
 import SupportCard from "../../../../components/SupportCard.jsx";
@@ -1399,6 +1400,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           {/* A signed job in Moldova or Ukraine goes into a portfolio for a
               lender (renders nothing otherwise). */}
           <AddToPortfolio projectId={initial.id} lang={lang} status={p.status} market={p.market} />
+          {/* the Studio job this quote belongs to, when one is linked */}
+          <StudioJobLine projectId={initial.id} kw={p.kw} lang={lang} />
         </FoldColumn>
       </div>
 

@@ -156,3 +156,7 @@ html[data-theme="dark"] .app .qb { --amber-ink: #EBA542; --dx-on-green: #07130D;
 .app .qb-photo-img { width: 44px; height: 44px; object-fit: cover; border-radius: 9px; flex: none; }
 .app .qb-photo .qb-tool-tx { flex: 1; min-width: 0; }
 .app .qb-photo-acts { display: flex; gap: 6px; flex-basis: 100%; padding-left: 56px; }
+
+/* the linked Studio job (StudioJobLine.jsx) */
+.app .sj-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13.5px; }
+.app .sj-line small { display: block; color: var(--amber); font-size: 12px; margin-top: 2px; }

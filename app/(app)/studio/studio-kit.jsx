@@ -576,6 +576,7 @@ export const PREVIEW_CSS = `
 .ws-crumbs a:hover{color:var(--ink);background:var(--paper-2)}
 .ws-crumbs [aria-current]{color:var(--ink);font-weight:700}
 .ws-crumbs small{font-weight:500;color:var(--muted);margin-left:4px}
+.pv-warn{color:var(--amber-ink,#8A5A0F);font-size:13px;line-height:1.45}
 .pv-badge{flex:none;font-family:var(--font-d);font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
   color:var(--ink);background:var(--amber);border-radius:99px;padding:3px 9px}
 .pv-kicker{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}

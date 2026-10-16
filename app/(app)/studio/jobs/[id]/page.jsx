@@ -13,6 +13,7 @@ import {
   useStudioJobs, STAGES, jobProgress, jobMoneySummary, readJSON, writeJSON, useFmt,
 } from "../../studio-kit.jsx";
 import { NEW_JOB } from "../../jobs-data.js";
+import QuoteLink from "./QuoteLink.jsx";
 
 const T = {
   back: { en: "All jobs", ro: "Toate lucrările", ru: "Все объекты", uk: "Усі об’єкти" },
@@ -43,7 +44,7 @@ export default function JobHub() {
   const lang = useLang();
   const t = (o) => tx(o, lang);
   const params = useParams();
-  const { jobs, activeId, selectJob, hydrated } = useStudioJobs();
+  const { jobs, activeId, selectJob, hydrated, updateJob } = useStudioJobs();
   const job = jobs.find((j) => j.id === params.id);
 
   useEffect(() => { document.title = job ? `${job.name || t(NEW_JOB)} | VoltMira Studio` : "Studio"; }, [job]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -129,6 +130,9 @@ export default function JobHub() {
           })}
         </div>
       </div>
+
+      {/* the quote this job belongs to (lib/studioLink.js) */}
+      <QuoteLink job={job} lang={lang} onLink={(projectId) => updateJob(job.id, { projectId: projectId || undefined })} />
 
       <div className="pv-panel">
         <h3>{t(T.money)}</h3>
