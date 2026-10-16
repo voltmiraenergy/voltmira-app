@@ -17,6 +17,7 @@ import {
 import { quote, effectiveYield } from "../../../_engine.js";
 import LiveEngineSidebar from "./LiveEngineSidebar.jsx";
 import WizardSteps, { JobJourney, STEPS } from "./WizardSteps.jsx";
+import { NEW_JOB } from "../../../jobs-data.js";
 
 export default function StudioWorkspace({ jobId }) {
   const { NUM } = useFmt();
@@ -83,13 +84,14 @@ export default function StudioWorkspace({ jobId }) {
         <nav className="ws-crumbs" aria-label={t({ en: "Where you are", ro: "Unde ești", ru: "Где вы", uk: "Де ви" })}>
           <Link href={PREVIEW_BASE}>Studio</Link>
           <span aria-hidden="true">›</span>
-          <Link href={`${PREVIEW_BASE}/jobs/${job.id}`}>{job.name || t({ en: "New job", ro: "Lucrare nouă", ru: "Новый объект", uk: "Новий об’єкт" })}</Link>
+          <Link href={`${PREVIEW_BASE}/jobs/${job.id}`}>{job.name || t(NEW_JOB)}</Link>
           <span aria-hidden="true">›</span>
-          <span aria-current="page">{t(STEPS[step]?.label || STEPS[0].label)} <small>{t({ en: `step ${step + 1} of ${STEPS.length}`, ro: `pasul ${step + 1} din ${STEPS.length}`, ru: `шаг ${step + 1} из ${STEPS.length}`, uk: `крок ${step + 1} з ${STEPS.length}` })}</small></span>
+          {/* the step's name only: the journey card below counts the steps done */}
+          <span aria-current="page">{t(STEPS[step]?.label || STEPS[0].label)}</span>
         </nav>
         <header className="ws-head">
           <div className="ws-head-tx">
-            <h1>{job.name || "—"}</h1>
+            <h1>{job.name || t(NEW_JOB)}</h1>
             <div className="ws-head-sub">
               {place && <span><MapPin size={14} aria-hidden="true" />{place}</span>}
               <span><Zap size={14} aria-hidden="true" /><b>{(+job.kw || 0).toFixed(1)} kWp</b>{(+job.batteryKwh || 0) > 0 ? ` + ${job.batteryKwh} kWh` : ""}</span>

@@ -128,7 +128,9 @@ export default function RootLayout({ children }) {
             never use it pay nothing beyond a slightly longer stylesheet URL. */}
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet" />
       </head>
-      <body style={{ margin: 0 }}>{children}<Analytics /></body>
+      {/* Vercel Analytics only in production: in development it loads a debug
+          script from another host, which the CSP rightly blocks on every page */}
+      <body style={{ margin: 0 }}>{children}{process.env.NODE_ENV === "production" && <Analytics />}</body>
     </html>
   );
 }

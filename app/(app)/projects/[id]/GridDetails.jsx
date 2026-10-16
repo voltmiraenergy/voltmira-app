@@ -3,8 +3,9 @@
 // Moldovan grid file (lib/gridDetails.js): what the operator's form asks for
 // that the quote does not hold. Prefilled from the quote, saved once through
 // setGridFile into install_progress.gridFile.details, then printed on the
-// Premier Energy or RED Nord application. Opens by itself until everything
-// the form needs is there; then it folds to one line with "Edit".
+// Premier Energy or RED Nord application. Folded to one line: what is still
+// missing and "Fill in", or the applicant and "Edit" once it is complete, so
+// the form never takes a phone's whole screen until someone asks for it.
 import { useState, useTransition } from "react";
 import { UserRound, Pencil } from "lucide-react";
 import { setGridFile } from "../../../../lib/actions.js";
@@ -16,7 +17,7 @@ const LABEL = { name: "gd_name", idn: "gd_idn_bad", phone: "gd_phone", siteAddre
 export default function GridDetails({ projectId, client, details, lang, onSaved }) {
   const start0 = gridApplicant(details, client);
   const [d, setD] = useState(start0);
-  const [open, setOpen] = useState(() => gridMissing(start0).length > 0 || !details);
+  const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [failed, setFailed] = useState(false);
   const set = (k) => (e) => setD((x) => ({ ...x, [k]: e.target.value }));
@@ -42,6 +43,15 @@ export default function GridDetails({ projectId, client, details, lang, onSaved 
     </label>
   );
 
+  if (!open && missing.length) {
+    return (
+      <div className="gd-sum warn">
+        <UserRound size={16} aria-hidden="true" />
+        <span><b>{t("gd_h", lang)}</b><small>{t("gd_missing", lang, { list: missing.map((k) => t(LABEL[k], lang)).join(", ") })}</small></span>
+        <button type="button" className="btn primary sm" onClick={() => setOpen(true)}><Pencil size={14} aria-hidden="true" />{t("gd_fill", lang)}</button>
+      </div>
+    );
+  }
   if (!open) {
     return (
       <div className="gd-sum">
@@ -64,7 +74,7 @@ export default function GridDetails({ projectId, client, details, lang, onSaved 
       </div>
       <div className="gd-grid">
         {field("name", "gd_name", { autoComplete: "name", maxLength: 120 })}
-        {field("idn", "gd_idn", { inputMode: "numeric", maxLength: 16, placeholder: "13 cifre" })}
+        {field("idn", "gd_idn", { inputMode: "numeric", maxLength: 16, placeholder: t("gd_idn_ph", lang) })}
         {field("phone", "gd_phone", { type: "tel", inputMode: "tel", maxLength: 30 })}
         {field("email", "gd_email", { type: "email", maxLength: 120 })}
         {field("siteAddress", "gd_site", { maxLength: 200 })}

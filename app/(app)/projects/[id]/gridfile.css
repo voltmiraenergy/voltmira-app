@@ -81,8 +81,12 @@
 .app .gd-state.warn { color: var(--amber-ink, #955F0B); }
 .app .gd-acts { display: flex; gap: 8px; }
 .app .gd-sum { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); font-size: 13px; }
-.app .gd-sum svg { color: var(--green); flex: none; }
+.app .gd-sum > svg { color: var(--green); flex: none; }
 .app .gd-sum span { flex: 1; min-width: 0; }
 .app .gd-sum small { display: block; font-size: 11.5px; color: var(--muted); }
 .app .gd-sum .btn { display: inline-flex; gap: 6px; align-items: center; flex: none; }
+.app .gd-sum { flex-wrap: wrap; }
+.app .gd-sum.warn { border-color: color-mix(in srgb, var(--amber) 55%, var(--line)); }
+.app .gd-sum.warn > svg { color: var(--amber); }
+.app .gd-sum.warn small { color: var(--ink); }
 @media (max-width: 640px) { .app .gd-grid { grid-template-columns: minmax(0, 1fr); } }

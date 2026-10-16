@@ -272,6 +272,7 @@ const CSS = `
   .m-back{display:none}
   @media (max-width: 900px){.m-back{display:flex}}
   .m-back.is-app{display:flex}
+  .main:has(.back-link) .m-back{display:none}
   .m-back{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;margin:-6px 0 10px;padding:4px 0;
     background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(6px)}
   .m-back-btn{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:6px 12px 6px 6px;border:0;border-radius:10px;

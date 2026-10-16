@@ -22,6 +22,7 @@ import {
   useStudioJobs, STAGES, jobProgress, jobMoneySummary, newJobId, useFmt,
 } from "./studio-kit.jsx";
 import { useStudioSync } from "./studio-sync.js";
+import { NEW_JOB } from "./jobs-data.js";
 
 const T = {
   title: { en: "Studio", ro: "Studio", ru: "Studio", uk: "Studio" },
@@ -281,7 +282,7 @@ export default function StudioOverview() {
                     <div className="sx-job-top">
                       <span className="sx-avatar" aria-hidden="true">{initials(job.name)}</span>
                       <span className="sx-job-id">
-                        <b>{job.name || "—"}</b>
+                        <b>{job.name || t(NEW_JOB)}</b>
                         <small>{String(job.address || "").split(",").slice(0, 2).join(",").trim() || "—"}</small>
                       </span>
                       <span className={"pv-stage " + progress.meta.chip}>{progress.meta.label[lang] || progress.meta.label.en}</span>

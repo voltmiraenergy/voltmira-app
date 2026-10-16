@@ -100,6 +100,9 @@ export function loadJobsState({ demo = false } = {}) {
   writeJSON(JOBS_KEY, jobs);
   return { jobs, activeId: jobs[0].id };
 }
+/** What a job not named yet is called on screen. */
+export const NEW_JOB = { en: "New job", ro: "Lucrare nouă", ru: "Новый объект", uk: "Новий об’єкт" };
+
 /** A new, empty job: the installer fills in the client and the site. */
 export function blankJob(market = "MD") {
   return { id: newJobId(), name: "", address: "", market, kw: 5, cons: 0, price: 0.185, batteryKwh: 0, phases: 1,
