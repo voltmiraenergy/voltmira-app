@@ -27,7 +27,9 @@ const cspCommon = [
   // Sentry SDK (lib/sentry setup, see instrumentation.js) — inert with no
   // NEXT_PUBLIC_SENTRY_DSN set, but the CSP has to allow the endpoint before
   // that, or the browser blocks the SDK's own reporting request outright.
-  "connect-src 'self' https://*.supabase.co https://re.jrc.ec.europa.eu https://nominatim.openstreetmap.org https://*.paddle.com https://plausible.io https://*.ingest.sentry.io https://*.sentry.io",
+  // server.arcgisonline.com: the offline worker (public/app-sw.js) fetches
+  // the map tiles it keeps, and answers tile requests, as a "connect".
+  "connect-src 'self' https://server.arcgisonline.com https://*.supabase.co https://re.jrc.ec.europa.eu https://nominatim.openstreetmap.org https://*.paddle.com https://plausible.io https://*.ingest.sentry.io https://*.sentry.io",
   "frame-src https://challenges.cloudflare.com https://*.paddle.com",
   "base-uri 'self'",
   "form-action 'self'",
