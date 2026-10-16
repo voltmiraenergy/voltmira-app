@@ -268,6 +268,12 @@ const CSS = `
   .offline-bar .offline-waiting{display:block;margin-top:2px}
   .offline-bar{margin-bottom:14px;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.45;color:var(--ink);
     background:var(--paper-2);border:1px solid var(--line)}
+  /* a quote drafted with no signal (app/(app)/projects/draft) */
+  .dr-form{display:grid;gap:12px}
+  .dr-form .field{display:grid;gap:5px}
+  .dr-form .field span{font-size:13px;font-weight:600;color:var(--muted)}
+  .dr-saved{margin:0;font-size:12.5px;color:var(--muted)}
+  .dr-msg{margin:0;font-size:13px;color:var(--amber)}
   /* a long page folded on a phone (components/FoldColumn.jsx) */
   .fold-wrap{display:grid;gap:6px}
   .fold-wrap:has(> .fold-body:empty){display:none}

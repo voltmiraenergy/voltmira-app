@@ -10,6 +10,8 @@ import { t } from "../../lib/i18n.js";
 import { registerAppSw, isNetworkError } from "../../lib/offline.js";
 import { queuedCount, onQueueChange, flushQueue } from "../../lib/offlineQueue.js";
 import { REPLAY_ACTIONS } from "../../lib/offlineReplay.js";
+import { listDrafts, markSynced } from "../../lib/offlineDrafts.js";
+import { createQuoteFromDraft } from "../../lib/draftActions.js";
 
 export default function OfflineReady({ lang, demo = false }) {
   const router = useRouter();
@@ -18,9 +20,14 @@ export default function OfflineReady({ lang, demo = false }) {
   const waiting = useSyncExternalStore(onQueueChange, queuedCount, () => 0);
   useEffect(() => {
     const send = async () => {
-      if (navigator.onLine === false || queuedCount() === 0) return;
-      const r = await flushQueue(REPLAY_ACTIONS, isNetworkError);
-      if (r.sent) router.refresh();
+      if (navigator.onLine === false) return;
+      let changed = false;
+      // quotes drafted with no signal become real quotes, oldest first
+      for (const d of listDrafts()) {
+        try { markSynced(d.id, await createQuoteFromDraft(d)); changed = true; } catch (e) { if (isNetworkError(e)) break; }
+      }
+      if (queuedCount() > 0) { const r = await flushQueue(REPLAY_ACTIONS, isNetworkError); if (r.sent) changed = true; }
+      if (changed) router.refresh();
     };
     send();
     window.addEventListener("online", send);

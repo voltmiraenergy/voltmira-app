@@ -6,19 +6,25 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createProject, createProjectFromTemplate } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
+import { isNetworkError } from "../../../lib/offline.js";
+import { offlineDraftGo } from "../../../components/NewQuoteOffline.jsx";
 
 export default function NewQuoteMenu({ templates = [], lang }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
 
-  const go = (promise) => start(() => promise.then(id => id && router.push(`/projects/${id}`)));
+  // with no signal a quote starts as a draft on the device (lib/offlineDrafts.js)
+  const go = (make) => {
+    if (navigator.onLine === false) { offlineDraftGo(lang); return; }
+    start(() => make().then(id => id && router.push(`/projects/${id}`)).catch((e) => { if (isNetworkError(e)) offlineDraftGo(lang); else throw e; }));
+  };
   const plus = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
 
   return (
     <div style={{ position: "relative", display: "inline-flex" }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
       <button className="btn primary" disabled={pending} style={{ borderRadius: templates.length ? "11px 0 0 11px" : 11 }}
-        onClick={() => go(createProject())}>{plus}{t("btn_new_quote", lang)}</button>
+        onClick={() => go(() => createProject())}>{plus}{t("btn_new_quote", lang)}</button>
       {templates.length > 0 && (
         <button className="btn primary" disabled={pending} aria-label="Templates" aria-expanded={open}
           onClick={() => setOpen(o => !o)}
@@ -32,7 +38,7 @@ export default function NewQuoteMenu({ templates = [], lang }) {
           <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--muted)", padding: "6px 10px 4px", fontWeight: 700 }}>{t("tpl_from", lang)}</div>
           {templates.map(tp => (
             <button key={tp.id} className="tpl-item" disabled={pending}
-              onClick={() => { setOpen(false); go(createProjectFromTemplate(tp.id)); }}
+              onClick={() => { setOpen(false); go(() => createProjectFromTemplate(tp.id)); }}
               style={{ display: "flex", width: "100%", alignItems: "center", gap: 10, textAlign: "left",
                 padding: "9px 10px", borderRadius: 8, cursor: "pointer", background: "none", border: "none", color: "var(--ink)" }}>
               <span style={{ fontWeight: 600, fontSize: 13.5, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tp.name}</span>
