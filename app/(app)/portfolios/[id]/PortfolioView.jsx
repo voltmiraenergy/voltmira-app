@@ -765,7 +765,7 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
                 {showShort && <p className="pf-hint">{pt(fin.dsraMonths > 0 ? "st_short_dsra_h" : "st_short_h", lang)}</p>}
                 <div className="pf-scroll">
                   <table className="pf-t">
-                    <thead><tr><th>{pt("st_case", lang)}</th><th className="r">{pt("col_dscr", lang)}</th><th className="r">{pt("col_irr", lang)}</th><th className="r">{pt("col_npv", lang)}</th><th className="r">{pt("st_dnpv", lang)}</th>
+                    <thead><tr><th>{pt("st_case", lang)}</th><th className="r">{pt("col_dscr", lang)}</th><th className="r">{pt("col_irr", lang)}</th><th className="r">{pt("k_eirr", lang)}</th><th className="r">{pt("col_npv", lang)}</th><th className="r">{pt("st_dnpv", lang)}</th>
                       {showShort && <th className="r" title={pt(fin.dsraMonths > 0 ? "st_short_dsra_h" : "st_short_h", lang)}>{pt(fin.dsraMonths > 0 ? "st_short_dsra" : "st_short", lang)}</th>}</tr></thead>
                     <tbody>
                       {suite.map((s) => {
@@ -776,6 +776,7 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
                             <td>{caseLabel(s.id, lang, market)}{caseNote(s, suite[0], lang) && <small className="pf-hint">{caseNote(s, suite[0], lang)}</small>}</td>
                             <td className={"r t-" + dscrTone(s.agg.dscrMin)}>{fd(s.agg.dscrMin)}</td>
                             <td className="r">{fp(s.agg.irr)}</td>
+                            <td className="r">{fp(s.agg.equityIrr)}</td>
                             <td className="r">{money.full(s.agg.npv)}</td>
                             <td className="r pf-delta">{s.id === "base" ? "" : <span className="pf-dwrap"><span className="pf-dtrack" aria-hidden="true"><span className="pf-dbar" style={{ width: Math.min(100, (Math.abs(d) / span) * 100) + "%" }} /></span><b>{d >= 0 ? "+" : "−"}{money.full(Math.abs(d))}</b></span>}</td>
                             {showShort && <td className={"r" + (s.agg.shortfallEur > 0.5 ? " t-bad" : "")}>{money.full(s.agg.shortfallEur || 0)}</td>}

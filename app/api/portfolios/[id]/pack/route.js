@@ -33,7 +33,7 @@ async function scope(id, plantParam) {
   if (plantParam && !plant) return { res: NextResponse.json({ error: "not_found" }, { status: 404 }) };
   const user = await currentUser();
   const plants = Array.isArray(d.portfolio.assets?.[PLANTS_KEY]) ? d.portfolio.assets[PLANTS_KEY].filter((p) => p && p.id) : [];
-  const real = localSwitch("PACK_LOCK_SAMPLES") ? plants : plants.filter((p) => !p.sample);
+  const real = plants.filter((p) => !p.sample);
   if (plant) {
     const access = await loadPackAccess({ companyId: d.portfolio.company_id, portfolioId: id, plant, email: user?.email });
     // a portfolio of this plant alone: its pack also opens the portfolio's documents

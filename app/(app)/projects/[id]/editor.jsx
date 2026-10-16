@@ -758,7 +758,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             </div>
             <p className="qb-sub">
               {clientLine}
-              {proposalSentAt && (
+              {/* once the client has signed, the offer's validity no longer matters */}
+              {proposalSentAt && p.status !== "won" && p.status !== "lost" && (
                 <span className={"qb-valid" + (quoteStale ? " stale" : "")}>
                   {tr("q_valid_until", { d: validUntilStr })}{quoteStale ? ", " + tr("q_stale").toLowerCase() : ""}
                 </span>

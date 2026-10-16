@@ -6,10 +6,11 @@
 // Premier Energy or RED Nord application. Folded to one line: what is still
 // missing and "Fill in", or the applicant and "Edit" once it is complete, so
 // the form never takes a phone's whole screen until someone asks for it.
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { UserRound, Pencil } from "lucide-react";
 import { setGridFile } from "../../../../lib/actions.js";
-import { gridApplicant, gridMissing } from "../../../../lib/gridDetails.js";
+import { gridApplicant, gridMissing, idnValid } from "../../../../lib/gridDetails.js";
+import { knownApplicant } from "../../../../lib/gridActions.js";
 import { t } from "../../../../lib/i18n.js";
 
 const LABEL = { name: "gd_name", idn: "gd_idn_bad", phone: "gd_phone", siteAddress: "gd_site", cadastral: "gd_cadastral", email: "gd_email" };
@@ -20,7 +21,22 @@ export default function GridDetails({ projectId, client, details, lang, onSaved 
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [failed, setFailed] = useState(false);
+  // nothing saved yet: the same client's details from an earlier quote, if any
+  const [reused, setReused] = useState(null);
+  useEffect(() => {
+    if (details) return;
+    let alive = true;
+    knownApplicant(projectId).then((k) => {
+      if (!alive || !k) return;
+      setD((x) => ({ ...x, ...Object.fromEntries(Object.entries(k.details).filter(([, v]) => v !== "" && v != null)) }));
+      setReused(k.from);
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [projectId, details]);
   const set = (k) => (e) => setD((x) => ({ ...x, [k]: e.target.value }));
+  // 13 digits whose control digit does not hold: almost always a typo
+  const idnDigits = String(d.idn || "").replace(/\D/g, "");
+  const idnBad = idnDigits.length === 13 && !idnValid(idnDigits);
   const missing = gridMissing(d);
   const id = (k) => `gd-${k}-${projectId}`;
 
@@ -67,6 +83,7 @@ export default function GridDetails({ projectId, client, details, lang, onSaved 
       <div className="gd-head">
         <b id={id("h")}>{t("gd_h", lang)}</b>
         <small>{t("gd_sub", lang)}</small>
+        {reused && <small className="gd-reused">{t("gd_reused", lang, { from: reused })}</small>}
       </div>
       <div className="seg2 gd-seg" role="group" aria-label={t("gd_kind", lang)}>
         <button type="button" className={d.kind === "person" ? "on" : ""} aria-pressed={d.kind === "person"} onClick={() => setD((x) => ({ ...x, kind: "person" }))}>{t("gd_person", lang)}</button>
@@ -74,7 +91,7 @@ export default function GridDetails({ projectId, client, details, lang, onSaved 
       </div>
       <div className="gd-grid">
         {field("name", "gd_name", { autoComplete: "name", maxLength: 120 })}
-        {field("idn", "gd_idn", { inputMode: "numeric", maxLength: 16, placeholder: t("gd_idn_ph", lang) })}
+        {field("idn", "gd_idn", { inputMode: "numeric", maxLength: 16, placeholder: t("gd_idn_ph", lang), "aria-invalid": idnBad || undefined }, idnBad ? "gd_idn_check" : null)}
         {field("phone", "gd_phone", { type: "tel", inputMode: "tel", maxLength: 30 })}
         {field("email", "gd_email", { type: "email", maxLength: 120 })}
         {field("siteAddress", "gd_site", { maxLength: 200 })}

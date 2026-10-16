@@ -320,13 +320,13 @@ export default function Report({ model, lang, company, date, money, fx, rid = ""
         <p className="rp-small">{pt("st_h", lang)}</p>
         {showShort && <p className="rp-small">{pt(fin.dsraMonths > 0 ? "st_short_dsra_h" : "st_short_h", lang)}</p>}
         <table className="rp-t"><thead><tr>
-          <th>{pt("st_case", lang)}</th><th className="r">{pt("col_dscr", lang)}</th><th className="r">{pt("col_irr", lang)}</th><th className="r">{pt("col_npv", lang)}, {cur}</th><th className="r">{pt("st_dnpv", lang)}</th>
+          <th>{pt("st_case", lang)}</th><th className="r">{pt("col_dscr", lang)}</th><th className="r">{pt("col_irr", lang)}</th><th className="r">{pt("k_eirr", lang)}</th><th className="r">{pt("col_npv", lang)}, {cur}</th><th className="r">{pt("st_dnpv", lang)}</th>
           {showShort && <th className="r">{pt(fin.dsraMonths > 0 ? "st_short_dsra" : "st_short", lang)}, {cur}</th>}
         </tr></thead><tbody>
           {suite.map((s) => (
             <tr key={s.id}><td>{caseLabel(s.id, lang, market)}{caseNote(s, suite[0], lang) && <small className="rp-small" style={{ display: "block" }}>{caseNote(s, suite[0], lang)}</small>}</td>
               <td className={"r t-" + dscrTone(s.agg.dscrMin)}>{fd(s.agg.dscrMin)}</td>
-              <td className="r">{f(s.agg.irr)}</td><td className="r">{money.full(s.agg.npv)}</td>
+              <td className="r">{f(s.agg.irr)}</td><td className="r">{f(s.agg.equityIrr)}</td><td className="r">{money.full(s.agg.npv)}</td>
               <td className="r">{s.id === "base" ? "" : `${s.agg.npv - suite[0].agg.npv >= 0 ? "+" : "−"}${money.full(Math.abs(s.agg.npv - suite[0].agg.npv))}`}</td>
               {showShort && <td className={"r" + (s.agg.shortfallEur > 0.5 ? " t-bad" : "")}>{money.full(s.agg.shortfallEur || 0)}</td>}</tr>
           ))}
