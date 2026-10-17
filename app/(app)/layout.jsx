@@ -135,8 +135,11 @@ export default async function AppLayout({ children }) {
               );
             })()}
           </div>
-          <ThemeToggle lang={lang} />
-          <SignOut lang={lang} />
+          {/* theme and sign-out on one line, so a short screen still shows both */}
+          <div className="side-acts">
+            <ThemeToggle lang={lang} />
+            <SignOut lang={lang} />
+          </div>
         </div>
       </aside>
       <main className="main" id="main">
