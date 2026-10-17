@@ -14,6 +14,7 @@
 // (formal address in every language). Styles: ./proposal.css.
 import "./proposal.css";
 import Tracker from "./tracker.jsx";
+import ClientAfter from "./ClientAfter.jsx";
 import AutoPrint from "./AutoPrint.jsx";
 import PrintSheet, { RoofSnapshotSVG } from "./PrintSheet.jsx";
 import RoofSatellite from "../../../components/RoofSatellite.jsx";
@@ -92,7 +93,7 @@ export default async function ProposalPage(props) {
       </main>
     );
   }
-  const { company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
+  const { after = null, company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
     offer = null, chosenOption = null, cned = null,
     roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null } = data;
   // The client reads this in the installer's language, not always English.
@@ -311,6 +312,9 @@ export default async function ProposalPage(props) {
 
         <div className="pp-layout">
           <div className="pp-main">
+
+            {/* signed: the client's own page, their installation and their production */}
+            {accepted && after && <ClientAfter after={after} lang={lang} code={params.code} company={company} nf={nf} />}
 
             {/* Ukraine: outages first, the way a Ukrainian household decides. */}
             {inputs.market === "UA" && (

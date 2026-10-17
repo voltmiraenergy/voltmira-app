@@ -617,3 +617,48 @@
 
 /* the installer's own roof photo, the offer's picture */
 .pp-roof-photo { display: block; width: 100%; border-radius: 10px; aspect-ratio: 16 / 10; object-fit: cover; }
+
+/* ---- after signing (ClientAfter.jsx): steps, production, a recommendation */
+.pp-after { display: grid; gap: 16px; }
+.pp-jsteps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.pp-jsteps li { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; color: var(--muted); }
+.pp-step-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line-2); justify-self: center; }
+.pp-jsteps li.done { color: var(--ink); }
+.pp-jsteps li.done .pp-step-dot { background: var(--green); border-color: var(--green); }
+.pp-jsteps li.now { color: var(--ink); font-weight: 700; }
+.pp-jsteps li.now .pp-step-dot { border-color: var(--green); box-shadow: 0 0 0 4px color-mix(in srgb, var(--green) 18%, transparent); }
+.pp-step-d { font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.pp-jsteps li.now .pp-step-d { color: var(--green); }
+.pp-prod, .pp-rec { padding: 18px; display: grid; gap: 10px; }
+.pp-prod h3, .pp-rec h3 { margin: 0; font-size: 17px; }
+.pp-prod-sum, .pp-prod-none, .pp-rec p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink); }
+.pp-bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; height: 150px; align-items: end; }
+.pp-bar { display: grid; grid-template-rows: 1fr auto; height: 100%; gap: 4px; }
+.pp-bar-col { position: relative; height: 100%; }
+.pp-bar-act { position: absolute; left: 15%; right: 15%; bottom: 0; background: var(--green); border-radius: 4px 4px 0 0; }
+.pp-bar-exp { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed var(--ink); opacity: .55; z-index: 1; }
+.pp-bar-m { font-size: 11px; color: var(--muted); text-align: center; }
+.pp-prod-key { margin: 0; font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pp-prod-key .k-act { width: 12px; height: 12px; border-radius: 3px; background: var(--green); }
+.pp-prod-key .k-exp { width: 16px; border-top: 2px dashed var(--ink); opacity: .55; margin-left: 10px; }
+.pp-rec-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.pp-rec-btns .pp-btn { min-height: 46px; }
+.pp-viber { background: #7360F2; color: #fff; }
+.pp-wapp { background: #1F8A4C; color: #fff; }
+
+/* ---- a recommendation page (app/r/[code]) */
+.rf { max-width: 560px; padding-top: 36px; padding-bottom: 48px; display: grid; gap: 16px; }
+.rf-head { display: flex; align-items: center; min-height: 44px; }
+.rf-logo { max-height: 44px; max-width: 200px; object-fit: contain; }
+.rf-name { font-size: 20px; color: var(--ink); }
+.rf-card { padding: 20px; display: grid; gap: 10px; }
+.rf-card h2 { margin: 0; font-size: 19px; }
+.rf-card p { margin: 0; font-size: 14.5px; line-height: 1.5; }
+.rf-form { display: grid; gap: 12px; }
+.rf-form label { display: grid; gap: 5px; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.rf-in { min-height: 46px; padding: 10px 12px; border: 1.5px solid var(--line-2); border-radius: 10px; font: inherit; font-size: 16px; background: var(--card); color: var(--ink); }
+.rf-in:focus { outline: none; border-color: var(--green); }
+.rf-hp { position: absolute; left: -10000px; width: 1px; height: 1px; opacity: 0; }
+.rf-sent { margin: 0; font-size: 16px; font-weight: 700; color: var(--green); }
+.rf-err { margin: 0; font-size: 13.5px; color: #B4472F; }
+.rf-fine { margin: 0; font-size: 12.5px; color: var(--muted); }

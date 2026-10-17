@@ -107,6 +107,8 @@ const nextConfig = {
       // any crawler. Indexing one is a GDPR exposure and the exact opposite of
       // what a trust-based product should do with a client's data.
       { source: "/p/:path*", headers: noIndexHeaders },
+      // a client's recommendation page: their first name and locality
+      { source: "/r/:path*", headers: noIndexHeaders },
       // a bank's deal room link: a private plant's figures and documents (its
       // pages also send no referrer, so the link never leaves in a Referer header)
       { source: "/d/:path*", headers: noIndexHeaders },

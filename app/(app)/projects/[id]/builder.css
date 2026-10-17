@@ -42,6 +42,13 @@ html[data-theme="dark"] .app .qb { --amber-ink: #EBA542; --dx-on-green: #07130D;
 .app .qb-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .app .qb-actions .btn { height: 40px; }
 .app .qb-actions .btn svg, .app .qb-actions .dx-new svg { flex: none; }
+/* one-tap send: each messenger in its own colour so it is found at a glance */
+.app .qb-actions .qb-sendgrp { display: inline-flex; align-items: center; gap: 8px; }
+.app .qb-actions .qb-send { font-weight: 700; justify-content: center; }
+.app .qb-actions .qb-send-viber { color: #5B47E0; border-color: rgba(115, 96, 242, .45); }
+.app .qb-actions .qb-send-wa { color: #17763F; border-color: rgba(31, 138, 76, .45); }
+html[data-theme="dark"] .app .qb-actions .qb-send-viber { color: #A99CFF; border-color: rgba(169, 156, 255, .45); }
+html[data-theme="dark"] .app .qb-actions .qb-send-wa { color: #5FD592; border-color: rgba(95, 213, 146, .45); }
 .app .qb-tpl { display: inline-flex; align-items: center; gap: 6px; }
 .app .qb-tpl .input { width: 170px; padding: 8px 11px; }
 
@@ -125,6 +132,9 @@ html[data-theme="dark"] .app .qb { --amber-ink: #EBA542; --dx-on-green: #07130D;
   .app .qb-actions { width: 100%; }
   .app .qb-actions .dx-new { flex: 1 1 100%; justify-content: center; order: -1; }
   .app .qb-actions .btn { flex: 1 1 auto; }
+  /* on a phone: the link button full width on top, Viber and WhatsApp side by side under it */
+  .app .qb-actions .qb-sendgrp { flex: 1 1 100%; order: -1; flex-wrap: wrap; }
+  .app .qb-actions .qb-sendgrp .qb-send { flex: 1 1 0; height: 46px; }
   /* On a phone the bar becomes one swipeable row, so it stays one line tall. */
   .app .qb-bar {
     display: flex; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;

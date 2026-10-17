@@ -11,7 +11,7 @@ import "../../dx.css";
 import "./builder.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
-import { regenerateProposal, saveQuoteTemplate, markProjectWon } from "../../../../lib/actions.js";
+import { regenerateProposal, saveQuoteTemplate, markProjectWon, offerPhone } from "../../../../lib/actions.js";
 import { sendOffer } from "../../../../lib/sendOffer.js";
 import { aiOn } from "../../../../lib/featureFlags.js";
 import AddressField from "../../../../components/AddressField.jsx";
@@ -226,6 +226,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const [billErr, setBillErr] = useState("");
   const billInput = useRef(null);
   const [propUrl, setPropUrl] = useState(null);
+  const [sendingVia, setSendingVia] = useState(null);   // "viber" | "wa" while the header's one-tap send works
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMsg, setRefreshMsg] = useState(null);
   // Emailing the PDF: the recipient isn't stored on the project (only the client's
@@ -601,6 +602,35 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     return code;
   }
 
+  // One tap from the header to the client's messenger, the way Moldovan
+  // clients actually get links: makes (or reuses) the offer link, marks the
+  // quote sent, and opens Viber or WhatsApp with the message and link written.
+  // WhatsApp goes straight to the client's chat when their phone is known
+  // (lib/actions.js offerPhone); Viber always lets you pick the contact.
+  async function sendVia(app) {
+    // the WhatsApp tab opens inside the click, before any await, or a phone's popup blocker eats it
+    const tab = app === "wa" ? window.open("", "_blank") : null;
+    setSendingVia(app);
+    try {
+      const [code, phone] = await Promise.all([
+        propUrl ? propUrl.split("/p/")[1] : sendOffer(initial.id),
+        app === "wa" ? offerPhone(initial.id).catch(() => "") : "",
+      ]);
+      if (p.status === "draft") update({ status: "sent" });
+      const msg = tr("wa_message", { client: p.client || tr("your_client"), company: companyName, url: `${location.origin}/p/${code}` });
+      if (app === "wa") {
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+        if (tab) { tab.opener = null; tab.location.href = url; } else window.location.href = url;
+      } else {
+        window.location.href = `viber://forward?text=${encodeURIComponent(msg)}`;
+      }
+    } catch {
+      if (tab) tab.close();
+    } finally {
+      setSendingVia(null);
+    }
+  }
+
   // The link itself never changes (createProposal is idempotent by design —
   // never bait-and-switch a client), but everything the link SHOWS is frozen
   // at first-generate time. Edited the BOM, drawn the roof, changed the price
@@ -785,7 +815,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <button className="btn ghost" onClick={downloadPdf}><Qi d="pdf" />{tr("dl_pdf")}</button>
             <button className="btn ghost" onClick={() => setInvOpen(true)}><Qi d="receipt" />{tr("inv_button")}</button>
             <button className="btn ghost" onClick={() => { setLegalTab("contract"); setLegalDocsOpen(true); }}><Qi d="scale" />{tr("ld_open")}</button>
-            <button className="dx-new" onClick={makeProposal}><Qi d="link" w={2.2} />{tr("gen_proposal")}</button>
+            {/* the three ways to send, kept together when the row wraps */}
+            <span className="qb-sendgrp">
+              <button className="btn ghost qb-send qb-send-viber" disabled={!!sendingVia} onClick={() => sendVia("viber")} title={tr("send_viber_t")}>{sendingVia === "viber" ? "..." : "Viber"}</button>
+              <button className="btn ghost qb-send qb-send-wa" disabled={!!sendingVia} onClick={() => sendVia("wa")} title={tr("send_wa_t")}>{sendingVia === "wa" ? "..." : "WhatsApp"}</button>
+              <button className="dx-new" onClick={makeProposal}><Qi d="link" w={2.2} />{tr("gen_proposal")}</button>
+            </span>
           </div>
         </div>
       </header>

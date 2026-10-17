@@ -18,7 +18,8 @@ import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
 import { sendEmail, proposalOpenedEmail, emailConfigured, ownerAlertEmail } from "../../../../lib/email.js";
 import { sendCrmWebhook } from "../../../../lib/crmWebhook.js";
 import { openNow } from "../../../../lib/openDigest.js";
-import { quote } from "@voltmira/engine";
+import { quote, SOLAR_SEASON } from "@voltmira/engine";
+import { journeySteps, nextStep, productionSeries } from "../../../../lib/clientJourney.js";
 import { snapshotEngine } from "../../../../lib/engineSettings.js";
 import { bomHasBattery } from "../../../../lib/quoteInput.js";
 import { loadOffers, offerFigures, acceptOffers } from "../../../../lib/proposalOffers.js";
@@ -221,9 +222,23 @@ export async function GET(req, props) {
     cned = { raionLine: prop.snapshot?.raionLine || null, qualified: isCnedQualified(reg?.reg_no) };
   }
 
+  // after signing, the client's own page: the installation's steps and the
+  // system's production against the offer (lib/clientJourney.js)
+  let after = null;
+  if (prop.accepted_at) {
+    const [{ data: pj }, { data: reads }] = await Promise.all([
+      db.from("projects").select("install_progress").eq("id", prop.project_id).maybeSingle(),
+      db.from("production_readings").select("month, kwh").eq("project_id", prop.project_id).order("month", { ascending: false }).limit(24),
+    ]);
+    const steps = journeySteps({ signedAt: prop.accepted_at, progress: pj?.install_progress });
+    const shape = Array.isArray(prop.snapshot?.monthlyYieldShape) && prop.snapshot.monthlyYieldShape.length === 12 ? prop.snapshot.monthlyYieldShape : SOLAR_SEASON;
+    after = { steps, next: nextStep(steps), production: productionSeries(reads || [], Number(q.e.solar0) || Number(q.e.prod0) || 0, shape) };
+  }
+
   return NextResponse.json({
     code: prop.code,
     accepted: !!prop.accepted_at,
+    after,
     // proof-of-signing only (name + timestamp). The drawn signature IMAGE is
     // sensitive and NOT returned on this public link — the installer views it
     // from their authenticated pipeline.
