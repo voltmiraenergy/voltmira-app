@@ -17,7 +17,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import "../SiteDesigner.css";
-import { X, Undo2, Redo2, Pentagon, Ban, Ruler, Move, LocateFixed, Trash2, Check, Eye, ChevronRight, Sun, Info } from "lucide-react";
+import { X, Undo2, Redo2, Pentagon, Ban, Ruler, Move, LocateFixed, Trash2, Check, Eye, ChevronRight, Sun, Info, Signpost } from "lucide-react";
+import { labelLayer, LABEL_TILES, namesPref, setNamesPref } from "../../lib/mapLabels.js";
+import { loadGoogleSatelliteLayer } from "../../lib/googleSatellite.js";
+import { tilesAround, postTiles } from "../../lib/tileWarm.js";
 import { layoutInputs, layoutPlots } from "../../lib/plantLayout.js";
 import { rotorDiameterM, turbineAt } from "../../lib/windLayout.js";
 import { plotHectares, EXCLUSION_KINDS, TABLE_FORMATS, TRACKER_GCR_DEFAULT, TRACKER_GCR_RANGE, tableGeometry } from "../../lib/siteLayout.js";
@@ -41,6 +44,7 @@ const TX = {
   cancel: { en: "Cancel", ro: "Anulează", ru: "Отмена", uk: "Скасувати" },
   done: { en: "Done", ro: "Gata", ru: "Готово", uk: "Готово" },
   lengths: { en: "Edge lengths", ro: "Lungimi laturi", ru: "Длины сторон", uk: "Довжини сторін" },
+  names: { en: "Place names", ro: "Nume pe hartă", ru: "Названия", uk: "Назви" },
   recenter: { en: "Back to the site", ro: "Înapoi la amplasament", ru: "К площадке", uk: "До майданчика" },
   loading: { en: "Loading satellite imagery", ro: "Se încarcă imaginea din satelit", ru: "Загружаем спутниковый снимок", uk: "Завантажуємо супутниковий знімок" },
   loadError: { en: "The map did not load. Check the connection and open the planner again.", ro: "Harta nu s-a încărcat. Verifică conexiunea și deschide din nou planificatorul.", ru: "Карта не загрузилась. Проверьте связь и откройте планировщик снова.", uk: "Мапа не завантажилася. Перевірте зв'язок і відкрийте планувальник знову." },
@@ -187,6 +191,9 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   const [tool, setTool] = useState(null);
   const [measure, setMeasure] = useState(null);
   const [showDims, setShowDims] = useState(true);
+  // roads, towns and villages over the imagery (lib/mapLabels.js)
+  const [showNames, setShowNames] = useState(true);
+  const namesLayer = useRef(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [shapes, setShapes] = useState({ plots: [], exclusions: [] });
@@ -471,8 +478,16 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       mapRef.current = map;
       L.control.zoom({ position: "bottomright" }).addTo(map);
       map.pm.setLang(lang === "ru" ? "ru" : lang === "uk" ? "ua" : lang === "ro" ? "ro" : "en");
-      // Esri has nothing past about z18 over most of Moldova: it upscales the last real tile instead
-      L.tileLayer(SAT, { maxZoom: 20, maxNativeZoom: 18, attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics" }).addTo(map);
+      // Google's satellite when the installer's key is set (sharper over most of Moldova); else Esri,
+      // which has nothing past about z18 there, so it upscales the last real tile instead
+      const google = await loadGoogleSatelliteLayer(L, undefined, { maxZoom: 20 });
+      if (cancelled || !mapEl.current) return;
+      if (google) google.addTo(map);
+      else L.tileLayer(SAT, { maxZoom: 20, maxNativeZoom: 18, attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics" }).addTo(map);
+      namesLayer.current = labelLayer(L, { maxZoom: 20 });
+      { const on = namesPref(); setShowNames(on); if (on) namesLayer.current.addTo(map); }
+      // the imagery and names around the site, kept for a field with no signal (Esri's: Google's may not be stored)
+      if (site) postTiles(tilesAround({ lat: site.lat, lon: site.lon }, 900, [15, 16, 17, 18], [SAT, ...LABEL_TILES], 600));
       if (site) {
         map.setView([site.lat, site.lon], 16);
         L.marker([site.lat, site.lon], { icon: L.divIcon({ className: "sd-pin-wrap", html: PIN_SVG, iconSize: [32, 40], iconAnchor: [16, 39] }), interactive: false, keyboard: false, pmIgnore: true, zIndexOffset: -100 }).addTo(map);
@@ -635,6 +650,14 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                 <button type="button" className={"sd-chip" + (showDims ? " on" : "")} aria-pressed={showDims}
                   onClick={() => { const on = !showDims; setShowDims(on); api.current.setDims?.(on); }}>
                   <Eye size={16} aria-hidden="true" />{tr("lengths")}
+                </button>
+                <button type="button" className={"sd-chip" + (showNames ? " on" : "")} aria-pressed={showNames}
+                  onClick={() => {
+                    const on = !showNames, m = mapRef.current, l = namesLayer.current;
+                    setShowNames(on); setNamesPref(on);
+                    if (m && l) { if (on) l.addTo(m); else m.removeLayer(l); }
+                  }}>
+                  <Signpost size={16} aria-hidden="true" />{tr("names")}
                 </button>
                 <button type="button" className="sd-chip" onClick={() => api.current.recenter?.()}><LocateFixed size={16} aria-hidden="true" />{tr("recenter")}</button>
               </div>

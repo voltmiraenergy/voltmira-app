@@ -15,6 +15,11 @@ import SignaturePad from "./SignaturePad.jsx";
 export default function Tracker({ code, accepted: initialAccepted, lang = "en", signedName = null, signedDate = null }) {
   const [accepted, setAccepted] = useState(initialAccepted);
   const [requested, setRequested] = useState(false);
+  const [asking, setAsking] = useState(false);       // the call request's small form is open
+  const [callPhone, setCallPhone] = useState("");
+  const [callWhen, setCallWhen] = useState("any");
+  const [calling, setCalling] = useState(false);
+  const [callFailed, setCallFailed] = useState(false);
   const [refDone, setRefDone] = useState(false);
   const [signing, setSigning] = useState(false);
   const [sig, setSig] = useState("");
@@ -81,6 +86,17 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
     window.dispatchEvent(new CustomEvent("voltmira:accepted"));
   }
 
+  // A call request reports what really happened: "sent" only once the
+  // installer has it (a lead, an Activity line, an email), else an error.
+  async function requestCall() {
+    if (calling) return;
+    setCalling(true); setCallFailed(false);
+    const res = await send("request", { phone: callPhone.trim(), when: callWhen });
+    setCalling(false);
+    if (!res || !res.ok) { setCallFailed(true); return; }
+    setRequested(true); setAsking(false);
+  }
+
   const REF = ["recommend", "google", "social", "installer", "other"];
   const who = signedName || signer.trim();
   const signedLine = who
@@ -126,13 +142,37 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
         </div>
       )}
 
-      {requested ? (
+      {/* asking for a call makes no sense once the offer is signed */}
+      {accepted ? null : requested ? (
         <p className="pp-ok-msg" role="status">{ppt("requested", lang)}</p>
-      ) : (
-        <button type="button" className="pp-btn pp-btn-ghost pp-btn-block"
-          onClick={() => { send("request"); setRequested(true); }}>
+      ) : !asking ? (
+        <button type="button" className="pp-btn pp-btn-ghost pp-btn-block" onClick={() => setAsking(true)}>
           {ppt("request", lang)}
         </button>
+      ) : (
+        <div className="pp-call-form" role="group" aria-labelledby={`${id}-ch`}>
+          <h3 className="pp-h3" id={`${id}-ch`}>{ppt("call_h", lang)}</h3>
+          <label className="pp-field-l" htmlFor={`${id}-cphone`}>{ppt("call_phone", lang)}</label>
+          <input id={`${id}-cphone`} className="pp-input" type="tel" inputMode="tel" autoComplete="tel" maxLength={30}
+            value={callPhone} onChange={(e) => setCallPhone(e.target.value)} placeholder={ppt("call_phone_ph", lang)} />
+          <p className="pp-field-l" id={`${id}-cwhen`} style={{ marginTop: 12 }}>{ppt("call_when", lang)}</p>
+          <div className="pp-ref-opts" role="group" aria-labelledby={`${id}-cwhen`}>
+            {["any", "morning", "afternoon", "evening"].map((w) => (
+              <button key={w} type="button" className={"pp-pill" + (callWhen === w ? " is-on" : "")} aria-pressed={callWhen === w} onClick={() => setCallWhen(w)}>
+                {ppt("call_when_" + w, lang)}
+              </button>
+            ))}
+          </div>
+          <div className="pp-sign-btns">
+            <button type="button" className="pp-btn pp-btn-accept pp-btn-block" disabled={calling} onClick={requestCall}>
+              {calling ? ppt("call_sending", lang) : ppt("call_send", lang)}
+            </button>
+            <button type="button" className="pp-btn pp-btn-text" onClick={() => { setAsking(false); setCallFailed(false); }}>
+              {ppt("sig_cancel", lang)}
+            </button>
+          </div>
+          {callFailed && <p className="pp-err" role="alert">{ppt("call_failed", lang)}</p>}
+        </div>
       )}
 
       {/* Referral source: word-of-mouth intelligence for the installer. */}

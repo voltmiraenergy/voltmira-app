@@ -18,6 +18,7 @@ import { supabaseServer } from "../../../lib/supabase.js";
 import { currentCompany, currentActor, currentUser } from "../../../lib/session.js";
 import { isDemoEmail } from "../../../lib/demo.js";
 import { createProject, cycleProjectStatus } from "../../../lib/actions.js";
+import NewQuoteOffline from "../../../components/NewQuoteOffline.jsx";
 import { quote } from "@voltmira/engine";
 import { companyEngine } from "../../../lib/engineSettings.js";
 import { t, normLang } from "../../../lib/i18n.js";
@@ -380,12 +381,11 @@ export default async function Dashboard() {
               quotes: t("nav_projects", lang), leads: t("nav_leads", lang), pages: t("dx_pal_pages", lang),
               none: t("dx_pal_none", lang), hint: t("dx_pal_hint", lang), newQuote: t("btn_new_quote", lang),
             }} />
-          <form action={newQuote}>
-            <button className="dx-new" type="submit">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
-              {t("btn_new_quote", lang)}
-            </button>
-          </form>
+          {/* with no signal it starts a draft on the device instead */}
+          <NewQuoteOffline action={newQuote} lang={lang} className="dx-new">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+            {t("btn_new_quote", lang)}
+          </NewQuoteOffline>
         </div>
       </header>
 

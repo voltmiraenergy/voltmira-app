@@ -12,17 +12,32 @@
 // on the client, which a plain <script> here did on every navigation into the
 // app. On a client navigation an effect sets the attribute instead. The root
 // <html> has suppressHydrationWarning, so React does not object to the change.
+//
+// `persist` (the signed-in app only) also keeps the workspace language on the
+// device: in localStorage for the client error boundary, which cannot read the
+// company row, and in a cookie so /login greets a signed-out user in it. Same
+// two paths: the server stream on the first load, an effect after that.
+//
+// The script's text comes from lib/inlineScripts.js, where the
+// Content-Security-Policy hashes it: it runs because its exact text is
+// allowed, with no nonce to pass down.
 import { useLayoutEffect, useRef } from "react";
 import { useServerInsertedHTML } from "next/navigation";
+import { htmlLangScript, PAGE_LANGS } from "./inlineScripts.js";
 
-export default function HtmlLang({ lang }) {
-  const l = ["en", "ro", "ru", "uk"].includes(lang) ? lang : "ro";
+export default function HtmlLang({ lang, persist = false }) {
+  const l = PAGE_LANGS.includes(lang) ? lang : "ro";
   const sent = useRef(false);
   useServerInsertedHTML(() => {
     if (sent.current) return null;
     sent.current = true;
-    return <script dangerouslySetInnerHTML={{ __html: `document.documentElement.lang=${JSON.stringify(l)}` }} />;
+    return <script dangerouslySetInnerHTML={{ __html: htmlLangScript(l, persist) }} />;
   });
-  useLayoutEffect(() => { document.documentElement.lang = l; }, [l]);
+  useLayoutEffect(() => {
+    document.documentElement.lang = l;
+    if (!persist) return;
+    try { localStorage.setItem("voltmira_lang", l); } catch { /* storage blocked */ }
+    document.cookie = `voltmira_lang=${l}; path=/; max-age=31536000; samesite=lax`;
+  }, [l, persist]);
   return null;
 }

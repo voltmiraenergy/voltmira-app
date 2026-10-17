@@ -26,8 +26,13 @@ import "leaflet/dist/leaflet.css";
 import "./SiteDesigner.css";
 import {
   X, Undo2, Redo2, Pentagon, Box, TreeDeciduous, Ruler, Plug, Move, LocateFixed, Trash2, Check,
-  House, ChevronDown, ChevronRight, Info, Eye,
+  House, ChevronDown, ChevronRight, Info, Eye, Signpost,
 } from "lucide-react";
+import { labelLayer, LABEL_TILES, namesPref, setNamesPref } from "../lib/mapLabels.js";
+import { loadGoogleSatelliteLayer } from "../lib/googleSatellite.js";
+import { tilesAround, postTiles } from "../lib/tileWarm.js";
+
+const SAT_ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 import { fitPanels, compassLabel, project, polygonAreaM2, facingFromShape, fitOptions } from "../lib/roofLayout.js";
 import { PANELS, findPanel, recommendPanel } from "../lib/supplierCatalog.js";
 import { designCheck } from "../lib/designCheck.js";
@@ -58,6 +63,7 @@ const TX = {
   cancel: { en: "Cancel", ro: "Anulează", ru: "Отмена", uk: "Скасувати" },
   done: { en: "Done", ro: "Gata", ru: "Готово", uk: "Готово" },
   lengths: { en: "Edge lengths", ro: "Lungimi laturi", ru: "Длины сторон", uk: "Довжини сторін" },
+  names: { en: "Street names", ro: "Nume de străzi", ru: "Названия улиц", uk: "Назви вулиць" },
   recenter: { en: "Back to the house", ro: "Înapoi la casă", ru: "К дому", uk: "До будинку" },
   loading: { en: "Loading satellite imagery", ro: "Se încarcă imaginea din satelit", ru: "Загружаем спутниковый снимок", uk: "Завантажуємо супутниковий знімок" },
   loadError: { en: "The map could not load. Check the connection, then close and open the roof design again.", ro: "Harta nu s-a putut încărca. Verifică conexiunea, apoi închide și redeschide proiectarea.", ru: "Карта не загрузилась. Проверьте соединение, затем закройте и снова откройте проект крыши.", uk: "Мапа не завантажилася. Перевірте з’єднання, потім закрийте й знову відкрийте проєкт даху." },
@@ -269,32 +275,6 @@ function edgeAngleDeg(a, b) {
   return deg;
 }
 
-let googleMapsScriptPromise = null;
-function loadGoogleMapsScript(key) {
-  if (window.google?.maps) return Promise.resolve();
-  if (!googleMapsScriptPromise) {
-    googleMapsScriptPromise = new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}`;
-      s.async = true;
-      s.onload = () => resolve();
-      s.onerror = () => reject(new Error("google maps script failed to load"));
-      document.head.appendChild(s);
-    });
-  }
-  return googleMapsScriptPromise;
-}
-// Any failure (bad key, network, billing off) resolves to null, so the map
-// falls back to Esri instead of staying blank.
-async function loadGoogleSatelliteLayer(L, key) {
-  try {
-    await loadGoogleMapsScript(key);
-    await import("leaflet.gridlayer.googlemutant");
-    return L.gridLayer.googleMutant({ type: "satellite", maxZoom: 21 });
-  } catch {
-    return null;
-  }
-}
 
 const clampNum = (v, lo, hi) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo; };
 const savedNum = (v, d) => (v === "" || v == null || !Number.isFinite(Number(v)) ? d : Number(v));
@@ -341,6 +321,9 @@ export default function SiteDesigner({
   const [markerType, setMarkerType] = useState("mainPanel");
   const [measureResult, setMeasureResult] = useState(null);
   const [showDimensions, setShowDimensions] = useState(true);
+  // roads, towns and villages over the imagery (lib/mapLabels.js)
+  const [showNames, setShowNames] = useState(true);
+  const namesLayer = useRef(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [shapes, setShapes] = useState({ planes: [], obstacles: [], markers: [] });
@@ -643,10 +626,13 @@ export default function SiteDesigner({
         // Esri has nothing past ~z18 over most of Moldova and Romania, so it
         // stops fetching there and upscales the last real tile instead of
         // showing its "no data" filler.
-        L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-          { maxZoom: 21, maxNativeZoom: 18, attribution: "Tiles &copy; Esri" }).addTo(map);
+        L.tileLayer(SAT_ESRI, { maxZoom: 21, maxNativeZoom: 18, attribution: "Tiles &copy; Esri" }).addTo(map);
       }
       if (cancelled || !mapEl.current) return;
+      namesLayer.current = labelLayer(L);
+      { const on = namesPref(); setShowNames(on); if (on) namesLayer.current.addTo(map); }
+      // the imagery and names around the house, kept for a roof with no signal
+      postTiles(tilesAround({ lat, lon }, 250, [17, 18, 19], [SAT_ESRI, ...LABEL_TILES], 400));
       L.marker([lat, lon], {
         icon: L.divIcon({ className: "sd-pin-wrap", html: PIN_SVG, iconSize: [32, 40], iconAnchor: [16, 39] }),
         interactive: false, keyboard: false, pmIgnore: true, zIndexOffset: -100,
@@ -1030,6 +1016,14 @@ export default function SiteDesigner({
                 <button type="button" className={"sd-chip" + (showDimensions ? " on" : "")} aria-pressed={showDimensions}
                   onClick={() => { const on = !showDimensions; setShowDimensions(on); api.current.setDimensions?.(on); }}>
                   <Eye size={16} aria-hidden="true" />{tr("lengths")}
+                </button>
+                <button type="button" className={"sd-chip" + (showNames ? " on" : "")} aria-pressed={showNames}
+                  onClick={() => {
+                    const on = !showNames, m = mapRef.current, l = namesLayer.current;
+                    setShowNames(on); setNamesPref(on);
+                    if (m && l) { if (on) l.addTo(m); else m.removeLayer(l); }
+                  }}>
+                  <Signpost size={16} aria-hidden="true" />{tr("names")}
                 </button>
                 <button type="button" className="sd-chip" onClick={() => api.current.recenter?.()}>
                   <LocateFixed size={16} aria-hidden="true" />{tr("recenter")}

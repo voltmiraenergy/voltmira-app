@@ -21,6 +21,7 @@ doubt changes nothing.
 | `add-client-kind.sql` | Who the client on a quote is (`projects.client_kind`: household, sme, company), for the support programmes | in the file above |
 | `add-deal-room.sql` | The deal room: a private `deal-docs` bucket, documents on the checklist, read-only bank links, the bank's questions and the access log (`deal_documents`, `deal_links`, `deal_questions`, `deal_views`) | Already run (2026-10-04), except the two alert columns on `deal_links` (`notify`, `notified_at`) added after |
 | `add-deadline-alerts.sql` | The weekly permits-and-deadlines email: a per-company switch (`companies.notify_deadlines`, on by default) | **Not run yet** |
+| `add-referral-leads.sql` | A lead can be "recommended by a client" (`leads.source = 'referral'`, from the client's page `/r/[code]`); until run, such leads are saved as manual with the note | **Not run yet** |
 
 Do not run `fix-profiles-rls.sql` on its own. It removes the recursion but
 leaves out the guard; `lock-down-2026-09-28.sql` does both and replaces it.
@@ -51,6 +52,7 @@ leaves out the guard; `lock-down-2026-09-28.sql` does both and replaces it.
 6. `run-pending-2026-10-02.sql` (offer currency, client type)
 7. `add-deal-room.sql` (the deal room, with its alert columns)
 8. `add-deadline-alerts.sql` (the weekly deadlines email switch)
+9. `add-referral-leads.sql` (leads recommended by a client)
 
 ## Checking what a database already has
 

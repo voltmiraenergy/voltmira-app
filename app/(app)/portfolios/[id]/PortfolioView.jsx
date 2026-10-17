@@ -20,13 +20,14 @@ import { buildModel, MAX_STRUCTURES } from "../../../../lib/portfolioModel.js";
 import { DOC_KEYS } from "../../../../lib/portfolio.js";
 import { presetsFor, presetFinance, FINANCING_PRESETS } from "../../../../lib/financingPresets.js";
 import { itemsFor, GRID_EMISSION_FACTOR } from "../../../../lib/esScreening.js";
-import { caseLabel, riskRows } from "../../../../lib/portfolioExport.js";
+import { caseLabel, caseNote, riskRows } from "../../../../lib/portfolioExport.js";
 import { sortTornado } from "../../../../lib/portfolioSensitivity.js";
 import { DEFAULT_SIZING } from "../../../../lib/debtSizing.js";
 import { pt } from "../../../../lib/portfolioText.js";
 import { pct, dscr, num as fnum, mwhUnit, kwpUnit, dscrTone, moneyFmt, capacity, DISPLAY_CURRENCIES } from "../../../../lib/portfolioFormat.js";
 import { fxNote, structureName, termsLine } from "../../../../lib/portfolioDisplay.js";
 import CashflowChart from "../../../../components/CashflowChart.jsx";
+import { cashflowEvents } from "../../../../lib/cashflowEvents.js";
 import DscrChart from "../../../../components/portfolio/DscrChart.jsx";
 import PackPay from "../../../../components/portfolio/PackPay.jsx";
 import { Lock } from "lucide-react";
@@ -79,7 +80,7 @@ const ES_STATUSES = ["open", "yes", "no", "na"];
 // a preset sets the lender's terms; the repayment profile, the construction
 // period, the grace and the reserve are kept as the user set them
 // the tax is the company's, not the lender's: a preset keeps it too
-const KEEP_KEYS = ["compare", "sizing", "displayCurrency", "repayment", "constructionMonths", "graceYears", "dsraMonths", "taxPct", "taxLifeYears", "taxLossYears"];
+const KEEP_KEYS = ["compare", "sizing", "displayCurrency", "repayment", "constructionMonths", "graceYears", "dsraMonths", "taxPct", "taxLifeYears", "taxLossYears", "quoteInvYear", "quoteInvEurPerKw", "endCostPct", "endValuePct"];
 const METRICS = ["dscrMin", "equityIrr", "irr", "npv"];
 // an id for a saved structure (event handlers only)
 const newId = () => "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -424,6 +425,12 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
                 <small>{pt("k_capacity_sub", lang, { pct: sizing.capacityPct == null ? na : fnum(sizing.capacityPct, lang, 0), cur: money.compact(sizing.currentLoanEur) })}</small></div>
               <div className={"pf-kpi t-" + dscrTone(agg.dscrMin)}><span>{pt("k_dscr_p50", lang)}</span><b>{agg.dscrMin == null ? na : dscr(agg.dscrMin, lang)}</b>
                 <small>{agg.dscrMin == null ? pt("no_debt", lang) : `P90 ${fd(model.p90.dscrMin)}${weakest ? `, ${pt("k_weakest", lang).toLowerCase()}: ${weakest.name} ${dscr(weakest.dscrMin, lang)}` : ""}`}</small></div>
+              {agg.llcr != null && (
+                <div className={"pf-kpi t-" + dscrTone(agg.llcr)}><span>{pt("k_llcr", lang)}</span><b>{dscr(agg.llcr, lang)}</b>
+                  <small>{agg.dscrIo != null
+                    ? `${pt("k_repay", lang, { v: fd(agg.dscrMinRepay) })}, ${pt("k_io", lang, { v: fd(agg.dscrIo) })}`
+                    : pt("k_llcr_sub", lang)}</small></div>
+              )}
               <div className="pf-kpi"><span>{pt("k_irr", lang)}</span><b>{fp(agg.irr)}</b><small>{pt("k_eirr", lang)} {fp(agg.equityIrr)}</small></div>
               <div className="pf-kpi"><span>{pt("k_npv", lang)}</span><b>{money.compact(agg.npv)}</b><small>{fnum(fin.discPct, lang, 1)}%, {pt("k_payback", lang)} {agg.paybackYears == null ? "25+" : fnum(agg.paybackYears, lang, 1)} {pt("years_w", lang)}</small></div>
             </div>
@@ -580,10 +587,17 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
                 <Num id="fCap" label={pt("f_grant_cap", lang)} value={p.finance.grantCapEur ?? ""} onChange={(v) => setFin("grantCapEur", v)} min="0" />
                 <Num id="fComp" label={pt("f_comp", lang)} hint={pt("f_comp_h", lang)} value={p.finance.principalCompensationPct ?? ""} onChange={(v) => setFin("principalCompensationPct", v)} min="0" max="100" />
                 <Num id="fFee" label={pt("f_fee", lang)} hint={pt("f_fee_h", lang)} value={p.finance.feePct ?? ""} onChange={(v) => setFin("feePct", v)} min="0" max="10" step="0.1" />
+                <Num id="fQInvY" label={pt("f_qinv_year", lang)} hint={pt("f_qinv_h", lang)} value={p.finance.quoteInvYear ?? ""} onChange={(v) => setFin("quoteInvYear", v)} min="0" max="30" step="1" />
+                <Num id="fQInvE" label={pt("f_qinv_eur", lang)} value={p.finance.quoteInvEurPerKw ?? ""} onChange={(v) => setFin("quoteInvEurPerKw", v)} min="0" step="5" />
+                <Num id="fEndC" label={pt("f_end_cost", lang)} hint={pt("f_end_h", lang)} value={p.finance.endCostPct ?? ""} onChange={(v) => setFin("endCostPct", v)} min="0" max="50" step="0.5" />
+                <Num id="fEndV" label={pt("f_end_value", lang)} value={p.finance.endValuePct ?? ""} onChange={(v) => setFin("endValuePct", v)} min="0" max="100" step="0.5" />
               </div>
-              <div className="pf-ts">
-                <Toggle checked={p.finance.termSheet === true} onChange={(v) => setFin("termSheet", v)} hint={pt("f_termsheet_h", lang)}>{pt("f_termsheet", lang)}</Toggle>
-              </div>
+              {/* one line: a ticked box says these terms come from a lender's own offer (it counts in readiness) */}
+              <label className="pf-ts" title={pt("f_termsheet_h", lang)}>
+                <input id="fTermSheet" type="checkbox" checked={p.finance.termSheet === true} onChange={(e) => setFin("termSheet", e.target.checked)} />
+                <span>{pt("f_termsheet", lang)}</span>
+                <small>{pt("f_termsheet_h", lang)}</small>
+              </label>
             </section>
 
             <section className="card">
@@ -728,11 +742,12 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
           <section id="cashflow" className="pf-sec" aria-label={pt("nav_cashflow", lang)}>
             <section className="card">
               <div className="dx-card-head"><div><h2>{pt("r_cashflow", lang)}</h2><p>{pt("r_cfads", lang)} / {pt("r_ds", lang)}, {money.cur}</p></div></div>
-              <CashflowChart cfads={agg.cfads} debtService={agg.debtService} lang={lang} years={agg.cfads.length} rate={money.rate} />
+              <CashflowChart cfads={agg.cfads} debtService={agg.debtService} lang={lang} years={agg.cfads.length} rate={money.rate}
+                events={cashflowEvents({ agg, fin: model.fin, scenario: model.scenario, assets: model.assets, E: model.E })} />
             </section>
             <section className="card">
               <div className="dx-card-head"><div><h2>{pt("ch_dscr", lang)}</h2><p>{pt("ch_dscr_h", lang)}</p></div></div>
-              <DscrChart p50={agg.dscrByYear} p90={model.p90.dscrByYear} targets={{ p50: sizing.p50Dscr, p90: sizing.p90Dscr }} lang={lang} />
+              <DscrChart p50={agg.dscrByYear} p90={model.p90.dscrByYear} targets={{ p50: sizing.p50Dscr, p90: sizing.p90Dscr }} lang={lang} span={agg.cfads.length} />
             </section>
           </section>
 
@@ -754,7 +769,7 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
                 {showShort && <p className="pf-hint">{pt(fin.dsraMonths > 0 ? "st_short_dsra_h" : "st_short_h", lang)}</p>}
                 <div className="pf-scroll">
                   <table className="pf-t">
-                    <thead><tr><th>{pt("st_case", lang)}</th><th className="r">{pt("col_dscr", lang)}</th><th className="r">{pt("col_irr", lang)}</th><th className="r">{pt("col_npv", lang)}</th><th className="r">{pt("st_dnpv", lang)}</th>
+                    <thead><tr><th>{pt("st_case", lang)}</th><th className="r">{pt("col_dscr", lang)}</th><th className="r">{pt("col_irr", lang)}</th><th className="r">{pt("k_eirr", lang)}</th><th className="r">{pt("col_npv", lang)}</th><th className="r">{pt("st_dnpv", lang)}</th>
                       {showShort && <th className="r" title={pt(fin.dsraMonths > 0 ? "st_short_dsra_h" : "st_short_h", lang)}>{pt(fin.dsraMonths > 0 ? "st_short_dsra" : "st_short", lang)}</th>}</tr></thead>
                     <tbody>
                       {suite.map((s) => {
@@ -762,9 +777,10 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
                         const span = Math.max(1, ...suite.map((x) => Math.abs(x.agg.npv - suite[0].agg.npv)));
                         return (
                           <tr key={s.id}>
-                            <td>{caseLabel(s.id, lang, market)}</td>
+                            <td>{caseLabel(s.id, lang, market)}{caseNote(s, suite[0], lang) && <small className="pf-hint">{caseNote(s, suite[0], lang)}</small>}</td>
                             <td className={"r t-" + dscrTone(s.agg.dscrMin)}>{fd(s.agg.dscrMin)}</td>
                             <td className="r">{fp(s.agg.irr)}</td>
+                            <td className="r">{fp(s.agg.equityIrr)}</td>
                             <td className="r">{money.full(s.agg.npv)}</td>
                             <td className="r pf-delta">{s.id === "base" ? "" : <span className="pf-dwrap"><span className="pf-dtrack" aria-hidden="true"><span className="pf-dbar" style={{ width: Math.min(100, (Math.abs(d) / span) * 100) + "%" }} /></span><b>{d >= 0 ? "+" : "−"}{money.full(Math.abs(d))}</b></span>}</td>
                             {showShort && <td className={"r" + (s.agg.shortfallEur > 0.5 ? " t-bad" : "")}>{money.full(s.agg.shortfallEur || 0)}</td>}

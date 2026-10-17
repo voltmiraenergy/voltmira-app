@@ -27,6 +27,7 @@ import { CashflowSVG, MonthlySVG, CHART } from "./charts.jsx";
 import { ppt, yearsN } from "./text.js";
 import { Moon, Scale, Snowflake, ThermometerSun, TriangleAlert } from "lucide-react";
 import UaSection from "./UaSection.jsx";
+import RoofSatellite from "../../../components/RoofSatellite.jsx";
 
 // Per-market export data (same table as the demo's MARKETS).
 const MKT = {
@@ -231,7 +232,7 @@ const CSS = `
   }
 `;
 
-export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, acceptUrl = "", fx = null }) {
+export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, acceptUrl = "", fx = null }) {
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
   // Minus ahead of the currency symbol: "€-31" reads as a broken string.
   // Lei for a Moldovan installer at the rate frozen with the proposal, with
@@ -330,7 +331,6 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   const mktLine = t("market_" + (inputs.market || "RO").toLowerCase(), lang);
   const who = [inputs.client ? tr("pdf2_for", { c: inputs.client }) : "", inputs.address || ""].filter(Boolean).join(", ");
   const hasLogo = company.logoUrl && /^(https?:\/\/|data:image\/)/i.test(company.logoUrl);
-  const acceptShort = acceptUrl.replace(/^https?:\/\//, "");
 
   let n = 0;
   const num = () => ++n;
@@ -419,7 +419,20 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
               </>
             )}
           </tbody></table>
-          {hasRoof && (
+          {/* the real roof from above when the offer carries its position;
+              offers sent before that keep the plain drawing */}
+          {roofPhoto ? (
+            <div className="p-roof">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={roofPhoto} alt="" style={{ display: "block", width: "100%", maxWidth: 680, borderRadius: 10 }} />
+              <small>{tr("pdf_roof_photo_note")}</small>
+            </div>
+          ) : roofSat ? (
+            <div className="p-roof">
+              <RoofSatellite roof={roofSat} />
+              <small>{tr("pdf_roof_sat_note", { n: roofSat.quoted || roofSat.planes.reduce((s, pl) => s + pl.panels.length, 0) })}</small>
+            </div>
+          ) : hasRoof && (
             <div className="p-roof">
               <RoofSnapshotSVG planes={roofPlanes} />
               <small>{tr("pdf_roof_snap_note", { n: roofPlanes.reduce((s, pl) => s + pl.panels.length, 0) })}</small>
@@ -530,14 +543,6 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
           <li>{ppt("step3", lang)}</li>
           <li>{ppt("step4", lang)}</li>
         </ol>
-        {acceptShort && (
-          <div className="p-cta">
-            {ppt("pdf_go", lang, { url: "" })}<b>{acceptShort}</b>
-            {preparedBy?.name && preparedBy?.phone ? <> {ppt("pdf_call", lang, { who: preparedBy.name, phone: preparedBy.phone })}</> : "."}
-          </div>
-        )}
-        {/* From 3 up: "1 system installed" undersells a new installer. */}
-        {company.wonCount >= 3 && <div className="p-proof">{tr("pdf_installed", { n: company.wonCount, co: company.name })}</div>}
         {fit.length === 0 && <p className="p-eco">{co2(tr("pdf2_eco", { kg: Math.round(co2Year).toLocaleString(loc), t: trees }))}</p>}
       </section>
 

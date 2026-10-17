@@ -10,6 +10,7 @@
 // Money is read from the same per-job pay record the Payments tool edits, so
 // "collected" and "to collect" here always match what that screen says.
 // Preview-only like the rest of Studio: all of it lives in this browser.
+import { aiOn } from "../../../lib/featureFlags.js";
 import "../dx.css";
 import "./hub.css";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -21,6 +22,7 @@ import {
   useStudioJobs, STAGES, jobProgress, jobMoneySummary, newJobId, useFmt,
 } from "./studio-kit.jsx";
 import { useStudioSync } from "./studio-sync.js";
+import { NEW_JOB } from "./jobs-data.js";
 
 const T = {
   title: { en: "Studio", ro: "Studio", ru: "Studio", uk: "Studio" },
@@ -108,8 +110,8 @@ const TOOLS = [
     desc: { en: "Every handed-over system against its promised P50", ro: "Fiecare sistem predat față de P50-ul promis", ru: "Каждая система против обещанного P50", uk: "Кожна система проти обіцяного P50" } },
   { slug: "bankability", name: { en: "P50 / P90 export", ro: "Export P50 / P90", ru: "Экспорт P50 / P90", uk: "Експорт P50 / P90" },
     desc: { en: "The yield assessment a lender asks for", ro: "Evaluarea producției cerută de un finanțator", ru: "Оценка выработки для кредитора", uk: "Оцінка генерації для кредитора" } },
-  { slug: "lead-widget", name: { en: "Calculator widget", ro: "Widget calculator", ru: "Виджет-калькулятор", uk: "Віджет-калькулятор" },
-    desc: { en: "The public estimate that fills your Leads", ro: "Estimarea publică ce îți umple lead-urile", ru: "Публичный расчёт, который приносит заявки", uk: "Публічний розрахунок, який приносить заявки" } },
+  ...(aiOn() ? [{ slug: "lead-widget", name: { en: "Calculator widget", ro: "Widget calculator", ru: "Виджет-калькулятор", uk: "Віджет-калькулятор" },
+    desc: { en: "The public estimate that fills your Leads", ro: "Estimarea publică ce îți umple lead-urile", ru: "Публичный расчёт, который приносит заявки", uk: "Публічний розрахунок, який приносить заявки" } }] : []),
 ];
 
 const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ""));
@@ -280,7 +282,7 @@ export default function StudioOverview() {
                     <div className="sx-job-top">
                       <span className="sx-avatar" aria-hidden="true">{initials(job.name)}</span>
                       <span className="sx-job-id">
-                        <b>{job.name || "—"}</b>
+                        <b>{job.name || t(NEW_JOB)}</b>
                         <small>{String(job.address || "").split(",").slice(0, 2).join(",").trim() || "—"}</small>
                       </span>
                       <span className={"pv-stage " + progress.meta.chip}>{progress.meta.label[lang] || progress.meta.label.en}</span>

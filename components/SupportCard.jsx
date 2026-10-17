@@ -11,10 +11,10 @@
 //
 // The client type is stored on the quote (projects.client_kind) through a
 // server action; until supabase/add-client-kind.sql runs it still works for
-// this visit and says it is not saved. The insulation answer and a typed loan
-// are what-ifs for the installer, kept in this browser only.
+// this visit and says it is not saved. A typed loan is a what-if for the
+// installer, kept on this screen only.
 import "./support.css";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { supportFor, CLIENT_KINDS } from "../lib/greenSupport.js";
 import { setClientKind } from "../lib/greenActions.js";
 import { PROGRAMS } from "../lib/greenData.js";
@@ -24,26 +24,13 @@ import { fmtDate } from "../lib/tz.js";
 import { LOCALE } from "../lib/relTime.js";
 
 const prog = (id) => PROGRAMS.find((p) => p.id === id);
-const INS_KEY = (id) => `vm_ins_${id}`;
 
 export default function SupportCard({ projectId, lang = "en", market, costEur = 0, batteryEur = 0, vatRatePct = 0, fx = null, initialKind = null }) {
   const [kind, setKind] = useState(CLIENT_KINDS.includes(initialKind) ? initialKind : null);
-  const [insulated, setInsulated] = useState(null);
   const [loan, setLoan] = useState("");
   const [note, setNote] = useState(null);
   const [pending, start] = useTransition();
 
-  // the insulation answer is remembered per quote in this browser
-  useEffect(() => {
-    try {
-      const v = localStorage.getItem(INS_KEY(projectId));
-      if (v === "1" || v === "0") setInsulated(v === "1");
-    } catch { /* private window: ask again */ }
-  }, [projectId]);
-  const answer = (v) => {
-    setInsulated(v);
-    try { localStorage.setItem(INS_KEY(projectId), v ? "1" : "0"); } catch { /* not remembered */ }
-  };
 
   // lei, the currency the programmes are set in: the quote's EUR converts at
   // the workspace's live rate once, and amounts already in lei are printed as
@@ -54,7 +41,7 @@ export default function SupportCard({ projectId, lang = "en", market, costEur = 
 
   const r = supportFor({
     market, clientKind: kind, costMdl: costEur * rate, batteryMdl: batteryEur * rate,
-    vatRatePct, insulated, loanMdl,
+    vatRatePct, loanMdl,
   });
   if (!r.market) return null;
 
@@ -76,23 +63,6 @@ export default function SupportCard({ projectId, lang = "en", market, costEur = 
   function body(it) {
     const p = prog(it.id);
     switch (it.id) {
-      case "casa_verde":
-        return (
-          <>
-            <p>{et("cv_line", lang, { pct: it.sharePct, cap: L(it.capMdl) })}</p>
-            {it.capped && it.state !== "blocked" && <p className="spc-dim">{et("cv_capped", lang, { half: L(it.halfMdl) })}</p>}
-            <div className="spc-q">
-              <span>{et("ins_q", lang)}</span>
-              <div className="seg2 spc-seg" role="group" aria-label={et("ins_q", lang)}>
-                <button type="button" className={insulated === true ? "on" : ""} aria-pressed={insulated === true} onClick={() => answer(true)}>{et("ins_yes", lang)}</button>
-                <button type="button" className={insulated === false ? "on" : ""} aria-pressed={insulated === false} onClick={() => answer(false)}>{et("ins_no", lang)}</button>
-              </div>
-            </div>
-            {it.state === "conditional" && <p className="spc-dim">{et("cv_ins_unknown", lang)}</p>}
-            {it.state === "blocked" && <p className="spc-warn">{et("cv_ins_no", lang)}</p>}
-            {it.state !== "blocked" && <p className="spc-dim">{et("cv_pays", lang, { x: L(it.clientPaysMdl) })}</p>}
-          </>
-        );
       case "law112_vat":
         return it.state === "none_on_invoice"
           ? <p className="spc-dim">{et("vat_zero", lang)}</p>
@@ -122,7 +92,6 @@ export default function SupportCard({ projectId, lang = "en", market, costEur = 
   }
 
   function amount(it) {
-    if (it.id === "casa_verde") return it.state === "blocked" ? null : L(it.amountMdl);
     if (it.id === "law112_vat") return it.state === "none_on_invoice" ? null : L(it.amountMdl);
     if (it.id === "facem_373") return et("upto", lang, { x: L(it.upToMdl) });
     if (it.id === "bess_guarantee") return it.amountMdl > 0 ? <>{L(it.amountMdl)} <small>{et("guaranteed", lang)}</small></> : null;
@@ -152,9 +121,7 @@ export default function SupportCard({ projectId, lang = "en", market, costEur = 
         <>
           {r.hint && (
             <p className="spc-hint">
-              {r.hint.id === "add_battery"
-                ? et("hint_add_battery", lang, { pct: r.hint.sharePct, cap: L(r.hint.capMdl) })
-                : et("hint_battery_programmes", lang)}
+              {et("hint_battery_programmes", lang)}
             </p>
           )}
           {r.items.length > 0 && (

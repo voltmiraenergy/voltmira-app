@@ -62,3 +62,31 @@
   .app .gf-when, .app .gf-mark { grid-column: 2; justify-self: start; }
   .app .gf-mark { min-height: 38px; }
 }
+
+/* the applicant's details (GridDetails.jsx) */
+.app .gd { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); }
+.app .gd-head b { display: block; font-size: 14px; }
+.app .gd-head small { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
+.app .gd-seg { margin-top: 0; max-width: 420px; }
+.app .gd-seg button { padding: 7px 10px; font-size: 13px; }
+.app .gd-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+.app .gd-f { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.app .gd-f > span { font-size: 12px; font-weight: 600; color: var(--ink); }
+.app .gd-f small { font-size: 11.5px; color: var(--muted); }
+.app .gd-f .input { width: 100%; }
+.app .gd-f .input.gd-miss { border-color: color-mix(in srgb, var(--amber) 65%, var(--line)); }
+.app .gd-recv { display: flex; flex-direction: column; gap: 6px; }
+.app .gd-recv > span { font-size: 12px; font-weight: 600; }
+.app .gd-state { margin: 0; font-size: 12.5px; color: var(--green); font-weight: 600; }
+.app .gd-state.warn { color: var(--amber-ink, #955F0B); }
+.app .gd-acts { display: flex; gap: 8px; }
+.app .gd-sum { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); font-size: 13px; }
+.app .gd-sum > svg { color: var(--green); flex: none; }
+.app .gd-sum span { flex: 1; min-width: 0; }
+.app .gd-sum small { display: block; font-size: 11.5px; color: var(--muted); }
+.app .gd-sum .btn { display: inline-flex; gap: 6px; align-items: center; flex: none; }
+.app .gd-sum { flex-wrap: wrap; }
+.app .gd-sum.warn { border-color: color-mix(in srgb, var(--amber) 55%, var(--line)); }
+.app .gd-sum.warn > svg { color: var(--amber); }
+.app .gd-sum.warn small { color: var(--ink); }
+@media (max-width: 640px) { .app .gd-grid { grid-template-columns: minmax(0, 1fr); } }

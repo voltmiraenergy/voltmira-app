@@ -265,8 +265,34 @@ const CSS = `
   .email-msg.bad{color:var(--red)}
 
   /* no signal (OfflineReady.jsx): a plain strip, no dot, no motion */
+  .offline-bar .offline-waiting{display:block;margin-top:2px}
   .offline-bar{margin-bottom:14px;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.45;color:var(--ink);
     background:var(--paper-2);border:1px solid var(--line)}
+  /* a quote drafted with no signal (app/(app)/projects/draft) */
+  .dr-form{display:grid;gap:12px}
+  .dr-form .field{display:grid;gap:5px}
+  .dr-form .field span{font-size:13px;font-weight:600;color:var(--muted)}
+  .dr-saved{margin:0;font-size:12.5px;color:var(--muted)}
+  .dr-msg{margin:0;font-size:13px;color:var(--amber)}
+  /* a long page folded on a phone (components/FoldColumn.jsx) */
+  .fold-wrap{display:grid;gap:6px}
+  .fold-wrap:has(> .fold-body:empty){display:none}
+  .fold-body.closed{overflow:hidden;position:relative;border-radius:16px}
+  .fold-body.closed::after{content:"";position:absolute;inset:auto 0 0 0;height:64px;pointer-events:none;
+    background:linear-gradient(to bottom,transparent,var(--paper))}
+  .fold-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:6px 14px;
+    border:1px solid var(--line);border-radius:10px;background:var(--paper-2);color:var(--ink);font:600 13.5px/1 inherit;cursor:pointer}
+  .fold-btn:hover,.fold-btn:focus-visible{border-color:var(--ink)}
+  /* the back bar on inner pages (components/MobileBack.jsx): phones and the installed app only */
+  .m-back{display:none}
+  @media (max-width: 900px){.m-back{display:flex}}
+  .m-back.is-app{display:flex}
+  .main:has(.back-link) .m-back{display:none}
+  .m-back{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;margin:-6px 0 10px;padding:4px 0;
+    background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(6px)}
+  .m-back-btn{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:6px 12px 6px 6px;border:0;border-radius:10px;
+    background:transparent;color:var(--ink);font:600 15px/1 inherit;cursor:pointer}
+  .m-back-btn:hover,.m-back-btn:focus-visible{background:var(--paper-2)}
   .demo-bar{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:18px;
     padding:10px 14px;border-radius:12px;background:var(--amber-tint);
     border:1px solid color-mix(in srgb,var(--amber) 38%,transparent)}

@@ -12,6 +12,8 @@ import {
   useLang, tx, FeatureIcon, ClientBar,
   useStudioJobs, STAGES, jobProgress, jobMoneySummary, readJSON, writeJSON, useFmt,
 } from "../../studio-kit.jsx";
+import { NEW_JOB } from "../../jobs-data.js";
+import QuoteLink from "./QuoteLink.jsx";
 
 const T = {
   back: { en: "All jobs", ro: "Toate lucrările", ru: "Все объекты", uk: "Усі об’єкти" },
@@ -42,10 +44,10 @@ export default function JobHub() {
   const lang = useLang();
   const t = (o) => tx(o, lang);
   const params = useParams();
-  const { jobs, activeId, selectJob, hydrated } = useStudioJobs();
+  const { jobs, activeId, selectJob, hydrated, updateJob } = useStudioJobs();
   const job = jobs.find((j) => j.id === params.id);
 
-  useEffect(() => { document.title = job ? `${job.name} | VoltMira Studio` : "Studio"; }, [job]);
+  useEffect(() => { document.title = job ? `${job.name || t(NEW_JOB)} | VoltMira Studio` : "Studio"; }, [job]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (job && activeId !== job.id) selectJob(job.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,7 +88,7 @@ export default function JobHub() {
         <div className="pv-head-ic"><FeatureIcon slug="overview" size={20} /></div>
         <div className="pv-head-tx">
           <div className="pv-head-t">
-            <h1>{job.name}</h1>
+            <h1>{job.name || t(NEW_JOB)}</h1>
             <span className={"pv-stage " + progress.meta.chip}>{progress.meta.label[lang] || progress.meta.label.en}</span>
           </div>
           <p>{[job.address, `${(+job.kw || 0).toFixed(1)} kW`, job.market, +job.batteryKwh > 0 ? `${job.batteryKwh} kWh` : null].filter(Boolean).join(", ")}</p>
@@ -128,6 +130,9 @@ export default function JobHub() {
           })}
         </div>
       </div>
+
+      {/* the quote this job belongs to (lib/studioLink.js) */}
+      <QuoteLink job={job} lang={lang} onLink={(projectId) => updateJob(job.id, { projectId: projectId || undefined })} />
 
       <div className="pv-panel">
         <h3>{t(T.money)}</h3>

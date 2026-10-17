@@ -17,13 +17,25 @@
  *   - only signed-in app pages are kept: never the client proposal (/p/), the
  *     API, sign-in, the demo or the landing page; a redirect (an expired
  *     session) is never stored;
- *   - signing out deletes everything this worker saved (lib/offline.js).
+ *   - signing out deletes everything this worker saved (lib/offline.js);
+ *   - map tiles: only the Esri tiles a designer asked for around its site
+ *     (lib/tileWarm.js), fetched with CORS (Esri allows any origin) so they
+ *     are stored at their real size, and served from the saved copy first;
+ *     tiles nobody asked for are never stored. Google's never are.
  * Registered from app/(app)/OfflineReady.jsx, in production builds only.
  */
 const PAGES = "vm-pages-v1";
-const STATIC = "vm-static-v1";
+// v2: v1 also kept `next dev` files (same names, new contents), which served
+// old scripts and styles on localhost after a local production run
+const STATIC = "vm-static-v2";
+const TILES = "vm-tiles-v1";
+const TILE_HOST = "server.arcgisonline.com";
+const MAX_TILES = 4000;
 const OFFLINE_URL = "/offline.html";
-const APP = /^\/(dashboard|leads|projects|documents|activity|catalog|settings|team|guide|studio|profile|traction)(\/|$)/;
+// the offline page's script, a file because the policy runs no inline script
+const OFFLINE_JS = "/offline.js";
+const OFFLINE_FILES = [OFFLINE_URL, OFFLINE_JS];
+const APP = /^\/(dashboard|leads|projects|documents|activity|catalog|settings|team|guide|studio|profile|traction|portfolios|energy)(\/|$)/;
 const STATIC_RE = /^\/_next\/static\//;
 const PROJECT_LINK = /href="(\/projects\/[0-9a-f-]{36})"/g;
 const MAX_PAGES = 150;
@@ -34,7 +46,7 @@ const NET_TIMEOUT_MS = 8000;
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(PAGES);
-    await cache.add(new Request(OFFLINE_URL, { cache: "reload" }));
+    await cache.addAll(OFFLINE_FILES.map((u) => new Request(u, { cache: "reload" })));
     await self.skipWaiting();
   })());
 });
@@ -42,7 +54,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     // Anything this origin cached before (the old app's caches included).
-    const keep = [PAGES, STATIC];
+    const keep = [PAGES, STATIC, TILES];
     for (const name of await caches.keys()) if (!keep.includes(name)) await caches.delete(name);
     await self.clients.claim();
   })());
@@ -52,8 +64,10 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  if (url.hostname === TILE_HOST && url.pathname.includes("/tile/")) { event.respondWith(tile(req)); return; }
   if (url.origin !== self.location.origin) return;
   if (STATIC_RE.test(url.pathname)) { event.respondWith(cacheFirst(req)); return; }
+  if (url.pathname === OFFLINE_JS) { event.respondWith(caches.match(OFFLINE_JS).then((hit) => hit || fetch(req))); return; }
   if (req.mode === "navigate" && APP.test(url.pathname)) { event.respondWith(networkFirst(req, url)); return; }
   // Everything else (RSC requests, the API, /p/, sign-in) goes to the network
   // untouched. Offline, a failed in-app link makes Next fall back to a full
@@ -64,9 +78,14 @@ self.addEventListener("message", (event) => {
   const msg = event.data || {};
   if (msg.type === "warm" && Array.isArray(msg.urls)) event.waitUntil(warm(msg.urls));
   if (msg.type === "clear") event.waitUntil(clearAll());
+  if (msg.type === "tiles" && Array.isArray(msg.urls)) event.waitUntil(keepTiles(msg.urls));
 });
 
 const isHtml = (res) => (res.headers.get("content-type") || "").includes("text/html");
+// Only a build's content-hashed files are sent "immutable"; `next dev` sends
+// its chunks "no-cache" under names that stay the same across edits, so those
+// are never kept.
+const isImmutable = (res) => /immutable/i.test(res.headers.get("cache-control") || "");
 const keyOf = (url) => url.origin + url.pathname + url.search;
 
 async function networkFirst(req, url) {
@@ -92,12 +111,37 @@ async function networkFirst(req, url) {
   }
 }
 
+// A map tile: the saved copy when there is one (a designer asked for it),
+// else the network, untouched.
+async function tile(req) {
+  const cache = await caches.open(TILES);
+  const hit = await cache.match(req.url);
+  if (hit) return hit;
+  return fetch(req);
+}
+
+// Save the tiles around a site while there is a signal (lib/tileWarm.js).
+async function keepTiles(urls) {
+  const cache = await caches.open(TILES);
+  for (const u of urls.slice(0, 800)) {
+    let url;
+    try { url = new URL(u); } catch { continue; }
+    if (url.hostname !== TILE_HOST || !url.pathname.includes("/tile/")) continue;
+    if (await cache.match(url.href)) continue;
+    try {
+      const res = await fetch(url.href, { mode: "cors", credentials: "omit" });
+      if (res.ok) await cache.put(url.href, res);
+    } catch { return; } // the signal went: stop quietly
+  }
+  trim(cache, MAX_TILES);
+}
+
 async function cacheFirst(req) {
   const cache = await caches.open(STATIC);
   const hit = await cache.match(req, { ignoreSearch: true });
   if (hit) return hit;
   const res = await fetch(req);
-  if (res.ok && res.type === "basic") {
+  if (res.ok && res.type === "basic" && isImmutable(res)) {
     cache.put(req, res.clone()).then(() => trim(cache, MAX_STATIC));
   }
   return res;
@@ -107,7 +151,7 @@ async function cacheFirst(req) {
 // a signal. The projects list also brings its most recent quotes.
 async function warm(urls) {
   const pages = await caches.open(PAGES);
-  const queue = urls.slice(0, 20);
+  const queue = urls.slice(0, 40);
   const seen = new Set();
   let projects = 0;
   while (queue.length) {
@@ -139,7 +183,7 @@ async function cacheAssets(html) {
     if (await cache.match(path, { ignoreSearch: true })) continue;
     try {
       const res = await fetch(path);
-      if (res.ok) await cache.put(path, res);
+      if (res.ok && isImmutable(res)) await cache.put(path, res);
     } catch { return; }
   }
   trim(cache, MAX_STATIC);
@@ -148,7 +192,7 @@ async function cacheAssets(html) {
 async function trim(cache, max) {
   const keys = await cache.keys();
   for (let i = 0; i < keys.length - max; i++) {
-    if (keys[i].url.endsWith(OFFLINE_URL)) continue;
+    if (OFFLINE_FILES.some((u) => keys[i].url.endsWith(u))) continue;
     await cache.delete(keys[i]);
   }
 }
@@ -157,5 +201,5 @@ async function trim(cache, max) {
 // "no signal" page.
 async function clearAll() {
   for (const name of await caches.keys()) await caches.delete(name);
-  try { await (await caches.open(PAGES)).add(new Request(OFFLINE_URL, { cache: "reload" })); } catch { /* offline */ }
+  try { await (await caches.open(PAGES)).addAll(OFFLINE_FILES.map((u) => new Request(u, { cache: "reload" }))); } catch { /* offline */ }
 }

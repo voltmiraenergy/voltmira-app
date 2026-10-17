@@ -4,8 +4,9 @@
 // second modal visual language. `onUpgrade` is expected to be the same
 // upgrade(plan) checkout call Settings already uses.
 import { t } from "../lib/i18n.js";
+import AppPortal from "./AppPortal.jsx";
 
-export default function UpsellModal({ lang, plan, onClose, onUpgrade }) {
+function UpsellModalSheet({ lang, plan, onClose, onUpgrade }) {
   const planName = plan.charAt(0).toUpperCase() + plan.slice(1);
   return (
     <div className="overlay" onClick={onClose}>
@@ -19,4 +20,9 @@ export default function UpsellModal({ lang, plan, onClose, onUpgrade }) {
       </div>
     </div>
   );
+}
+
+/** Drawn at the app root (components/AppPortal.jsx), so no animated section can trap it. */
+export default function UpsellModal(props) {
+  return <AppPortal><UpsellModalSheet {...props} /></AppPortal>;
 }

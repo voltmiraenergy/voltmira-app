@@ -8,9 +8,12 @@ import { PREVIEW_CSS, PreviewNav, StudioClientProvider, tx } from "./studio-kit.
 import { PREVIEW_BASE } from "./features.js";
 import { hydrate } from "./studio-sync.js";
 
-export default function StudioShell({ lang, children }) {
+export default function StudioShell({ lang, demo = false, children }) {
   // The hub carries its own "Studio" header, so the kicker only shows on the tools.
-  const onHub = (usePathname() || "") === PREVIEW_BASE;
+  const path = usePathname() || "";
+  const onHub = path === PREVIEW_BASE;
+  // a job's pages carry their own breadcrumb (Studio, the job, the step)
+  const onJob = path.startsWith(PREVIEW_BASE + "/jobs/");
   // The tools read their data synchronously from the local cache, so the
   // workspace copy has to be in it before any of them mounts.
   const [ready, setReady] = useState(false);
@@ -28,12 +31,12 @@ export default function StudioShell({ lang, children }) {
     );
   }
   return (
-    <StudioClientProvider>
+    <StudioClientProvider demo={demo}>
       <div className="pv-wrap">
         {/* AppTheme.jsx already defines the palette, so the bundled TOKENS_CSS
             is not re-injected here. */}
         <style dangerouslySetInnerHTML={{ __html: PREVIEW_CSS }} />
-        {!onHub && (
+        {!onHub && !onJob && (
           <div className="pv-topbar">
             <span className="pv-kicker">{tx({
               en: "Studio: client-ready tools",
@@ -43,7 +46,7 @@ export default function StudioShell({ lang, children }) {
             }, lang)}</span>
           </div>
         )}
-        <PreviewNav lang={lang} />
+        {!onJob && <PreviewNav lang={lang} />}
         {children}
       </div>
     </StudioClientProvider>

@@ -81,12 +81,18 @@ export function newJobId() {
 // Loads the job list, migrating the old single-client key in as an extra job
 // (so a returning demo session doesn't lose whatever it had open) the first
 // time this runs after the redesign, then never again.
-export function loadJobsState() {
+export function loadJobsState({ demo = false } = {}) {
   const saved = readJSON(JOBS_KEY, null);
   if (Array.isArray(saved) && saved.length) {
-    return { jobs: saved, activeId: readJSON(ACTIVE_KEY, saved[0].id) };
+    // a real workspace keeps no sample client it never touched (older versions seeded them everywhere)
+    const kept = demo ? saved : pruneUntouchedPresets(saved);
+    const jobs = kept.length ? kept : [blankJob()];
+    if (jobs.length !== saved.length) writeJSON(JOBS_KEY, jobs);
+    const active = readJSON(ACTIVE_KEY, jobs[0].id);
+    return { jobs, activeId: jobs.some((j) => j.id === active) ? active : jobs[0].id };
   }
-  const jobs = CLIENT_PRESETS.map((p) => ({ ...p }));
+  // the four sample clients belong to the demo; a real workspace starts with one blank job of its own
+  const jobs = demo ? CLIENT_PRESETS.map((p) => ({ ...p })) : [blankJob()];
   const legacy = readJSON(OLD_CLIENT_KEY, null);
   if (legacy && legacy.name && !jobs.some((j) => j.name === legacy.name && j.address === legacy.address)) {
     jobs.push({ ...legacy, id: legacy.id && !CLIENT_PRESETS.some((p) => p.id === legacy.id) ? legacy.id : newJobId() });
@@ -94,6 +100,28 @@ export function loadJobsState() {
   writeJSON(JOBS_KEY, jobs);
   return { jobs, activeId: jobs[0].id };
 }
+/** What a job not named yet is called on screen. */
+export const NEW_JOB = { en: "New job", ro: "Lucrare nouă", ru: "Новый объект", uk: "Новий об’єкт" };
+
+/** A new, empty job: the installer fills in the client and the site. */
+export function blankJob(market = "MD") {
+  return { id: newJobId(), name: "", address: "", market, kw: 5, cons: 0, price: 0.185, batteryKwh: 0, phases: 1,
+    panelId: DEFAULT_IDS.panel, inverterId: DEFAULT_IDS.inverter, batteryId: DEFAULT_IDS.battery, mountId: DEFAULT_IDS.mount };
+}
+
+/**
+ * The jobs without the sample clients nobody touched: a preset is dropped only
+ * when it is exactly as shipped and has no install, readings, payments or
+ * tickets saved, so nothing an installer entered is ever lost.
+ */
+export function pruneUntouchedPresets(jobs, hasData = (id) => [installKey, actualsKey, payKey, ticketsKey].some((k) => readJSON(k(id), null) != null)) {
+  const same = (a, b) => JSON.stringify(Object.keys(b).sort().map((k) => [k, b[k]])) === JSON.stringify(Object.keys(a).sort().map((k) => [k, a[k]]));
+  return jobs.filter((j) => {
+    const preset = CLIENT_PRESETS.find((p) => p.id === j.id);
+    return !(preset && same(j, preset) && !hasData(j.id));
+  });
+}
+
 export function saveJobsState(jobs, activeId) {
   writeJSON(JOBS_KEY, jobs);
   if (activeId) writeJSON(ACTIVE_KEY, activeId);

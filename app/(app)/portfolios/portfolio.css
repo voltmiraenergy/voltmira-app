@@ -20,6 +20,7 @@ html[data-theme="dark"] .app .pf { --pf-a: #2BA170; --pf-b: #C4851A; --pf-c: #4C
 .app .pf-warn { color: var(--pf-warn); font-weight: 600; }
 .app .pf-note { padding: 10px 14px; border-radius: 11px; background: var(--amber-tint); color: var(--pf-warn); }
 .app .pf-hint { display: block; font-size: 12px; color: var(--muted); line-height: 1.45; margin-top: 4px; max-width: 70ch; }
+.app .pf-hint.warn { color: var(--amber); }
 .app .pf-dim { color: var(--muted); }
 .app .pf-lbl { font-size: 12.5px; font-weight: 600; color: var(--muted); }
 
@@ -157,6 +158,17 @@ html[data-theme="dark"] .app .pf { --pf-a: #2BA170; --pf-b: #C4851A; --pf-c: #4C
 .app .pf-col { fill: var(--pf-a); transition: opacity .12s; }
 .app .pf-col.on { opacity: .8; }
 .app .pf-line { stroke: var(--pf-b); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.app .pf-ds-mark { stroke: var(--pf-b); stroke-width: 3; stroke-linecap: round; }
+.app .pf-k-mark { height: 3px; }
+.app .pf-cov { font-size: 10px; }
+.app .pf-cov.bad { fill: var(--pf-bad); font-weight: 700; }
+.app .pf-cov-l { font-weight: 600; }
+.app .pf-ev-l { stroke: color-mix(in srgb, var(--ink) 30%, var(--line)); stroke-width: 1; stroke-dasharray: 3 3; }
+.app .pf-ev-c { fill: var(--paper-2); stroke: var(--ink); stroke-width: 1.2; }
+.app .pf-ev-n { fill: var(--ink); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.app .pf-evs { margin: 10px 0 0; padding-left: 22px; display: grid; gap: 3px; font-size: 12.5px; color: var(--ink); line-height: 1.45; }
+.app .pf-evs li::marker { font-weight: 700; font-variant-numeric: tabular-nums; }
+.app .pf-tip .pf-tip-ev { white-space: normal; max-width: 280px; }
 .app .pf-hit { fill: transparent; outline: none; }
 .app .pf-hit:hover, .app .pf-hit:focus-visible { fill: color-mix(in srgb, var(--ink) 5%, transparent); }
 .app .pf-tip { position: absolute; top: 0; transform: translateX(-50%); pointer-events: none; z-index: 2; background: var(--paper-2); border: 1px solid var(--line);
@@ -380,7 +392,10 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 .app .pf-check input:checked ~ .toggle-pill { background: var(--green); }
 .app .pf-check input:checked ~ .toggle-pill::after { transform: translateX(18px); }
 .app .pf-check input:focus-visible ~ .toggle-pill { outline: 2px solid var(--amber); outline-offset: 2px; }
-.app .pf-ts { margin-top: 14px; }
+.app .pf-ts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: 12px; font-size: 13px; color: var(--ink); cursor: pointer; }
+.app .pf-ts input { width: 16px; height: 16px; accent-color: var(--green); align-self: center; margin: 0; }
+.app .pf-ts span { font-weight: 600; }
+.app .pf-ts small { flex-basis: 100%; padding-left: 26px; font-size: 11.5px; color: var(--muted); }
 @media (max-width: 1100px) {
   .app .pf-charts { grid-template-columns: minmax(0, 1fr); }
 }

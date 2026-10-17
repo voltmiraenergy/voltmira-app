@@ -8,19 +8,94 @@
 // code filtering (RLS stays closed to anonymous users).
 
 import { NextResponse } from "next/server";
+import { nt, CALL_TIMES } from "../../../../lib/notifyText.js";
 import { cnedEnabled } from "../../../../lib/cnedData.js";
 import { isCnedQualified } from "../../../../lib/cnedInstallers.js";
-import { supabaseAdmin } from "../../../../lib/supabase.js";
+import { supabaseAdmin, supabaseServer } from "../../../../lib/supabase.js";
 import { escapeHtml } from "../../../../lib/safe.js";
 import { logActivity } from "../../../../lib/activity.js";
 import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
-import { sendEmail, proposalOpenedEmail, emailConfigured } from "../../../../lib/email.js";
+import { sendEmail, proposalOpenedEmail, emailConfigured, ownerAlertEmail } from "../../../../lib/email.js";
 import { sendCrmWebhook } from "../../../../lib/crmWebhook.js";
-import { quote } from "@voltmira/engine";
+import { openNow } from "../../../../lib/openDigest.js";
+import { quote, SOLAR_SEASON } from "@voltmira/engine";
+import { journeySteps, nextStep, productionSeries, journeyFacts } from "../../../../lib/clientJourney.js";
 import { snapshotEngine } from "../../../../lib/engineSettings.js";
 import { bomHasBattery } from "../../../../lib/quoteInput.js";
 import { loadOffers, offerFigures, acceptOffers } from "../../../../lib/proposalOffers.js";
 import { effectiveOfferCurrency } from "../../../../lib/offerCurrency.js";
+
+/**
+ * Email the company owner that a client asked for a call. Never breaks the
+ * request: a missing email setup only means no email.
+ */
+async function notifyCallRequested(db, prop, { who, title, phone, when, lang }) {
+  try {
+    if (!emailConfigured()) return;
+    const [{ data: co }, { data: owner }] = await Promise.all([
+      db.from("companies").select("*").eq("id", prop.company_id).single(),
+      db.from("profiles").select("email").eq("company_id", prop.company_id)
+        .eq("role", "owner").not("email", "eq", "").limit(1).single(),
+    ]);
+    // the call alert has its own switch once add-notify-more.sql has run; until then it is on
+    if (co && co.notify_calls === false) return;
+    if (!owner?.email) return;
+    const { html } = ownerAlertEmail({
+      lang, kicker: nt("call_kicker", lang), heading: nt("call_heading", lang, { client: who, title }),
+      rows: [[nt("call_phone", lang), phone || nt("no_phone", lang)], [nt("call_when", lang), nt("when_" + when, lang)]],
+      lead: nt("call_lead", lang), cta: { label: nt("call_cta", lang), href: `/projects/${prop.project_id}` },
+      foot: nt("foot", lang), appUrl: process.env.NEXT_PUBLIC_APP_URL,
+    });
+    await sendEmail({ to: owner.email, subject: nt("call_subject", lang, { client: who }), html });
+  } catch (err) {
+    console.error("call-request notify failed", err?.message);
+  }
+}
+
+/**
+ * Email the company owner that a client accepted the offer online. Never
+ * breaks the acceptance: a missing email setup only means no email.
+ */
+async function notifyAccepted(db, prop, { who, title, signer, pct }) {
+  try {
+    if (!emailConfigured()) return;
+    const [{ data: co }, { data: owner }] = await Promise.all([
+      db.from("companies").select("*").eq("id", prop.company_id).single(),
+      db.from("profiles").select("email").eq("company_id", prop.company_id)
+        .eq("role", "owner").not("email", "eq", "").limit(1).single(),
+    ]);
+    // its own switch once add-notify-more.sql has run; until then it is on
+    if (!co || co.notify_accepted === false || !owner?.email) return;
+    const lang = co.lang || "ro";
+    const loc = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "ro-RO";
+    const when = new Date().toLocaleString(loc, { timeZone: "Europe/Chisinau", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+    const { html } = ownerAlertEmail({
+      lang, kicker: nt("acc_kicker", lang), heading: nt("acc_heading", lang, { client: who, title }),
+      rows: [[nt("acc_signer", lang), signer || who], [nt("acc_when", lang), when], ...(pct ? [[nt("acc_discount", lang), `${pct}%`]] : [])],
+      lead: nt("acc_lead", lang), cta: { label: nt("acc_cta", lang), href: `/projects/${prop.project_id}` },
+      foot: nt("foot", lang), appUrl: process.env.NEXT_PUBLIC_APP_URL,
+    });
+    await sendEmail({ to: owner.email, subject: nt("acc_subject", lang, { client: who }), html });
+  } catch (err) {
+    console.error("accept notify failed", err?.message);
+  }
+}
+
+/**
+ * The installer looking at their own offer (signed in to the company that
+ * sent it): not a client's view, so it is neither counted nor emailed about.
+ */
+async function isOwnView(db, companyId) {
+  try {
+    const sb = await supabaseServer();
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return false;
+    const { data: me } = await db.from("profiles").select("company_id").eq("id", user.id).maybeSingle();
+    return !!me && me.company_id === companyId;
+  } catch {
+    return false;
+  }
+}
 
 /** One email per proposal per this window, no matter how many opens. */
 const NOTIFY_THROTTLE_MS = 4 * 60 * 60 * 1000;
@@ -32,6 +107,9 @@ const NOTIFY_THROTTLE_MS = 4 * 60 * 60 * 1000;
 async function notifyProposalOpened(db, prop) {
   try {
     if (!emailConfigured()) return;
+    // the morning email (lib/openDigest.js) takes it when the company chose one, or in quiet hours
+    const { data: pref } = await db.from("companies").select("*").eq("id", prop.company_id).maybeSingle();
+    if (!openNow(pref)) return;
 
     // Throttle check + claim in one update: only proceed if we win the row.
     const cutoff = new Date(Date.now() - NOTIFY_THROTTLE_MS).toISOString();
@@ -144,9 +222,25 @@ export async function GET(req, props) {
     cned = { raionLine: prop.snapshot?.raionLine || null, qualified: isCnedQualified(reg?.reg_no) };
   }
 
+  // after signing, the client's own page: the installation's steps and the
+  // system's production against the offer (lib/clientJourney.js)
+  let after = null;
+  if (prop.accepted_at) {
+    const [{ data: pj }, { data: reads }] = await Promise.all([
+      db.from("projects").select("install_progress").eq("id", prop.project_id).maybeSingle(),
+      db.from("production_readings").select("month, kwh").eq("project_id", prop.project_id).order("month", { ascending: false }).limit(24),
+    ]);
+    const steps = journeySteps({ signedAt: prop.accepted_at, progress: pj?.install_progress });
+    const shape = Array.isArray(prop.snapshot?.monthlyYieldShape) && prop.snapshot.monthlyYieldShape.length === 12 ? prop.snapshot.monthlyYieldShape : SOLAR_SEASON;
+    const prod0 = Number(q.e.solar0) || Number(q.e.prod0) || 0;
+    const production = productionSeries(reads || [], prod0, shape);
+    after = { steps, next: nextStep(steps), production, facts: journeyFacts(steps, production, { year1: q.e.year1, prod0 }) };
+  }
+
   return NextResponse.json({
     code: prop.code,
     accepted: !!prop.accepted_at,
+    after,
     // proof-of-signing only (name + timestamp). The drawn signature IMAGE is
     // sensitive and NOT returned on this public link — the installer views it
     // from their authenticated pipeline.
@@ -232,6 +326,8 @@ export async function GET(req, props) {
     // rectangles, already projected to local meters) — undefined on any
     // proposal made before this existed or where nothing was ever drawn.
     roofPlanes: Array.isArray(prop.snapshot.roofPlanes) ? prop.snapshot.roofPlanes : undefined,
+    roofSat: prop.snapshot.roofSat && Array.isArray(prop.snapshot.roofSat.planes) ? prop.snapshot.roofSat : undefined,
+    roofPhoto: /^https:\/\//.test(String(prop.snapshot.roofPhoto || "")) ? prop.snapshot.roofPhoto : undefined,
   });
 }
 
@@ -260,6 +356,11 @@ export async function POST(req, props) {
     const src = set.includes(body.source) ? body.source : "other";
     await db.from("projects").update({ referral_source: src }).eq("id", prop.project_id);
     return NextResponse.json({ ok: true });
+  }
+
+  // the installer previewing their own offer is not the client reading it
+  if (["open", "heartbeat", "toggle_batt"].includes(kind) && await isOwnView(db, prop.company_id)) {
+    return NextResponse.json({ ok: true, own: true });
   }
 
   const seconds = Math.max(0, Math.min(3600, parseInt(body.seconds || 0, 10) || 0));
@@ -341,22 +442,48 @@ export async function POST(req, props) {
         : `<b>${escapeHtml(who)}</b> accepted your proposal`,
       link: `/projects/${prop.project_id}`,
     });
+    await notifyAccepted(db, prop, { who, title: proj?.title || prop.code, signer: signerName, pct });
+    await sendCrmWebhook(prop.company_id, "proposal.won", { projectId: prop.project_id, title: proj?.title || "", client_name: proj?.client_name || "", via: "client" });
   }
   if (kind === "request") {
-    const { data: proj } = await db.from("projects").select("title, client_name").eq("id", prop.project_id).single();
-    await db.from("leads").insert({
-      company_id: prop.company_id, project_id: prop.project_id,
-      name: (proj?.client_name || "Client via proposal").slice(0, 120),
-      note: `Requested the quote for \u201C${(proj?.title || prop.code).slice(0, 200)}\u201D`,
-      hot: true, source: "proposal",
-    });
+    // A call request: one per offer per day (a second tap only updates the
+    // phone and time), a hot lead, an Activity line, an email to the owner and
+    // the CRM webhook. Any write that fails answers an error, so the client
+    // never reads "sent" for a request that went nowhere.
+    const phone = String(body.phone || "").replace(/[^\d+()\s-]/g, "").trim().slice(0, 30);
+    const when = CALL_TIMES.includes(body.when) ? body.when : "any";
+    const { data: proj } = await db.from("projects").select("title, client_name, client_email").eq("id", prop.project_id).single();
     const rawReqTitle = (proj?.title || prop.code).slice(0, 200);
-    await logActivity(db, {
-      companyId: prop.company_id, kind: "lead", key: "act_quote_requested",
-      params: { b: rawReqTitle },
-      text: `Client requested the quote for <b>${escapeHtml(rawReqTitle)}</b>`,
-      link: `/projects/${prop.project_id}`,
-    });
+    const who = (proj?.client_name || "Client").slice(0, 120);
+    const { data: co } = await db.from("companies").select("lang").eq("id", prop.company_id).maybeSingle();
+    const lang = co?.lang || "ro";
+    const note = `${nt("call_kicker", lang)}: ${rawReqTitle}. ${nt("call_when", lang)}: ${nt("when_" + when, lang)}`;
+    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const { data: open } = await db.from("leads").select("id").eq("project_id", prop.project_id)
+      .eq("source", "proposal").gte("created_at", since).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const write = open
+      ? await db.from("leads").update({ ...(phone ? { phone } : {}), note, hot: true }).eq("id", open.id)
+      : await db.from("leads").insert({
+        company_id: prop.company_id, project_id: prop.project_id, name: who,
+        email: proj?.client_email || "", phone, note, hot: true, source: "proposal",
+      });
+    if (write.error) {
+      console.error("[proposal] call request not saved:", write.error.message);
+      return NextResponse.json({ error: "save_failed" }, { status: 500 });
+    }
+    if (!open) {
+      await logActivity(db, {
+        companyId: prop.company_id, kind: "lead", key: "act_call_requested",
+        params: { b: who, title: rawReqTitle },
+        text: `<b>${escapeHtml(who)}</b> asked for a call about <b>${escapeHtml(rawReqTitle)}</b>`,
+        link: `/projects/${prop.project_id}`,
+      });
+      await sendCrmWebhook(prop.company_id, "lead.created", {
+        project_id: prop.project_id, name: who, phone, email: proj?.client_email || "", source: "call_request", best_time: when, title: rawReqTitle,
+      });
+      await notifyCallRequested(db, prop, { who, title: rawReqTitle, phone, when, lang });
+    }
+    return NextResponse.json({ ok: true, again: !!open });
   }
 
   return NextResponse.json({ ok: true });

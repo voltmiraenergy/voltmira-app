@@ -18,6 +18,7 @@ import { openCheckout, yearlyReady } from "../../../lib/paddle.js";
 import { cr } from "../../../lib/creditsText.js";
 import { creditsPreview } from "../../../lib/creditsPreview.js";
 import { saveCompany, seedSampleData, clearSampleData, getMyRole } from "../../../lib/actions.js";
+import { sendTestEmail, testWebhook } from "../../../lib/notifyTest.js";
 import { defaultEngineSettings } from "@voltmira/engine";
 import { t, normLang, LANGS, LANG_NAMES } from "../../../lib/i18n.js";
 import { dlt } from "../../../lib/deadlineText.js";
@@ -28,12 +29,14 @@ import LeadAssistant from "./LeadAssistant.jsx";
 import MonitoringBill from "./MonitoringBill.jsx";
 import CreditsPanel from "./CreditsPanel.jsx";
 import { clearOfflineData } from "../../../lib/offline.js";
+import { aiOn } from "../../../lib/featureFlags.js";
 
+// the assistants and the website widget are hidden until AI is switched on (lib/featureFlags.js)
 const TABS = [
   { id: "company", Icon: Building2, label: "st_tab_company", hint: "st_tab_company_h" },
   { id: "documents", Icon: Receipt, label: "st_tab_docs", hint: "st_tab_docs_h" },
   { id: "calculations", Icon: Calculator, label: "st_tab_calc", hint: "st_tab_calc_h" },
-  { id: "assistants", Icon: Bot, label: "st_tab_ai", hint: "st_tab_ai_h" },
+  ...(aiOn() ? [{ id: "assistants", Icon: Bot, label: "st_tab_ai", hint: "st_tab_ai_h" }] : []),
   { id: "notifications", Icon: Bell, label: "st_tab_alerts", hint: "st_tab_alerts_h" },
   { id: "plan", Icon: CreditCard, label: "st_tab_plan", hint: "st_tab_plan_h" },
 ];
@@ -80,6 +83,40 @@ function Toggle({ checked, onChange, title, note }) {
   );
 }
 
+/** "Send me a test" under an email toggle (lib/notifyTest.js): says what was sent, or why it could not be. */
+function TestEmail({ kind, lang }) {
+  const [state, setState] = useState(null);
+  const run = async () => {
+    setState({ busy: true });
+    const r = await sendTestEmail(kind).catch(() => ({ ok: false, reason: "send", code: "network" }));
+    setState(r.ok ? { ok: true, text: t("nt_sent", lang, { to: r.to }) }
+      : { ok: false, text: t(r.reason === "no_key" ? "nt_no_key" : r.reason === "no_email" ? "nt_no_email" : r.reason === "demo" ? "nt_demo" : r.reason === "domain" ? "nt_domain" : r.reason === "rate" ? "nt_rate" : "nt_failed", lang, { code: r.code || r.reason }) });
+  };
+  return (
+    <div className="st-test">
+      <button type="button" className="btn ghost sm" onClick={run} disabled={state?.busy}>{state?.busy ? t("nt_testing", lang) : t("nt_test", lang)}</button>
+      {state?.text && <span className={"st-test-msg " + (state.ok ? "ok" : "bad")} role="status">{state.text}</span>}
+    </div>
+  );
+}
+
+/** A test event to the CRM webhook, with the URL's own answer. */
+function TestWebhook({ lang }) {
+  const [state, setState] = useState(null);
+  const run = async () => {
+    setState({ busy: true });
+    const r = await testWebhook().catch(() => ({ ok: false, reason: "network" }));
+    const key = r.ok ? "wh_ok" : r.reason === "http" ? "wh_http" : r.reason === "timeout" ? "wh_timeout" : r.reason === "off" ? "wh_off" : r.reason === "rate" ? "nt_rate" : "wh_network";
+    setState({ ok: !!r.ok, text: t(key, lang, { status: r.status }) });
+  };
+  return (
+    <div className="st-test">
+      <button type="button" className="btn ghost sm" onClick={run} disabled={state?.busy}>{state?.busy ? t("nt_testing", lang) : t("wh_test", lang)}</button>
+      {state?.text && <span className={"st-test-msg " + (state.ok ? "ok" : "bad")} role="status">{state.text}</span>}
+    </div>
+  );
+}
+
 const COUNTRY_CURRENCY = { MD: "MDL", UA: "UAH", RO: "RON" };
 
 export default function Settings() {
@@ -114,6 +151,18 @@ export default function Settings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Back and forward walk through the tabs (setTab pushes each one).
+  useEffect(() => {
+    const onPop = () => {
+      try {
+        const want = new URLSearchParams(location.search).get("tab") || "company";
+        if (TAB_IDS.includes(want)) setTabState(want);
+      } catch {}
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   // The tab title in the workspace language once the company row is in.
   const coLang = co?.lang;
   useEffect(() => {
@@ -140,7 +189,7 @@ export default function Settings() {
     try {
       const u = new URL(location.href);
       u.searchParams.set("tab", id);
-      history.replaceState(null, "", u.pathname + u.search);
+      if (u.search !== location.search) history.pushState(null, "", u.pathname + u.search);
     } catch {}
     if (typeof window !== "undefined" && window.innerWidth < 900) window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -171,6 +220,11 @@ export default function Settings() {
         subsidy_amount_ron: co.subsidy_amount_ron, prosumer_limit_kw: co.prosumer_limit_kw,
         notify_open: co.notify_open !== false,
         notify_deadlines: co.notify_deadlines !== false,
+        notify_calls: co.notify_calls !== false,
+        notify_open_mode: co.notify_open_mode === "digest" ? "digest" : "instant",
+        notify_quiet: co.notify_quiet === true,
+        notify_accepted: co.notify_accepted !== false,
+        notify_readings: co.notify_readings !== false,
         nudge_enabled: co.nudge_enabled === true,
         crm_webhook_enabled: co.crm_webhook_enabled === true,
         crm_webhook_url: co.crm_webhook_url,
@@ -585,12 +639,36 @@ export default function Settings() {
           <div className="st-toggles">
             <Toggle checked={co.notify_open !== false} onChange={e => { setCo({ ...co, notify_open: e.target.checked }); touch(); }}
               title={t("s_notify", lang)} note={t("s_notify_note", lang)} />
+            {co.notify_open !== false && (
+              <div className="st-sub">
+                <div className="seg2" role="group" aria-label={t("s_open_when", lang)}>
+                  <button type="button" className={co.notify_open_mode !== "digest" ? "on" : ""} aria-pressed={co.notify_open_mode !== "digest"}
+                    onClick={() => { setCo({ ...co, notify_open_mode: "instant" }); touch(); }}>{t("s_open_instant", lang)}</button>
+                  <button type="button" className={co.notify_open_mode === "digest" ? "on" : ""} aria-pressed={co.notify_open_mode === "digest"}
+                    onClick={() => { setCo({ ...co, notify_open_mode: "digest" }); touch(); }}>{t("s_open_digest", lang)}</button>
+                </div>
+                <Toggle checked={co.notify_quiet === true} onChange={e => { setCo({ ...co, notify_quiet: e.target.checked }); touch(); }}
+                  title={t("s_quiet", lang)} note={t("s_quiet_note", lang)} />
+              </div>
+            )}
+            <TestEmail kind="open" lang={lang} />
+            <Toggle checked={co.notify_calls !== false} onChange={e => { setCo({ ...co, notify_calls: e.target.checked }); touch(); }}
+              title={t("s_notify_calls", lang)} note={t("s_notify_calls_note", lang)} />
+            <TestEmail kind="calls" lang={lang} />
+            <Toggle checked={co.notify_accepted !== false} onChange={e => { setCo({ ...co, notify_accepted: e.target.checked }); touch(); }}
+              title={t("s_notify_accepted", lang)} note={t("s_notify_accepted_note", lang)} />
+            <TestEmail kind="accepted" lang={lang} />
             <Toggle checked={co.notify_deadlines !== false} onChange={e => { setCo({ ...co, notify_deadlines: e.target.checked }); touch(); }}
               title={dlt("st_toggle", lang)} note={dlt("st_note", lang)} />
+            <TestEmail kind="deadlines" lang={lang} />
+            <Toggle checked={co.notify_readings !== false} onChange={e => { setCo({ ...co, notify_readings: e.target.checked }); touch(); }}
+              title={t("s_notify_readings", lang)} note={t("s_notify_readings_note", lang)} />
+            <TestEmail kind="readings" lang={lang} />
             {/* Opt-in: emails a real client under this company's brand, so it
                 stays off until someone turns it on (add-proposal-nudges.sql). */}
             <Toggle checked={co.nudge_enabled === true} onChange={e => { setCo({ ...co, nudge_enabled: e.target.checked }); touch(); }}
               title={t("s_nudge", lang)} note={t("s_nudge_note", lang)} />
+            <TestEmail kind="nudge" lang={lang} />
           </div>
         </Card>
         {/* Sends real pipeline data to a URL the installer controls: opt-in,
@@ -609,6 +687,7 @@ export default function Settings() {
                   <label htmlFor="sCrm">{t("s_crm_url", lang)}</label>
                   <input className="input" id="sCrm" value={co.crm_webhook_url || ""} onChange={set("crm_webhook_url")}
                     placeholder="https://hooks.bitrix24.com/rest/…" />
+                  <TestWebhook lang={lang} />
                 </div>
               )}
             </div>

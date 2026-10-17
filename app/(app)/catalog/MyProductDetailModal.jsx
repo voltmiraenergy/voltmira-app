@@ -21,8 +21,9 @@ import { findSupplierProduct } from "../../../lib/supplierCatalog.js";
 import { productImage, placeholderImage } from "../../../lib/catalogImages.js";
 import { t } from "../../../lib/i18n.js";
 import { localSpec } from "../../../lib/quoteAnalysis.js";
+import AppPortal from "../../../components/AppPortal.jsx";
 
-export default function MyProductDetailModal({ p, lang, onClose, onEdit }) {
+function MyProductDetailModalSheet({ p, lang, onClose, onEdit }) {
   if (!p) return null;
   const sup = findSupplierProduct(p.brand, p.model);
   // Same honesty guard findWarrantyInfo applies: an unverified warranty
@@ -93,4 +94,9 @@ export default function MyProductDetailModal({ p, lang, onClose, onEdit }) {
       ` }} />
     </div>
   );
+}
+
+/** Drawn at the app root (components/AppPortal.jsx), so no animated section can trap it. */
+export default function MyProductDetailModal(props) {
+  return <AppPortal><MyProductDetailModalSheet {...props} /></AppPortal>;
 }

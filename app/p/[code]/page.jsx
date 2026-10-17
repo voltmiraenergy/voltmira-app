@@ -14,9 +14,10 @@
 // (formal address in every language). Styles: ./proposal.css.
 import "./proposal.css";
 import Tracker from "./tracker.jsx";
-import QaWidget from "./QaWidget.jsx";
+import ClientAfter from "./ClientAfter.jsx";
 import AutoPrint from "./AutoPrint.jsx";
 import PrintSheet, { RoofSnapshotSVG } from "./PrintSheet.jsx";
+import RoofSatellite from "../../../components/RoofSatellite.jsx";
 import ClientAudit from "./ClientAudit.jsx";
 import { MonthlySVG, CashflowSVG, CHART, monthNames } from "./charts.jsx";
 import FinanceToggle from "./FinanceToggle.jsx";
@@ -92,9 +93,9 @@ export default async function ProposalPage(props) {
       </main>
     );
   }
-  const { company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
+  const { after = null, company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
     offer = null, chosenOption = null, cned = null,
-    roofAreaM2 = null, roofOrientation = null, roofPlanes = null } = data;
+    roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
   const signedDate = signedAt
@@ -112,7 +113,7 @@ export default async function ProposalPage(props) {
       <main lang={lang} style={{ background: "#fff", minHeight: "100vh" }}>
         <HtmlLang lang={lang} />
         <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom}
-          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes}
+          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat} roofPhoto={roofPhoto}
           acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} />
         {/* The PDF route drives printing through CDP and passes auto=0:
             window.print() inside headless Chromium blocks rather than returns. */}
@@ -188,8 +189,10 @@ export default async function ProposalPage(props) {
   const validityDays = Number(E?.quoteValidityDays) || 30;
   const validTs = (sentAt ? new Date(sentAt).getTime() : now) + validityDays * 864e5;
   const validUntil = fmtDate(new Date(validTs), loc, { day: "numeric", month: "long", year: "numeric" });
-  const expired = now > validTs;
-  const validShort = expired ? ppt("expired_on", lang, { d: validUntil }) : ppt("valid_until", lang, { d: validUntil });
+  // a signed offer no longer expires: it says when it was signed instead
+  const signedDay = accepted && signedAt ? fmtDate(new Date(signedAt), loc, { day: "numeric", month: "long", year: "numeric" }) : null;
+  const expired = !signedDay && now > validTs;
+  const validShort = signedDay ? ppt("signed_on", lang, { d: signedDay }) : expired ? ppt("expired_on", lang, { d: validUntil }) : ppt("valid_until", lang, { d: validUntil });
 
   const placeholderTitle = isPlaceholderTitle(inputs.title);
   const headline = placeholderTitle ? t("pdf_auto_title", lang, { kw: kwTxt }) : inputs.title;
@@ -238,28 +241,6 @@ export default async function ProposalPage(props) {
     ["sc_pess", bands.pess, E?.bands?.pess, CHART.pess, true, false],
     ["sc_expc", bands.expc, E?.bands?.expc, CHART.expc, false, true],
     ["sc_opti", bands.opti, E?.bands?.opti, CHART.opti, true, false],
-  ];
-
-  // Questions with answers this proposal can actually back up.
-  const warrItems = bomLines.map((l, i) => (bomWarranty[i]
-    ? `${kindLabel(l.kind, lang)}, ${[l.brand, l.model].filter(Boolean).join(" ")}: ${yearsN(bomWarranty[i].warrantyYears, lang)}`
-    : null)).filter(Boolean);
-  const surplusKey = { MD: "a_surplus_md", RO: "a_surplus_ro", UA: "a_surplus_ua" }[inputs.market];
-  const faqs = [
-    ["guar", ppt("q_guar", lang), ppt("a_guar", lang)],
-    ["sign", ppt("q_sign", lang), ppt("a_sign", lang, { co: coShort })],
-    ...(warrItems.length || installWarrantyYears ? [["warr", ppt("q_warr", lang), (
-      <>
-        {warrItems.length > 0 && ppt("a_warr", lang)}
-        <ul>
-          {warrItems.map((w) => <li key={w}>{w}</li>)}
-          {installWarrantyYears > 0 && <li>{ppt("install_warr", lang, { co: coName, y: yearsN(installWarrantyYears, lang) })}</li>}
-        </ul>
-      </>
-    )]] : []),
-    ...(surplusKey ? [["surplus", ppt("q_surplus", lang), ppt(surplusKey, lang)]] : []),
-    ...(hasFinance ? [["loan", ppt("q_loan", lang), ppt("a_loan", lang, { r: rateTxt, y: yearsN(financeTerm, lang) })]] : []),
-    ["change", ppt("q_change", lang), ppt("a_change", lang)],
   ];
 
   const priceProps = { costEur: q.cost, offer, currency: fmt.currency, rate: fmt.rate, lang };
@@ -333,6 +314,9 @@ export default async function ProposalPage(props) {
 
         <div className="pp-layout">
           <div className="pp-main">
+
+            {/* signed: the client's own page, their installation and their production */}
+            {accepted && after && <ClientAfter after={after} lang={lang} code={params.code} company={company} nf={nf} fmt={fmt} preparedBy={preparedBy} market={inputs.market} />}
 
             {/* Ukraine: outages first, the way a Ukrainian household decides. */}
             {inputs.market === "UA" && (
@@ -419,7 +403,18 @@ export default async function ProposalPage(props) {
                 </div>
               )}
 
-              {hasRoof && (
+              {roofPhoto ? (
+                <figure className="pp-roof pp-card">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="pp-roof-photo" src={roofPhoto} alt={t("pdf_roof_photo_note", lang)} />
+                  <figcaption>{t("pdf_roof_photo_note", lang)}</figcaption>
+                </figure>
+              ) : roofSat ? (
+                <figure className="pp-roof pp-card">
+                  <RoofSatellite roof={roofSat} />
+                  <figcaption>{t("pdf_roof_sat_note", lang, { n: roofSat.quoted || roofSat.planes.reduce((s, pl) => s + pl.panels.length, 0) })}</figcaption>
+                </figure>
+              ) : hasRoof && (
                 <figure className="pp-roof pp-card">
                   <RoofSnapshotSVG planes={roofPlanes} />
                   <figcaption>{t("pdf_roof_snap_note", lang, { n: roofPlanes.reduce((s, pl) => s + pl.panels.length, 0) })}</figcaption>
@@ -653,28 +648,8 @@ export default async function ProposalPage(props) {
                       <Phone className="pp-ic" aria-hidden="true" /><span className="pp-num">{phone}</span>
                     </a>
                   )}
-                  {/* From 3 up: "1 system installed" undersells a new installer.
-                      Computed from real won projects, never typed. */}
-                  {company.wonCount >= 3 && <p className="pp-proof">{t("pdf_installed", lang, { n: company.wonCount, co: coName })}</p>}
                 </div>
               </div>
-            </section>
-
-            {/* Questions: the answers this proposal can back up, then the
-                assistant grounded in its real, frozen numbers (VoltMira's own,
-                or the installer's Make.com scenario; see
-                app/api/proposal/[code]/qa). Live view only, never on the PDF. */}
-            <section className="pp-sec" aria-labelledby="pp-faq-h">
-              <h2 className="pp-h2" id="pp-faq-h" style={{ marginBottom: 14 }}>{ppt("faq_h", lang)}</h2>
-              <div className="pp-faq">
-                {faqs.map(([k, qText, aText]) => (
-                  <details key={k}>
-                    <summary>{qText}<ChevronDown className="pp-ic" aria-hidden="true" /></summary>
-                    <div className="pp-faq-a">{aText}</div>
-                  </details>
-                ))}
-              </div>
-              <QaWidget code={params.code} lang={lang} preparedBy={preparedBy} />
             </section>
           </div>
 
@@ -706,7 +681,7 @@ export default async function ProposalPage(props) {
         </div>
 
         <footer className="pp-foot">
-          <p>{expired ? ppt("expired_full", lang, { d: validUntil }) : ppt("valid_full", lang, { d: validUntil })}</p>
+          <p>{signedDay ? ppt("signed_on", lang, { d: signedDay }) : expired ? ppt("expired_full", lang, { d: validUntil }) : ppt("valid_full", lang, { d: validUntil })}</p>
           {/* Growth loop: every free-plan proposal a homeowner opens carries a
               tasteful VoltMira credit. Pro/Team white-labels it away. The mark
               is drawn exactly as the brand's, never recoloured. */}

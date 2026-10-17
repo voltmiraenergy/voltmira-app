@@ -8,7 +8,7 @@
 // until paid. A portfolio of rooftop quotes only keeps its data room as before.
 import { NextResponse } from "next/server";
 import { renderPdf } from "../../../../../lib/renderProposalPdf.js";
-import { buildDataRoom } from "../../../../../lib/portfolioExport.js";
+import { buildDataRoom } from "../../../../../lib/dataRoom.js";
 import { authorizePortfolio, authCookies, reportUrl, gatePortfolio } from "../../../../../lib/portfolioRoute.js";
 
 export const runtime = "nodejs";

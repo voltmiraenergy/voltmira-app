@@ -11,8 +11,9 @@
 import { productImage, placeholderImage } from "../../../lib/catalogImages.js";
 import { compareRows, bestIndex } from "../../../lib/catalogCompare.js";
 import { t } from "../../../lib/i18n.js";
+import AppPortal from "../../../components/AppPortal.jsx";
 
-export default function CompareModal({ items, lang, onClose }) {
+function CompareModalSheet({ items, lang, onClose }) {
   if (!items || items.length < 2) return null;
   const kind = items[0].kind;
   const rows = compareRows(kind, lang);
@@ -78,4 +79,9 @@ export default function CompareModal({ items, lang, onClose }) {
       ` }} />
     </div>
   );
+}
+
+/** Drawn at the app root (components/AppPortal.jsx), so no animated section can trap it. */
+export default function CompareModal(props) {
+  return <AppPortal><CompareModalSheet {...props} /></AppPortal>;
 }

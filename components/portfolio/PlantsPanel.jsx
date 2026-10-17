@@ -26,6 +26,7 @@ import { bt } from "../../lib/bankText.js";
 import { stillMissing, PACK_LANGS } from "../../lib/bankPack.js";
 import { namesList } from "../../lib/portfolioDisplay.js";
 import StudyReader from "./StudyReader.jsx";
+import { aiOn } from "../../lib/featureFlags.js";
 import { P90Basis, WeatherReplay, SeasonalCover, ExportLimit } from "./EnergyBasis.jsx";
 import { monthlyCover } from "../../lib/monthlyCover.js";
 import { weatherReplay } from "../../lib/weatherReplay.js";
@@ -229,8 +230,10 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
               ) : en.wind && en.wind.source === "none" ? <p className="pf-hint">{plt("w_no_data", lang)}</p> : null}
               {en.wind && en.wind.source !== "study" && <p className="pf-hint">{plt("w_screen_note", lang)}</p>}
               <h5>{plt("study_h", lang)}</h5>
-              <StudyReader kind="wind" id={id} lang={lang} plantMw={pl.wind.mw}
-                onApply={({ study, extra }) => setIn("wind", { ...extra, study: { ...(raw.wind.study || {}), ...study } })} />
+              {aiOn() && (
+                <StudyReader kind="wind" id={id} lang={lang} plantMw={pl.wind.mw}
+                  onApply={({ study, extra }) => setIn("wind", { ...extra, study: { ...(raw.wind.study || {}), ...study } })} />
+              )}
               <div className="pl-grid">
                 <Field id={`wp5-${id}`} label={plt("s_p50", lang)} value={raw.wind.study?.p50Mwh} onChange={(v) => setIn("wind", { study: { ...(raw.wind.study || {}), p50Mwh: v } })} min="0" />
                 <Field id={`wp9-${id}`} label={plt("s_p90", lang)} value={raw.wind.study?.p90Mwh} onChange={(v) => setIn("wind", { study: { ...(raw.wind.study || {}), p90Mwh: v } })} min="0" />
@@ -266,8 +269,10 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
               {msg?.k === "solar" && <p className="pf-warn" role="alert">{msg.t}</p>}
               {drift.solar != null && <p className="pf-warn">{plt("moved_solar", lang, { km: fnum(drift.solar, lang, 1) })}</p>}
               <h5>{plt("study_h", lang)}</h5>
-              <StudyReader kind="solar" id={id} lang={lang} plantMw={pl.solar.mwp}
-                onApply={({ study, extra }) => setIn("solar", { ...extra, study: { ...(raw.solar.study || {}), ...study } })} />
+              {aiOn() && (
+                <StudyReader kind="solar" id={id} lang={lang} plantMw={pl.solar.mwp}
+                  onApply={({ study, extra }) => setIn("solar", { ...extra, study: { ...(raw.solar.study || {}), ...study } })} />
+              )}
               <div className="pl-grid">
                 <Field id={`sp5-${id}`} label={plt("s_p50", lang)} value={raw.solar.study?.p50Mwh} onChange={(v) => setIn("solar", { study: { ...(raw.solar.study || {}), p50Mwh: v } })} min="0" />
                 <Field id={`sp9-${id}`} label={plt("s_p90", lang)} value={raw.solar.study?.p90Mwh} onChange={(v) => setIn("solar", { study: { ...(raw.solar.study || {}), p90Mwh: v } })} min="0" />
@@ -335,7 +340,13 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
             {raw.bess && <Field id={`kob-${id}`} label={plt("k_opb", lang)} value={raw.costs?.opexBessEurPerKwhYr} onChange={(v) => setIn("costs", { opexBessEurPerKwhYr: v })} min="0" />}
             <Field id={`kl-${id}`} label={plt("k_land", lang)} value={raw.costs?.landEurYr} onChange={(v) => setIn("costs", { landEurYr: v })} min="0" />
             <Field id={`ki-${id}`} label={plt("k_ins", lang)} value={raw.costs?.insurancePct} onChange={(v) => setIn("costs", { insurancePct: v })} step="0.05" min="0" max="5" />
+            {raw.solar && <Field id={`kiy-${id}`} label={plt("k_inv_year", lang)} value={raw.costs?.invReplaceYear} onChange={(v) => setIn("costs", { invReplaceYear: v })} step="1" min="0" max="30" />}
+            {raw.solar && <Field id={`kie-${id}`} label={plt("k_inv_eur", lang)} value={raw.costs?.invReplaceEurPerKw} onChange={(v) => setIn("costs", { invReplaceEurPerKw: v })} min="0" />}
+            {raw.bess && <Field id={`kay-${id}`} label={plt("k_aug_year", lang)} value={raw.costs?.bessAugYear} onChange={(v) => setIn("costs", { bessAugYear: v })} step="1" min="0" max="30" />}
+            {raw.bess && <Field id={`kae-${id}`} label={plt("k_aug_eur", lang)} value={raw.costs?.bessAugEurPerKwh} onChange={(v) => setIn("costs", { bessAugEurPerKwh: v })} min="0" />}
           </div>
+          {(raw.solar || raw.bess) && <p className="pf-hint">{plt("k_repl_h", lang)}</p>}
+          {raw.solar && !(Number(raw.costs?.invReplaceYear) > 0 && Number(raw.costs?.invReplaceEurPerKw) > 0) && <p className="pf-hint warn">{plt("k_repl_none", lang)}</p>}
         </section>
       </div>
 
