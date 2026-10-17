@@ -75,6 +75,8 @@ const nextConfig = {
       { source: "/p/:path*", headers: noIndexHeaders },
       // a client's recommendation page: their first name and locality
       { source: "/r/:path*", headers: noIndexHeaders },
+      // a lender's portal link: applicants' names and phones
+      { source: "/l/:path*", headers: noIndexHeaders },
       // a bank's deal room link: a private plant's figures and documents (its
       // pages also send no referrer, so the link never leaves in a Referer header)
       { source: "/d/:path*", headers: noIndexHeaders },

@@ -23,6 +23,7 @@ import { journeySteps, nextStep, productionSeries, journeyFacts } from "../../..
 import { snapshotEngine } from "../../../../lib/engineSettings.js";
 import { bomHasBattery } from "../../../../lib/quoteInput.js";
 import { offerQuoteInput, offerTariffNote } from "../../../../lib/offerInput.js";
+import { offerFinancing } from "../../../../lib/financeServer.js";
 import { loadOffers, offerFigures, acceptOffers } from "../../../../lib/proposalOffers.js";
 import { effectiveOfferCurrency } from "../../../../lib/offerCurrency.js";
 
@@ -240,10 +241,19 @@ export async function GET(req, props) {
     after = { steps, next: nextStep(steps), production, facts: journeyFacts(steps, production, { year1: q.e.year1, prod0 }) };
   }
 
+  // green financing: partner lenders' offers that fit this quote, and any
+  // application already sent from it (lib/financeServer.js); Moldova only
+  let financing = null;
+  try {
+    const { data: pk } = await db.from("projects").select("client_kind").eq("id", prop.project_id).maybeSingle();
+    financing = await offerFinancing(db, { prop, snapshot: prop.snapshot, E, clientKind: pk?.client_kind || null });
+  } catch (e) { console.error("[financing] offer page:", e?.message); }
+
   return NextResponse.json({
     code: prop.code,
     accepted: !!prop.accepted_at,
     after,
+    financing,
     // the tariff rule and the support programmes the offer was issued under,
     // frozen with it (lib/tariffRules.js, lib/eligibility.js); null on older offers
     tariff: offerTariffNote(prop.snapshot),

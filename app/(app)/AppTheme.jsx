@@ -153,6 +153,16 @@ const CSS = `
   }
   .side-theme:hover{color:#fff;background:rgba(255,255,255,.18)}
   /* the sidebar's last line: the theme as an icon (sun or moon), then the sign-out */
+  /* the dashboard's loan applications (dashboard/LoanApps.jsx) */
+  .dx-loan-list{list-style:none;margin:0;padding:0;display:grid}
+  .dx-loan{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 2px;border-top:1px solid var(--line);text-decoration:none;color:inherit}
+  .dx-loan-list li:first-child .dx-loan{border-top:0}
+  .dx-loan-who{display:grid;gap:2px;min-width:0}
+  .dx-loan-who b{font-size:14px;color:var(--ink)}
+  .dx-loan-who small{font-size:12.5px;color:var(--muted)}
+  .dx-loan-st{flex:none;font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--paper);color:var(--ink-2)}
+  .dx-loan-st.s-approved,.dx-loan-st.s-funded{background:var(--green-tint);color:var(--green)}
+  .dx-loan-st.s-rejected,.dx-loan-st.s-failed{background:var(--red-tint,#F7E6E1);color:var(--red,#C4543B)}
   .side-acts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;margin-top:10px;align-items:stretch}
   .side-acts .side-theme{margin-top:0;width:auto;padding:10px 12px;justify-content:center}
   .side-acts .side-theme-tx{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

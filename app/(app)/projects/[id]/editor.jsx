@@ -186,7 +186,7 @@ function LocalMoneyInput({ eur, fmt, onEur, dec = 2, allowZero = false, classNam
 
 // `currency` is the WORKSPACE's (companies.currency); the offer may name its
 // own (p.offerCurrency, null = follow the workspace), see lib/offerCurrency.js.
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, calibration = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, calibration = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [] }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
@@ -814,6 +814,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 </span>
               )}
             </p>
+            {/* the client's loan applications from this offer (docs/FINANCING.md) */}
+            {loans.length > 0 && (
+              <p className="qb-loans">{loans.map((l) => <span key={l.id} className={"qb-loan s-" + l.status}>{l.text}</span>)}</p>
+            )}
           </div>
           <div className="qb-actions">
             {tplOpen ? (

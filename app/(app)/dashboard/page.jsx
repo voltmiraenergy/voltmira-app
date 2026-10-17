@@ -42,6 +42,7 @@ import DashTabs from "./DashTabs.jsx";
 import AutoRefresh from "./AutoRefresh.jsx";
 import LeadActions from "../leads/LeadActions.jsx";
 import Avatar from "../../../lib/Avatar.jsx";
+import LoanApps from "./LoanApps.jsx";
 import { moneyFormatter } from "../../../lib/money.js";
 
 export const dynamic = "force-dynamic";
@@ -432,6 +433,9 @@ export default async function Dashboard() {
         <div className="dx-stack">
           <Phases phases={phaseData} lender={lenderLine}
             labels={{ title: wt("ph_title", lang), sub: wt("ph_sub", lang), empty: wt("ph_empty", lang), acts: actLabels }} />
+
+          {/* the clients' loan applications, as the banks move them (docs/FINANCING.md) */}
+          <LoanApps lang={lang} />
 
           <section className="dx-card dx-pulse" aria-labelledby="dx-pulse-h">
             <header className="dx-card-head">

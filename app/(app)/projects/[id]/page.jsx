@@ -9,6 +9,7 @@ import { canViewAllProjects, canEditTechnical } from "../../../../lib/rbac.js";
 import Editor from "./editor.jsx";
 import { cnedEnabled } from "../../../../lib/cnedData.js";
 import { appTitle } from "../../../../lib/pageTitle.js";
+import { lt } from "../../../../lib/loanText.js";
 
 export const dynamic = "force-dynamic";
 export const generateMetadata = appTitle("col_project");
@@ -84,13 +85,26 @@ export default async function ProjectPage(props) {
   // to the installer; never applied on its own (see lib/yieldCalibration.js).
   const calibration = await companyYieldCalibration(sb, E);
 
+  // the client's loan applications from this quote's offer (docs/FINANCING.md):
+  // read on the installer's session; lender names from the server
+  let loans = [];
+  {
+    const { data: la, error: laErr } = await sb.from("loan_applications").select("id, lender_id, status").eq("project_id", params.id).order("created_at", { ascending: false }).limit(3);
+    if (!laErr && la?.length) {
+      const { data: ln } = await supabaseAdmin().from("lenders").select("id, name").in("id", [...new Set(la.map((a) => a.lender_id))]);
+      const nm = new Map((ln || []).map((l) => [l.id, l.name]));
+      const lang = normLang(co?.lang);
+      loans = la.map((a) => ({ id: a.id, status: a.status, text: lt("ln_on_quote", lang, { status: lt("st_" + a.status, lang), lender: nm.get(a.lender_id) || "" }) }));
+    }
+  }
+
   return <Editor initial={p} engineSettings={E} team={team || []} catalog={catalog || []}
     canEditTechnical={canEditTech}
     prosumerLimitKw={Number(co?.prosumer_limit_kw ?? 10.8)} lang={normLang(co?.lang)} currency={co?.currency || "EUR"}
     proposalSentAt={prop?.created_at || null} companyName={co?.name || "VoltMira"} companyLogo={co?.logo_url || ""}
     companyLegal={{ legal_name: co?.legal_name || "", reg_no: co?.reg_no || "", legal_address: co?.legal_address || "", iban: co?.iban || "", install_warranty_years: co?.install_warranty_years || null,
       contract_template_override: wl?.contract_template_override || "", commissioning_template_override: wl?.commissioning_template_override || "" }}
-    signed={signed} calibration={calibration} vatRatePct={Number(co?.vat_rate) || 0} cnedOn={cnedEnabled()} />;
+    signed={signed} calibration={calibration} loans={loans} vatRatePct={Number(co?.vat_rate) || 0} cnedOn={cnedEnabled()} />;
 }
 
 /**

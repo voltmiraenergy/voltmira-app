@@ -170,3 +170,9 @@ html[data-theme="dark"] .app .qb-actions .qb-send-wa { color: #5FD592; border-co
 /* the linked Studio job (StudioJobLine.jsx) */
 .app .sj-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13.5px; }
 .app .sj-line small { display: block; color: var(--amber); font-size: 12px; margin-top: 2px; }
+
+/* the client's loan applications on the quote (docs/FINANCING.md) */
+.app .qb-loans { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 0; }
+.app .qb-loan { font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--paper); color: var(--ink-2); border: 1px solid var(--line); }
+.app .qb-loan.s-approved, .app .qb-loan.s-funded { background: var(--green-tint); color: var(--green); border-color: transparent; }
+.app .qb-loan.s-rejected, .app .qb-loan.s-failed { background: var(--red-tint); color: var(--red); border-color: transparent; }

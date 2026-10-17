@@ -144,9 +144,9 @@ create trigger commission_ledger_append_only before update or delete on commissi
 --    real terms are signed. Rates and limits are illustrative, not the banks'.
 insert into lenders (code, name, adapter, contact_email, commission_type, commission_bps, commission_flat_minor, currency, is_sample)
 values
-  ('maib', 'MAIB (sample)', 'mock', '', 'percent', 100, 0, 'MDL', true),
-  ('micb', 'Moldindconbank (sample)', 'mock', '', 'percent', 75, 0, 'MDL', true),
-  ('otp', 'OTP Bank (sample)', 'mock', '', 'flat', 0, 150000, 'MDL', true)
+  ('maib', 'MAIB', 'mock', '', 'percent', 100, 0, 'MDL', true),
+  ('micb', 'Moldindconbank', 'mock', '', 'percent', 75, 0, 'MDL', true),
+  ('otp', 'OTP Bank', 'mock', '', 'flat', 0, 150000, 'MDL', true)
 on conflict (code) do nothing;
 
 insert into financing_offers (lender_id, product_name, currency, rate_bps, term_min_months, term_max_months, fee_bps, fee_flat_minor, min_amount_minor, max_amount_minor, eligibility, is_sample)

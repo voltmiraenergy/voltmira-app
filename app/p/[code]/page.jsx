@@ -16,6 +16,7 @@ import "./proposal.css";
 import Tracker from "./tracker.jsx";
 import ClientAfter from "./ClientAfter.jsx";
 import SupportOffer, { supportLine } from "./SupportOffer.jsx";
+import LoanCalculator from "./LoanCalculator.jsx";
 import AutoPrint from "./AutoPrint.jsx";
 import PrintSheet, { RoofSnapshotSVG } from "./PrintSheet.jsx";
 import RoofSatellite from "../../../components/RoofSatellite.jsx";
@@ -95,7 +96,7 @@ export default async function ProposalPage(props) {
     );
   }
   const { after = null, company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
-    offer = null, chosenOption = null, cned = null, support = null,
+    offer = null, chosenOption = null, cned = null, support = null, financing = null,
     roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
@@ -586,6 +587,9 @@ export default async function ProposalPage(props) {
 
             {/* the support programmes frozen with this offer (Moldova, offers since versioned rules) */}
             <SupportOffer support={support} lang={lang} costMdl={q.cost * (Number(fx?.MDL) || 0)} />
+
+            {/* partner banks' loans on this offer, and applying to one (docs/FINANCING.md) */}
+            {financing?.offers?.length > 0 && <LoanCalculator code={params.code} lang={lang} financing={financing} clientName={inputs.client || ""} />}
 
             {(hasFinance && monthlyPayment > 0) || loan > 0 ? (
               <section className="pp-sec" aria-labelledby="pp-fin-h">
