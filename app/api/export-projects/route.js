@@ -39,7 +39,7 @@ export async function GET() {
     // Same input builder as the dashboard/projects list, so the exported payback
     // and value match the app exactly (this used to omit the battery capacity and
     // the bill-of-materials total, so battery/BOM quotes exported wrong numbers).
-    const q = quote(rowToQuoteInput(p), E).e;
+    const q = quote(rowToQuoteInput(p, E), E).e;
     const st = stats.get(p.id);
     return [
       p.title || "", p.client_name || "", p.address || "", p.market,

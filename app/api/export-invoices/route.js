@@ -61,7 +61,7 @@ export async function GET() {
   ];
   const lines = [];
   for (const p of rows || []) {
-    const q = quote(rowToQuoteInput(p), E).e;
+    const q = quote(rowToQuoteInput(p, E), E).e;
     const cur = effectiveOfferCurrency(p.offer_currency, co.currency, p.market);
     const { gross, net, vat, rate } = invoiceAmounts({ grossEur: Math.max(0, q.cost || 0), fx: await rateFor(cur), vatRatePct: co.vat_rate });
     const date = p.invoiced_at ? new Date(p.invoiced_at).toISOString().slice(0, 10) : "";

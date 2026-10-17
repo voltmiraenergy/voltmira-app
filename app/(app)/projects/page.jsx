@@ -150,7 +150,7 @@ export default async function Projects(props) {
   // The market tag only tells rows apart when the book spans more than one market; on one it is noise
   // that pushes titles onto a third line.
   const mixedMarkets = new Set(allRows.map((p) => p.market).filter(Boolean)).size > 1;
-  const all = allRows.map((p) => ({ p, st: stats.get(p.id) || null, q: quote(rowToQuoteInput(p), E).e, w: wfMap.get(p.id) }));
+  const all = allRows.map((p) => ({ p, st: stats.get(p.id) || null, q: quote(rowToQuoteInput(p, E), E).e, w: wfMap.get(p.id) }));
 
   // One tile per status: how many, and how much contract value (pre-grant, so
   // "Sent" here equals the dashboard's Pipeline figure).

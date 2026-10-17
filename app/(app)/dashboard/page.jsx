@@ -142,7 +142,7 @@ export default async function Dashboard() {
 
   // The engine runs once per quote; every figure below reads from this.
   const Q = new Map();
-  for (const r of list) Q.set(r.id, quote(rowToQuoteInput(r), E).e);
+  for (const r of list) Q.set(r.id, quote(rowToQuoteInput(r, E), E).e);
   const gross = new Map([...Q].map(([id, q]) => [id, q.grossCost]));
 
   // ---------- vitals (the six KPIs) ----------

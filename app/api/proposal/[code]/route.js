@@ -22,6 +22,7 @@ import { quote, SOLAR_SEASON } from "@voltmira/engine";
 import { journeySteps, nextStep, productionSeries, journeyFacts } from "../../../../lib/clientJourney.js";
 import { snapshotEngine } from "../../../../lib/engineSettings.js";
 import { bomHasBattery } from "../../../../lib/quoteInput.js";
+import { offerQuoteInput, offerTariffNote } from "../../../../lib/offerInput.js";
 import { loadOffers, offerFigures, acceptOffers } from "../../../../lib/proposalOffers.js";
 import { effectiveOfferCurrency } from "../../../../lib/offerCurrency.js";
 
@@ -197,8 +198,10 @@ export async function GET(req, props) {
   const E = snapshotEngine(prop.snapshot.engine, co);
   // Snapshots store the BOM itself, so this is derived rather than frozen — an
   // older snapshot with no BOM simply has no costOverride and is unaffected.
-  prop.snapshot.bomHasBattery = bomHasBattery(prop.snapshot.bom);
-  const q = quote(prop.snapshot, E);
+  // and since tariff rules are versioned, the export price of the rule the
+  // offer was issued under (lib/offerInput.js); older offers are unchanged
+  const input = offerQuoteInput(prop.snapshot);
+  const q = quote(input, E);
 
   // Side-by-side options: extra configs the installer attached (base snapshot with
   // kw / battery overridden). We return only what the comparison cards need; the
@@ -208,7 +211,7 @@ export async function GET(req, props) {
     .filter(o => Number(o?.kw) > 0)
     .map(o => {
       const kw = Number(o.kw), battKwh = Math.max(0, Number(o.battKwh) || 0);
-      const oq = quote({ ...prop.snapshot, kw, batt: battKwh > 0, battKwh }, E).e;
+      const oq = quote({ ...input, kw, batt: battKwh > 0, battKwh }, E).e;
       return { label: String(o.label || "").slice(0, 40), kw, battKwh,
         cost: oq.cost, payback: oq.payback, year1: oq.year1 };
     });
@@ -241,6 +244,10 @@ export async function GET(req, props) {
     code: prop.code,
     accepted: !!prop.accepted_at,
     after,
+    // the tariff rule and the support programmes the offer was issued under,
+    // frozen with it (lib/tariffRules.js, lib/eligibility.js); null on older offers
+    tariff: offerTariffNote(prop.snapshot),
+    support: prop.snapshot.support || null,
     // proof-of-signing only (name + timestamp). The drawn signature IMAGE is
     // sensitive and NOT returned on this public link — the installer views it
     // from their authenticated pipeline.
@@ -270,6 +277,8 @@ export async function GET(req, props) {
       price: Number(prop.snapshot.price), cons: Number(prop.snapshot.cons),
       consMonthly: prop.snapshot.consMonthly || null,
       afmSubsidy: !!prop.snapshot.afmSubsidy,
+      // the frozen tariff rule's export price, so the audit panel recomputes with it
+      feedOverride: input.feedOverride,
       yieldOverride: prop.snapshot.yieldOverride || undefined,
       monthlyYieldShape: prop.snapshot.monthlyYieldShape || undefined,
       // the frozen bill-of-materials total: without it the client-side audit

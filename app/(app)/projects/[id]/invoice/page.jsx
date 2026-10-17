@@ -59,7 +59,7 @@ export default async function InvoicePage(props) {
     .format(Math.round(n || 0));
 
   const E = await companyEngine(co);
-  const q = quote(rowToQuoteInput(p), E).e;
+  const q = quote(rowToQuoteInput(p, E), E).e;
 
   // Prices shown to homeowners are VAT-inclusive, so back out the net + VAT.
   // A rate of 0 means NOT CONFIGURED (Settings shows it blank-as-zero), and

@@ -42,7 +42,7 @@ import ShareCard from "./ShareCard.jsx";
 import LegalDocsModal from "./LegalDocsModal.jsx";
 import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
 import { financials, bomTotal } from "../../../../lib/quoteAnalysis.js";
-import { startYearOf } from "../../../../lib/quoteInput.js";
+import { startYearOf, mdFeedFor } from "../../../../lib/quoteInput.js";
 import { applyCalibration } from "../../../../lib/yieldCalibration.js";
 import { t } from "../../../../lib/i18n.js";
 import { autoBom, recommendMount } from "../../../../lib/supplierCatalog.js";
@@ -277,7 +277,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const buyback = useBuyback(Number(p.price) || 0.18, FX.MDL);
   const isMD = p.market === "MD";
   const isUA = p.market === "UA";
-  const feedOverride = isMD ? buyback.weightedEur : undefined;
+  // the versioned tariff rule in force today for this job's operator
+  // (lib/tariffRules.js, E.tariffRules from companyEngine): the same price an
+  // offer issued now freezes, so the screen and the offer agree
+  const feedOverride = useMemo(() => (isMD
+    ? mdFeedFor({ install_progress: initial.install_progress, address: p.address, title: p.title }, E.tariffRules)
+    : undefined), [isMD, initial.install_progress, p.address, p.title, E.tariffRules]);
   // Ukraine's green tariff ends with 2029, so the year the system starts decides
   // how many years of it the client gets (engine: startYear).
   const startYear = useMemo(() => startYearOf(initial.created_at), [initial.created_at]);
