@@ -17,18 +17,21 @@
 // device: in localStorage for the client error boundary, which cannot read the
 // company row, and in a cookie so /login greets a signed-out user in it. Same
 // two paths: the server stream on the first load, an effect after that.
+//
+// The script's text comes from lib/inlineScripts.js, where the
+// Content-Security-Policy hashes it: it runs because its exact text is
+// allowed, with no nonce to pass down.
 import { useLayoutEffect, useRef } from "react";
 import { useServerInsertedHTML } from "next/navigation";
-
-const saveScript = (l) => `try{localStorage.setItem('voltmira_lang',${JSON.stringify(l)})}catch(e){}document.cookie='voltmira_lang='+${JSON.stringify(l)}+'; path=/; max-age=31536000; samesite=lax'`;
+import { htmlLangScript, PAGE_LANGS } from "./inlineScripts.js";
 
 export default function HtmlLang({ lang, persist = false }) {
-  const l = ["en", "ro", "ru", "uk"].includes(lang) ? lang : "ro";
+  const l = PAGE_LANGS.includes(lang) ? lang : "ro";
   const sent = useRef(false);
   useServerInsertedHTML(() => {
     if (sent.current) return null;
     sent.current = true;
-    return <script dangerouslySetInnerHTML={{ __html: `document.documentElement.lang=${JSON.stringify(l)};${persist ? saveScript(l) : ""}` }} />;
+    return <script dangerouslySetInnerHTML={{ __html: htmlLangScript(l, persist) }} />;
   });
   useLayoutEffect(() => {
     document.documentElement.lang = l;

@@ -32,6 +32,9 @@ const TILES = "vm-tiles-v1";
 const TILE_HOST = "server.arcgisonline.com";
 const MAX_TILES = 4000;
 const OFFLINE_URL = "/offline.html";
+// the offline page's script, a file because the policy runs no inline script
+const OFFLINE_JS = "/offline.js";
+const OFFLINE_FILES = [OFFLINE_URL, OFFLINE_JS];
 const APP = /^\/(dashboard|leads|projects|documents|activity|catalog|settings|team|guide|studio|profile|traction|portfolios|energy)(\/|$)/;
 const STATIC_RE = /^\/_next\/static\//;
 const PROJECT_LINK = /href="(\/projects\/[0-9a-f-]{36})"/g;
@@ -43,7 +46,7 @@ const NET_TIMEOUT_MS = 8000;
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(PAGES);
-    await cache.add(new Request(OFFLINE_URL, { cache: "reload" }));
+    await cache.addAll(OFFLINE_FILES.map((u) => new Request(u, { cache: "reload" })));
     await self.skipWaiting();
   })());
 });
@@ -64,6 +67,7 @@ self.addEventListener("fetch", (event) => {
   if (url.hostname === TILE_HOST && url.pathname.includes("/tile/")) { event.respondWith(tile(req)); return; }
   if (url.origin !== self.location.origin) return;
   if (STATIC_RE.test(url.pathname)) { event.respondWith(cacheFirst(req)); return; }
+  if (url.pathname === OFFLINE_JS) { event.respondWith(caches.match(OFFLINE_JS).then((hit) => hit || fetch(req))); return; }
   if (req.mode === "navigate" && APP.test(url.pathname)) { event.respondWith(networkFirst(req, url)); return; }
   // Everything else (RSC requests, the API, /p/, sign-in) goes to the network
   // untouched. Offline, a failed in-app link makes Next fall back to a full
@@ -188,7 +192,7 @@ async function cacheAssets(html) {
 async function trim(cache, max) {
   const keys = await cache.keys();
   for (let i = 0; i < keys.length - max; i++) {
-    if (keys[i].url.endsWith(OFFLINE_URL)) continue;
+    if (OFFLINE_FILES.some((u) => keys[i].url.endsWith(u))) continue;
     await cache.delete(keys[i]);
   }
 }
@@ -197,5 +201,5 @@ async function trim(cache, max) {
 // "no signal" page.
 async function clearAll() {
   for (const name of await caches.keys()) await caches.delete(name);
-  try { await (await caches.open(PAGES)).add(new Request(OFFLINE_URL, { cache: "reload" })); } catch { /* offline */ }
+  try { await (await caches.open(PAGES)).addAll(OFFLINE_FILES.map((u) => new Request(u, { cache: "reload" }))); } catch { /* offline */ }
 }

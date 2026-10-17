@@ -1,8 +1,12 @@
 // proxy.js (Next 16's name for middleware.js) — refresh the Supabase session,
-// gate the app, keep /p/* public.
+// gate the app, keep /p/* public, and send the Content-Security-Policy
+// (lib/csp.js): a fresh nonce for every page, which Next reads from the
+// request and puts on its own scripts.
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import { aiOn, isAiPath } from "./lib/featureFlags.js";
+import { buildCsp, makeNonce, scriptHash } from "./lib/csp.js";
+import { APP_INLINE_SCRIPTS } from "./lib/inlineScripts.js";
 
 // The public site lives on voltmira.com only. app.voltmira.com serves the same
 // Next app (it is where email links point), so without this its copies of the
@@ -10,19 +14,42 @@ import { aiOn, isAiPath } from "./lib/featureFlags.js";
 const SITE = "https://voltmira.com";
 const PUBLIC_PAGES = new Set(["/", "/ro", "/ru", "/uk", "/privacy", "/terms", "/refunds", "/cookies", "/credits"]);
 const LANG_PATH = { en: "/", ro: "/ro", ru: "/ru", uk: "/uk" };
+// The homepage is built once and served from the CDN, so it carries its own
+// policy, by hash (lib/landing.js); a nonce here would not match its scripts.
+const LANDING = new Set(["/", "/ro", "/ru", "/uk"]);
+const DEV = process.env.NODE_ENV !== "production";
+
+// The hashes of the app's own inline scripts, worked out once per server.
+let appHashes = null;
+const hashesOnce = () => (appHashes ||= Promise.all(APP_INLINE_SCRIPTS.map(scriptHash)));
+
+/** The policy for this path, and the nonce it carries ("" for the homepage, which sends its own). */
+async function policyFor(path) {
+  if (LANDING.has(path)) return { csp: "", nonce: null };
+  // route handlers (API, the demo door) render no Next page: no nonce to hand out
+  const page = !path.startsWith("/api/") && path !== "/demo";
+  const nonce = page ? makeNonce() : null;
+  const frameAncestors = path === "/widget" || path.startsWith("/widget/") ? "*" : "'none'";
+  return { csp: buildCsp({ nonce, hashes: await hashesOnce(), dev: DEV, frameAncestors }), nonce };
+}
 
 export async function proxy(req) {
-  const res = NextResponse.next({ request: req });
-
   const path = req.nextUrl.pathname;
   const host = (req.headers.get("host") || "").toLowerCase();
+
+  const { csp, nonce } = await policyFor(path);
+  const reqHeaders = new Headers(req.headers);
+  if (csp) reqHeaders.set("content-security-policy", csp);
+  if (nonce) reqHeaders.set("x-nonce", nonce);
+  const withCsp = (r) => { if (csp) r.headers.set("Content-Security-Policy", csp); return r; };
+  const res = withCsp(NextResponse.next({ request: { headers: reqHeaders } }));
 
   // AI and widgets are hidden until NEXT_PUBLIC_VOLTMIRA_AI=on (lib/featureFlags.js):
   // their pages and routes answer a plain 404, as if they did not exist.
   if (!aiOn() && isAiPath(path)) {
     return path.startsWith("/api/")
       ? NextResponse.json({ error: "not_found" }, { status: 404 })
-      : NextResponse.rewrite(new URL("/_not-found", req.url), { status: 404 });
+      : withCsp(NextResponse.rewrite(new URL("/_not-found", req.url), { status: 404, request: { headers: reqHeaders } }));
   }
 
   if (PUBLIC_PAGES.has(path)) {

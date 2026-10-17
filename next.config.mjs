@@ -3,41 +3,10 @@ import { CHROMIUM_ROUTES, traceKey } from "./lib/pdfRoutes.mjs";
 
 /** @type {import('next').NextConfig} */
 
-// Security headers applied to every response. The CSP is intentionally
-// permissive enough for the inline styles/scripts the marketing homepage uses
-// and the Supabase/PVGIS/Paddle endpoints the app calls, while blocking
-// framing (clickjacking) and enforcing HTTPS.
-// Shared directives. `frame-ancestors` is appended per-context: 'none' everywhere
-// so the app can't be clickjacked, but the /widget lead form is MEANT to be
-// embedded on installers' own sites, so it must allow any ancestor.
-const cspCommon = [
-  "default-src 'self'",
-  // Paddle Billing: paddle.js is served from cdn.paddle.com; the overlay checkout
-  // runs in a buy.paddle.com iframe and calls *.paddle.com endpoints. Allow both
-  // sandbox and production Paddle subdomains via the wildcard.
-  // plausible.io was missing here, so the analytics script the landing page
-  // loads was blocked before the request was even made — no pageview has ever
-  // been recorded. Both directives are needed: one to load script.js, one for
-  // the beacon it POSTs to /api/event.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://*.paddle.com https://plausible.io",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.paddle.com",
-  "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: https:",
-  // *.ingest.sentry.io/us.sentry.io: error/performance events from the
-  // Sentry SDK (lib/sentry setup, see instrumentation.js) — inert with no
-  // NEXT_PUBLIC_SENTRY_DSN set, but the CSP has to allow the endpoint before
-  // that, or the browser blocks the SDK's own reporting request outright.
-  // server.arcgisonline.com: the offline worker (public/app-sw.js) fetches
-  // the map tiles it keeps, and answers tile requests, as a "connect".
-  "connect-src 'self' https://server.arcgisonline.com https://*.supabase.co https://re.jrc.ec.europa.eu https://nominatim.openstreetmap.org https://*.paddle.com https://plausible.io https://*.ingest.sentry.io https://*.sentry.io",
-  "frame-src https://challenges.cloudflare.com https://*.paddle.com",
-  "base-uri 'self'",
-  "form-action 'self'",
-  // No plugins/embeds anywhere — closes the object-src gap flagged by scanners.
-  "object-src 'none'",
-];
-const csp = [...cspCommon, "frame-ancestors 'none'"].join("; ");
-const cspWidget = [...cspCommon, "frame-ancestors *"].join("; ");
+// The Content-Security-Policy is not set here. It is built in lib/csp.js and
+// sent by proxy.js (a fresh nonce per page) and by lib/landing.js (the
+// homepage, by hash). A second policy here would be enforced as well, and the
+// stricter of the two would win, so there is exactly one sender per response.
 
 // Pages that must never appear in search results. Sent as a HEADER rather than
 // a robots.txt Disallow on purpose: Disallow stops the crawl, which means the
@@ -53,15 +22,12 @@ const commonHeaders = [
 ];
 // Everything except /widget: block framing entirely.
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: csp },
   { key: "X-Frame-Options", value: "DENY" },
   ...commonHeaders,
 ];
-// /widget: no X-Frame-Options (legacy header can't say "any"), CSP allows framing.
-const widgetHeaders = [
-  { key: "Content-Security-Policy", value: cspWidget },
-  ...commonHeaders,
-];
+// /widget: no X-Frame-Options (legacy header can't say "any"); its policy
+// (proxy.js) allows framing.
+const widgetHeaders = [...commonHeaders];
 
 const nextConfig = {
   transpilePackages: ["@voltmira/engine"],

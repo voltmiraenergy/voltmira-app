@@ -1,4 +1,6 @@
 import { Analytics } from "@vercel/analytics/next";
+import { connection } from "next/server";
+import { NO_FLASH } from "../lib/inlineScripts.js";
 
 export const metadata = {
   // Resolves every relative canonical and og:image to the public site, so the
@@ -104,14 +106,12 @@ const THEME_VARS = `
   }
 `;
 
-// Runs before paint to set the theme attribute — prevents a light-then-dark flash.
-// Also syncs <meta name="theme-color">, same as the landing page: in standalone
-// (Home Screen) mode that color paints the status bar strip itself, so a
-// stale light value behind a dark-mode page reads as a visible seam, not just
-// a missed nicety.
-const NO_FLASH = `(function(){try{var t=localStorage.getItem("voltmira_theme");if(t!=="dark"&&t!=="light"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0F1310":"#142A21");}catch(e){}})();`;
-
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  // Every page renders per request. The Content-Security-Policy (lib/csp.js,
+  // sent by proxy.js) carries a fresh nonce each time, and Next can put that
+  // nonce on its own scripts only while rendering for that request: a page
+  // built ahead of time would carry none, and the policy would block it.
+  await connection();
   return (
     // suppressHydrationWarning: NO_FLASH stamps data-theme on <html> before
     // React hydrates, by design, so the attribute never matches the server's.
@@ -119,6 +119,7 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#142A21" />
+        {/* the theme before paint; allowed by its hash (lib/inlineScripts.js, lib/csp.js) */}
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH }} />
         <style dangerouslySetInnerHTML={{ __html: THEME_VARS }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
