@@ -39,9 +39,10 @@
   },
   "allowScripts": {
     "@sentry/cli@2.58.6": true,
-    "esbuild@0.28.1": true
+    "esbuild@0.28.1": true,
+    "unrs-resolver@1.12.2": true
   },
   "engines": {
-    "node": ">=20.9"
+    "node": "24.x"
   }
 }
