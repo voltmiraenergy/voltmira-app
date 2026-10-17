@@ -40,7 +40,9 @@ export default function TariffAdmin({ rules, lang, canPublish, today }) {
 
   const check = validateTariffInput(form);
   const bad = new Set(check.ok ? [] : check.errors);
-  const diff = check.ok && latest ? diffRules(latest, check.row) : [];
+  // the diff appears as soon as the prices are valid, before the source is typed
+  const preview = check.ok ? check : validateTariffInput({ ...form, source_title: form.source_title || latest?.source_title || "-" });
+  const diff = preview.ok && latest ? diffRules(latest, { ...preview.row, source_title: form.source_title || latest.source_title }) : [];
   const show = (field, v) => {
     if (v == null || v === "") return "";
     if (RATE_FIELDS.includes(field) || field.startsWith("export_monthly")) return `${fromMinorPerMwh(v)} lei/kWh`;
@@ -140,7 +142,11 @@ export default function TariffAdmin({ rules, lang, canPublish, today }) {
           <div className="adm-scroll">
             <table className="adm-table adm-diff">
               <thead><tr><th>{at("ad_field", lang)}</th><th>{at("ad_before", lang)}</th><th>{at("ad_after", lang)}</th></tr></thead>
-              <tbody>{diff.map((d) => <tr key={d.field}><td>{label(d.field)}</td><td className="num b">{show(d.field, d.before)}</td><td className="num">{show(d.field, d.after)}</td></tr>)}</tbody>
+              <tbody>{diff.map((d) => {
+                // prices stay on one line; text (a source, a note) wraps
+                const n = RATE_FIELDS.includes(d.field) || d.field.startsWith("export_monthly") || d.field.startsWith("effective") ? "num" : "";
+                return <tr key={d.field}><td>{label(d.field)}</td><td className={n + " b"}>{show(d.field, d.before)}</td><td className={n}>{show(d.field, d.after)}</td></tr>;
+              })}</tbody>
             </table>
           </div>
         ) : <p>{at("tr_nodiff", lang)}</p>)}
