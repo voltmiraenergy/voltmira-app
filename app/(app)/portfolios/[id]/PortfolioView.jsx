@@ -906,7 +906,7 @@ export default function PortfolioView({ portfolio, quotes, E, lang, schemeLimitK
           ].map(([path, kind, label, tab]) => (locked
             ? <span key={path} className={`btn ${kind} off pw-locked`} aria-disabled="true" title={bt("pw_locked_btn", lang)}><Lock size={14} aria-hidden="true" />{pt(label, lang)}</span>
             : <a key={path} className={`btn ${kind}` + (exportsOff ? " off" : "")} aria-disabled={exportsOff} tabIndex={exportsOff ? -1 : undefined}
-              href={`/api/portfolios/${portfolio.id}/${path}${exportQs}`} {...(tab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              href={`/api/portfolios/${portfolio.id}/${path}${exportQs}`} {...(tab ? { target: "_blank", rel: "noopener noreferrer", "data-pdf": "" } : {})}
               title={path === "teaser" ? pt("ex_teaser_h", lang) : undefined}>{pt(label, lang)}</a>))}</PackPay>
         </div>
         <p className="pf-hint">{pt("ex_teaser_h", lang)}</p>

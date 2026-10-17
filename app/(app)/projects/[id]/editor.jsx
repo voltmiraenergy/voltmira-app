@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
 import { regenerateProposal, saveQuoteTemplate, markProjectWon, offerPhone } from "../../../../lib/actions.js";
 import { sendOffer } from "../../../../lib/sendOffer.js";
+import { isStandalone, openPdfInApp } from "../../../../lib/openPdf.js";
 import { aiOn } from "../../../../lib/featureFlags.js";
 import AddressField from "../../../../components/AddressField.jsx";
 import SiteDesigner from "../../../../components/SiteDesigner.jsx";
@@ -649,6 +650,16 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   }
 
   async function downloadPdf() {
+    // The installed app: the PDF opens in the app's own viewer, with an X and
+    // Save (lib/openPdf.js). Opened like a page, it used to fill the app with
+    // no way back.
+    if (isStandalone()) {
+      let code = propUrl ? propUrl.split("/p/")[1] : null;
+      if (!code) { try { code = await sendOffer(initial.id); } catch { return; } }
+      if (p.status === "draft") update({ status: "sent" });
+      openPdfInApp(`/api/proposal/${code}/pdf`, p.title || "");
+      return;
+    }
     // Open the tab synchronously, inside the click gesture, so mobile popup
     // blockers don't swallow it — they do when window.open runs after an await,
     // which is why "Download PDF" appeared to do nothing on a phone.

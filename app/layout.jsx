@@ -1,6 +1,7 @@
 import { Analytics } from "@vercel/analytics/next";
 import { connection } from "next/server";
 import { NO_FLASH } from "../lib/inlineScripts.js";
+import AppNavBar from "../components/AppNavBar.jsx";
 
 export const metadata = {
   // Resolves every relative canonical and og:image to the public site, so the
@@ -131,7 +132,11 @@ export default async function RootLayout({ children }) {
       </head>
       {/* Vercel Analytics only in production: in development it loads a debug
           script from another host, which the CSP rightly blocks on every page */}
-      <body style={{ margin: 0 }}>{children}{process.env.NODE_ENV === "production" && <Analytics />}</body>
+      <body style={{ margin: 0 }}>
+        {/* back, forward, reload and the PDF viewer: only in the installed (home-screen) app */}
+        <AppNavBar />
+        {children}{process.env.NODE_ENV === "production" && <Analytics />}
+      </body>
     </html>
   );
 }

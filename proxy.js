@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { aiOn, isAiPath } from "./lib/featureFlags.js";
 import { buildCsp, makeNonce, scriptHash } from "./lib/csp.js";
 import { APP_INLINE_SCRIPTS } from "./lib/inlineScripts.js";
+import { AUTH_COOKIE_MAX_AGE } from "./lib/authCookie.js";
 
 // The public site lives on voltmira.com only. app.voltmira.com serves the same
 // Next app (it is where email links point), so without this its copies of the
@@ -93,9 +94,9 @@ export async function proxy(req) {
   }
 
   const supabase = createServerClient(url_, anon, {
-    // Persistent auth cookies (~400 days) so users stay signed in across browser
-    // restarts; getSession() below refreshes the token as needed.
-    cookieOptions: { maxAge: 60 * 60 * 24 * 400 },
+    // Persistent auth cookies (30 days, lib/authCookie.js) so users stay signed
+    // in across restarts; getSession() below refreshes the token as needed.
+    cookieOptions: { maxAge: AUTH_COOKIE_MAX_AGE },
     cookies: {
       getAll: () => req.cookies.getAll(),
       setAll: (list) => list.forEach(({ name, value, options }) =>

@@ -1,7 +1,7 @@
 // app/(legal)/cookies/page.jsx
 //
-// The sign-in cookie's lifetime comes from middleware.js / app/demo/route.js
-// (cookieOptions.maxAge, 400 days); voltmira_lang is set by the language
+// The sign-in cookie's lifetime comes from lib/authCookie.js (30 days,
+// renewed while the app is in use); voltmira_lang is set by the language
 // switchers (landing, /login) and the app layout. If either changes, change
 // the table too.
 import LegalShell from "../LegalShell.jsx";
@@ -14,7 +14,7 @@ export const metadata = {
 };
 
 const COOKIES = [
-  ["sb-…-auth-token", "Supabase, for VoltMira", "Keeps you signed in to your account or the live demo", "Up to 400 days, or until you sign out"],
+  ["sb-…-auth-token", "Supabase, for VoltMira", "Keeps you signed in to your account or the live demo", "30 days from your last visit, or until you sign out"],
   ["Paddle checkout cookies", "Paddle", "Completing a subscription purchase: session state and fraud prevention", "Session or short-lived"],
   ["Turnstile cookies, if any", "Cloudflare", "Telling a person from a bot on the sign-in page", "Session"],
   ["voltmira_lang", "VoltMira", "Remembers the language you picked, so the sign-in page opens in it", "1 year"],

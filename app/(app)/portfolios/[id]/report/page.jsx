@@ -14,6 +14,7 @@ import { pt } from "../../../../../lib/portfolioText.js";
 import { docSetup, printCss } from "../../../../../lib/portfolioPrint.js";
 import Report from "./Report.jsx";
 import PrintButton from "./PrintButton.jsx";
+import CloseDoc from "./CloseDoc.jsx";
 import { mdDayKey } from "../../../../../lib/tz.js";
 import { bt } from "../../../../../lib/bankText.js";
 import { reportId } from "../../../../../lib/reportId.js";
@@ -41,7 +42,7 @@ export default async function ReportPage(props) {
   return (
     <div className={"rp-wrap" + (pdf ? " is-pdf" : "")}>
       {!pdf && sp?.fallback === "1" && <p className="rp-fallback" role="status">{pt("r_pdf_fallback", lang)}</p>}
-      {!pdf && <div className="rp-bar"><PrintButton label={pt("r_print", lang)} /></div>}
+      {!pdf && <div className="rp-bar"><CloseDoc label={pt("r_close", lang)} href={`/portfolios/${id}`} /><PrintButton label={pt("r_print", lang)} /></div>}
       {!access.open && <p className="rp-draft" role="note">{bt("pk_ribbon", lang)}</p>}
       <Report model={model} lang={lang} company={d.co?.name || ""} date={date} money={money} fx={d.fx} rid={rid} />
       <style>{printCss({ lang, title: `${d.portfolio?.name || ""}, ${pt("r_title", lang)}, ${bt("rid", lang, { x: rid })}` })}</style>

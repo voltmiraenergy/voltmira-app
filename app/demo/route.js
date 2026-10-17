@@ -18,6 +18,7 @@ import { createDemoWorkspace, DEMO_SEED_DATE, resolvePdfDemoDest, resolveProposa
 import { isDemoEmail, isNonHumanAgent } from "../../lib/demo.js";
 import { isRateLimited, clientIp } from "../../lib/ratelimit.js";
 import { safeNext } from "../../lib/safeRedirect.js";
+import { AUTH_COOKIE_MAX_AGE } from "../../lib/authCookie.js";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +26,8 @@ const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 // This route builds its own createServerClient directly (not the shared
 // supabaseServer() factory in lib/supabase.js, which sets its own maxAge but
-// isn't used here) — so the long cookie lifetime has to be set explicitly on
-// it, same as it always was.
-const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 400;
+// isn't used here), so the cookie lifetime (lib/authCookie.js) is set
+// explicitly on it.
 
 const LANGS = new Set(["en", "ro", "ru", "uk"]);
 
