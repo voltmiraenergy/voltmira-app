@@ -20,7 +20,7 @@ export default async function ProjectPage(props) {
   // the security-definer my_company_id(), no recursion).
   const [{ data: p }, { data: co }, { data: prop }, { data: catalog }, { data: signedProp }, { data: wl }] = await Promise.all([
     sb.from("projects").select("*").eq("id", params.id).single(),
-    sb.from("companies").select("name, logo_url, engine, currency, prosumer_limit_kw, subsidy_amount_ron, lang, legal_name, reg_no, legal_address, iban, install_warranty_years").single(),
+    sb.from("companies").select("name, logo_url, engine, currency, prosumer_limit_kw, subsidy_amount_ron, lang, legal_name, reg_no, legal_address, iban, install_warranty_years, vat_rate").single(),
     sb.from("proposals").select("created_at").eq("project_id", params.id).limit(1).maybeSingle(),
     sb.from("products").select("*").order("created_at"),   // catalog for the bill of materials
     // the accepted + signed proposal, so the installer can view the signature back

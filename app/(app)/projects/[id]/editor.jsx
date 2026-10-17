@@ -1417,12 +1417,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             </div>
           </section>
 
-          {/* What programmes may pay for part of this job (Moldova). For the
-              installer only: none of it reaches the client's offer. */}
+          {/* What programmes may pay for part of this job (Moldova). The offer
+              shows the same, frozen on the day it is sent (SupportOffer.jsx). */}
           {isMD && (
             <SupportCard projectId={initial.id} lang={lang} market={p.market} costEur={q.e.grossCost}
               batteryEur={batteryEur({ batt: p.batt, battKwh: p.battKwh, batteryCostPerKwh: E.batteryCostPerKwh })}
-              vatRatePct={vatRatePct} fx={E.fx} initialKind={initial.client_kind ?? null} />
+              vatRatePct={vatRatePct} fx={E.fx} initialKind={initial.client_kind ?? null} initialProfile={initial.client_profile ?? null} />
           )}
 
           {/* The job's area from CNED's register: a local preview while

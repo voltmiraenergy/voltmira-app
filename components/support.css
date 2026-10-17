@@ -49,3 +49,9 @@
 .app .rc-show input { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--green); flex: none; }
 .app .rc-quote { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--green-tint); font-size: 13px; line-height: 1.5; color: var(--ink); }
 .app .rc-quote small { color: var(--muted); font-size: 12px; }
+
+/* the client's answers for the support check (projects.client_profile) */
+.spc-pf { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.spc-pf-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13.5px; }
+.spc-pf-docs { display: grid; gap: 6px; font-size: 13.5px; }
+.spc-pf-docs label { display: flex; gap: 8px; align-items: center; }

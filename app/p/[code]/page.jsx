@@ -15,6 +15,7 @@
 import "./proposal.css";
 import Tracker from "./tracker.jsx";
 import ClientAfter from "./ClientAfter.jsx";
+import SupportOffer, { supportLine } from "./SupportOffer.jsx";
 import AutoPrint from "./AutoPrint.jsx";
 import PrintSheet, { RoofSnapshotSVG } from "./PrintSheet.jsx";
 import RoofSatellite from "../../../components/RoofSatellite.jsx";
@@ -94,7 +95,7 @@ export default async function ProposalPage(props) {
     );
   }
   const { after = null, company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
-    offer = null, chosenOption = null, cned = null,
+    offer = null, chosenOption = null, cned = null, support = null,
     roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
@@ -114,7 +115,7 @@ export default async function ProposalPage(props) {
         <HtmlLang lang={lang} />
         <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom}
           roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat} roofPhoto={roofPhoto}
-          acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} />
+          acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} support={support} />
         {/* The PDF route drives printing through CDP and passes auto=0:
             window.print() inside headless Chromium blocks rather than returns. */}
         {searchParams?.auto !== "0" && <AutoPrint />}
@@ -583,6 +584,9 @@ export default async function ProposalPage(props) {
               <ClientAudit inputs={inputs} assumptions={E} lang={lang} currency={fmt.currency} rate={fmt.rate} />
             </section>
 
+            {/* the support programmes frozen with this offer (Moldova, offers since versioned rules) */}
+            <SupportOffer support={support} lang={lang} costMdl={q.cost * (Number(fx?.MDL) || 0)} />
+
             {(hasFinance && monthlyPayment > 0) || loan > 0 ? (
               <section className="pp-sec" aria-labelledby="pp-fin-h">
                 <h2 className="pp-h2" id="pp-fin-h" style={{ marginBottom: 18 }}>{ppt("fin_h", lang)}</h2>
@@ -607,6 +611,10 @@ export default async function ProposalPage(props) {
                     </div>
                   )}
                 </div>
+                {(() => {
+                  const sl = supportLine(support, lang, { costMdl: q.cost * (Number(fx?.MDL) || 0) });
+                  return sl ? <p className="pp-sup-total">{sl.head}{sl.net ? <><br />{sl.net}</> : null}</p> : null;
+                })()}
               </section>
             ) : null}
 

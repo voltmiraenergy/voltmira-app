@@ -13,6 +13,7 @@
 // editor; the client gets what each one means.
 // Rendered instead of the mobile proposal when ?print=1.
 import { moneyFormatter, numFor } from "../../../lib/money.js";
+import { supportLine } from "./SupportOffer.jsx";
 import { t } from "../../../lib/i18n.js";
 import { isPlaceholderTitle } from "../../../lib/quoteTitle.js";
 import { fmtDate } from "../../../lib/tz.js";
@@ -232,7 +233,7 @@ const CSS = `
   }
 `;
 
-export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, acceptUrl = "", fx = null }) {
+export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, acceptUrl = "", fx = null, support = null }) {
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
   // Minus ahead of the currency symbol: "€-31" reads as a broken string.
   // Lei for a Moldovan installer at the rate frozen with the proposal, with
@@ -534,6 +535,29 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
           <p className="p-eco">{co2(tr("pdf2_eco", { kg: Math.round(co2Year).toLocaleString(loc), t: trees }))}</p>
         </section>
       )}
+
+      {/* the support programmes frozen with the offer, as on the live page (SupportOffer.jsx) */}
+      {support?.results?.length > 0 && (() => {
+        const L = moneyFormatter({ currency: "MDL", lang, fx: { MDL: 1 } });
+        const line = supportLine(support, lang, { costMdl: q.cost * (Number(fx?.MDL) || 0) });
+        return (
+          <section>
+            <h2><span className="p-n">{num()}</span>{ppt("sup_h", lang)}</h2>
+            <p className="p-lead">{ppt("sup_sub", lang, { d: fmtDate(`${support.asOf}T12:00:00Z`, loc, { day: "numeric", month: "long", year: "numeric" }) })}</p>
+            <ul className="p-sup">
+              {support.results.map((r) => (
+                <li key={r.code}>
+                  <b>{r.name?.[lang] || r.name?.en}</b>
+                  {": "}{ppt(r.status === "eligible" ? "sup_eligible" : "sup_conditional", lang)}
+                  {r.estimateMinor > 0 ? `, ${ppt(r.kind === "guarantee" ? "sup_guarantee" : r.upTo || r.status !== "eligible" ? "sup_up_to" : "sup_about", lang, { x: L(r.estimateMinor / 100) })}` : ""}
+                  {r.fromPct != null ? `, ${ppt("sup_duty", lang, { a: r.fromPct, b: r.toPct })}` : ""}
+                </li>
+              ))}
+            </ul>
+            {line && <p className="p-lead"><b>{line.head}</b>{line.net ? `. ${line.net}` : ""}</p>}
+          </section>
+        );
+      })()}
 
       <section>
         <h2><span className="p-n">{num()}</span>{tr("pdf_next_h")}</h2>

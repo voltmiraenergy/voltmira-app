@@ -5,18 +5,20 @@
 // client is (household, small business, company); the rest follows from the
 // quote: its price, its battery and the VAT on the installer's invoices.
 //
-// Installer-only. Nothing here reaches the client's offer: an eligibility
-// mistake on a client document would be a promise, so the amounts stay with
-// the installer, each marked as an estimate with its source.
+// The client's offer shows the same programmes, frozen on the day it is sent,
+// each worded as an estimate (app/p/[code]/SupportOffer.jsx,
+// lib/supportSnapshot.js).
 //
-// The client type is stored on the quote (projects.client_kind) through a
-// server action; until supabase/add-client-kind.sql runs it still works for
-// this visit and says it is not saved. A typed loan is a what-if for the
-// installer, kept on this screen only.
+// The client type is stored on the quote (projects.client_kind), and the
+// client's answers (VAT payer, net-metering contract, the loan, documents
+// already held) in projects.client_profile, through server actions; until the
+// SQL has run they work for this visit and say they are not saved.
 import "./support.css";
 import { useMemo, useState, useTransition } from "react";
 import { supportFor, CLIENT_KINDS } from "../lib/greenSupport.js";
-import { setClientKind } from "../lib/greenActions.js";
+import { setClientKind, setClientProfile } from "../lib/greenActions.js";
+import { SUBSIDY_SEED } from "../lib/subsidySeed.js";
+import { cleanClientProfile } from "../lib/clientProfile.js";
 import { PROGRAMS } from "../lib/greenData.js";
 import { et, sourceLine } from "../lib/energyText.js";
 import { moneyFormatter, rateFor } from "../lib/money.js";
@@ -24,10 +26,14 @@ import { fmtDate } from "../lib/tz.js";
 import { LOCALE } from "../lib/relTime.js";
 
 const prog = (id) => PROGRAMS.find((p) => p.id === id);
+// every document a programme may ask for, once each
+const DOCS = [...new Map(SUBSIDY_SEED.flatMap((p) => p.required_documents).map((d) => [d.id, d])).values()];
 
-export default function SupportCard({ projectId, lang = "en", market, costEur = 0, batteryEur = 0, vatRatePct = 0, fx = null, initialKind = null }) {
+export default function SupportCard({ projectId, lang = "en", market, costEur = 0, batteryEur = 0, vatRatePct = 0, fx = null, initialKind = null, initialProfile = null }) {
   const [kind, setKind] = useState(CLIENT_KINDS.includes(initialKind) ? initialKind : null);
-  const [loan, setLoan] = useState("");
+  const [profile, setProfile] = useState(() => cleanClientProfile(initialProfile || {}));
+  const [loan, setLoan] = useState(profile.loanMdl ? String(profile.loanMdl) : "");
+  const [pfNote, setPfNote] = useState(null);
   const [note, setNote] = useState(null);
   const [pending, start] = useTransition();
 
@@ -57,6 +63,27 @@ export default function SupportCard({ projectId, lang = "en", market, costEur = 
     });
   }
 
+  // the client's answers, saved on the quote for the next offer
+  function saveProfile(next) {
+    const clean = cleanClientProfile(next);
+    setProfile(clean);
+    setPfNote(null);
+    start(async () => {
+      try {
+        const res = await setClientProfile(projectId, clean);
+        setPfNote(res?.ok ? "saved" : res?.needsDb ? "needs_db" : "failed");
+      } catch { setPfNote("failed"); }
+    });
+  }
+  const tri = (key) => (
+    <div className="seg2 spc-seg" role="group" aria-label={et(key === "vatPayer" ? "pf_vat" : "pf_net", lang)}>
+      {[["yes", true], ["no", false], ["unknown", undefined]].map(([w, v]) => (
+        <button key={w} type="button" className={profile[key] === v ? "on" : ""} aria-pressed={profile[key] === v}
+          onClick={() => saveProfile({ ...profile, [key]: v === undefined ? null : v })}>{et("pf_" + w, lang)}</button>
+      ))}
+    </div>
+  );
+
   const loc = LOCALE[lang] || "en-GB";
   const battery = batteryEur > 0;
 
@@ -78,7 +105,8 @@ export default function SupportCard({ projectId, lang = "en", market, costEur = 
             <div className="spc-q">
               <label htmlFor={"spc-loan-" + projectId}>{et("g_loan", lang)}</label>
               <input id={"spc-loan-" + projectId} className="input spc-loan" inputMode="numeric" value={loan}
-                onChange={(e) => setLoan(e.target.value.replace(/[^\d\s.]/g, ""))} />
+                onChange={(e) => setLoan(e.target.value.replace(/[^\d\s.]/g, ""))}
+                onBlur={() => { if ((profile.loanMdl || 0) !== loanMdl) saveProfile({ ...profile, loanMdl }); }} />
             </div>
             {it.state === "needs_loan" && <p className="spc-dim">{et("g_type_loan", lang)}</p>}
             {it.capped && <p className="spc-dim">{et("g_capped", lang, { cap: L(it.capMdl) })}</p>}
@@ -143,6 +171,26 @@ export default function SupportCard({ projectId, lang = "en", market, costEur = 
             </ul>
           )}
           {battery && r.items.length > 0 && <p className="spc-dim">{et("sp_batt_est", lang, { x: L(batteryEur * rate) })}</p>}
+          {battery && r.items.length > 0 && (
+            <div className="spc-pf">
+              <span className="spc-lbl">{et("pf_h", lang)}</span>
+              <div className="spc-pf-row"><span>{et("pf_vat", lang)}</span>{tri("vatPayer")}</div>
+              <div className="spc-pf-row"><span>{et("pf_net", lang)}</span>{tri("netMetering")}</div>
+              <span className="spc-lbl">{et("pf_docs", lang)}</span>
+              <div className="spc-pf-docs">
+                {DOCS.map((d) => {
+                  const on = (profile.documentsHave || []).includes(d.id);
+                  return (
+                    <label key={d.id}>
+                      <input type="checkbox" checked={on} onChange={() => saveProfile({ ...profile, documentsHave: on ? profile.documentsHave.filter((x) => x !== d.id) : [...(profile.documentsHave || []), d.id] })} />
+                      {d.name[lang] || d.name.en}
+                    </label>
+                  );
+                })}
+              </div>
+              {pfNote && <p className={"spc-note" + (pfNote === "saved" ? "" : " bad")} role="status">{et(pfNote === "saved" ? "pf_saved" : pfNote === "needs_db" ? "pf_needs_db" : "sp_save_failed", lang)}</p>}
+            </div>
+          )}
           <p className="spc-foot">{et("sp_foot", lang)}</p>
         </>
       )}
