@@ -23,6 +23,7 @@ doubt changes nothing.
 | `add-deadline-alerts.sql` | The weekly permits-and-deadlines email: a per-company switch (`companies.notify_deadlines`, on by default) | **Not run yet** |
 | `add-tariffs-subsidies.sql` | Versioned tariff rules (`tariff_rules`), versioned support programmes (`subsidy_programs`), the append-only `audit_log`, and `projects.client_profile`; seeds version 1 equal to the code. Until run, the app uses the same values from code (`lib/tariffSeed.js`, `lib/subsidySeed.js`) and the admin screens say so | **Not run yet** |
 | `add-financing.sql` | Green financing: `lenders` (server only), `financing_offers`, `loan_applications`, the append-only `loan_status_events` and `commission_ledger`; sample MAIB, Moldindconbank and OTP offers. Run after `add-tariffs-subsidies.sql` | **Not run yet** |
+| `add-integrations.sql` | Local integrations: `qualified_signatures` and `proposals.signature_level`, `efactura_submissions`, `payments`, `export_mappings` (the 1C column mapping), `grid_submissions` and the append-only `grid_submission_events`. Run after `add-tariffs-subsidies.sql` | **Not run yet** |
 | `add-referral-leads.sql` | A lead can be "recommended by a client" (`leads.source = 'referral'`, from the client's page `/r/[code]`); until run, such leads are saved as manual with the note | **Not run yet** |
 
 Do not run `fix-profiles-rls.sql` on its own. It removes the recursion but
@@ -57,6 +58,7 @@ leaves out the guard; `lock-down-2026-09-28.sql` does both and replaces it.
 9. `add-referral-leads.sql` (leads recommended by a client)
 10. `add-tariffs-subsidies.sql` (versioned tariffs, support programmes, audit log)
 11. `add-financing.sql` (lenders, offers, loan applications, commissions)
+12. `add-integrations.sql` (qualified signatures, e-Factura, payments, 1C mapping, grid submissions)
 
 ## Checking what a database already has
 
