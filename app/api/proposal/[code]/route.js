@@ -19,7 +19,7 @@ import { sendEmail, proposalOpenedEmail, emailConfigured, ownerAlertEmail } from
 import { sendCrmWebhook } from "../../../../lib/crmWebhook.js";
 import { openNow } from "../../../../lib/openDigest.js";
 import { quote, SOLAR_SEASON } from "@voltmira/engine";
-import { journeySteps, nextStep, productionSeries } from "../../../../lib/clientJourney.js";
+import { journeySteps, nextStep, productionSeries, journeyFacts } from "../../../../lib/clientJourney.js";
 import { snapshotEngine } from "../../../../lib/engineSettings.js";
 import { bomHasBattery } from "../../../../lib/quoteInput.js";
 import { loadOffers, offerFigures, acceptOffers } from "../../../../lib/proposalOffers.js";
@@ -232,7 +232,9 @@ export async function GET(req, props) {
     ]);
     const steps = journeySteps({ signedAt: prop.accepted_at, progress: pj?.install_progress });
     const shape = Array.isArray(prop.snapshot?.monthlyYieldShape) && prop.snapshot.monthlyYieldShape.length === 12 ? prop.snapshot.monthlyYieldShape : SOLAR_SEASON;
-    after = { steps, next: nextStep(steps), production: productionSeries(reads || [], Number(q.e.solar0) || Number(q.e.prod0) || 0, shape) };
+    const prod0 = Number(q.e.solar0) || Number(q.e.prod0) || 0;
+    const production = productionSeries(reads || [], prod0, shape);
+    after = { steps, next: nextStep(steps), production, facts: journeyFacts(steps, production, { year1: q.e.year1, prod0 }) };
   }
 
   return NextResponse.json({

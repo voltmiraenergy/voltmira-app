@@ -25,6 +25,7 @@ export async function POST(req) {
   const name = clip(body.name, 120);
   const phone = clip(body.phone, 30).replace(/[^\d+()\s-]/g, "");
   const locality = clip(body.locality, 80);
+  const bill = Math.min(1e6, Math.max(0, Math.round(Number(String(body.bill ?? "").replace(/[^\d]/g, "")) || 0)));
   if (clip(body.hp, 200)) return NextResponse.json({ ok: true });
   if (!/^[a-z0-9]{6,16}$/i.test(code) || name.length < 2 || phone.replace(/\D/g, "").length < 6) return NextResponse.json({ error: "invalid" }, { status: 400 });
 
@@ -37,14 +38,25 @@ export async function POST(req) {
   ]);
   const lang = co?.lang || "ro";
   const by = pj?.client_name || "";
-  const note = [nt("ref_note", lang, { by, title: pj?.title || code }), locality ? `${nt("ref_where", lang)}: ${locality}` : ""].filter(Boolean).join(". ");
+  const note = [nt("ref_note", lang, { by, title: pj?.title || code }), locality ? `${nt("ref_where", lang)}: ${locality}` : "", bill ? `${nt("ref_bill", lang)}: ${bill}` : ""].filter(Boolean).join(". ");
 
   // source "referral" once add-referral-leads.sql has run; before that, a manual
-  // lead on the "referral" channel that says so in its note
-  const lead = { company_id: prop.company_id, name, phone, note, hot: true, channel: "referral" };
-  let { error } = await db.from("leads").insert({ ...lead, source: "referral" });
-  if (error && /source|check constraint/i.test(error.message || "")) ({ error } = await db.from("leads").insert({ ...lead, source: "manual" }));
-  if (error && /channel/i.test(error.message || "")) ({ error } = await db.from("leads").insert({ ...lead, channel: undefined, source: "manual" }));
+  // lead on the "referral" channel that says so in its note. A database
+  // without the newer lead columns still gets the lead, without them.
+  let lead = { company_id: prop.company_id, name, phone, note, hot: true, source: "referral", channel: "referral",
+    ...(locality ? { address: locality } : {}), ...(bill ? { monthly_bill: bill } : {}) };
+  let error;
+  for (let i = 0; i < 5; i++) {
+    ({ error } = await db.from("leads").insert(lead));
+    const m = error?.message || "";
+    if (!error) break;
+    if (lead.source === "referral" && /source|check constraint/i.test(m)) lead = { ...lead, source: "manual" };
+    else if (/channel|address|monthly_bill/i.test(m)) {
+      const col = ["channel", "address", "monthly_bill"].find((c) => m.includes(c));
+      const { [col]: _drop, ...rest } = lead;
+      lead = rest;
+    } else break;
+  }
   if (error) {
     console.error("[referral] lead not saved:", error.message);
     return NextResponse.json({ error: "save_failed" }, { status: 500 });
@@ -61,7 +73,7 @@ export async function POST(req) {
       if (owner?.email) {
         const { html } = ownerAlertEmail({
           lang, kicker: nt("ref_kicker", lang), heading: nt("ref_heading", lang, { name, by: firstName(by) || by }),
-          rows: [[nt("call_phone", lang), phone], ...(locality ? [[nt("ref_where", lang), locality]] : []), [nt("ref_by", lang), by]],
+          rows: [[nt("call_phone", lang), phone], ...(locality ? [[nt("ref_where", lang), locality]] : []), ...(bill ? [[nt("ref_bill", lang), String(bill)]] : []), [nt("ref_by", lang), by]],
           lead: nt("ref_lead", lang), cta: { label: nt("ref_cta", lang), href: "/leads" }, foot: nt("foot", lang), appUrl: process.env.NEXT_PUBLIC_APP_URL,
         });
         await sendEmail({ to: owner.email, subject: nt("ref_subject", lang, { name }), html });

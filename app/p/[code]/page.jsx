@@ -189,8 +189,10 @@ export default async function ProposalPage(props) {
   const validityDays = Number(E?.quoteValidityDays) || 30;
   const validTs = (sentAt ? new Date(sentAt).getTime() : now) + validityDays * 864e5;
   const validUntil = fmtDate(new Date(validTs), loc, { day: "numeric", month: "long", year: "numeric" });
-  const expired = now > validTs;
-  const validShort = expired ? ppt("expired_on", lang, { d: validUntil }) : ppt("valid_until", lang, { d: validUntil });
+  // a signed offer no longer expires: it says when it was signed instead
+  const signedDay = accepted && signedAt ? fmtDate(new Date(signedAt), loc, { day: "numeric", month: "long", year: "numeric" }) : null;
+  const expired = !signedDay && now > validTs;
+  const validShort = signedDay ? ppt("signed_on", lang, { d: signedDay }) : expired ? ppt("expired_on", lang, { d: validUntil }) : ppt("valid_until", lang, { d: validUntil });
 
   const placeholderTitle = isPlaceholderTitle(inputs.title);
   const headline = placeholderTitle ? t("pdf_auto_title", lang, { kw: kwTxt }) : inputs.title;
@@ -314,7 +316,7 @@ export default async function ProposalPage(props) {
           <div className="pp-main">
 
             {/* signed: the client's own page, their installation and their production */}
-            {accepted && after && <ClientAfter after={after} lang={lang} code={params.code} company={company} nf={nf} />}
+            {accepted && after && <ClientAfter after={after} lang={lang} code={params.code} company={company} nf={nf} fmt={fmt} preparedBy={preparedBy} market={inputs.market} />}
 
             {/* Ukraine: outages first, the way a Ukrainian household decides. */}
             {inputs.market === "UA" && (
@@ -679,7 +681,7 @@ export default async function ProposalPage(props) {
         </div>
 
         <footer className="pp-foot">
-          <p>{expired ? ppt("expired_full", lang, { d: validUntil }) : ppt("valid_full", lang, { d: validUntil })}</p>
+          <p>{signedDay ? ppt("signed_on", lang, { d: signedDay }) : expired ? ppt("expired_full", lang, { d: validUntil }) : ppt("valid_full", lang, { d: validUntil })}</p>
           {/* Growth loop: every free-plan proposal a homeowner opens carries a
               tasteful VoltMira credit. Pro/Team white-labels it away. The mark
               is drawn exactly as the brand's, never recoloured. */}

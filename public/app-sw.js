@@ -25,7 +25,9 @@
  * Registered from app/(app)/OfflineReady.jsx, in production builds only.
  */
 const PAGES = "vm-pages-v1";
-const STATIC = "vm-static-v1";
+// v2: v1 also kept `next dev` files (same names, new contents), which served
+// old scripts and styles on localhost after a local production run
+const STATIC = "vm-static-v2";
 const TILES = "vm-tiles-v1";
 const TILE_HOST = "server.arcgisonline.com";
 const MAX_TILES = 4000;
@@ -76,6 +78,10 @@ self.addEventListener("message", (event) => {
 });
 
 const isHtml = (res) => (res.headers.get("content-type") || "").includes("text/html");
+// Only a build's content-hashed files are sent "immutable"; `next dev` sends
+// its chunks "no-cache" under names that stay the same across edits, so those
+// are never kept.
+const isImmutable = (res) => /immutable/i.test(res.headers.get("cache-control") || "");
 const keyOf = (url) => url.origin + url.pathname + url.search;
 
 async function networkFirst(req, url) {
@@ -131,7 +137,7 @@ async function cacheFirst(req) {
   const hit = await cache.match(req, { ignoreSearch: true });
   if (hit) return hit;
   const res = await fetch(req);
-  if (res.ok && res.type === "basic") {
+  if (res.ok && res.type === "basic" && isImmutable(res)) {
     cache.put(req, res.clone()).then(() => trim(cache, MAX_STATIC));
   }
   return res;
@@ -173,7 +179,7 @@ async function cacheAssets(html) {
     if (await cache.match(path, { ignoreSearch: true })) continue;
     try {
       const res = await fetch(path);
-      if (res.ok) await cache.put(path, res);
+      if (res.ok && isImmutable(res)) await cache.put(path, res);
     } catch { return; }
   }
   trim(cache, MAX_STATIC);
