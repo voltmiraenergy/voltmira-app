@@ -80,7 +80,7 @@ export async function proxy(req) {
     || path.startsWith("/guide") || path.startsWith("/catalog") || path.startsWith("/profile")
     || path.startsWith("/activity") || path.startsWith("/documents")
     || path.startsWith("/studio") || path.startsWith("/traction") || path.startsWith("/portfolios")
-    || path.startsWith("/energy");
+    || path.startsWith("/energy") || path.startsWith("/admin");
 
   if (!isProtected) return res;
 

@@ -96,6 +96,7 @@ const nextConfig = {
       { source: "/traction/:path*", headers: noIndexHeaders },
       { source: "/portfolios/:path*", headers: noIndexHeaders },
       { source: "/energy/:path*", headers: noIndexHeaders },
+      { source: "/admin/:path*", headers: noIndexHeaders },
       { source: "/auth/:path*", headers: noIndexHeaders },
       // /demo used to be a robots.txt Disallow, which Search Console reports as
       // "Blocked by robots.txt" for every page that links to it. It is now

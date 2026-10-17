@@ -98,6 +98,8 @@ export default async function TractionPage() {
           </p>
         </div>
         <div className="dx-head-tools">
+          <a className="dx-btn" href="/admin/tariffs">Tariff rules</a>
+          <a className="dx-btn" href="/admin/subsidies">Support programmes</a>
           <a className="dx-btn" href="/api/admin/traction?format=csv">Download weekly CSV</a>
         </div>
       </header>
