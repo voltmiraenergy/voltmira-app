@@ -141,7 +141,7 @@ export default function StudyReader({ kind, id, lang = "en", plantMw = null, onA
   return (
     <div className="yr">
       <div className="pl-row">
-        <label className={"btn sm" + (busy ? " off" : "")} htmlFor={`yr-${kind}-${id}`}>
+        <label className={"btn sm amber" + (busy ? " off" : "")} htmlFor={`yr-${kind}-${id}`}>
           {plt("rd_btn", lang)}
           <input ref={inputRef} id={`yr-${kind}-${id}`} className="yr-file" type="file" accept="application/pdf,.pdf" disabled={busy}
             onChange={(e) => onFile(e.target.files?.[0])} />
@@ -158,7 +158,7 @@ export default function StudyReader({ kind, id, lang = "en", plantMw = null, onA
           <label htmlFor={`yrr-${kind}-${id}`}>{plt("rd_scan", lang)}</label>
           <div className="pl-row">
             <input id={`yrr-${kind}-${id}`} className="input" value={range} onChange={(e) => setRange(e.target.value)} placeholder="4-9" inputMode="numeric" />
-            <button type="button" className="btn sm" onClick={readScan}>{plt("rd_scan_go", lang)}</button>
+            <button type="button" className="btn sm amber" onClick={readScan}>{plt("rd_scan_go", lang)}</button>
             <button type="button" className="btn ghost sm" onClick={reset}>{plt("rd_cancel", lang)}</button>
           </div>
           {rangeBad && <small className="pf-warn" role="alert">{plt("rd_range_bad", lang, { total })}</small>}

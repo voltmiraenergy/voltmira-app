@@ -777,3 +777,21 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 .app .mc-t th, .app .mc-t td { padding-left: 4px; padding-right: 4px; font-size: 10.5px; white-space: nowrap; }
 .app .mc-t td:first-child, .app .mc-t th:first-child { white-space: normal; min-width: 90px; padding-left: 0; }
 .app .mc-t td.mc-low { color: var(--pf-bad); }
+
+/* ---- a plant's quick links (PlantsPanel.jsx): one tap to each section; the
+   grid connection is amber until a point is chosen, green once it is */
+.app .pl-jump { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 14px; }
+.app .pl-jump-a { padding: 6px 11px; border-radius: 99px; border: 1px solid var(--line); background: var(--paper-2); color: var(--ink); font-size: 12.5px; font-weight: 600; text-decoration: none; transition: border-color .15s ease, background-color .15s ease; }
+.app .pl-jump-a:hover { border-color: var(--green); color: var(--green); }
+.app .pl-jump-a.key { background: var(--amber); border-color: var(--amber); color: var(--on-amber); }
+.app .pl-jump-a.key:hover { background: var(--amber-soft); color: var(--on-amber); }
+.app .pl-jump-a.on { background: var(--green-tint); border-color: transparent; color: var(--green); }
+.app .pl-anchor { scroll-margin-top: 72px; }
+
+/* ---- the site planner's entry ("develop the site"): amber until a plan is drawn */
+.app .ly-open { border: 1.5px solid var(--amber); background: var(--amber-tint); box-shadow: 0 3px 12px rgba(232, 155, 45, .18); }
+.app .ly-open:hover { border-color: var(--amber-ink); }
+.app .ly-open .ly-open-ic { background: var(--amber); color: var(--on-amber); }
+.app .ly-open-tx b { color: var(--ink); }
+.app .ly-open.done { border-color: color-mix(in srgb, var(--green) 40%, var(--line)); background: color-mix(in srgb, var(--green) 6%, var(--paper)); box-shadow: none; }
+.app .ly-open.done .ly-open-ic { background: var(--green); color: var(--on-green); }

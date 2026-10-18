@@ -39,7 +39,7 @@ export default function LayoutPanel({ lang = "en", pl, onSave }) {
           {assumed.length > 0 && <p className="pf-hint">{plt("ly_assume", lang, { what: assumed.join(", ") })}</p>}
           {lay.inputs?.wind && (() => { const D = rotorDiameterM(lay.inputs.wind.mwPerTurbine); const r = keepoutRadiusM(D);
             return <p className="pl-line">{plt("ly_need_wind", lang, { n: f(lay.inputs.wind.count, 0), d: f(D, 0), r: f(r, 0) })}</p>; })()}
-          <button type="button" className="ly-open" onClick={() => setOpen(true)}>
+          <button type="button" className={"ly-open" + (pl.layout ? " done" : "")} onClick={() => setOpen(true)}>
             <span className="ly-open-ic" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.7 21 9.2l-3.4 10.6H6.4L3 9.2z" /></svg>
             </span>
