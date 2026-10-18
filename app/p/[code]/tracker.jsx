@@ -5,14 +5,16 @@
 // closes once the client has typed their name AND drawn a signature.
 //   listens  "voltmira:sign"      (AcceptLink.jsx: any other "Accept and sign" on the page)
 //   sends    "voltmira:accepted"  (AcceptLink.jsx, StickyCta.jsx: the client has signed)
-// Styles: proposal.css (.pp-act, .pp-sign, .pp-ref).
+// Next to it, the qualified signature (MSign with MPass): a button that starts
+// it at /api/proposal/[code]/qsign, and the outcome when the client comes back.
+// Styles: proposal.css (.pp-act, .pp-sign, .pp-ref, .pp-qs, .pp-lvl).
 import { useEffect, useId, useRef, useState } from "react";
 import { PenLine } from "lucide-react";
 import { t } from "../../../lib/i18n.js";
 import { ppt } from "./text.js";
 import SignaturePad from "./SignaturePad.jsx";
 
-export default function Tracker({ code, accepted: initialAccepted, lang = "en", signedName = null, signedDate = null }) {
+export default function Tracker({ code, accepted: initialAccepted, lang = "en", signedName = null, signedDate = null, signature = null, qsign = null, qsignOutcome = null }) {
   const [accepted, setAccepted] = useState(initialAccepted);
   const [requested, setRequested] = useState(false);
   const [asking, setAsking] = useState(false);       // the call request's small form is open
@@ -26,6 +28,8 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
   const [signer, setSigner] = useState("");
   const [sending, setSending] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [qsBusy, setQsBusy] = useState(false);
+  const [qsFailed, setQsFailed] = useState(false);
   const secondsRef = useRef(0);
   const nameRef = useRef(null);
   const focusName = useRef(false);
@@ -86,6 +90,17 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
     window.dispatchEvent(new CustomEvent("voltmira:accepted"));
   }
 
+  // The qualified signature leaves this page for MSign (or the simulation)
+  // and comes back to it with the outcome.
+  async function startQualified() {
+    if (qsBusy) return;
+    setQsBusy(true); setQsFailed(false);
+    const res = await fetch(`/api/proposal/${code}/qsign`, { method: "POST" }).catch(() => null);
+    const out = res && res.ok ? await res.json().catch(() => null) : null;
+    if (!out?.redirectUrl) { setQsFailed(true); setQsBusy(false); return; }
+    window.location.assign(out.redirectUrl);
+  }
+
   // A call request reports what really happened: "sent" only once the
   // installer has it (a lead, an Activity line, an email), else an error.
   async function requestCall() {
@@ -102,19 +117,35 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
   const signedLine = who
     ? (signedDate ? ppt("signed_by", lang, { name: who, date: signedDate }) : ppt("signed_by_nd", lang, { name: who }))
     : ppt("sig_done", lang);
+  // the legal level of the signature, said plainly; a simulated qualified one says so
+  const level = signature?.level === "qualified" ? (signature.simulated ? "lvl_simulated" : "lvl_qualified") : "lvl_simple";
 
   return (
     <div className="pp-act">
       {accepted ? (
         <div className="pp-done" role="status">
           <PenLine className="pp-ic" aria-hidden="true" />
-          <span>{signedLine}{who ? <><br /><span style={{ fontWeight: 500 }}>{ppt("sig_done", lang)}</span></> : null}</span>
+          <span>{signedLine}<span className={"pp-lvl" + (level === "lvl_simulated" ? " is-sim" : "")}>{ppt(level, lang)}</span>{who ? <span style={{ display: "block", fontWeight: 500 }}>{ppt("sig_done", lang)}</span> : null}</span>
         </div>
       ) : !signing ? (
-        <button type="button" className="pp-btn pp-btn-accept pp-btn-block"
-          onClick={() => { focusName.current = true; setSigning(true); }}>
-          {ppt("cta_accept", lang)}
-        </button>
+        <>
+          <button type="button" className="pp-btn pp-btn-accept pp-btn-block"
+            onClick={() => { focusName.current = true; setSigning(true); }}>
+            {ppt("cta_accept", lang)}
+          </button>
+          {qsign && (
+            <div className="pp-qs">
+              <p className="pp-qs-or">{ppt("qs_or", lang)}</p>
+              <button type="button" className="pp-btn pp-btn-ghost pp-btn-block" disabled={qsBusy} onClick={startQualified}>
+                {qsBusy ? ppt("qs_starting", lang) : ppt("qs_btn", lang)}
+              </button>
+              <p className="pp-qs-note">{ppt("qs_note", lang)}</p>
+              {qsign === "mock" && <p className="pp-qs-test">{ppt("qs_test", lang)}</p>}
+              {qsFailed && <p className="pp-err" role="alert">{ppt("qs_error", lang)}</p>}
+              {!qsFailed && qsignOutcome && <p className="pp-err" role="status">{ppt("qs_" + qsignOutcome, lang)}</p>}
+            </div>
+          )}
+        </>
       ) : (
         <div className="pp-sign" role="group" aria-labelledby={`${id}-sh`}>
           <h3 className="pp-h3" id={`${id}-sh`}>{ppt("sig_h", lang)}</h3>

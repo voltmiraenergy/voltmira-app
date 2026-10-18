@@ -830,3 +830,21 @@
 .pp-lc-acts { display: flex; gap: 8px; flex-wrap: wrap; }
 .pp-lc-acts .pp-btn { min-height: 46px; }
 .pp-lc-err { margin: 0; font-size: 13.5px; color: var(--red); }
+
+/* ---- the qualified signature: the button under click-to-sign, the level line,
+   and the simulated MSign page (app/sign/mock) */
+.pp-qs { margin-top: 12px; display: grid; gap: 8px; }
+.pp-qs-or { margin: 0; font-size: 12.5px; color: var(--muted); text-align: center; }
+.pp-qs-note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); text-align: center; }
+.pp-qs-test { margin: 0; font-size: 12px; line-height: 1.5; color: var(--amber-ink); text-align: center; font-weight: 600; }
+.pp-lvl { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.pp-lvl.is-sim { color: var(--amber-ink); }
+.qm { max-width: 560px; padding-top: 32px; padding-bottom: 56px; display: grid; gap: 16px; }
+.qm-warn { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--amber-tint); color: var(--amber-ink); border: 1.5px solid var(--amber); font-size: 14px; font-weight: 600; line-height: 1.5; }
+.qm-card { padding: 18px; display: grid; gap: 12px; }
+.qm-facts { margin: 0; display: grid; gap: 8px; font-size: 13.5px; }
+.qm-facts dt { color: var(--muted); font-size: 12px; }
+.qm-facts dd { margin: 0; color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+.qm-hash { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-weight: 500; font-size: 12.5px; }
+.qm-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.qm-btns .pp-btn { flex: 1 1 160px; }

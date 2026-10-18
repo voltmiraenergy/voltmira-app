@@ -96,7 +96,7 @@ export default async function ProposalPage(props) {
     );
   }
   const { after = null, company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
-    offer = null, chosenOption = null, cned = null, support = null, financing = null,
+    offer = null, chosenOption = null, cned = null, support = null, financing = null, signature = null, qsign = null,
     roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
@@ -116,7 +116,8 @@ export default async function ProposalPage(props) {
         <HtmlLang lang={lang} />
         <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom}
           roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat} roofPhoto={roofPhoto}
-          acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} support={support} />
+          acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} support={support}
+          signed={accepted && signedName ? { name: signedName, date: signedDate, ...signature } : null} />
         {/* The PDF route drives printing through CDP and passes auto=0:
             window.print() inside headless Chromium blocks rather than returns. */}
         {searchParams?.auto !== "0" && <AutoPrint />}
@@ -639,7 +640,8 @@ export default async function ProposalPage(props) {
                 </div>
                 <OfferBanner lang={lang} accepted={accepted} offer={offer} chosenOption={chosenOption} currency={fmt.currency} rate={fmt.rate}
                   optionLabels={Object.fromEntries(options.map((o, i) => [i + 2, o.label || ppt("opt_n", lang, { n: i + 2 })]))} />
-                <Tracker code={params.code} accepted={accepted} lang={lang} signedName={signedName} signedDate={signedDate} />
+                <Tracker code={params.code} accepted={accepted} lang={lang} signedName={signedName} signedDate={signedDate}
+                  signature={signature} qsign={qsign} qsignOutcome={["declined", "invalid", "pending"].includes(searchParams?.qsign) ? searchParams.qsign : null} />
               </div>
               <div className="pp-accept-foot">
                 <div>

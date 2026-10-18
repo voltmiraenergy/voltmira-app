@@ -233,7 +233,7 @@ const CSS = `
   }
 `;
 
-export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, acceptUrl = "", fx = null, support = null }) {
+export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, acceptUrl = "", fx = null, support = null, signed = null }) {
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
   // Minus ahead of the currency symbol: "€-31" reads as a broken string.
   // Lei for a Moldovan installer at the rate frozen with the proposal, with
@@ -584,6 +584,11 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
           )}
         </dl>
       </div>
+
+      {/* signed: who, when and the signature's legal level (simple or qualified) */}
+      {signed?.name && (
+        <p className="p-lead"><b>{ppt("sig_print", lang, { name: signed.name, date: signed.date || "", level: ppt(signed.level === "qualified" ? (signed.simulated ? "lvl_simulated" : "lvl_qualified") : "lvl_simple", lang) })}</b></p>
+      )}
 
       <div className="p-foot">
         <span>{preparedBy?.name ? `${tr("pp_prepared_by")} ${preparedBy.name}${preparedBy.phone ? ", " + preparedBy.phone : ""}` : company.name}</span>

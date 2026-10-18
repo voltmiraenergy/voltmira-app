@@ -76,7 +76,16 @@ export default async function ProjectPage(props) {
     acceptedAt: signedProp.accepted_at || null,
     signedIp: signedProp.signed_ip || null,
     signedUa: signedProp.signed_ua || null,
+    level: signedProp.signature_level === "qualified" ? "qualified" : "simple",
+    qualified: null,
   } : null;
+  // a qualified signature's evidence: the provider's container, the hash of
+  // what was signed, and whether it was the simulation (lib/qsignFlow.js)
+  if (signed?.level === "qualified") {
+    const { data: qs } = await sb.from("qualified_signatures").select("request_id, provider, document_hash, container, verification")
+      .eq("proposal_code", signedProp.code).eq("status", "signed").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+    if (qs) signed.qualified = { requestId: qs.request_id, documentHash: qs.document_hash, container: qs.container || "", simulated: qs.verification?.simulated !== false, issuer: qs.verification?.issuer || "" };
+  }
 
   // What this installer's own installed base says the P50 promise is worth.
   // PVGIS models a location; it doesn't know this company's mounting, shading

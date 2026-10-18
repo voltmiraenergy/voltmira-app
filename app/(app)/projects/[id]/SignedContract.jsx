@@ -3,7 +3,8 @@
 // homeowner's e-signature. The drawn signature is deliberately NOT exposed on the
 // public proposal link; it's shown here, inside the authenticated app, once the
 // client has signed-to-accept. Includes the light audit trail (name, time, IP,
-// device) that gives the signature its evidentiary weight.
+// device) that gives the signature its evidentiary weight, and the legal level:
+// simple (click-to-sign) or qualified (MSign), with a qualified one's container.
 import { t } from "../../../../lib/i18n.js";
 import { fmtDate, fmtTime } from "../../../../lib/tz.js";
 
@@ -36,6 +37,21 @@ export default function SignedContract({ signed, lang = "en" }) {
         <div style={{ marginTop: 4, fontSize: 12, color: "var(--muted)" }}>
           {t("sc_audit", lang, { ip: signed.signedIp || "—" })}{device ? `, ${device}` : ""}
         </div>
+      )}
+      <div style={{ marginTop: 4, fontSize: 13, fontWeight: 600, color: signed.qualified?.simulated ? "var(--amber-ink, #8A5A0F)" : "var(--text)" }}>
+        {t(signed.level === "qualified" ? (signed.qualified?.simulated !== false ? "sc_level_simulated" : "sc_level_qualified") : "sc_level_simple", lang)}
+      </div>
+      {signed.qualified && (
+        <div style={{ marginTop: 4, fontSize: 12, color: "var(--muted)", overflowWrap: "anywhere" }}>
+          {t("sc_doc_hash", lang)}: <code>{signed.qualified.documentHash}</code>
+        </div>
+      )}
+      {signed.qualified?.container && (
+        <a className="btn sm ghost" href={`data:application/octet-stream;base64,${signed.qualified.container}`}
+          download={`${signed.qualified.requestId}${signed.qualified.simulated ? ".simulation.json" : ".p7s"}`}
+          style={{ marginTop: 12, marginRight: 8, display: "inline-block" }}>
+          {t("sc_container", lang)}
+        </a>
       )}
       {signed.signature && (
         <a className="btn sm ghost" href={signed.signature} download="signature.png"
