@@ -1,8 +1,9 @@
 -- supabase/add-financing.sql — green financing (docs/FINANCING.md): partner
 -- lenders and their offers, the homeowner's loan applications from the
 -- client's offer, every status change, and the commission VoltMira is owed
--- when a loan is funded. Needs supabase/add-tariffs-subsidies.sql first (it
--- creates refuse_change() and the audit log). Safe to run more than once.
+-- when a loan is funded. Runs on its own (the append-only guard is created
+-- below too); the audit log comes from add-tariffs-subsidies.sql, and until
+-- that runs the app skips audit rows without failing. Safe to run more than once.
 --
 -- Units: money is integer minor units (bani) with a currency; rates are basis
 -- points (9.5 % a year = 950).
@@ -14,6 +15,13 @@
 --   loan_status_events          them (the homeowner and the lender have no
 --                               account).
 --   commission_ledger           platform only: no workspace reads it.
+
+-- The append-only guard, also created by add-tariffs-subsidies.sql; repeated
+-- here so this file runs on its own, in any order.
+create or replace function refuse_change() returns trigger language plpgsql as $$
+begin
+  raise exception '% rows are append-only: add a new version instead', tg_table_name;
+end $$;
 
 -- 1. Partner lenders. The portal token is never stored, only its SHA-256.
 create table if not exists lenders (

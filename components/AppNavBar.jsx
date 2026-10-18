@@ -78,7 +78,10 @@ export default function AppNavBar() {
   useEffect(() => {
     const nav = window.navigation;
     if (!nav) return;
-    const read = () => setCan({ back: nav.canGoBack ?? true, fwd: nav.canGoForward ?? true });
+    // the router changes the URL inside React's commit (an insertion effect),
+    // and this event fires right there: read it a moment later, after the
+    // commit, since state may not be set during an insertion effect
+    const read = () => queueMicrotask(() => setCan({ back: nav.canGoBack ?? true, fwd: nav.canGoForward ?? true }));
     read();
     nav.addEventListener("currententrychange", read);
     return () => nav.removeEventListener("currententrychange", read);

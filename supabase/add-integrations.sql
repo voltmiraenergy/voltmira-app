@@ -1,12 +1,20 @@
 -- supabase/add-integrations.sql — Phase 3, legally valid local integrations
 -- (docs/INTEGRATIONS.md): qualified e-signatures (MSign/MPass), e-Factura
 -- submissions to SFS, payments and the 1C export mapping, and grid-operator
--- submissions with their status history. Needs add-tariffs-subsidies.sql
--- first (refuse_change, audit_log). Safe to run more than once.
+-- submissions with their status history. Runs on its own (the append-only
+-- guard is created below too); the audit log comes from
+-- add-tariffs-subsidies.sql. Safe to run more than once.
 --
 -- Money is integer minor units with a currency. Each workspace reads its own
 -- rows; the server writes the integration records (service role), the
 -- installer writes payments and the export mapping on their own session.
+
+-- The append-only guard, also created by add-tariffs-subsidies.sql; repeated
+-- here so this file runs on its own, in any order.
+create or replace function refuse_change() returns trigger language plpgsql as $$
+begin
+  raise exception '% rows are append-only: add a new version instead', tg_table_name;
+end $$;
 
 -- 1. Qualified signatures (MSign with MPass). The signed container is kept as
 --    it came back; proposals.signature_level says which kind signed the offer.
@@ -66,10 +74,13 @@ create table if not exists payments (
   paid_at          date not null,
   method           text not null default 'bank' check (method in ('bank', 'cash', 'card')),
   reference        text not null default '' check (char_length(reference) <= 120),
+  idempotency_key  text not null check (char_length(idempotency_key) between 8 and 80),
   created_by       uuid,
-  created_at       timestamptz not null default now()
+  created_at       timestamptz not null default now(),
+  unique (company_id, idempotency_key)                     -- a double tap records one payment
 );
 create index if not exists payments_company_idx on payments(company_id, paid_at desc);
+create index if not exists payments_project_idx on payments(project_id, paid_at desc);
 alter table payments enable row level security;
 drop policy if exists payments_all on payments;
 create policy payments_all on payments for all using (company_id = my_company_id()) with check (company_id = my_company_id());
