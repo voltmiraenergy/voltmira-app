@@ -25,7 +25,7 @@ const PROVIDERS = [
   ["Google", "Sign in with Google, if you choose it, and map imagery in the roof designer when enabled"],
   ["Esri (ArcGIS)", "Map tiles and satellite imagery in the roof designer and the portfolio maps (map requests only)"],
   ["OpenStreetMap Nominatim", "Turning an address or a place name into map coordinates, and a point into a village name (the text or the coordinates only)"],
-  ["OpenStreetMap Overpass API", "Where the power grid is around a plant's site (coordinates only): overpass-api.de, or the kumi.systems mirror when it is busy"],
+  ["OpenStreetMap Overpass API", "Where the power grid is around a plant's site outside Moldova, and what a connection route crosses (coordinates only): overpass-api.de, or the private.coffee and kumi.systems mirrors when it is busy. In Moldova the grid comes from a copy of OpenStreetMap kept in VoltMira, and nothing is sent"],
   ["NASA POWER", "Wind data for a plant's site, for the wind screening (coordinates only)"],
   ["European Commission JRC (PVGIS)", "Solar irradiance data for a location (coordinates only)"],
 ];

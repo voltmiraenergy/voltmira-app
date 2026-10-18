@@ -75,6 +75,16 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
       routeFactor: prev.routeFactor, applied: prev.applied || null, shared: !!prev.shared, crossings: prev.crossings || null }));
     setFrameKey((k) => k + 1);
   }
+  // a plant with a site and no grid yet gets it on its own, once: in Moldova the
+  // lookup reads the kept copy (lib/gridData.js) and answers at once
+  const auto = useRef(false);
+  useEffect(() => {
+    if (auto.current || !hasSite || raw?.grid) return;
+    auto.current = true;
+    look();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSite, raw?.grid]);
+
   async function checkCrossings() {
     const pts = optionRoute(g, chosen).points;
     if (!pts) return;
@@ -118,7 +128,7 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
           <h4 id={`gr-h-${id}`}>{plt("grid_h", lang)}</h4>
           <p className="pf-hint">{plt("grid_p", lang)}</p>
         </div>
-        <button type="button" className="btn sm" disabled={!hasSite || !!busy} aria-busy={busy === "grid"} onClick={look}>
+        <button type="button" className="btn sm amber" disabled={!hasSite || !!busy} aria-busy={busy === "grid"} onClick={look}>
           {g ? plt("grid_again", lang) : plt("grid_find", lang)}{busy === "grid" ? "..." : ""}
         </button>
       </div>
@@ -158,7 +168,7 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
               <div className="gr-route">
                 <p className="pl-line">{plt("rt_len", lang, { opt: optName(chosenOpt), km: km(r1.km), how: r1.drawn ? plt("rt_drawn", lang) : plt("rt_straight", lang, { f: fnum(g.routeFactor, lang, 2) }) })}</p>
                 <div className="pl-row">
-                  {!drawing && <button type="button" className="btn sm" onClick={() => { setDrawing(true); if (!route) setRoute([[pl.lat, pl.lon], [chosenOpt.to.lat, chosenOpt.to.lon]]); }}>{plt(route ? "rt_edit" : "rt_draw", lang)}</button>}
+                  {!drawing && <button type="button" className="btn sm amber" onClick={() => { setDrawing(true); if (!route) setRoute([[pl.lat, pl.lon], [chosenOpt.to.lat, chosenOpt.to.lon]]); }}>{plt(route ? "rt_edit" : "rt_draw", lang)}</button>}
                   {drawing && <button type="button" className="btn primary sm" onClick={() => setDrawing(false)}>{plt("rt_done", lang)}</button>}
                   {drawing && route && route.length > 2 && <button type="button" className="btn ghost sm" onClick={undoBend}>{plt("rt_undo", lang)}</button>}
                   {route && <button type="button" className="btn ghost sm" onClick={() => { setDrawing(false); clearRoute(); }}>{plt("rt_clear", lang)}</button>}
@@ -264,7 +274,7 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
               <div className="gr-cx">
                 <div className="pl-row">
                   <h5>{plt("cx_h", lang)}</h5>
-                  <button type="button" className="btn sm" disabled={!!busy} aria-busy={busy === "cross"} onClick={checkCrossings}>{plt("cx_btn", lang)}{busy === "cross" ? "..." : ""}</button>
+                  <button type="button" className="btn sm amber" disabled={!!busy} aria-busy={busy === "cross"} onClick={checkCrossings}>{plt("cx_btn", lang)}{busy === "cross" ? "..." : ""}</button>
                 </div>
                 {busy === "cross" && <small className="pf-hint" role="status">{plt("cx_busy", lang)}</small>}
                 {crossOld && <p className="pf-warn">{plt("cx_old", lang)}</p>}
