@@ -16,6 +16,7 @@ import LeadCard from "./LeadCard.jsx";
 import LeadAttribution from "./LeadAttribution.jsx";
 import AddLead from "./AddLead.jsx";
 import { appTitle } from "../../../lib/pageTitle.js";
+import { xt } from "../../../lib/integrationText.js";
 
 export const dynamic = "force-dynamic";
 export const generateMetadata = appTitle("nav_leads");
@@ -33,6 +34,8 @@ export default async function LeadsPage(props) {
 
   const { data: allLeads } = await sb.from("leads").select("*").order("created_at", { ascending: false });
   const leads = (allLeads || []).map(l => ({ ...l, status: l.status || "new" }));
+  // requests the marketplace offered and still waiting on an answer (app/(app)/marketplace)
+  const { count: marketWaiting } = await sb.from("lead_offers").select("id", { count: "exact", head: true }).eq("status", "offered");
 
   const counts = leads.reduce((m, l) => (m[l.status] = (m[l.status] || 0) + 1, m), {});
   let shown = filter === "all" ? leads.filter(l => l.status !== "archived") : leads.filter(l => l.status === filter);
@@ -82,6 +85,7 @@ export default async function LeadsPage(props) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></svg>
             <input name="q" defaultValue={q} placeholder={t("lead_search", lang)} aria-label={t("lead_search", lang)} />
           </form>
+          <Link className={"dx-btn" + (marketWaiting ? " primary" : "")} href="/marketplace">{xt("mp_nav", lang)}{marketWaiting ? ` (${marketWaiting})` : ""}</Link>
           <AddLead lang={lang} />
         </div>
       </header>

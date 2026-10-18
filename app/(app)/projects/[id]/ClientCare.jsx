@@ -33,7 +33,7 @@ export default function ClientCare({ projectId, lang, clientEmail = "", linked =
     const j = res ? await res.json().catch(() => ({})) : {};
     setBusy(false);
     if (j.ok) { setInv({ ok: true, text: T("hi_sent", { email }) }); router.refresh(); }
-    else setInv({ ok: false, text: T("hi_e_" + j.error) !== "hi_e_" + j.error ? T("hi_e_" + j.error) : j.error === "needs_db" ? T("bl_needs_db") : T("hi_e_other") });
+    else setInv({ ok: false, text: T("hi_e_" + j.error) !== "hi_e_" + j.error ? T("hi_e_" + j.error) : j.error === "needs_db" ? T("mk_needs_db") : T("hi_e_other") });
   }
 
   async function ticket(payload) {
@@ -42,7 +42,7 @@ export default function ClientCare({ projectId, lang, clientEmail = "", linked =
     const res = await fetch(`/api/projects/${projectId}/tickets`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).catch(() => null);
     const j = res ? await res.json().catch(() => ({})) : {};
     setBusy(false);
-    if (!j.ok) { setMsg(T("mt_e_" + j.error) !== "mt_e_" + j.error ? T("mt_e_" + j.error) : j.error === "needs_db" ? T("bl_needs_db") : T("mt_e_other")); return false; }
+    if (!j.ok) { setMsg(T("mt_e_" + j.error) !== "mt_e_" + j.error ? T("mt_e_" + j.error) : j.error === "needs_db" ? T("mk_needs_db") : T("mt_e_other")); return false; }
     router.refresh();
     return true;
   }
@@ -67,7 +67,7 @@ export default function ClientCare({ projectId, lang, clientEmail = "", linked =
       <div className="cc-block">
         <h3>{T("mt_h")}</h3>
         <p className="cc-p">{T("mt_lead")}</p>
-        {needsDb && <p className="cc-msg bad">{T("bl_needs_db")}</p>}
+        {needsDb && <p className="cc-msg bad">{T("mk_needs_db")}</p>}
         {tickets.length === 0 ? <p className="cc-p">{T("mt_none")}</p> : (
           <ul className="cc-list">
             {tickets.map((t) => (

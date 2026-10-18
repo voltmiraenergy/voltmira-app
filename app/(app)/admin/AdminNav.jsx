@@ -3,7 +3,7 @@ import Link from "next/link";
 import { at } from "../../../lib/adminText.js";
 
 export default function AdminNav({ lang, here }) {
-  const links = [["/traction", "ad_traction"], ["/admin/tariffs", "ad_tariffs"], ["/admin/subsidies", "ad_programs"], ["/admin/lenders", "ad_loans"]];
+  const links = [["/traction", "ad_traction"], ["/admin/tariffs", "ad_tariffs"], ["/admin/subsidies", "ad_programs"], ["/admin/lenders", "ad_loans"], ["/admin/installers", "ad_installers"]];
   return (
     <nav className="adm-nav" aria-label="Admin">
       {links.map(([href, key]) => (

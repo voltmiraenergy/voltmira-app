@@ -1,0 +1,32 @@
+/* app/(app)/marketplace/marketplace.css — the installer's marketplace page,
+ * on the workspace look (dx.css, billing.css). Selectors start with .app. */
+.app .mp-list { list-style: none; display: grid; gap: 10px; }
+.app .mp-offer { display: grid; gap: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; }
+.app .mp-offer.taken { background: var(--green-tint); border-color: transparent; }
+.app .mp-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--ink); }
+.app .mp-top span { font-size: 13px; color: var(--muted); }
+.app .mp-clock { font-size: 12.5px !important; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--amber-tint); color: var(--amber-ink) !important; font-variant-numeric: tabular-nums; }
+.app .mp-clock.late { background: var(--red-tint); color: var(--red) !important; }
+.app .mp-facts { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; }
+.app .mp-facts dt { font-size: 11.5px; color: var(--muted); }
+.app .mp-facts dd { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.app .mp-decline { display: grid; gap: 8px; }
+.app .mp-h3 { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.app .mp-ver { font-size: 14px; font-weight: 700; color: var(--muted); }
+.app .mp-ver.s-verified { color: var(--green); }
+.app .mp-ver.s-pending { color: var(--amber-ink); }
+.app .mp-ver.s-rejected, .app .mp-ver.s-expired { color: var(--red); }
+.app .mp-public { font-size: 13px; font-weight: 600; color: var(--green); }
+.app .mp-form { display: grid; gap: 12px; }
+.app .mp-switches { display: flex; gap: 18px; flex-wrap: wrap; }
+.app .mp-form textarea { resize: vertical; font: inherit; }
+.app .mp-regions { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; min-width: 0; }
+.app .mp-regions legend { font-size: 12px; font-weight: 600; color: var(--muted); padding: 0 4px; }
+.app .mp-rg { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--ink); }
+.app .mp-rg.all { grid-column: 1 / -1; font-weight: 600; }
+.app .mp-rg input { accent-color: var(--green); }
+.app .mp-docs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.app .mp-docs input[type=file] { font: inherit; font-size: 12.5px; color: var(--ink); }
+.app .mp-revs { list-style: none; display: grid; }
+.app .mp-revs li { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--ink); }
+.app .mp-revs small { grid-column: 2; color: var(--muted); font-size: 12px; }

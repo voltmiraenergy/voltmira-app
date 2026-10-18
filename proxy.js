@@ -54,6 +54,9 @@ export async function proxy(req) {
       : withCsp(NextResponse.rewrite(new URL("/_not-found", req.url), { status: 404, request: { headers: reqHeaders } }));
   }
 
+  // an installer's public profile (app/i) is a public page too, on voltmira.com only
+  if (path.startsWith("/i/") && host === "app.voltmira.com") return NextResponse.redirect(SITE + path, 301);
+
   if (PUBLIC_PAGES.has(path)) {
     // Old homepage URLs: each language was once /?lang=xx. Google still has
     // them on file, and they answered 200 with the English page.
@@ -81,7 +84,7 @@ export async function proxy(req) {
     || path.startsWith("/guide") || path.startsWith("/catalog") || path.startsWith("/profile")
     || path.startsWith("/activity") || path.startsWith("/documents")
     || path.startsWith("/studio") || path.startsWith("/traction") || path.startsWith("/portfolios")
-    || path.startsWith("/energy") || path.startsWith("/admin");
+    || path.startsWith("/energy") || path.startsWith("/admin") || path.startsWith("/marketplace");
   // a homeowner's own pages (app/home): signed in, as a homeowner
   const isHome = (path === "/home" || path.startsWith("/home/")) && path !== "/home/login" && path !== "/home/enter";
 
