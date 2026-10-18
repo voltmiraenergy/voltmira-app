@@ -80,11 +80,11 @@ export default function Credits() {
       <h2>Map and grid data</h2>
       <ul>
         <li>
-          The substations, high-voltage lines, towns and villages a plant's grid connection is measured against come from{" "}
+          The substations, high-voltage lines, towns and villages a plant&rsquo;s grid connection is measured against come from{" "}
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>,
           {" "}&copy; OpenStreetMap contributors, available under the{" "}
           <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener noreferrer">Open Database License</a>.
-          {" "}<span className="muted">Used on: a plant's grid connection, in Portfolios.</span>
+          {" "}<span className="muted">Used on: a plant&rsquo;s grid connection, in Portfolios.</span>
         </li>
       </ul>
 
