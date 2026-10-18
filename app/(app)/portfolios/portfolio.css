@@ -607,6 +607,8 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 .app .gr-main > div { display: flex; flex-direction: column; gap: 6px; }
 .app .gr-route { padding: 10px 12px; border-radius: 10px; background: var(--paper); }
 .app .gr-shared { padding: 10px 12px; border-radius: 10px; background: var(--amber-tint); }
+.app .gr-area { padding: 10px 12px; border-radius: 10px; background: var(--paper); border: 1px solid var(--line); }
+.app .gr-area h5 { margin: 0 0 2px; }
 /* the tables beside the map fit their column: headers wrap; a table that still
    cannot fit scrolls inside its own box instead of running under the map */
 .app .gr-main .pf-scroll { overflow-x: auto; max-width: 100%; }

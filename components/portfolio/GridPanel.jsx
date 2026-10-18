@@ -24,6 +24,7 @@ import { plt } from "../../lib/plantText.js";
 import { namesList } from "../../lib/portfolioDisplay.js";
 import { num as fnum, dscr, pct } from "../../lib/portfolioFormat.js";
 import NumInput from "../NumInput.jsx";
+import { raionName } from "../../lib/mdRaions.js";
 
 const GridMap = dynamic(() => import("./GridMap.jsx"), { ssr: false, loading: () => <div className="gr-map" /> });
 const today = () => new Date().toISOString().slice(0, 10);
@@ -78,6 +79,19 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
   }
   // a plant with a site and no grid yet gets it on its own, once: in Moldova the
   // lookup reads the kept copy (lib/gridData.js) and answers at once
+  // what CNED's register shows already connected round the site; the route answers 404 while
+  // CNED_DATA is off, and nothing of it is saved with the plant (app/api/cned/grid/route.js)
+  const [area, setArea] = useState(null);
+  useEffect(() => {
+    if (!hasSite || pl.lat == null || pl.lon == null) return;
+    let gone = false;
+    fetch(`/api/cned/grid?lat=${pl.lat}&lon=${pl.lon}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (!gone) setArea(j?.context ? { ...j.context, dataTo: j.dataTo } : null); })
+      .catch(() => {});
+    return () => { gone = true; };
+  }, [hasSite, pl.lat, pl.lon]);
+  const mw = (kw) => fnum(kw / 1000, lang, kw >= 10000 ? 0 : 1);
   const auto = useRef(false);
   useEffect(() => {
     if (auto.current || !hasSite || raw?.grid) return;
@@ -163,6 +177,17 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
                 ))}
               </table>
             </div>
+
+            {/* ---- what is already connected round the site (CNED, while the flag is on) */}
+            {area && (
+              <div className="gr-area" role="note">
+                <h5>{plt("cx_area_h", lang)}</h5>
+                <p className="pl-line">{plt("cx_area_raion", lang, { raion: raionName(area.raion, lang), pv: mw(area.pvKw), wind: mw(area.windKw), n: area.plantsN })}</p>
+                {(area.near.pv.n > 0 || area.near.wind.n > 0) && <p className="pl-line">{plt("cx_area_near", lang, { km: area.near.km, pv: mw(area.near.pv.kw), pn: area.near.pv.n, wind: mw(area.near.wind.kw), wn: area.near.wind.n })}</p>}
+                {area.crowded && <p className="pf-warn">{plt("cx_area_crowded", lang)}</p>}
+                <small className="pf-hint">{plt("cx_area_note", lang, { date: area.dataTo })}</small>
+              </div>
+            )}
 
             {/* ---- the route to the chosen point */}
             {chosenOpt && (
