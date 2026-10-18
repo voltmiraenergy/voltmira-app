@@ -38,6 +38,7 @@ import SupportCard from "../../../../components/SupportCard.jsx";
 import RaionCard from "../../../../components/RaionCard.jsx";
 import { batteryEur } from "../../../../lib/greenSupport.js";
 import SignedContract from "./SignedContract.jsx";
+import ClientCare from "./ClientCare.jsx";
 import ShareCard from "./ShareCard.jsx";
 import LegalDocsModal from "./LegalDocsModal.jsx";
 import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
@@ -186,7 +187,7 @@ function LocalMoneyInput({ eur, fmt, onEur, dec = 2, allowZero = false, classNam
 
 // `currency` is the WORKSPACE's (companies.currency); the offer may name its
 // own (p.offerCurrency, null = follow the workspace), see lib/offerCurrency.js.
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null, care = null }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
@@ -1413,6 +1414,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           )}
 
           {signed && <SignedContract signed={signed} lang={lang} />}
+          {/* the client's own account and maintenance, once the offer is signed (docs/MARKETPLACE.md) */}
+          {signed && care && <ClientCare projectId={initial.id} lang={lang} clientEmail={p.clientEmail || ""} {...care} />}
 
           {p.status === "won" && (
             <InstallChecklist key={railProg ? JSON.stringify(railProg) : "init"} projectId={initial.id}

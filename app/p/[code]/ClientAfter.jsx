@@ -10,10 +10,12 @@ import { fmtDate } from "../../../lib/tz.js";
 import { toIntlPhone } from "../../../lib/phone.js";
 import RecommendShare from "./RecommendShare.jsx";
 import ProdBars from "./ProdBars.jsx";
+import HomeClaim from "./HomeClaim.jsx";
+import { ht } from "../../../lib/homeText.js";
 
 const LOC = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
 
-export default function ClientAfter({ after, lang, code, company, nf, fmt, preparedBy = null, market = "MD" }) {
+export default function ClientAfter({ after, lang, code, company, nf, fmt, preparedBy = null, market = "MD", inHome = false }) {
   const loc = LOC[lang] || LOC.en;
   const day = (d) => fmtDate(`${d}T12:00:00Z`, loc, { day: "numeric", month: "long" });
   const monthLong = (m) => fmtDate(`${m}-15T12:00:00Z`, loc, { month: "long", year: "numeric" });
@@ -112,6 +114,9 @@ export default function ClientAfter({ after, lang, code, company, nf, fmt, prepa
         <RecommendShare code={code} lang={lang} company={co} />
         <p className="pp-rec-note">{ppt("rec_get", lang)}</p>
       </div>
+
+      {/* the client's own account (app/home); not shown inside it */}
+      {!inHome && <HomeClaim code={code} T={Object.fromEntries(["hc_h", "hc_p", "hc_hint", "hc_open", "hl_email", "hl_sending", "hl_sent", "hl_installer", "hl_error"].map((k) => [k, ht(k, lang)]))} />}
 
       {live && (
         <details className="pp-card pp-af-done">

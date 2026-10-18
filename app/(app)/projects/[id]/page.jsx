@@ -112,12 +112,23 @@ export default async function ProjectPage(props) {
     }
   }
 
+  // the client's account and maintenance tickets (docs/MARKETPLACE.md), read on the installer's session
+  let care = null;
+  if (signed) {
+    const [hl, mt] = await Promise.all([
+      sb.from("homeowner_links").select("email").eq("project_id", params.id),
+      sb.from("maintenance_tickets").select("id, source, kind, title, detail, status, visit_at, outcome, created_at").eq("project_id", params.id).order("created_at", { ascending: false }).limit(20),
+    ]);
+    const gone = (e) => e && /does not exist|schema cache/i.test(e.message || "");
+    care = { linked: [...new Set((hl.data || []).map((l) => l.email))], tickets: mt.data || [], needsDb: gone(hl.error) || gone(mt.error) };
+  }
+
   return <Editor initial={p} engineSettings={E} team={team || []} catalog={catalog || []}
     canEditTechnical={canEditTech}
     prosumerLimitKw={Number(co?.prosumer_limit_kw ?? 10.8)} lang={normLang(co?.lang)} currency={co?.currency || "EUR"}
     proposalSentAt={prop?.created_at || null} companyName={co?.name || "VoltMira"} companyLogo={co?.logo_url || ""}
     companyLegal={{ legal_name: co?.legal_name || "", reg_no: co?.reg_no || "", legal_address: co?.legal_address || "", iban: co?.iban || "", install_warranty_years: co?.install_warranty_years || null,
       contract_template_override: wl?.contract_template_override || "", commissioning_template_override: wl?.commissioning_template_override || "" }}
-    signed={signed} loans={loans} vatRatePct={Number(co?.vat_rate) || 0} cnedOn={cnedEnabled()} gridSub={gridSub} />;
+    signed={signed} loans={loans} vatRatePct={Number(co?.vat_rate) || 0} cnedOn={cnedEnabled()} gridSub={gridSub} care={care} />;
 }
 

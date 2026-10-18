@@ -848,3 +848,11 @@
 .qm-hash { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-weight: 500; font-size: 12.5px; }
 .qm-btns { display: flex; gap: 10px; flex-wrap: wrap; }
 .qm-btns .pp-btn { flex: 1 1 160px; }
+
+/* ---- the client's own account, offered on a signed offer (HomeClaim.jsx) */
+.pp-home { display: grid; gap: 8px; }
+.pp-home h3 { margin: 0; }
+.pp-home p { margin: 0; }
+.pp-home-form { display: grid; gap: 6px; }
+.pp-home-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.pp-home-row .pp-input { flex: 1 1 220px; min-width: 0; }
