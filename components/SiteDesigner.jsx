@@ -824,12 +824,9 @@ export default function SiteDesigner({
         L.polyline(r.rail1, { color: "#5B6B7A", weight: 3, opacity: 0.85, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
         L.polyline(r.rail2, { color: "#5B6B7A", weight: 3, opacity: 0.85, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
       });
-      panels.forEach((corners) => {
-        L.polygon(corners, { color: "#B9C4CE", weight: 1, fillColor: "url(#sdPanelCells)", fillOpacity: 1, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
-      });
-      spare.forEach((corners) => {
-        L.polygon(corners, { color: "#DDE3E8", weight: 1, opacity: 0.6, dashArray: "3 3", fill: false, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
-      });
+      // the panels of a side as one shape each way (placed, and the places left free): one map element, not hundreds
+      if (panels.length) L.polygon(panels.map((c) => [c]), { color: "#B9C4CE", weight: 1, fillColor: "url(#sdPanelCells)", fillOpacity: 1, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
+      if (spare.length) L.polygon(spare.map((c) => [c]), { color: "#DDE3E8", weight: 1, opacity: 0.6, dashArray: "3 3", fill: false, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
     }
     const kw = Math.round(((totalCount * panel.watt) / 1000) * 10) / 10;
     setLayout({

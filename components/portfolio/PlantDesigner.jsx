@@ -494,7 +494,8 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
           commit();
         });
       }
-      for (const t of r.tables) L.polygon(t.corners, { color: "#B9C4CE", weight: 0.6, fillColor: "url(#pdTableCells)", fillOpacity: 1, interactive: false, pmIgnore: true }).addTo(panelGroup.current);
+      // every table in one shape: a plant has thousands, and one map element each froze the page on every change
+      if (r.tables.length) L.polygon(r.tables.map((t) => [t.corners]), { color: "#B9C4CE", weight: 0.6, fillColor: "url(#pdTableCells)", fillOpacity: 1, interactive: false, pmIgnore: true }).addTo(panelGroup.current);
       for (const c of [...r.cables, ...(r.windCables || [])]) L.polyline(c, { color: "#FF9F1C", weight: 2.5, dashArray: "6 4", interactive: false, pmIgnore: true }).addTo(panelGroup.current);
       for (const st of r.stations) {
         L.polygon(st.corners, { color: "#ffffff", weight: 1.5, fillColor: "#D946EF", fillOpacity: 1, interactive: false, pmIgnore: true }).addTo(panelGroup.current);
