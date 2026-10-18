@@ -84,4 +84,49 @@
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
+  <!-- the free solar design funnel (app/solar) -->
+  <url>
+    <loc>https://voltmira.com/solar</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://voltmira.com/solar"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://voltmira.com/ro/solar"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://voltmira.com/ru/solar"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://voltmira.com/uk/solar"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://voltmira.com/ro/solar"/>
+  </url>
+  <url>
+    <loc>https://voltmira.com/ro/solar</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://voltmira.com/solar"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://voltmira.com/ro/solar"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://voltmira.com/ru/solar"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://voltmira.com/uk/solar"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://voltmira.com/ro/solar"/>
+  </url>
+  <url>
+    <loc>https://voltmira.com/ru/solar</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://voltmira.com/solar"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://voltmira.com/ro/solar"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://voltmira.com/ru/solar"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://voltmira.com/uk/solar"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://voltmira.com/ro/solar"/>
+  </url>
+  <url>
+    <loc>https://voltmira.com/uk/solar</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://voltmira.com/solar"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://voltmira.com/ro/solar"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://voltmira.com/ru/solar"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://voltmira.com/uk/solar"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://voltmira.com/ro/solar"/>
+  </url>
 </urlset>

@@ -7,6 +7,8 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../lib/supabase.js";
 import { dueNudges, sendNudge } from "../../../../lib/nudgeRun.js";
 import { sendOpenDigests } from "../../../../lib/openDigest.js";
+import { sweepOffers } from "../../../../lib/marketFlow.js";
+import { marketIo } from "../../../../lib/marketServer.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +23,9 @@ export async function GET(req) {
   const started = Date.now();
   // the morning "offers opened" email, for companies that chose it or keep quiet hours
   const digests = await sendOpenDigests(db, { budgetMs: 15_000 });
+  // marketplace offers past their answer time pass to the next installer; the
+  // pages sweep too, this catches the days nobody opens one (lib/marketFlow.js)
+  const market = await sweepOffers(db, { io: marketIo(db) }).catch(() => null);
   const due = await dueNudges(db);
   const tally = { due: due.length, sent: 0, skipped: 0, failed: 0 };
   for (const n of due) {
@@ -30,5 +35,5 @@ export async function GET(req) {
     else if (r.skipped) tally.skipped++;
     else tally.failed++;
   }
-  return NextResponse.json({ ok: true, ...tally, digests });
+  return NextResponse.json({ ok: true, ...tally, digests, market });
 }
