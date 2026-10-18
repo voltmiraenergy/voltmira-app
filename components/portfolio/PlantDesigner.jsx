@@ -99,7 +99,7 @@ const TX = {
   short: { en: "The plots are too small: {miss} MWp does not fit. Add a plot, lower the tilt or the distance from the boundary.", ro: "Parcelele sunt prea mici: {miss} MWp nu încap. Adaugă o parcelă, micșorează înclinarea sau distanța față de limită.", ru: "Участки малы: {miss} МВтп не помещается. Добавьте участок, уменьшите наклон или отступ.", uk: "Ділянки замалі: {miss} МВтп не вміщується. Додайте ділянку, зменште нахил або відступ." },
   grid: { en: "{n} inverter stations, about {m} m of medium-voltage cable to the connection point.", ro: "{n} stații de invertoare, circa {m} m de cablu de medie tensiune până la punctul de racordare.", ru: "{n} инверторных станций, около {m} м кабеля среднего напряжения до точки присоединения.", uk: "{n} інверторних станцій, близько {m} м кабелю середньої напруги до точки приєднання." },
   turbinesDrag: { en: "Drag a turbine to move it; the tables make way round its keep-out circle.", ro: "Trage o turbină ca s-o muți; mesele se retrag în jurul cercului ei de siguranță.", ru: "Перетащите турбину, чтобы передвинуть её; столы отступают от её защитного круга.", uk: "Перетягніть турбіну, щоб пересунути її; столи відступають від її захисного кола." },
-  turbinesAuto: { en: "Place the turbines automatically", ro: "Așază turbinele automat", ru: "Расставить турбины автоматически", uk: "Розставити турбіни автоматично" },
+  turbinesAuto: { en: "Place the turbines around the solar field", ro: "Așază turbinele în jurul câmpului solar", ru: "Расставить турбины вокруг солнечного поля", uk: "Розставити турбіни навколо сонячного поля" },
   turbinesFit: { en: "Wind: {n} of {need} turbines fit, rotor about {d} m, each with a {r} m keep-out circle.", ro: "Vânt: încap {n} din {need} turbine, rotor de circa {d} m, fiecare cu un cerc de siguranță de {r} m.", ru: "Ветер: помещается {n} из {need} турбин, ротор около {d} м, у каждой защитный круг {r} м.", uk: "Вітер: вміщується {n} з {need} турбін, ротор близько {d} м, у кожної захисне коло {r} м." },
   turbinesShort: { en: "Not every turbine fits: {n} of {need}. Add a plot or move the keep-out zones.", ro: "Nu încap toate turbinele: {n} din {need}. Adaugă o parcelă sau mută zonele excluse.", ru: "Не все турбины помещаются: {n} из {need}. Добавьте участок или передвиньте запретные зоны.", uk: "Не всі турбіни вміщуються: {n} з {need}. Додайте ділянку або пересуньте заборонені зони." },
   apply: { en: "Save the plan", ro: "Salvează planul", ru: "Сохранить план", uk: "Зберегти план" },
@@ -214,7 +214,6 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   const [selectedId, setSelectedId] = useState(null);
   const [step, setStep] = useState(saved.plots?.length ? 3 : 1);
   const [result, setResult] = useState(null);
-  const [tbFixed, setTbFixed] = useState(!!saved.turbines?.length);
 
   const shellRef = useRef(null);
   const stageRef = useRef(null);
@@ -336,7 +335,6 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
     function mirror() {
       const s = snapshot();
       setShapes({ plots: s.plots.map((p) => ({ id: p.id, ha: plotHectares(p.ring) })), exclusions: s.exclusions.map((e) => ({ id: e.id, kind: e.kind })) });
-      setTbFixed(!!s.turbines?.length);
     }
     function clearAll() {
       const map = mapRef.current;
@@ -891,6 +889,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                       settings above keep their room on a laptop screen */}
                   {s.short && <p className="sd-warn" role="alert">{tr(tracker ? "shortTracker" : "short", { miss: nf(Math.max(0, s.mwpNeed - s.mwpFit), 2) })}</p>}
                   {hasWind && s.turbinesShort && <p className="sd-warn" role="alert">{tr("turbinesShort", { n: s.turbineCount, need: s.needTurbines })}</p>}
+                  {hasWind && <button type="button" className={"sd-btn" + (s.turbinesShort ? " key" : " ghost")} onClick={() => api.current.autoTurbines?.()}>{tr("turbinesAuto")}</button>}
                   <details className="sd-result-more">
                     <summary><ChevronRight size={15} aria-hidden="true" />{tr("details")}</summary>
                     <div className="sd-result-more-b">
@@ -898,7 +897,6 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                       {!s.short && result.stations.length > 0 && <p className="sd-help">{tr("grid", { n: result.stations.length, m: nf(s.cableM, 0) })}</p>}
                       {hasWind && !s.turbinesShort && <p className="sd-help">{tr("turbinesFit", { n: s.turbineCount, need: s.needTurbines, d: nf(s.rotorM, 0), r: nf(s.keepoutRadiusM || 0, 0) })}</p>}
                       {hasWind && s.turbineCount > 0 && <p className="sd-help">{tr("turbinesDrag")}</p>}
-                      {hasWind && tbFixed && <button type="button" className="sd-btn ghost" onClick={() => api.current.autoTurbines?.()}>{tr("turbinesAuto")}</button>}
                       <p className="sd-help">{tr("saved")}</p>
                     </div>
                   </details>
