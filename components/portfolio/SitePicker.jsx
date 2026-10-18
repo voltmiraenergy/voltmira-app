@@ -154,7 +154,7 @@ export default function SitePicker({ id, lang = "en", start = null, others = [],
         <label htmlFor={`pk-q-${id}`} className="pk-vh">{plt("pick_search", lang)}</label>
         <input id={`pk-q-${id}`} className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder={plt("pick_search", lang)}
           onKeyDown={(e) => { if (e.key === "Enter") search(e); }} />
-        <button type="button" className="btn sm" onClick={search}>{plt("pick_go", lang)}</button>
+        <button type="button" className="btn sm amber" onClick={search}>{plt("pick_go", lang)}</button>
       </div>
       {findMsg && <small className="pf-warn" role="status">{findMsg}</small>}
       {hits && (

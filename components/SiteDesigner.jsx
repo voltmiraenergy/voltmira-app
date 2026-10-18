@@ -33,7 +33,9 @@ import { loadGoogleSatelliteLayer } from "../lib/googleSatellite.js";
 import { tilesAround, postTiles } from "../lib/tileWarm.js";
 
 const SAT_ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-import { fitPanels, compassLabel, project, polygonAreaM2, facingFromShape, fitOptions } from "../lib/roofLayout.js";
+import { fitPanels, compassLabel, project, polygonAreaM2, slopeAreaM2, facingFromShape, fitOptions, limitPanels } from "../lib/roofLayout.js";
+import { drawReadout, drawLang } from "./drawReadout.js";
+import NumInput from "./NumInput.jsx";
 import { PANELS, findPanel, recommendPanel } from "../lib/supplierCatalog.js";
 import { designCheck } from "../lib/designCheck.js";
 import { SOLAR_SEASON, effectiveConsumption } from "@voltmira/engine";
@@ -55,7 +57,7 @@ const TX = {
   t_edit: { en: "Adjust shapes", ro: "Ajustează forme", ru: "Изменить формы", uk: "Змінити форми" },
   h_plane: { en: "Click each corner of this side of the roof. Click the first corner again to close it.", ro: "Apasă pe fiecare colț al acestei părți de acoperiș. Apasă din nou pe primul colț ca să închizi forma.", ru: "Щёлкните по каждому углу ската. Щёлкните по первому углу ещё раз, чтобы замкнуть контур.", uk: "Клацніть по кожному куту схилу. Клацніть по першому куту ще раз, щоб замкнути контур." },
   h_obstacle: { en: "Click around the chimney, roof window or dormer. Click the first point again to close it.", ro: "Apasă în jurul coșului, ferestrei de mansardă sau lucarnei. Apasă din nou pe primul punct ca să închizi forma.", ru: "Обведите дымоход, мансардное или слуховое окно. Щёлкните по первой точке, чтобы замкнуть контур.", uk: "Обведіть димар, мансардне чи слухове вікно. Клацніть по першій точці, щоб замкнути контур." },
-  h_tree: { en: "Press on the trunk and drag out to the edge of the crown.", ro: "Apasă pe trunchi și trage până la marginea coroanei.", ru: "Нажмите на ствол и потяните до края кроны.", uk: "Натисніть на стовбур і потягніть до краю крони." },
+  h_tree: { en: "Click the trunk, then click the edge of the crown.", ro: "Apasă pe trunchi, apoi pe marginea coroanei.", ru: "Нажмите на ствол, затем на край кроны.", uk: "Натисніть на стовбур, потім на край крони." },
   h_measure: { en: "Click two points to measure the distance between them.", ro: "Apasă pe două puncte ca să măsori distanța dintre ele.", ru: "Щёлкните по двум точкам, чтобы измерить расстояние.", uk: "Клацніть по двох точках, щоб виміряти відстань." },
   h_measured: { en: "{d} m between the two points. Click two more to measure again.", ro: "{d} m între cele două puncte. Apasă pe alte două ca să măsori din nou.", ru: "{d} м между точками. Щёлкните ещё две, чтобы измерить снова.", uk: "{d} м між точками. Клацніть ще дві, щоб виміряти знову." },
   h_marker: { en: "Pick what it is, then click where it sits.", ro: "Alege ce este, apoi apasă unde se află.", ru: "Выберите, что это, и щёлкните, где оно находится.", uk: "Виберіть, що це, і клацніть, де воно розташоване." },
@@ -125,7 +127,28 @@ const TX = {
   monthly: { en: "Month by month", ro: "Lună de lună", ru: "По месяцам", uk: "По місяцях" },
   cash: { en: "Money over the years", ro: "Banii de-a lungul anilor", ru: "Деньги по годам", uk: "Гроші по роках" },
 
+  goalH: { en: "What you are aiming for", ro: "Ce urmărești", ru: "К чему стремимся", uk: "До чого прагнемо" },
+  goal: { en: "The quote is for {kw} kW: about {n} panels of {w} W, so about {m2} m² of clear roof.", ro: "Oferta e de {kw} kW: circa {n} panouri de {w} W, deci circa {m2} m² de acoperiș liber.", ru: "В расчёте {kw} кВт: около {n} панелей по {w} Вт, то есть около {m2} м² свободной крыши.", uk: "У розрахунку {kw} кВт: близько {n} панелей по {w} Вт, тобто близько {m2} м² вільного даху." },
+  goalNone: { en: "Set the system size in the quote and the designer shows how much roof it needs.", ro: "Pune puterea sistemului în ofertă și aici vezi cât acoperiș îi trebuie.", ru: "Укажите мощность в расчёте, и здесь будет видно, сколько крыши нужно.", uk: "Вкажіть потужність у розрахунку, і тут буде видно, скільки даху потрібно." },
+  howH: { en: "How to draw a side", ro: "Cum desenezi o parte", ru: "Как нарисовать скат", uk: "Як намалювати схил" },
+  keys: { en: "Keys 1 to 5 pick a tool, Esc stops drawing, Ctrl+Z takes back the last corner. Zoom in until the roof's edges are sharp.", ro: "Tastele 1 până la 5 aleg unealta, Esc oprește desenul, Ctrl+Z anulează ultimul colț. Mărește harta până vezi clar marginile acoperișului.", ru: "Клавиши от 1 до 5 выбирают инструмент, Esc останавливает рисование, Ctrl+Z отменяет последний угол. Приблизьте карту, пока края крыши не станут чёткими.", uk: "Клавіші від 1 до 5 вибирають інструмент, Esc зупиняє малювання, Ctrl+Z скасовує останній кут. Наблизьте карту, доки краї даху не стануть чіткими." },
+  sub1_none: { en: "Nothing yet", ro: "Nimic încă", ru: "Пока пусто", uk: "Поки порожньо" },
+  sub1_one: { en: "1 side", ro: "1 parte", ru: "1 скат", uk: "1 схил" },
+  sub1: { en: "{n} sides", ro: "{n} părți", ru: "Скатов: {n}", uk: "Схилів: {n}" },
+  sub2_none: { en: "Optional", ro: "Opțional", ru: "Необязательно", uk: "Необов’язково" },
+  sub2: { en: "{n} marked", ro: "{n} marcate", ru: "Отмечено: {n}", uk: "Позначено: {n}" },
+  sub3_none: { en: "After the roof", ro: "După acoperiș", ru: "После крыши", uk: "Після даху" },
+  meterEmpty: { en: "0 of about {t} panels for {kw} kW", ro: "0 din circa {t} panouri pentru {kw} kW", ru: "0 из примерно {t} панелей для {kw} кВт", uk: "0 з приблизно {t} панелей для {kw} кВт" },
+  meter: { en: "{n} of about {t} panels for {kw} kW", ro: "{n} din circa {t} panouri pentru {kw} kW", ru: "{n} из примерно {t} панелей для {kw} кВт", uk: "{n} з приблизно {t} панелей для {kw} кВт" },
+  meterOver: { en: "{n} fit, more than the {kw} kW the quote asks for", ro: "Încap {n}, mai multe decât cei {kw} kW din ofertă", ru: "Помещается {n}, больше, чем {kw} кВт в расчёте", uk: "Вміщується {n}, більше, ніж {kw} кВт у розрахунку" },
   resultEmpty: { en: "Draw a side of the roof and the panels that fit on it appear here.", ro: "Desenează o parte a acoperișului și aici apar panourile care încap pe ea.", ru: "Обведите скат, и здесь появятся панели, которые на нём помещаются.", uk: "Обведіть схил, і тут з’являться панелі, які на ньому вміщаються." },
+  howMany: { en: "How many panels", ro: "Câte panouri", ru: "Сколько панелей", uk: "Скільки панелей" },
+  fillTarget: { en: "As the quote needs ({n})", ro: "Cât cere oferta ({n})", ru: "Сколько нужно в расчёте ({n})", uk: "Скільки потрібно в розрахунку ({n})" },
+  fillRoof: { en: "Whole roof ({n})", ro: "Tot acoperișul ({n})", ru: "Вся крыша ({n})", uk: "Увесь дах ({n})" },
+  fillOwn: { en: "My number", ro: "Alt număr", ru: "Своё число", uk: "Своє число" },
+  fillOwnLbl: { en: "Panels to place", ro: "Panouri de pus", ru: "Сколько поставить", uk: "Скільки поставити" },
+  fillHelp: { en: "Panels go on the sides facing nearest south first. Places left free show as grey outlines on the map.", ro: "Panourile se pun întâi pe părțile orientate cel mai aproape de sud. Locurile rămase libere apar pe hartă ca un contur gri.", ru: "Панели ставятся сначала на стороны, ближе всего к югу. Свободные места видны на карте серым контуром.", uk: "Панелі ставляться спершу на сторони, найближчі до півдня. Вільні місця видно на мапі сірим контуром." },
+  spareLine: { en: "{fit} fit on the roof; {free} places left free.", ro: "Pe acoperiș încap {fit}; {free} locuri rămân libere.", ru: "На крыше помещается {fit}; {free} мест остаются свободными.", uk: "На даху вміщується {fit}; {free} місць лишаються вільними." },
   roofUse: { en: "{used} m² of panels on {roof} m² of roof", ro: "{used} m² de panouri pe {roof} m² de acoperiș", ru: "{used} м² панелей на {roof} м² крыши", uk: "{used} м² панелей на {roof} м² даху" },
   price: { en: "System price", ro: "Preț sistem", ru: "Цена системы", uk: "Ціна системи" },
   payback: { en: "Pays back in", ro: "Se recuperează în", ru: "Окупается за", uk: "Окуповується за" },
@@ -289,6 +312,9 @@ export default function SiteDesigner({
   const fmtMoney = money || ((n) => "€" + Math.round(n).toLocaleString("en-IE"));
   const loc = { en: "en-GB", ru: "ru-RU", uk: "uk-UA" }[lang] || "ro-RO";
   const nf = (n, d = 0) => Number(n).toLocaleString(loc, { maximumFractionDigits: d, minimumFractionDigits: d });
+  // what the label at the cursor says while an outline is drawn (components/drawReadout.js)
+  const readoutText = useRef(null);
+  useEffect(() => { readoutText.current = (m, a) => `${nf(m, 1)} m` + (a ? `, ${nf(a, 1)} m²` : ""); });
 
   const shellRef = useRef(null);
   const stageRef = useRef(null);
@@ -350,7 +376,18 @@ export default function SiteDesigner({
   const [clusterMaxW, setClusterMaxW] = useState(() => savedNum(saved.clusterMaxW, 0));
   const [clusterMaxH, setClusterMaxH] = useState(() => savedNum(saved.clusterMaxH, 0));
   const [clusterGap, setClusterGap] = useState(() => savedNum(saved.clusterGap, 0));
-  const settings = { panelId, orientation, rowSpacingCm, colSpacingCm, setbackCm, clusterMaxW, clusterMaxH, clusterGap };
+  // how many of the panels that fit go on the roof: what the quote needs, the whole roof, or the installer's own number.
+  // A roof drawn before this choice existed was filled whole, and stays so until changed.
+  const [fill, setFill] = useState(() => (["target", "roof", "own"].includes(saved.fill) ? saved.fill
+    : Array.isArray(siteDesign?.planes) && siteDesign.planes.length ? "roof" : "target"));
+  const [fillOwn, setFillOwn] = useState(() => savedNum(saved.fillOwn, 0));
+  // what the quote asks for, in panels of the chosen model; its kW is kept to 0.1, so a
+  // quarter panel of slack keeps a roof applied from here at the same count when reopened
+  const targetKw = Number(projectInputs?.kw) || 0;
+  const panelW = Number(findPanel(panelId)?.watt) || 0;
+  const targetPanels = targetKw > 0 && panelW > 0 ? Math.max(1, Math.ceil((targetKw * 1000) / panelW - 0.25)) : 0;
+  const fillCount = fill === "own" ? fillOwn : fill === "target" ? targetPanels : 0;
+  const settings = { panelId, orientation, rowSpacingCm, colSpacingCm, setbackCm, clusterMaxW, clusterMaxH, clusterGap, fill, fillOwn, fillCount };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -451,7 +488,7 @@ export default function SiteDesigner({
     function mirror() {
       setShapes({
         planes: [...planeLayers.current.entries()].map(([id, l]) => ({
-          id, tilt: l._sdTilt, az: l._sdAzimuth, roofType: l._sdRoofType, guessed: !!l._sdAzGuess, area: polygonAreaM2(ringToLatLon(l)),
+          id, tilt: l._sdTilt, az: l._sdAzimuth, roofType: l._sdRoofType, guessed: !!l._sdAzGuess, area: slopeAreaM2(ringToLatLon(l), l._sdTilt ?? 35),
         })),
         obstacles: [...obstacleLayers.current.entries()].map(([id, l]) => ({ id, kind: l._sdObstacleKind })),
         markers: [...markerLayers.current.entries()].map(([id, m]) => ({ id, type: m._sdMarkerType })),
@@ -524,11 +561,16 @@ export default function SiteDesigner({
       layoutTimer.current = setTimeout(() => api.current.runLayout?.(), ms);
     }
 
+    let stopReadout = () => {};
     function endTool() {
+      stopReadout();
       const map = mapRef.current;
       if (map) {
-        map.pm.disableDraw();
-        if (map.pm.globalEditModeEnabled()) map.pm.disableGlobalEditMode();
+        // the drawing layer can be gone while the planner closes: ending a tool then is a no-op
+        if (map.pm) {
+          map.pm.disableDraw();
+          if (map.pm.globalEditModeEnabled()) map.pm.disableGlobalEditMode();
+        }
         map.getContainer().style.cursor = "";
       }
       pendingKind.current = null;
@@ -541,10 +583,11 @@ export default function SiteDesigner({
     function startTool(next) {
       endTool();
       const map = mapRef.current;
-      if (!next || !map) return;
+      if (!next || !map || !map.pm) return;
       if (next === "plane" || next === "obstacle") {
         pendingKind.current = next;
-        map.pm.enableDraw("Polygon", { pathOptions: next === "plane" ? PLANE_ON : OBSTACLE_STYLE, snappable: true, snapDistance: 14, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
+        stopReadout = drawReadout(map, (m, a) => readoutText.current?.(m, a) || "");
+        map.pm.enableDraw("Polygon", { pathOptions: next === "plane" ? PLANE_ON : OBSTACLE_STYLE, snappable: true, snapDistance: 8, allowSelfIntersection: false, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
       } else if (next === "tree") {
         map.pm.enableDraw("Circle", { pathOptions: TREE_STYLE, snappable: true });
       } else if (next === "measure" || next === "marker") {
@@ -587,7 +630,7 @@ export default function SiteDesigner({
       mirror();
       // a slider sends many small moves: save and remember the last one
       clearTimeout(commitTimer.current);
-      commitTimer.current = setTimeout(() => commit({ geometry: false }), 280);
+      commitTimer.current = setTimeout(() => { commitTimer.current = null; commit({ geometry: false }); }, 280);
     }
     function updateObstacle(id, kind) {
       const l = obstacleLayers.current.get(id);
@@ -600,7 +643,7 @@ export default function SiteDesigner({
       showDimensionsRef.current = on;
       renderDimensionLabels();
     }
-    api.current = { ...api.current, undo, redo, startTool, endTool, removeShape, focusShape, recenter, updatePlane, updateObstacle, restyle, setDimensions, snapshotShapes, scheduleLayout };
+    api.current = { ...api.current, commitNow: () => commit({ geometry: false }), undo, redo, startTool, endTool, removeShape, focusShape, recenter, updatePlane, updateObstacle, restyle, setDimensions, snapshotShapes, scheduleLayout };
 
     async function init() {
       // leaflet-geoman's bundle expects a global `L` (it was built to run after
@@ -617,7 +660,9 @@ export default function SiteDesigner({
       const map = L.map(mapEl.current, { zoomControl: false, maxZoom: 21 }).setView([lat, lon], 19);
       mapRef.current = map;
       L.control.zoom({ position: "bottomright" }).addTo(map);
-      map.pm.setLang(lang === "ru" ? "ru" : lang === "uk" ? "ua" : lang === "ro" ? "ro" : "en");
+      // leaflet-geoman attaches map.pm when the map is made; if it missed this map, attach it now
+      if (!map.pm && L.PM?.Map) map.pm = new L.PM.Map(map);
+      drawLang(map, lang);
 
       const googleKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
       const googleLayer = googleKey ? await loadGoogleSatelliteLayer(L, googleKey) : null;
@@ -714,7 +759,8 @@ export default function SiteDesigner({
     return () => {
       cancelled = true;
       clearTimeout(layoutTimer.current);
-      clearTimeout(commitTimer.current);
+      // closed within a moment of a change: save it now rather than drop it
+      if (commitTimer.current) { clearTimeout(commitTimer.current); commitTimer.current = null; try { api.current.commitNow?.(); } catch { /* the map is already gone */ } }
       mapRef.current?.remove();
       mapRef.current = null;
       planeLayers.current.clear();
@@ -737,7 +783,8 @@ export default function SiteDesigner({
   useEffect(() => {
     selectedRef.current = selectedId;
     api.current.restyle?.();
-    if (selectedId) document.getElementById("sd-item-" + selectedId)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    // on a phone the cards sit under the map: scrolling to one would push the map off screen
+    if (selectedId && !window.matchMedia("(max-width: 860px)").matches) document.getElementById("sd-item-" + selectedId)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [selectedId]);
 
   // Fits the chosen module into every drawn side, skipping every obstacle,
@@ -755,14 +802,20 @@ export default function SiteDesigner({
     const opts = fitOptions(s);
     ensurePanelPattern(map);
 
-    let totalCount = 0, roofAreaM2 = 0;
+    let totalCount = 0, roofAreaM2 = 0, fitCount = 0;
     const perPlane = [];
+    const fits = [];
     for (const [id, layer] of planeLayers.current) {
       const polygon = ringToLatLon(layer);
       // Portrait: the panel's long side runs up the slope, its short side along the ridge.
-      const { panels, count, rows } = fitPanels(polygon, obstaclePolys, h, w, opts);
+      // on the real slope: the outline is seen from above, so a pitched side holds more rows than it looks
+      fits.push({ id, layer, polygon, azimuthDeg: layer._sdAzimuth ?? 0, ...fitPanels(polygon, obstaclePolys, h, w, { ...opts, tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0 }) });
+    }
+    // only as many as chosen, the sides facing nearest south first; the rest stay as faint outlines
+    for (const { id, layer, polygon, panels, count, rows, spare } of limitPanels(fits, s.fillCount)) {
       totalCount += count;
-      const areaM2 = polygonAreaM2(polygon);
+      fitCount += count + spare.length;
+      const areaM2 = slopeAreaM2(polygon, layer._sdTilt ?? 35);
       roofAreaM2 += areaM2;
       const [clat, clon] = centroidOf(polygon);
       perPlane.push({ id, tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0, roofType: layer._sdRoofType || "tile", lat: clat, lon: clon, count, areaM2 });
@@ -771,14 +824,14 @@ export default function SiteDesigner({
         L.polyline(r.rail1, { color: "#5B6B7A", weight: 3, opacity: 0.85, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
         L.polyline(r.rail2, { color: "#5B6B7A", weight: 3, opacity: 0.85, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
       });
-      panels.forEach((corners) => {
-        L.polygon(corners, { color: "#B9C4CE", weight: 1, fillColor: "url(#sdPanelCells)", fillOpacity: 1, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
-      });
+      // the panels of a side as one shape each way (placed, and the places left free): one map element, not hundreds
+      if (panels.length) L.polygon(panels.map((c) => [c]), { color: "#B9C4CE", weight: 1, fillColor: "url(#sdPanelCells)", fillOpacity: 1, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
+      if (spare.length) L.polygon(spare.map((c) => [c]), { color: "#DDE3E8", weight: 1, opacity: 0.6, dashArray: "3 3", fill: false, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
     }
     const kw = Math.round(((totalCount * panel.watt) / 1000) * 10) / 10;
     setLayout({
       totalCount, kw, perPlane, panelId: panel.id, panelBrand: panel.brand, panelModel: panel.model, panelWatt: panel.watt,
-      panelAreaM2: (totalCount * w * h) / 1e6, roofAreaM2,
+      panelAreaM2: (totalCount * w * h) / 1e6, roofAreaM2, fitCount,
     });
   }
   api.current.runLayout = runLayout;
@@ -798,14 +851,27 @@ export default function SiteDesigner({
   // redo, Delete removes what is selected. Never while typing in a field.
   useEffect(() => {
     function onKey(e) {
+      const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(e.target?.tagName || "");
       if (e.key === "Escape") {
         e.preventDefault();
-        if (toolRef.current) api.current.endTool?.();
+        // in a field, Esc leaves the field; it never throws the whole designer away
+        if (typing) e.target.blur();
+        else if (toolRef.current) api.current.endTool?.();
         else onCloseRef.current?.();
         return;
       }
-      if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target?.tagName || "")) return;
+      if (typing) return;
       const k = e.key.toLowerCase();
+      // while an outline is being drawn, Ctrl+Z takes back its last corner, not the shape before it
+      const draw = mapRef.current?.pm?.Draw?.Polygon;
+      if ((e.ctrlKey || e.metaKey) && k === "z" && !e.shiftKey && toolRef.current && draw?._enabled && draw._layer?.getLatLngs?.().length) {
+        e.preventDefault(); draw._removeLastVertex?.(); return;
+      }
+      // 1, 2, 3... pick the tools in the toolbar's order, the same in every language
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && /^[1-9]$/.test(e.key)) {
+        const b = document.querySelectorAll(".sd-tools .sd-tool")[Number(e.key) - 1];
+        if (b) { e.preventDefault(); b.click(); return; }
+      }
       if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); if (e.shiftKey) api.current.redo?.(); else api.current.undo?.(); }
       else if ((e.ctrlKey || e.metaKey) && k === "y") { e.preventDefault(); api.current.redo?.(); }
       else if ((e.key === "Delete" || e.key === "Backspace") && selectedRef.current && !toolRef.current) { e.preventDefault(); api.current.removeShape?.(selectedRef.current); }
@@ -869,6 +935,17 @@ export default function SiteDesigner({
   const fitsAny = !!layout && layout.totalCount > 0;
   const tabDone = { 1: hasPlanes, 2: hasObstacles || hasPoints, 3: fitsAny };
   const panel = findPanel(panelId);
+  // what the quote asks for: its kW in panels of the chosen model, and the clear roof they need
+  // (the panels' own area plus about a quarter for the gaps, the edges and the walkways)
+  const panelM2 = panel?.dimensionsMm ? (panel.dimensionsMm.w / 1000) * (panel.dimensionsMm.h / 1000) : 2;
+  const targetM2 = Math.round(targetPanels * panelM2 * 1.25);
+  const placed = layout?.totalCount || 0;
+  const meterPct = targetPanels ? Math.min(100, Math.round((placed / targetPanels) * 100)) : 0;
+  const tabSub = {
+    1: hasPlanes ? (shapes.planes.length === 1 ? tr("sub1_one") : tr("sub1", { n: shapes.planes.length })) : tr("sub1_none"),
+    2: hasObstacles || hasPoints ? tr("sub2", { n: shapes.obstacles.length + shapes.markers.length }) : tr("sub2_none"),
+    3: fitsAny ? `${placed} ${panelsNoun(placed, lang)}` : tr("sub3_none"),
+  };
 
   let hint = null;
   if (tool === "plane") hint = tr("h_plane");
@@ -912,8 +989,8 @@ export default function SiteDesigner({
               <span className="sd-lbl-row">
                 <span className="sd-lbl" id={"sd-pitch-" + pl.id}>{tr("pitch")}</span>
                 <span className="sd-numwrap">
-                  <input type="number" className="sd-num" min="0" max="60" step="1" value={pl.tilt} aria-labelledby={"sd-pitch-" + pl.id}
-                    onChange={(e) => e.target.value !== "" && api.current.updatePlane?.(pl.id, { tilt: +e.target.value })} />
+                  <NumInput className="sd-num" min="0" max="60" step="1" value={pl.tilt} aria-labelledby={"sd-pitch-" + pl.id}
+                    onValue={(v) => api.current.updatePlane?.(pl.id, { tilt: v })} />
                   <span className="sd-unit">°</span>
                 </span>
               </span>
@@ -979,7 +1056,7 @@ export default function SiteDesigner({
 
         <div className="sd-body">
           {/* ------------------------------------------------------ map */}
-          <div className="sd-stage" ref={stageRef}>
+          <div className={"sd-stage" + (tool ? " tooling" : "")} ref={stageRef}>
             <div ref={mapEl} className="sd-map" />
             {ready && (
               <div className="sd-tools" role="toolbar" aria-label={tr("tools")}>
@@ -987,7 +1064,7 @@ export default function SiteDesigner({
                   ? <span key={"sep" + i} className="sd-tool-sep" aria-hidden="true" />
                   : (
                     <button key={tl.id} type="button" className={"sd-tool" + (tool === tl.id ? " on" : "")} aria-pressed={tool === tl.id}
-                      onClick={() => pick(tl.id)} title={tl.label}>
+                      onClick={() => pick(tl.id)} title={`${tl.label} (${TOOLS.filter((x) => x !== "sep").indexOf(tl) + 1})`} aria-keyshortcuts={String(TOOLS.filter((x) => x !== "sep").indexOf(tl) + 1)}>
                       <tl.Icon size={18} aria-hidden="true" /><span>{tl.label}</span>
                     </button>
                   ))}
@@ -1040,7 +1117,7 @@ export default function SiteDesigner({
                 <button key={n} type="button" role="tab" id={"sd-tab-" + n} aria-selected={step === n} aria-controls="sd-tabpanel"
                   className={"sd-tab" + (step === n ? " on" : "") + (tabDone[n] ? " done" : "")} onClick={() => setStep(n)}>
                   <span className="sd-tab-n" aria-hidden="true">{tabDone[n] ? <Check size={14} strokeWidth={3} /> : n}</span>
-                  <span className="sd-tab-tx">{tr("tab" + n)}</span>
+                  <span className="sd-tab-tx">{tr("tab" + n)}<small>{tabSub[n]}</small></span>
                 </button>
               ))}
             </nav>
@@ -1052,17 +1129,40 @@ export default function SiteDesigner({
                     <h3>{tr("st1h")}</h3>
                     <p>{tr("st1p")}</p>
                   </header>
-                  <button type="button" className={"sd-btn big" + (tool === "plane" ? " on" : " primary")} onClick={() => pick("plane")} disabled={!ready}>
+                  <button type="button" className={"sd-btn big" + (tool === "plane" ? " on" : " key")} onClick={() => pick("plane")} disabled={!ready}>
                     {tool === "plane"
                       ? <><X size={19} aria-hidden="true" />{tr("drawCancel")}</>
                       : <><Pentagon size={19} aria-hidden="true" />{hasPlanes ? tr("drawMore") : tr("drawFirst")}</>}
                   </button>
+                  {!hasPlanes && (
+                    <div className="sd-goal">
+                      <h4>{tr("goalH")}</h4>
+                      <p>{targetPanels ? tr("goal", { kw: nf(targetKw, 1), n: targetPanels, w: panelW, m2: nf(targetM2) }) : tr("goalNone")}</p>
+                    </div>
+                  )}
                   {(tool === "plane" || !hasPlanes) && (
-                    <ol className="sd-how">
-                      <li><span aria-hidden="true">1</span>{tr("how1")}</li>
-                      <li><span aria-hidden="true">2</span>{tr("how2")}</li>
-                      <li><span aria-hidden="true">3</span>{tr("how3")}</li>
-                    </ol>
+                    <div className="sd-howcard">
+                      <h4>{tr("howH")}</h4>
+                      <div className="sd-howbody">
+                        {/* a roof side drawn the way the map wants it: corner by corner, back to the first */}
+                        <svg className="sd-howfig" viewBox="0 0 120 92" aria-hidden="true">
+                          <path d="M14 70 L34 18 L98 18 L108 70 Z" className="sd-howfig-shape" />
+                          <path d="M14 70 L34 18 L98 18 L108 70" className="sd-howfig-line" />
+                          {/* the last click closes the shape on the first corner */}
+                          <path d="M108 70 L22 70" className="sd-howfig-close" />
+                          <circle cx="34" cy="18" r="5" className="sd-howfig-dot" />
+                          <circle cx="98" cy="18" r="5" className="sd-howfig-dot" />
+                          <circle cx="108" cy="70" r="5" className="sd-howfig-dot" />
+                          <circle cx="14" cy="70" r="9" className="sd-howfig-dot one" /><text x="14" y="73.5">1</text>
+                        </svg>
+                        <ol className="sd-how">
+                          <li><span aria-hidden="true">1</span>{tr("how1")}</li>
+                          <li><span aria-hidden="true">2</span>{tr("how2")}</li>
+                          <li><span aria-hidden="true">3</span>{tr("how3")}</li>
+                        </ol>
+                      </div>
+                      <p className="sd-keys">{tr("keys")}</p>
+                    </div>
                   )}
                   {hasPlanes && <div className="sd-cards">{shapes.planes.map(planeCard)}</div>}
                   {hasPlanes && (
@@ -1137,6 +1237,24 @@ export default function SiteDesigner({
                     <h3>{tr("st3h")}</h3>
                     <p>{tr("st3p")}</p>
                   </header>
+                  <div className="sd-field">
+                    <span className="sd-lbl" id="sd-fill">{tr("howMany")}</span>
+                    <div className="sd-seg" role="radiogroup" aria-labelledby="sd-fill">
+                      {targetPanels > 0 && <button type="button" role="radio" aria-checked={fill === "target"} className={fill === "target" ? "on" : ""} onClick={() => setFill("target")}>{tr("fillTarget", { n: targetPanels })}</button>}
+                      <button type="button" role="radio" aria-checked={fill === "roof" || (fill === "target" && !targetPanels)} className={fill === "roof" || (fill === "target" && !targetPanels) ? "on" : ""} onClick={() => setFill("roof")}>{tr("fillRoof", { n: layout?.fitCount ?? 0 })}</button>
+                      <button type="button" role="radio" aria-checked={fill === "own"} className={fill === "own" ? "on" : ""}
+                        onClick={() => { if (!fillOwn) setFillOwn(layout?.totalCount || targetPanels || 1); setFill("own"); }}>{tr("fillOwn")}</button>
+                    </div>
+                    {fill === "own" && (
+                      <span className="sd-lbl-row">
+                        <span className="sd-lbl" id="sd-fill-own">{tr("fillOwnLbl")}</span>
+                        <span className="sd-numwrap">
+                          <NumInput className="sd-num" min="1" max="2000" step="1" value={fillOwn || ""} aria-labelledby="sd-fill-own" onValue={(v) => setFillOwn(Math.round(v))} />
+                        </span>
+                      </span>
+                    )}
+                    <span className="sd-note">{tr("fillHelp")}</span>
+                  </div>
                   <label className="sd-field">
                     <span className="sd-lbl">{tr("module")}</span>
                     <select className="sd-select" value={panelId} onChange={(e) => setPanelId(e.target.value)}>
@@ -1159,7 +1277,7 @@ export default function SiteDesigner({
                     <span className="sd-lbl-row">
                       <span className="sd-lbl" id="sd-setback">{tr("setback")}</span>
                       <span className="sd-numwrap">
-                        <input type="number" className="sd-num" min="0" max="100" value={setbackCm} onChange={(e) => setSetbackCm(clampNum(e.target.value, 0, 100))} aria-labelledby="sd-setback" />
+                        <NumInput className="sd-num" min="0" max="100" value={setbackCm} onValue={setSetbackCm} aria-labelledby="sd-setback" />
                         <span className="sd-unit">cm</span>
                       </span>
                     </span>
@@ -1169,15 +1287,15 @@ export default function SiteDesigner({
                     <summary><ChevronDown size={17} aria-hidden="true" />{tr("more")}</summary>
                     <div className="sd-grid2">
                       <label className="sd-field"><span className="sd-lbl">{tr("rowGap")} (cm)</span>
-                        <input type="number" className="sd-num wide" min="0" max="20" value={rowSpacingCm} onChange={(e) => setRowSpacingCm(clampNum(e.target.value, 0, 20))} /></label>
+                        <NumInput className="sd-num wide" min="0" max="20" value={rowSpacingCm} onValue={setRowSpacingCm} /></label>
                       <label className="sd-field"><span className="sd-lbl">{tr("colGap")} (cm)</span>
-                        <input type="number" className="sd-num wide" min="0" max="20" value={colSpacingCm} onChange={(e) => setColSpacingCm(clampNum(e.target.value, 0, 20))} /></label>
+                        <NumInput className="sd-num wide" min="0" max="20" value={colSpacingCm} onValue={setColSpacingCm} /></label>
                       <label className="sd-field"><span className="sd-lbl">{tr("blockW")} (m)</span>
-                        <input type="number" className="sd-num wide" min="0" max="30" step="0.5" value={clusterMaxW} onChange={(e) => setClusterMaxW(clampNum(e.target.value, 0, 30))} /></label>
+                        <NumInput className="sd-num wide" min="0" max="30" step="0.5" value={clusterMaxW} onValue={setClusterMaxW} /></label>
                       <label className="sd-field"><span className="sd-lbl">{tr("blockH")} (m)</span>
-                        <input type="number" className="sd-num wide" min="0" max="30" step="0.5" value={clusterMaxH} onChange={(e) => setClusterMaxH(clampNum(e.target.value, 0, 30))} /></label>
+                        <NumInput className="sd-num wide" min="0" max="30" step="0.5" value={clusterMaxH} onValue={setClusterMaxH} /></label>
                       <label className="sd-field"><span className="sd-lbl">{tr("blockGap")} (m)</span>
-                        <input type="number" className="sd-num wide" min="0" max="10" step="0.1" value={clusterGap} onChange={(e) => setClusterGap(clampNum(e.target.value, 0, 10))} /></label>
+                        <NumInput className="sd-num wide" min="0" max="10" step="0.1" value={clusterGap} onValue={setClusterGap} /></label>
                       <p className="sd-help">{tr("blockHelp")}</p>
                     </div>
                   </details>
@@ -1200,6 +1318,12 @@ export default function SiteDesigner({
 
             {/* the result, always in view */}
             <div className="sd-result" aria-live="polite">
+              {targetPanels > 0 && (
+                <div className="sd-meter" role="img" aria-label={placed > targetPanels ? tr("meterOver", { n: placed, kw: nf(targetKw, 1) }) : placed ? tr("meter", { n: placed, t: targetPanels, kw: nf(targetKw, 1) }) : tr("meterEmpty", { t: targetPanels, kw: nf(targetKw, 1) })}>
+                  <div className="sd-meter-bar"><span className={placed >= targetPanels ? "full" : ""} style={{ width: meterPct + "%" }} /></div>
+                  <p>{placed > targetPanels ? tr("meterOver", { n: placed, kw: nf(targetKw, 1) }) : placed ? tr("meter", { n: placed, t: targetPanels, kw: nf(targetKw, 1) }) : tr("meterEmpty", { t: targetPanels, kw: nf(targetKw, 1) })}</p>
+                </div>
+              )}
               {!layout ? (
                 <p className="sd-result-empty">{tr("resultEmpty")}</p>
               ) : (
@@ -1212,6 +1336,7 @@ export default function SiteDesigner({
                     )}
                   </div>
                   {layout.totalCount === 0 && <p className="sd-warn" role="alert">{tr("noFit")}</p>}
+                  {layout.fitCount > layout.totalCount && layout.totalCount > 0 && <p className="sd-help">{tr("spareLine", { fit: layout.fitCount, free: layout.fitCount - layout.totalCount })}</p>}
                   {quoteResult && (
                     <dl className="sd-metrics">
                       <div><dt>{tr("price")}</dt><dd>{fmtMoney(quoteResult.e.cost)}</dd></div>

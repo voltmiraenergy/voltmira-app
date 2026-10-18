@@ -73,10 +73,6 @@ export default async function PortfoliosPage(props) {
                 <input type="hidden" name="kind" value="hybrid" />
                 <SubmitButton className="btn ghost">{plt("sample_hybrid", lang)}</SubmitButton>
               </form>
-              <form action={createSampleProject}>
-                <input type="hidden" name="kind" value="rooftops" />
-                <SubmitButton className="btn ghost">{plt("sample_roofs", lang)}</SubmitButton>
-              </form>
             </div>
             <p className="pf-hint">{plt("sample_wait", lang)}</p>
           </section>

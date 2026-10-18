@@ -607,8 +607,31 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 .app .gr-main > div { display: flex; flex-direction: column; gap: 6px; }
 .app .gr-route { padding: 10px 12px; border-radius: 10px; background: var(--paper); }
 .app .gr-shared { padding: 10px 12px; border-radius: 10px; background: var(--amber-tint); }
-/* the two tables beside the map fit their column: headers wrap, nothing scrolls sideways */
-.app .gr-main .pf-scroll { overflow-x: visible; }
+.app .gr-area { padding: 10px 12px; border-radius: 10px; background: var(--paper); border: 1px solid var(--line); }
+.app .gr-area h5 { margin: 0 0 2px; }
+/* the tables beside the map fit their column: headers wrap; a table that still
+   cannot fit scrolls inside its own box instead of running under the map */
+.app .gr-main .pf-scroll { overflow-x: auto; max-width: 100%; }
+/* the connection options, one card each */
+.app .gr-oc { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.app .gr-oc-i { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2, #fff); min-width: 0; }
+.app .gr-oc-i.on { border-color: var(--green); box-shadow: inset 3px 0 0 var(--green); }
+.app .gr-oc-i.best { background: var(--green-tint); }
+.app .gr-oc-h { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.app .gr-oc-h .gr-k { margin-top: 4px; flex: none; }
+.app .gr-oc-n { flex: 1; min-width: 0; }
+.app .gr-oc-n b { display: block; font-size: 14px; overflow-wrap: anywhere; }
+.app .gr-oc-n small { display: block; font-size: 12px; color: var(--muted); }
+.app .gr-oc-tag { flex: none; font-style: normal; font-size: 11.5px; font-weight: 700; color: var(--green); padding: 2px 8px; border-radius: 99px; border: 1px solid var(--green); white-space: nowrap; }
+.app .gr-oc-m { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px 14px; }
+.app .gr-oc-m div { min-width: 0; }
+.app .gr-oc-m dt { font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); }
+.app .gr-oc-m dd { margin: 2px 0 0; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.app .gr-oc-m dd small { display: block; font-size: 11.5px; font-weight: 500; color: var(--muted); }
+.app .gr-oc-a { display: flex; justify-content: flex-end; align-items: center; gap: 10px; flex-wrap: wrap; }
+.app .gr-oc-why { margin: 0; text-align: right; flex: 1 1 180px; }
+.app .gr-oc .gr-yes { color: var(--green); }
+.app .gr-oc .gr-no { color: var(--pf-warn, #8A5A0F); }
 .app .gr-ox, .app .gr-ct { table-layout: fixed; font-size: 12.5px; }
 .app .gr-ox th, .app .gr-ct th { white-space: normal; padding: 8px 5px; font-size: 10.5px; letter-spacing: .03em; line-height: 1.25; vertical-align: bottom; }
 .app .gr-ox td, .app .gr-ct td { padding: 9px 5px; }
@@ -713,9 +736,9 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 .app .pk-pin { display: block; width: 24px; height: 24px; border-radius: 50%; background: var(--pf-a, #0F8A5F); border: 3px solid #fff; box-shadow: 0 0 0 2px rgba(20, 42, 33, .55), 0 2px 6px rgba(0, 0, 0, .35); cursor: grab; }
 .app .pk-dot-label { font-size: 11.5px; font-weight: 600; padding: 2px 6px; }
 /* the zoom buttons in the app's colours, readable on either theme (as in the roof designer) */
-.app .pk-map .leaflet-control-zoom, .app .pf-map .leaflet-control-zoom { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-.app .pk-map .leaflet-control-zoom a, .app .pf-map .leaflet-control-zoom a { background: var(--paper-2, #fff); color: var(--ink); border-bottom-color: var(--line); }
-.app .pk-map .leaflet-control-zoom a:hover, .app .pf-map .leaflet-control-zoom a:hover { background: var(--paper); color: var(--green); }
+.app .gr-map .leaflet-control-zoom, .app .pk-map .leaflet-control-zoom, .app .pf-map .leaflet-control-zoom { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.app .gr-map .leaflet-control-zoom a, .app .pk-map .leaflet-control-zoom a, .app .pf-map .leaflet-control-zoom a { background: var(--paper-2, #fff); color: var(--ink); border-bottom-color: var(--line); }
+.app .gr-map .leaflet-control-zoom a:hover, .app .pk-map .leaflet-control-zoom a:hover, .app .pf-map .leaflet-control-zoom a:hover { background: var(--paper); color: var(--green); }
 .app .pl-adds { gap: 8px; }
 @media (max-width: 560px) { .app .pk-map { height: 300px; } }
 /* on a phone the long labels (the samples, adding won quotes, the pack) wrap
@@ -777,3 +800,21 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 .app .mc-t th, .app .mc-t td { padding-left: 4px; padding-right: 4px; font-size: 10.5px; white-space: nowrap; }
 .app .mc-t td:first-child, .app .mc-t th:first-child { white-space: normal; min-width: 90px; padding-left: 0; }
 .app .mc-t td.mc-low { color: var(--pf-bad); }
+
+/* ---- a plant's quick links (PlantsPanel.jsx): one tap to each section; the
+   grid connection is amber until a point is chosen, green once it is */
+.app .pl-jump { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 14px; }
+.app .pl-jump-a { padding: 6px 11px; border-radius: 99px; border: 1px solid var(--line); background: var(--paper-2); color: var(--ink); font-size: 12.5px; font-weight: 600; text-decoration: none; transition: border-color .15s ease, background-color .15s ease; }
+.app .pl-jump-a:hover { border-color: var(--green); color: var(--green); }
+.app .pl-jump-a.key { background: var(--amber); border-color: var(--amber); color: var(--on-amber); }
+.app .pl-jump-a.key:hover { background: var(--amber-soft); color: var(--on-amber); }
+.app .pl-jump-a.on { background: var(--green-tint); border-color: transparent; color: var(--green); }
+.app .pl-anchor { scroll-margin-top: 72px; }
+
+/* ---- the site planner's entry ("develop the site"): amber until a plan is drawn */
+.app .ly-open { border: 1.5px solid var(--amber); background: var(--amber-tint); box-shadow: 0 3px 12px rgba(232, 155, 45, .18); }
+.app .ly-open:hover { border-color: var(--amber-ink); }
+.app .ly-open .ly-open-ic { background: var(--amber); color: var(--on-amber); }
+.app .ly-open-tx b { color: var(--ink); }
+.app .ly-open.done { border-color: color-mix(in srgb, var(--green) 40%, var(--line)); background: color-mix(in srgb, var(--green) 6%, var(--paper)); box-shadow: none; }
+.app .ly-open.done .ly-open-ic { background: var(--green); color: var(--on-green); }

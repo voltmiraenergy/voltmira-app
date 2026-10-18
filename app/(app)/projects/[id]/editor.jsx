@@ -45,10 +45,10 @@ import { financials, bomTotal } from "../../../../lib/quoteAnalysis.js";
 import { startYearOf, mdFeedFor } from "../../../../lib/quoteInput.js";
 import { t } from "../../../../lib/i18n.js";
 import { xt } from "../../../../lib/integrationText.js";
-import { autoBom, recommendMount } from "../../../../lib/supplierCatalog.js";
+import { autoBom, recommendMount, findPanel } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
 import { designCheck } from "../../../../lib/designCheck.js";
-import { fitPanels, fitOptions } from "../../../../lib/roofLayout.js";
+import { fitPanels, fitOptions, limitPanels } from "../../../../lib/roofLayout.js";
 import { moneyFormatter, numFor } from "../../../../lib/money.js";
 import { effectiveOfferCurrency, currencyOnMarketChange, betterCurrencyFor, normCurrency } from "../../../../lib/offerCurrency.js";
 import { saveOutbox, readOutbox, clearOutbox, isNetworkError } from "../../../../lib/offline.js";
@@ -548,9 +548,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     const obstacles = Array.isArray(p.siteDesign?.obstacles)
       ? p.siteDesign.obstacles.map((o) => o.polygon).filter((o) => Array.isArray(o) && o.length >= 3)
       : [];
-    const { w, h } = designCheck({ bom: p.bom, kw: p.kw }).panel.dimensionsMm || { w: 1909, h: 1134 };
+    const dc = designCheck({ bom: p.bom, kw: p.kw });
+    const { w, h } = dc.panel.dimensionsMm || { w: 1909, h: 1134 };
     const opts = fitOptions(p.siteDesign?.layout);
-    return validPlanes.flatMap((pl) => fitPanels(pl.polygon, obstacles, h, w, opts).rows);
+    // rails for the panels the quote sells, not for every place on the roof
+    return limitPanels(validPlanes.map((pl) => ({ ...fitPanels(pl.polygon, obstacles, h, w, { ...opts, tiltDeg: Number(pl.tiltDeg) || 0, azimuthDeg: Number(pl.azimuthDeg) || 0 }), azimuthDeg: Number(pl.azimuthDeg) || 0 })),
+      Math.max(0, Number(dc.modules) || 0)).flatMap((f) => f.rows);
   }, [p.siteDesign, p.bom, p.kw]);
 
   async function applySiteDesignLayout(layout) {
@@ -585,7 +588,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       const hasPanelLine = bomArr.some((l) => l.kind === "panel");
       patch.bom = hasPanelLine
         ? bomArr.map((l) => {
-            if (l.kind === "panel") return { ...l, qty: layout.totalCount, brand: layout.panelBrand, model: layout.panelModel };
+            if (l.kind === "panel") {
+              // a different model brings its own rating and list price; the same model keeps the installer's price
+              const cat = findPanel(layout.panelId);
+              const changed = l.brand !== layout.panelBrand || l.model !== layout.panelModel;
+              return { ...l, qty: layout.totalCount, brand: layout.panelBrand, model: layout.panelModel, ...(changed && cat ? { spec: `${cat.watt} W`, unit_price: cat.price } : {}) };
+            }
             // Only swap an EXISTING mount line's product, never add or
             // remove one — an installer's custom BOM keeps its own shape.
             if (l.kind === "mounting" && matchedMount) return { ...l, brand: matchedMount.brand, model: matchedMount.model, spec: matchedMount.type, unit_price: matchedMount.eurPerKw };
@@ -1440,7 +1448,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       {/* site designer: draw the roof on satellite imagery, full screen */}
       {siteDesignerOpen && p.lat != null && p.lon != null && (
         <SiteDesigner lang={lang} lat={p.lat} lon={p.lon} address={p.address} siteDesign={p.siteDesign}
-          onChange={(sd) => update({ siteDesign: sd })}
+          onChange={(sd) => update({ siteDesign: { ...(p.siteDesign?.photoUrl ? { photoUrl: p.siteDesign.photoUrl } : {}), ...sd } })}
           onApply={applySiteDesignLayout} applying={siteDesignApplying}
           projectInputs={p} onComputeQuote={computeSiteDesignQuote} money={fmt}
           onClose={() => setSiteDesignerOpen(false)} />

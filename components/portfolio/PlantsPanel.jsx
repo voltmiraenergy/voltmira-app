@@ -177,7 +177,14 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
       </header>
       {pl.sample && <p className="pl-note">{plt("sample_note", lang)}</p>}
 
-      <div className="pl-grid">
+      {/* ---- a long plant reads in sections: one tap to each, the grid connection included */}
+      <nav className="pl-jump" aria-label={plt("jump_label", lang)}>
+        {[["site", "jump_site"], ["parts", "jump_parts"], ["money", "jump_money"], ["results", "jump_results"], ["layout", "jump_layout"], ["grid", "jump_grid"], ["permits", "jump_permits"], ["pack", "jump_pack"]].map(([k, key]) => (
+          <a key={k} href={`#pl-${id}-${k}`} className={"pl-jump-a" + (k === "grid" ? (pl.grid ? " on" : " key") : "")}>{plt(key, lang)}</a>
+        ))}
+      </nav>
+
+      <div className="pl-grid pl-anchor" id={`pl-${id}-site`}>
         <Field id={`pn-${id}`} type="text" wide label={plt("f_name", lang)} value={raw.name} onChange={(v) => set({ name: v })} />
         <Field id={`pc-${id}`} type="text" label={plt("f_locality", lang)} value={raw.locality} onChange={(v) => set({ locality: v })} />
         <Field id={`pla-${id}`} label={plt("f_lat", lang)} value={raw.lat} onChange={(v) => set({ lat: v })} step="0.0001" />
@@ -188,7 +195,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
       </div>
       {!picking && (
         <div className="pl-row">
-          <button type="button" className="btn sm" onClick={() => setPicking(true)}>{plt("pick_btn", lang)}</button>
+          <button type="button" className="btn sm amber" onClick={() => setPicking(true)}>{plt("pick_btn", lang)}</button>
           {busy && (raw.wind || raw.solar) && <small className="pf-hint" role="status">{plt("pick_looking_up", lang)}</small>}
         </div>
       )}
@@ -198,11 +205,11 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
       )}
 
       {/* ---- wind, solar, storage */}
-      <div className="pl-comps">
+      <div className="pl-comps pl-anchor" id={`pl-${id}-parts`}>
         <section className="pl-comp" aria-label={plt("c_wind", lang)}>
           <div className="pl-comp-h"><h4>{plt("c_wind", lang)}</h4>
             {raw.wind ? <button type="button" className="btn ghost sm" onClick={() => set({ wind: null })}>{plt("c_remove", lang)}</button>
-              : <button type="button" className="btn sm" onClick={() => set({ wind: { mw: 20, turbines: 4, hubM: 150, shear: 0.2, lossesPct: 15, turbine: { cutIn: 3, rated: 10, cutOut: 25 } } })}>{plt("c_add", lang, { x: plt("c_wind", lang).toLowerCase() })}</button>}
+              : <button type="button" className="btn sm ghost" onClick={() => set({ wind: { mw: 20, turbines: 4, hubM: 150, shear: 0.2, lossesPct: 15, turbine: { cutIn: 3, rated: 10, cutOut: 25 } } })}>{plt("c_add", lang, { x: plt("c_wind", lang).toLowerCase() })}</button>}
           </div>
           {raw.wind && (
             <>
@@ -215,7 +222,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
                 <Field id={`wr-${id}`} label={plt("w_rated", lang)} value={raw.wind.turbine?.rated} onChange={(v) => setIn("wind", { turbine: { ...(raw.wind.turbine || {}), rated: v } })} step="0.5" min="6" max="16" />
               </div>
               <div className="pl-row">
-                <button type="button" className="btn sm" disabled={!hasSite || busy === "wind"} aria-busy={busy === "wind"} onClick={screen}>
+                <button type="button" className="btn sm amber" disabled={!hasSite || busy === "wind"} aria-busy={busy === "wind"} onClick={screen}>
                   {raw.wind.screening ? plt("w_screen_again", lang) : plt("w_screen", lang)}{busy === "wind" ? "..." : ""}
                 </button>
                 {!hasSite && <small className="pf-hint">{plt("f_need_site", lang)}</small>}
@@ -248,7 +255,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
         <section className="pl-comp" aria-label={plt("c_solar", lang)}>
           <div className="pl-comp-h"><h4>{plt("c_solar", lang)}</h4>
             {raw.solar ? <button type="button" className="btn ghost sm" onClick={() => set({ solar: null })}>{plt("c_remove", lang)}</button>
-              : <button type="button" className="btn sm" onClick={() => set({ solar: { mwp: 10, yieldKwhKwp: 0, degrPctYr: 0.5 } })}>{plt("c_add", lang, { x: plt("c_solar", lang).toLowerCase() })}</button>}
+              : <button type="button" className="btn sm ghost" onClick={() => set({ solar: { mwp: 10, yieldKwhKwp: 0, degrPctYr: 0.5 } })}>{plt("c_add", lang, { x: plt("c_solar", lang).toLowerCase() })}</button>}
           </div>
           {raw.solar && (
             <>
@@ -263,7 +270,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
               <ExportLimit pl={pl} lang={lang} money={money} hint heading={false} lineClass="pl-line" noteClass="pf-hint" />
               {pl.solar.variabilityPct != null && <p className="pl-line ok">{plt("sol_pvgis_got", lang, { sd: fnum(pl.solar.variabilityPct, lang, 1), db: pl.solar.variabilityDb, years: pl.solar.variabilityYears })}</p>}
               <div className="pl-row">
-                <button type="button" className="btn sm" disabled={!hasSite || busy === "solar"} aria-busy={busy === "solar"} onClick={() => pvgis()}>{plt("sol_lookup", lang)}{busy === "solar" ? "..." : ""}</button>
+                <button type="button" className="btn sm amber" disabled={!hasSite || busy === "solar"} aria-busy={busy === "solar"} onClick={() => pvgis()}>{plt("sol_lookup", lang)}{busy === "solar" ? "..." : ""}</button>
                 {!hasSite && <small className="pf-hint">{plt("f_need_site", lang)}</small>}
               </div>
               {msg?.k === "solar" && <p className="pf-warn" role="alert">{msg.t}</p>}
@@ -285,7 +292,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
         <section className="pl-comp" aria-label={plt("c_bess", lang)}>
           <div className="pl-comp-h"><h4>{plt("c_bess", lang)}</h4>
             {raw.bess ? <button type="button" className="btn ghost sm" onClick={() => set({ bess: null })}>{plt("c_remove", lang)}</button>
-              : <button type="button" className="btn sm" onClick={() => set({ bess: { mw: 5, mwh: 10 } })}>{plt("c_add", lang, { x: plt("c_bess", lang).toLowerCase() })}</button>}
+              : <button type="button" className="btn sm ghost" onClick={() => set({ bess: { mw: 5, mwh: 10 } })}>{plt("c_add", lang, { x: plt("c_bess", lang).toLowerCase() })}</button>}
           </div>
           {raw.bess && (
             <>
@@ -302,7 +309,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
       </div>
 
       {/* ---- revenue and costs */}
-      <div className="pl-two">
+      <div className="pl-two pl-anchor" id={`pl-${id}-money`}>
         <section aria-label={plt("rev_h", lang)}>
           <h4>{plt("rev_h", lang)}</h4>
           <div className="pl-grid">
@@ -351,7 +358,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
       </div>
 
       {/* ---- what it comes to */}
-      <section className="pl-res" aria-label={plt("res_h", lang)}>
+      <section className="pl-res pl-anchor" id={`pl-${id}-results`} aria-label={plt("res_h", lang)}>
         <h4>{plt("res_h", lang)}</h4>
         <dl className="pl-kv">
           <div><dt>{plt("r_energy", lang)}</dt><dd>{mwh(en.p50Mwh)} / {mwh(p90Mwh)}<small>
@@ -459,7 +466,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
       <section className="pl-comp" aria-label={plt("cl_h", lang)}>
         <div className="pl-comp-h"><h4>{plt("cl_h", lang)}</h4></div>
         <div className="pl-row">
-          <button type="button" className="btn sm" disabled={!hasSite || busy === "climate"} aria-busy={busy === "climate"} onClick={() => loadClimate()}>
+          <button type="button" className="btn sm amber" disabled={!hasSite || busy === "climate"} aria-busy={busy === "climate"} onClick={() => loadClimate()}>
             {plt(pl.climate ? "cl_reload" : "cl_load", lang)}{busy === "climate" ? "..." : ""}
           </button>
           {!hasSite && <small className="pf-hint">{plt("f_need_site", lang)}</small>}
@@ -475,14 +482,16 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
       </section>
 
       {/* ---- the plot and the panels laid out on it */}
-      <LayoutPanel lang={lang} pl={pl} onSave={saveLayout} />
+      <div className="pl-anchor" id={`pl-${id}-layout`}><LayoutPanel lang={lang} pl={pl} onSave={saveLayout} /></div>
 
       {/* ---- the grid around the site, and the connection */}
-      <GridPanel id={id} lang={lang} raw={raw} hasSite={hasSite} money={money} E={E} fin={fin} scenario={scenario} groups={groups}
-        onRaw={(fn) => { const { raw: r, onChange: ch } = live.current; ch(fn(r)); }} />
+      <div className="pl-anchor" id={`pl-${id}-grid`}>
+        <GridPanel id={id} lang={lang} raw={raw} hasSite={hasSite} money={money} E={E} fin={fin} scenario={scenario} groups={groups}
+          onRaw={(fn) => { const { raw: r, onChange: ch } = live.current; ch(fn(r)); }} />
+      </div>
 
       {/* ---- permits, EVO-ready */}
-      <section className="pl-permits" aria-label={plt("permits_h", lang)}>
+      <section className="pl-permits pl-anchor" id={`pl-${id}-permits`} aria-label={plt("permits_h", lang)}>
         <div className="pl-comp-h"><h4>{plt("permits_h", lang)}</h4><span className="dx-count">{plt("p_progress", lang, { done: prog.done, total: prog.total })}</span></div>
         <p className="pf-hint">{plt("permits_p", lang)}</p>
         {prog.ready.length > 0 && <p className="pl-line">{plt("p_ready", lang, { x: prog.ready.map(permitName).join(", ") })}</p>}
@@ -548,7 +557,7 @@ function Plant({ raw, onChange, onRemove, lang, E, fin, scenario, money, target,
       </section>
 
       {/* ---- the bank submission pack */}
-      <section className="pl-pack" aria-label={bt("pack_h", lang)}>
+      <section className="pl-pack pl-anchor" id={`pl-${id}-pack`} aria-label={bt("pack_h", lang)}>
         <h4>{bt("pack_h", lang)}</h4>
         <p className="pf-hint">{bt("pack_p", lang)}</p>
         <div className="pl-checks">

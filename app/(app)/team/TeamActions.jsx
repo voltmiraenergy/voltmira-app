@@ -218,7 +218,7 @@ export default function TeamActions({ lang, meId, me, members, counts = {}, pend
 
               <span className="m-acts">
                 {isOwner && m.id !== meId && isPending(m.id) && (
-                  <button className="btn sm" onClick={stop(() => resend(m))} disabled={busy}
+                  <button className="btn sm ghost" onClick={stop(() => resend(m))} disabled={busy}
                     title={t("tm_resend_title", lang)}>{t("tm_resend", lang)}</button>
                 )}
                 {isOwner && m.id !== meId && (
@@ -321,7 +321,7 @@ export default function TeamActions({ lang, meId, me, members, counts = {}, pend
                 <button type="button" className="btn sm primary" disabled={busy} onClick={confirmMove}>
                   {busy ? t("tm_inviting", lang) : t("tm_move_yes", lang)}
                 </button>
-                <button type="button" className="btn sm" disabled={busy} onClick={() => setAsk(null)}>
+                <button type="button" className="btn sm ghost" disabled={busy} onClick={() => setAsk(null)}>
                   {t("lead_cancel", lang)}
                 </button>
               </div>

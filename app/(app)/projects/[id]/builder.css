@@ -176,3 +176,8 @@ html[data-theme="dark"] .app .qb-actions .qb-send-wa { color: #5FD592; border-co
 .app .qb-loan { font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--paper); color: var(--ink-2); border: 1px solid var(--line); }
 .app .qb-loan.s-approved, .app .qb-loan.s-funded { background: var(--green-tint); color: var(--green); border-color: transparent; }
 .app .qb-loan.s-rejected, .app .qb-loan.s-failed { background: var(--red-tint); color: var(--red); border-color: transparent; }
+
+/* the tools still to use stand out in amber; a used one turns calm green (.done above) */
+.app .qb-tool:not(.done):not(:disabled) { border: 1.5px solid var(--amber); background: var(--amber-tint); }
+.app .qb-tool:not(.done):not(:disabled) .qb-tool-ic { background: var(--amber); color: var(--on-amber); }
+.app .qb-tool:not(.done):not(:disabled):hover { border-color: var(--amber-ink); }

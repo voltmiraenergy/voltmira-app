@@ -23,6 +23,8 @@ import { normalizePlant } from "../../lib/plantFinance.js";
 import { plt } from "../../lib/plantText.js";
 import { namesList } from "../../lib/portfolioDisplay.js";
 import { num as fnum, dscr, pct } from "../../lib/portfolioFormat.js";
+import NumInput from "../NumInput.jsx";
+import { raionName } from "../../lib/mdRaions.js";
 
 const GridMap = dynamic(() => import("./GridMap.jsx"), { ssr: false, loading: () => <div className="gr-map" /> });
 const today = () => new Date().toISOString().slice(0, 10);
@@ -75,6 +77,29 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
       routeFactor: prev.routeFactor, applied: prev.applied || null, shared: !!prev.shared, crossings: prev.crossings || null }));
     setFrameKey((k) => k + 1);
   }
+  // a plant with a site and no grid yet gets it on its own, once: in Moldova the
+  // lookup reads the kept copy (lib/gridData.js) and answers at once
+  // what CNED's register shows already connected round the site; the route answers 404 while
+  // CNED_DATA is off, and nothing of it is saved with the plant (app/api/cned/grid/route.js)
+  const [area, setArea] = useState(null);
+  useEffect(() => {
+    if (!hasSite || pl.lat == null || pl.lon == null) return;
+    let gone = false;
+    fetch(`/api/cned/grid?lat=${pl.lat}&lon=${pl.lon}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (!gone) setArea(j?.context ? { ...j.context, dataTo: j.dataTo } : null); })
+      .catch(() => {});
+    return () => { gone = true; };
+  }, [hasSite, pl.lat, pl.lon]);
+  const mw = (kw) => fnum(kw / 1000, lang, kw >= 10000 ? 0 : 1);
+  const auto = useRef(false);
+  useEffect(() => {
+    if (auto.current || !hasSite || raw?.grid) return;
+    auto.current = true;
+    look();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSite, raw?.grid]);
+
   async function checkCrossings() {
     const pts = optionRoute(g, chosen).points;
     if (!pts) return;
@@ -118,7 +143,7 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
           <h4 id={`gr-h-${id}`}>{plt("grid_h", lang)}</h4>
           <p className="pf-hint">{plt("grid_p", lang)}</p>
         </div>
-        <button type="button" className="btn sm" disabled={!hasSite || !!busy} aria-busy={busy === "grid"} onClick={look}>
+        <button type="button" className="btn sm amber" disabled={!hasSite || !!busy} aria-busy={busy === "grid"} onClick={look}>
           {g ? plt("grid_again", lang) : plt("grid_find", lang)}{busy === "grid" ? "..." : ""}
         </button>
       </div>
@@ -153,12 +178,23 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
               </table>
             </div>
 
+            {/* ---- what is already connected round the site (CNED, while the flag is on) */}
+            {area && (
+              <div className="gr-area" role="note">
+                <h5>{plt("cx_area_h", lang)}</h5>
+                <p className="pl-line">{plt("cx_area_raion", lang, { raion: raionName(area.raion, lang), pv: mw(area.pvKw), wind: mw(area.windKw), n: area.plantsN })}</p>
+                {(area.near.pv.n > 0 || area.near.wind.n > 0) && <p className="pl-line">{plt("cx_area_near", lang, { km: area.near.km, pv: mw(area.near.pv.kw), pn: area.near.pv.n, wind: mw(area.near.wind.kw), wn: area.near.wind.n })}</p>}
+                {area.crowded && <p className="pf-warn">{plt("cx_area_crowded", lang)}</p>}
+                <small className="pf-hint">{plt("cx_area_note", lang, { date: area.dataTo })}</small>
+              </div>
+            )}
+
             {/* ---- the route to the chosen point */}
             {chosenOpt && (
               <div className="gr-route">
                 <p className="pl-line">{plt("rt_len", lang, { opt: optName(chosenOpt), km: km(r1.km), how: r1.drawn ? plt("rt_drawn", lang) : plt("rt_straight", lang, { f: fnum(g.routeFactor, lang, 2) }) })}</p>
                 <div className="pl-row">
-                  {!drawing && <button type="button" className="btn sm" onClick={() => { setDrawing(true); if (!route) setRoute([[pl.lat, pl.lon], [chosenOpt.to.lat, chosenOpt.to.lon]]); }}>{plt(route ? "rt_edit" : "rt_draw", lang)}</button>}
+                  {!drawing && <button type="button" className="btn sm amber" onClick={() => { setDrawing(true); if (!route) setRoute([[pl.lat, pl.lon], [chosenOpt.to.lat, chosenOpt.to.lon]]); }}>{plt(route ? "rt_edit" : "rt_draw", lang)}</button>}
                   {drawing && <button type="button" className="btn primary sm" onClick={() => setDrawing(false)}>{plt("rt_done", lang)}</button>}
                   {drawing && route && route.length > 2 && <button type="button" className="btn ghost sm" onClick={undoBend}>{plt("rt_undo", lang)}</button>}
                   {route && <button type="button" className="btn ghost sm" onClick={() => { setDrawing(false); clearRoute(); }}>{plt("rt_clear", lang)}</button>}
@@ -178,50 +214,6 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
                   {plt("sh_tick", lang)}
                 </label>
                 {chosenOpt.shareOf != null && chosenOpt.aloneEur != null && <p className="pl-line ok">{plt("sh_save", lang, { x: eur(chosenOpt.costEur), y: eur(chosenOpt.aloneEur) })}</p>}
-              </div>
-            )}
-
-            {/* ---- the options compared */}
-            {cmp && cmp.options.length > 0 && (
-              <div className="gr-cmp">
-                <h5>{plt("ox_h", lang)}</h5>
-                <p className="pf-hint">{plt("ox_p", lang)}</p>
-                {!anyCost && <p className="pf-warn">{plt("ox_need_costs", lang)}</p>}
-                <div className="pf-scroll">
-                  <table className="pf-t gr-ox">
-                    <thead><tr>
-                      <th>{plt("ox_col_opt", lang)}</th><th className="r">{plt("ox_col_route", lang)}</th><th>{plt("ox_col_carry", lang)}</th>
-                      <th className="r">{plt("ox_col_loss", lang)}</th><th className="r">{plt("ox_col_cost", lang)}</th><th className="r">{plt("ox_col_effect", lang)}</th><th />
-                    </tr></thead>
-                    <tbody>
-                      {cmp.options.map((o) => {
-                        const best = cmp.recommended === o.key;
-                        const inUse = g.applied?.key === o.key;
-                        // the option in use, after its route changed: its cost or losses moved
-                        const stale = inUse && o.costEur != null && (Math.abs(o.costEur - g.applied.costEur) > 0.005 * Math.max(1, g.applied.costEur) || Math.abs(o.loss.pct - g.applied.lossPct) > 0.005);
-                        return (
-                          <tr key={o.key} className={(o.chosen ? "on " : "") + (best ? "best" : "")}>
-                            <td><i className={"gr-k gr-k-" + o.cls} /><b>{nameOf(o)}</b>
-                              <small>{o.kvAt} kV, {plt(o.kind === "sub" ? "grid_sub" : "grid_line", lang).toLowerCase()}{best ? <em className="gr-best"> {plt("ox_best", lang)}</em> : null}</small></td>
-                            <td className="r nw">{km(o.route.km)}<small>{o.route.drawn ? plt("ox_drawn", lang) : plt("ox_straight", lang, { f: fnum(g.routeFactor, lang, 2) })}</small></td>
-                            <td className={o.fits ? "gr-yes" : "gr-no"}>{o.fits ? plt("ox_yes", lang, { cap: fnum(o.capacityMw, lang, 0) })
-                              : plt("ox_no", lang, { mw: fnum(o.totalMw, lang, 0), cap: fnum(o.capacityMw, lang, 0) })}{o.othersMw > 0 ? <small>{plt("ox_with", lang)}</small> : null}</td>
-                            <td className="r nw">{fnum(o.loss.pct, lang, 2)}%<small>{fnum(o.loss.mwh, lang, 0)} MWh, {eur(o.loss.eurYr)}</small></td>
-                            <td className="r nw">{o.costEur != null ? eur(o.costEur) : "-"}</td>
-                            <td className="r nw">{o.effect ? <>{o.effect.dscrMin == null ? "-" : dscr(o.effect.dscrMin, lang)}<small>{o.effect.irr == null ? "-" : pct(o.effect.irr, lang)}</small></> : "-"}</td>
-                            <td>{inUse && stale ? <button type="button" className="btn primary sm" onClick={() => apply(o)}>{plt("ox_update", lang)}</button>
-                              : inUse ? <span className="gr-inuse">{plt("ox_in_use", lang)}</span>
-                              : <button type="button" className={"btn sm" + (best ? " primary" : " ghost")} disabled={!o.effect} onClick={() => apply(o)}>{plt("ox_use", lang)}</button>}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                {applied && <p className="pl-line">{plt("ox_used", lang, { opt: optName(applied), cost: eur(g.applied.costEur), loss: `${fnum(g.applied.lossPct, lang, 2)}%` })}</p>}
-                {applied && applied.costEur != null && Math.abs(applied.costEur - g.applied.costEur) > 0.005 * Math.max(1, g.applied.costEur)
-                  && <p className="pf-warn">{plt("ox_stale", lang, { cost: eur(applied.costEur) })}</p>}
-                <p className="pf-hint">{plt("ox_note", lang)}</p>
               </div>
             )}
 
@@ -252,19 +244,66 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
               <div className="pl-grid">
                 <div className="field">
                   <label htmlFor={`gre-rf-${id}`}>{plt("est_route", lang)}</label>
-                  <input id={`gre-rf-${id}`} className="input" type="number" inputMode="decimal" step="0.05" min="1" max="3"
-                    value={raw.grid?.routeFactor ?? ROUTE_FACTOR} onChange={(e) => setGrid((prev) => ({ ...prev, routeFactor: e.target.value === "" ? "" : +e.target.value }))} />
+                  <NumInput id={`gre-rf-${id}`} className="input" inputMode="decimal" step="0.05" min="1" max="3"
+                    value={raw.grid?.routeFactor ?? ROUTE_FACTOR} onValue={(v) => setGrid((prev) => ({ ...prev, routeFactor: v }))} />
                   <small className="pf-hint">{plt("est_route_h", lang)}</small>
                 </div>
               </div>
             </div>
+
+            {/* ---- the options compared */}
+            {cmp && cmp.options.length > 0 && (
+              <div className="gr-cmp">
+                <h5>{plt("ox_h", lang)}</h5>
+                <p className="pf-hint">{plt("ox_p", lang)}</p>
+                {!anyCost && <p className="pf-warn">{plt("ox_need_costs", lang)}</p>}
+                {/* one card per option: the figures wrap to the column's width, the action stays inside */}
+                <ul className="gr-oc">
+                  {cmp.options.map((o) => {
+                    const best = cmp.recommended === o.key;
+                    const inUse = g.applied?.key === o.key;
+                    // the option in use, after its route changed: its cost or losses moved
+                    const stale = inUse && o.costEur != null && (Math.abs(o.costEur - g.applied.costEur) > 0.005 * Math.max(1, g.applied.costEur) || Math.abs(o.loss.pct - g.applied.lossPct) > 0.005);
+                    return (
+                      <li key={o.key} className={"gr-oc-i" + (o.chosen ? " on" : "") + (best ? " best" : "") + (inUse ? " used" : "")}>
+                        <div className="gr-oc-h">
+                          <i className={"gr-k gr-k-" + o.cls} aria-hidden="true" />
+                          <span className="gr-oc-n"><b>{nameOf(o)}</b><small>{o.kvAt} kV, {plt(o.kind === "sub" ? "grid_sub" : "grid_line", lang).toLowerCase()}</small></span>
+                          {best && <em className="gr-oc-tag">{plt("ox_best", lang)}</em>}
+                        </div>
+                        <dl className="gr-oc-m">
+                          <div><dt>{plt("ox_col_route", lang)}</dt><dd>{km(o.route.km)}<small>{o.route.drawn ? plt("ox_drawn", lang) : plt("ox_straight", lang, { f: fnum(g.routeFactor, lang, 2) })}</small></dd></div>
+                          <div><dt>{plt("ox_col_carry", lang)}</dt><dd className={o.fits ? "gr-yes" : "gr-no"}>{o.fits ? plt("ox_yes", lang, { cap: fnum(o.capacityMw, lang, 0) })
+                            : plt("ox_no", lang, { mw: fnum(o.totalMw, lang, 0), cap: fnum(o.capacityMw, lang, 0) })}{o.othersMw > 0 ? <small>{plt("ox_with", lang)}</small> : null}</dd></div>
+                          <div><dt>{plt("ox_col_loss", lang)}</dt><dd>{fnum(o.loss.pct, lang, 2)}%<small>{fnum(o.loss.mwh, lang, 0)} MWh, {eur(o.loss.eurYr)}</small></dd></div>
+                          <div><dt>{plt("ox_col_cost", lang)}</dt><dd>{o.costEur != null ? eur(o.costEur) : "-"}</dd></div>
+                          <div><dt>{plt("ox_col_effect", lang)}</dt><dd>{o.effect ? <>{o.effect.dscrMin == null ? "-" : dscr(o.effect.dscrMin, lang)}<small>{o.effect.irr == null ? "-" : pct(o.effect.irr, lang)}</small></> : "-"}</dd></div>
+                        </dl>
+                        <div className="gr-oc-a">
+                          {inUse && stale ? <button type="button" className="btn primary sm" onClick={() => apply(o)}>{plt("ox_update", lang)}</button>
+                            : inUse ? <span className="gr-inuse">{plt("ox_in_use", lang)}</span>
+                            : <>
+                              {!o.effect && <small className="pf-hint gr-oc-why">{plt("ox_disabled", lang)}</small>}
+                              <button type="button" className={"btn sm" + (best ? " primary" : " ghost")} disabled={!o.effect} onClick={() => apply(o)}>{plt("ox_use", lang)}</button>
+                            </>}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {applied && <p className="pl-line">{plt("ox_used", lang, { opt: optName(applied), cost: eur(g.applied.costEur), loss: `${fnum(g.applied.lossPct, lang, 2)}%` })}</p>}
+                {applied && applied.costEur != null && Math.abs(applied.costEur - g.applied.costEur) > 0.005 * Math.max(1, g.applied.costEur)
+                  && <p className="pf-warn">{plt("ox_stale", lang, { cost: eur(applied.costEur) })}</p>}
+                <p className="pf-hint">{plt("ox_note", lang)}</p>
+              </div>
+            )}
 
             {/* ---- what the route crosses */}
             {chosenOpt && (
               <div className="gr-cx">
                 <div className="pl-row">
                   <h5>{plt("cx_h", lang)}</h5>
-                  <button type="button" className="btn sm" disabled={!!busy} aria-busy={busy === "cross"} onClick={checkCrossings}>{plt("cx_btn", lang)}{busy === "cross" ? "..." : ""}</button>
+                  <button type="button" className="btn sm amber" disabled={!!busy} aria-busy={busy === "cross"} onClick={checkCrossings}>{plt("cx_btn", lang)}{busy === "cross" ? "..." : ""}</button>
                 </div>
                 {busy === "cross" && <small className="pf-hint" role="status">{plt("cx_busy", lang)}</small>}
                 {crossOld && <p className="pf-warn">{plt("cx_old", lang)}</p>}
@@ -305,7 +344,7 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
           </div>
         </div>
       )}
-      {g && <p className="pf-hint">{plt("grid_caveat", lang)} {plt("grid_credit", lang, { date: g.fetched })}</p>}
+      {g && <p className="pf-hint">{plt("grid_caveat", lang)} {g.osmAsOf ? plt("grid_credit_copy", lang, { date: g.osmAsOf }) : plt("grid_credit", lang, { date: g.fetched })}</p>}
     </section>
   );
 }

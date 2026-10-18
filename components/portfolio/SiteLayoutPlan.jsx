@@ -161,7 +161,7 @@ export default function SiteLayoutPlan({ pl, lang = "en", width = 720, height = 
       {facts && <table className="rp-kv ly-facts"><tbody>
         {layoutFacts(lay, lang, pl.solar?.mwp).map(([k, val]) => <tr key={k}><th scope="row">{k}</th><td>{val}</td></tr>)}
       </tbody></table>}
-      {note && <p className="rp-small">{plt("ly_note", lang, { sb: num(s.setbackM, lang, 0), w: num(moduleSides(lay.inputs.wp).short, lang, 2), h: num(moduleSides(lay.inputs.wp).long, lang, 2) })}{r.turbines.length > 0 ? ` ${plt("ly_note_wind", lang)}` : ""}</p>}
+      {note && <p className="rp-small">{plt("ly_note", lang, { shade: s.shadeH > 0 ? plt("ly_shade_win", lang, { a: 12 - s.shadeH, b: 12 + s.shadeH }) : plt("ly_shade_0", lang), sb: num(s.setbackM, lang, 0), w: num(moduleSides(lay.inputs.wp).short, lang, 2), h: num(moduleSides(lay.inputs.wp).long, lang, 2) })}{r.turbines.length > 0 ? ` ${plt("ly_note_wind", lang)}` : ""}</p>}
     </>
   );
 }
