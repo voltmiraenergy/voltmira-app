@@ -303,6 +303,8 @@ html[data-theme="dark"] .app .sd-shell { --sd-on-green: #07130D; }
 .app .sd-result-more[open] summary svg { transform: rotate(90deg); }
 .app .sd-result-more-b { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
 .app .sd-btn.ghost { background: transparent; }
+/* the length of the edge being drawn, at the cursor */
+.sd-live { background: #E89B2D; color: #142A21; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); pointer-events: none; }
 
 /* --------------------------------------------------------- tablet & phone */
 @media (max-width: 1280px) {

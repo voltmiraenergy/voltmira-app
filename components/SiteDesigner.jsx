@@ -34,6 +34,7 @@ import { tilesAround, postTiles } from "../lib/tileWarm.js";
 
 const SAT_ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 import { fitPanels, compassLabel, project, polygonAreaM2, facingFromShape, fitOptions } from "../lib/roofLayout.js";
+import { drawReadout } from "./drawReadout.js";
 import { PANELS, findPanel, recommendPanel } from "../lib/supplierCatalog.js";
 import { designCheck } from "../lib/designCheck.js";
 import { SOLAR_SEASON, effectiveConsumption } from "@voltmira/engine";
@@ -303,6 +304,9 @@ export default function SiteDesigner({
   const fmtMoney = money || ((n) => "€" + Math.round(n).toLocaleString("en-IE"));
   const loc = { en: "en-GB", ru: "ru-RU", uk: "uk-UA" }[lang] || "ro-RO";
   const nf = (n, d = 0) => Number(n).toLocaleString(loc, { maximumFractionDigits: d, minimumFractionDigits: d });
+  // what the label at the cursor says while an outline is drawn (components/drawReadout.js)
+  const readoutText = useRef(null);
+  useEffect(() => { readoutText.current = (m, a) => `${nf(m, 1)} m` + (a ? `, ${nf(a, 1)} m²` : ""); });
 
   const shellRef = useRef(null);
   const stageRef = useRef(null);
@@ -538,7 +542,9 @@ export default function SiteDesigner({
       layoutTimer.current = setTimeout(() => api.current.runLayout?.(), ms);
     }
 
+    let stopReadout = () => {};
     function endTool() {
+      stopReadout();
       const map = mapRef.current;
       if (map) {
         // the drawing layer can be gone while the planner closes: ending a tool then is a no-op
@@ -561,7 +567,8 @@ export default function SiteDesigner({
       if (!next || !map || !map.pm) return;
       if (next === "plane" || next === "obstacle") {
         pendingKind.current = next;
-        map.pm.enableDraw("Polygon", { pathOptions: next === "plane" ? PLANE_ON : OBSTACLE_STYLE, snappable: true, snapDistance: 14, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
+        stopReadout = drawReadout(map, (m, a) => readoutText.current?.(m, a) || "");
+        map.pm.enableDraw("Polygon", { pathOptions: next === "plane" ? PLANE_ON : OBSTACLE_STYLE, snappable: true, snapDistance: 14, allowSelfIntersection: false, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
       } else if (next === "tree") {
         map.pm.enableDraw("Circle", { pathOptions: TREE_STYLE, snappable: true });
       } else if (next === "measure" || next === "marker") {

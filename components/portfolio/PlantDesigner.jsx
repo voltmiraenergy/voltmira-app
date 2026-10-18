@@ -23,6 +23,7 @@ import { loadGoogleSatelliteLayer } from "../../lib/googleSatellite.js";
 import { tilesAround, postTiles } from "../../lib/tileWarm.js";
 import { layoutInputs, layoutPlots } from "../../lib/plantLayout.js";
 import { rotorDiameterM, turbineAt } from "../../lib/windLayout.js";
+import { drawReadout } from "../drawReadout.js";
 import { plotHectares, EXCLUSION_KINDS, TABLE_FORMATS, TRACKER_GCR_DEFAULT, TRACKER_GCR_RANGE, SHADE_WINDOWS, tableGeometry } from "../../lib/siteLayout.js";
 
 /* --------------------------------------------------------------- words --- */
@@ -182,6 +183,9 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   const L3 = (o) => o[lang] || o.en;
   const loc = { en: "en-GB", ru: "ru-RU", uk: "uk-UA" }[lang] || "ro-RO";
   const nf = (n, d = 0) => Number(n).toLocaleString(loc, { maximumFractionDigits: d, minimumFractionDigits: d });
+  // what the label at the cursor says while an outline is drawn (components/drawReadout.js)
+  const readoutText = useRef(null);
+  useEffect(() => { readoutText.current = (m, a) => `${nf(m, 0)} m` + (a ? `, ${nf(a / 1e4, 2)} ha` : ""); });
 
   const base = useMemo(() => layoutInputs(pl), [pl]);
   const site = base.site;
@@ -370,7 +374,9 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
     }
     function schedule(ms) { clearTimeout(timer.current); timer.current = setTimeout(() => api.current.run?.(), ms); }
 
+    let stopReadout = () => {};
     function endTool() {
+      stopReadout();
       const map = mapRef.current;
       if (map) {
         // the drawing layer can be gone while the planner closes: ending a tool then is a no-op
@@ -392,7 +398,8 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       if (!next || !map || !map.pm) return;
       if (next === "plot" || next === "excl") {
         pendingKind.current = next;
-        map.pm.enableDraw("Polygon", { pathOptions: next === "plot" ? PLOT_ON : EXCL_STYLE, snappable: true, snapDistance: 14, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
+        stopReadout = drawReadout(map, (m, a) => readoutText.current?.(m, a) || "");
+        map.pm.enableDraw("Polygon", { pathOptions: next === "plot" ? PLOT_ON : EXCL_STYLE, snappable: true, snapDistance: 14, allowSelfIntersection: false, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
       } else if (next === "measure") {
         map.getContainer().style.cursor = "crosshair";
       } else if (next === "edit") {
