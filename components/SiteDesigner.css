@@ -337,3 +337,35 @@ html[data-theme="dark"] .app .sd-shell { --sd-on-green: #07130D; }
 @media (prefers-reduced-motion: reduce) {
   .app .sd-compass-mid svg { transition: none; }
 }
+
+
+/* ---- the roof designer's guidance (SiteDesigner.jsx): what each tab holds,
+   the goal from the quote, a drawn how-to, and progress toward the quote.
+   Starting a tool is the key action (amber); applying to the quote stays green. */
+.app .sd-tab-tx { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.app .sd-tab-tx small { font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+.app .sd-tab.on .sd-tab-tx small, .app .sd-tab.done .sd-tab-tx small { color: var(--green); }
+.app .sd-btn.key { background: var(--amber); border-color: var(--amber); color: var(--on-amber, #142A21); box-shadow: 0 4px 14px rgba(232, 155, 45, .3); }
+.app .sd-btn.key:hover:not(:disabled) { background: var(--amber-soft); border-color: var(--amber-soft); color: var(--on-amber, #142A21); }
+.app .sd-goal { padding: 14px 16px; border-radius: 12px; background: var(--amber-tint); border: 1px solid color-mix(in srgb, var(--amber) 45%, transparent); }
+.app .sd-goal h4, .app .sd-howcard h4 { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--amber-ink); margin-bottom: 4px; }
+.app .sd-goal p { font-size: 14px; line-height: 1.5; color: var(--ink); }
+.app .sd-howcard { padding: 14px 16px; border-radius: 12px; background: var(--paper); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.app .sd-howcard h4 { color: var(--muted); }
+.app .sd-howbody { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 14px; align-items: center; }
+.app .sd-howcard .sd-how { padding: 0; border: 0; background: none; }
+.app .sd-howfig { width: 110px; height: auto; display: block; }
+.app .sd-howfig-shape { fill: color-mix(in srgb, var(--sd-plane) 16%, transparent); }
+.app .sd-howfig-line { fill: none; stroke: var(--amber); stroke-width: 2.5; stroke-dasharray: 5 4; }
+.app .sd-howfig-dot { fill: var(--paper-2); stroke: var(--amber); stroke-width: 2.5; }
+.app .sd-howfig-dot.one { fill: var(--amber); }
+.app .sd-howfig-close { fill: none; stroke: var(--amber); stroke-width: 2.5; marker-end: none; stroke-dasharray: 2 4; stroke-linecap: round; }
+.app .sd-howfig text { font: 700 9px/1 var(--font-b, Inter, system-ui, sans-serif); fill: var(--ink); text-anchor: middle; }
+.app .sd-keys { font-size: 12px; line-height: 1.45; color: var(--muted); }
+.app .sd-meter { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.app .sd-meter-bar { height: 8px; border-radius: 99px; background: var(--paper); border: 1px solid var(--line); overflow: hidden; }
+.app .sd-meter-bar span { display: block; height: 100%; background: var(--amber); border-radius: 99px; transition: width .35s ease; }
+.app .sd-meter-bar span.full { background: var(--green); }
+.app .sd-meter p { font-size: 12.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+@media (max-width: 420px) { .app .sd-howbody { grid-template-columns: 1fr; } .app .sd-howfig { width: 120px; } }
+@media (prefers-reduced-motion: reduce) { .app .sd-meter-bar span { transition: none; } }

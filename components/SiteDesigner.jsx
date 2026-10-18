@@ -125,6 +125,20 @@ const TX = {
   monthly: { en: "Month by month", ro: "Lună de lună", ru: "По месяцам", uk: "По місяцях" },
   cash: { en: "Money over the years", ro: "Banii de-a lungul anilor", ru: "Деньги по годам", uk: "Гроші по роках" },
 
+  goalH: { en: "What you are aiming for", ro: "Ce urmărești", ru: "К чему стремимся", uk: "До чого прагнемо" },
+  goal: { en: "The quote is for {kw} kW: about {n} panels of {w} W, so about {m2} m² of clear roof.", ro: "Oferta e de {kw} kW: circa {n} panouri de {w} W, deci circa {m2} m² de acoperiș liber.", ru: "В расчёте {kw} кВт: около {n} панелей по {w} Вт, то есть около {m2} м² свободной крыши.", uk: "У розрахунку {kw} кВт: близько {n} панелей по {w} Вт, тобто близько {m2} м² вільного даху." },
+  goalNone: { en: "Set the system size in the quote and the designer shows how much roof it needs.", ro: "Pune puterea sistemului în ofertă și aici vezi cât acoperiș îi trebuie.", ru: "Укажите мощность в расчёте, и здесь будет видно, сколько крыши нужно.", uk: "Вкажіть потужність у розрахунку, і тут буде видно, скільки даху потрібно." },
+  howH: { en: "How to draw a side", ro: "Cum desenezi o parte", ru: "Как нарисовать скат", uk: "Як намалювати схил" },
+  keys: { en: "Esc stops drawing, Ctrl+Z takes back the last step. Zoom in until the roof's edges are sharp.", ro: "Esc oprește desenul, Ctrl+Z anulează ultimul pas. Mărește harta până vezi clar marginile acoperișului.", ru: "Esc останавливает рисование, Ctrl+Z отменяет последний шаг. Приблизьте карту, пока края крыши не станут чёткими.", uk: "Esc зупиняє малювання, Ctrl+Z скасовує останній крок. Наблизьте карту, доки краї даху не стануть чіткими." },
+  sub1_none: { en: "Nothing yet", ro: "Nimic încă", ru: "Пока пусто", uk: "Поки порожньо" },
+  sub1_one: { en: "1 side", ro: "1 parte", ru: "1 скат", uk: "1 схил" },
+  sub1: { en: "{n} sides", ro: "{n} părți", ru: "Скатов: {n}", uk: "Схилів: {n}" },
+  sub2_none: { en: "Optional", ro: "Opțional", ru: "Необязательно", uk: "Необов’язково" },
+  sub2: { en: "{n} marked", ro: "{n} marcate", ru: "Отмечено: {n}", uk: "Позначено: {n}" },
+  sub3_none: { en: "After the roof", ro: "După acoperiș", ru: "После крыши", uk: "Після даху" },
+  meterEmpty: { en: "0 of about {t} panels for {kw} kW", ro: "0 din circa {t} panouri pentru {kw} kW", ru: "0 из примерно {t} панелей для {kw} кВт", uk: "0 з приблизно {t} панелей для {kw} кВт" },
+  meter: { en: "{n} of about {t} panels for {kw} kW", ro: "{n} din circa {t} panouri pentru {kw} kW", ru: "{n} из примерно {t} панелей для {kw} кВт", uk: "{n} з приблизно {t} панелей для {kw} кВт" },
+  meterOver: { en: "{n} fit, more than the {kw} kW the quote asks for", ro: "Încap {n}, mai multe decât cei {kw} kW din ofertă", ru: "Помещается {n}, больше, чем {kw} кВт в расчёте", uk: "Вміщується {n}, більше, ніж {kw} кВт у розрахунку" },
   resultEmpty: { en: "Draw a side of the roof and the panels that fit on it appear here.", ro: "Desenează o parte a acoperișului și aici apar panourile care încap pe ea.", ru: "Обведите скат, и здесь появятся панели, которые на нём помещаются.", uk: "Обведіть схил, і тут з’являться панелі, які на ньому вміщаються." },
   roofUse: { en: "{used} m² of panels on {roof} m² of roof", ro: "{used} m² de panouri pe {roof} m² de acoperiș", ru: "{used} м² панелей на {roof} м² крыши", uk: "{used} м² панелей на {roof} м² даху" },
   price: { en: "System price", ro: "Preț sistem", ru: "Цена системы", uk: "Ціна системи" },
@@ -527,8 +541,11 @@ export default function SiteDesigner({
     function endTool() {
       const map = mapRef.current;
       if (map) {
-        map.pm.disableDraw();
-        if (map.pm.globalEditModeEnabled()) map.pm.disableGlobalEditMode();
+        // the drawing layer can be gone while the planner closes: ending a tool then is a no-op
+        if (map.pm) {
+          map.pm.disableDraw();
+          if (map.pm.globalEditModeEnabled()) map.pm.disableGlobalEditMode();
+        }
         map.getContainer().style.cursor = "";
       }
       pendingKind.current = null;
@@ -541,7 +558,7 @@ export default function SiteDesigner({
     function startTool(next) {
       endTool();
       const map = mapRef.current;
-      if (!next || !map) return;
+      if (!next || !map || !map.pm) return;
       if (next === "plane" || next === "obstacle") {
         pendingKind.current = next;
         map.pm.enableDraw("Polygon", { pathOptions: next === "plane" ? PLANE_ON : OBSTACLE_STYLE, snappable: true, snapDistance: 14, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
@@ -617,7 +634,9 @@ export default function SiteDesigner({
       const map = L.map(mapEl.current, { zoomControl: false, maxZoom: 21 }).setView([lat, lon], 19);
       mapRef.current = map;
       L.control.zoom({ position: "bottomright" }).addTo(map);
-      map.pm.setLang(lang === "ru" ? "ru" : lang === "uk" ? "ua" : lang === "ro" ? "ro" : "en");
+      // leaflet-geoman attaches map.pm when the map is made; if it missed this map, attach it now
+      if (!map.pm && L.PM?.Map) map.pm = new L.PM.Map(map);
+      map.pm?.setLang(lang === "ru" ? "ru" : lang === "uk" ? "ua" : lang === "ro" ? "ro" : "en");
 
       const googleKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
       const googleLayer = googleKey ? await loadGoogleSatelliteLayer(L, googleKey) : null;
@@ -869,6 +888,20 @@ export default function SiteDesigner({
   const fitsAny = !!layout && layout.totalCount > 0;
   const tabDone = { 1: hasPlanes, 2: hasObstacles || hasPoints, 3: fitsAny };
   const panel = findPanel(panelId);
+  // what the quote asks for: its kW in panels of the chosen model, and the clear roof they need
+  // (the panels' own area plus about a quarter for the gaps, the edges and the walkways)
+  const targetKw = Number(projectInputs?.kw) || 0;
+  const panelW = Number(panel?.watt) || 0;
+  const panelM2 = panel?.dimensionsMm ? (panel.dimensionsMm.w / 1000) * (panel.dimensionsMm.h / 1000) : 2;
+  const targetPanels = targetKw > 0 && panelW > 0 ? Math.ceil((targetKw * 1000) / panelW) : 0;
+  const targetM2 = Math.round(targetPanels * panelM2 * 1.25);
+  const placed = layout?.totalCount || 0;
+  const meterPct = targetPanels ? Math.min(100, Math.round((placed / targetPanels) * 100)) : 0;
+  const tabSub = {
+    1: hasPlanes ? (shapes.planes.length === 1 ? tr("sub1_one") : tr("sub1", { n: shapes.planes.length })) : tr("sub1_none"),
+    2: hasObstacles || hasPoints ? tr("sub2", { n: shapes.obstacles.length + shapes.markers.length }) : tr("sub2_none"),
+    3: fitsAny ? `${placed} ${panelsNoun(placed, lang)}` : tr("sub3_none"),
+  };
 
   let hint = null;
   if (tool === "plane") hint = tr("h_plane");
@@ -1040,7 +1073,7 @@ export default function SiteDesigner({
                 <button key={n} type="button" role="tab" id={"sd-tab-" + n} aria-selected={step === n} aria-controls="sd-tabpanel"
                   className={"sd-tab" + (step === n ? " on" : "") + (tabDone[n] ? " done" : "")} onClick={() => setStep(n)}>
                   <span className="sd-tab-n" aria-hidden="true">{tabDone[n] ? <Check size={14} strokeWidth={3} /> : n}</span>
-                  <span className="sd-tab-tx">{tr("tab" + n)}</span>
+                  <span className="sd-tab-tx">{tr("tab" + n)}<small>{tabSub[n]}</small></span>
                 </button>
               ))}
             </nav>
@@ -1052,17 +1085,40 @@ export default function SiteDesigner({
                     <h3>{tr("st1h")}</h3>
                     <p>{tr("st1p")}</p>
                   </header>
-                  <button type="button" className={"sd-btn big" + (tool === "plane" ? " on" : " primary")} onClick={() => pick("plane")} disabled={!ready}>
+                  <button type="button" className={"sd-btn big" + (tool === "plane" ? " on" : " key")} onClick={() => pick("plane")} disabled={!ready}>
                     {tool === "plane"
                       ? <><X size={19} aria-hidden="true" />{tr("drawCancel")}</>
                       : <><Pentagon size={19} aria-hidden="true" />{hasPlanes ? tr("drawMore") : tr("drawFirst")}</>}
                   </button>
+                  {!hasPlanes && (
+                    <div className="sd-goal">
+                      <h4>{tr("goalH")}</h4>
+                      <p>{targetPanels ? tr("goal", { kw: nf(targetKw, 1), n: targetPanels, w: panelW, m2: nf(targetM2) }) : tr("goalNone")}</p>
+                    </div>
+                  )}
                   {(tool === "plane" || !hasPlanes) && (
-                    <ol className="sd-how">
-                      <li><span aria-hidden="true">1</span>{tr("how1")}</li>
-                      <li><span aria-hidden="true">2</span>{tr("how2")}</li>
-                      <li><span aria-hidden="true">3</span>{tr("how3")}</li>
-                    </ol>
+                    <div className="sd-howcard">
+                      <h4>{tr("howH")}</h4>
+                      <div className="sd-howbody">
+                        {/* a roof side drawn the way the map wants it: corner by corner, back to the first */}
+                        <svg className="sd-howfig" viewBox="0 0 120 92" aria-hidden="true">
+                          <path d="M14 70 L34 18 L98 18 L108 70 Z" className="sd-howfig-shape" />
+                          <path d="M14 70 L34 18 L98 18 L108 70" className="sd-howfig-line" />
+                          {/* the last click closes the shape on the first corner */}
+                          <path d="M108 70 L22 70" className="sd-howfig-close" />
+                          <circle cx="34" cy="18" r="5" className="sd-howfig-dot" />
+                          <circle cx="98" cy="18" r="5" className="sd-howfig-dot" />
+                          <circle cx="108" cy="70" r="5" className="sd-howfig-dot" />
+                          <circle cx="14" cy="70" r="9" className="sd-howfig-dot one" /><text x="14" y="73.5">1</text>
+                        </svg>
+                        <ol className="sd-how">
+                          <li><span aria-hidden="true">1</span>{tr("how1")}</li>
+                          <li><span aria-hidden="true">2</span>{tr("how2")}</li>
+                          <li><span aria-hidden="true">3</span>{tr("how3")}</li>
+                        </ol>
+                      </div>
+                      <p className="sd-keys">{tr("keys")}</p>
+                    </div>
                   )}
                   {hasPlanes && <div className="sd-cards">{shapes.planes.map(planeCard)}</div>}
                   {hasPlanes && (
@@ -1200,6 +1256,12 @@ export default function SiteDesigner({
 
             {/* the result, always in view */}
             <div className="sd-result" aria-live="polite">
+              {targetPanels > 0 && (
+                <div className="sd-meter" role="img" aria-label={placed > targetPanels ? tr("meterOver", { n: placed, kw: nf(targetKw, 1) }) : placed ? tr("meter", { n: placed, t: targetPanels, kw: nf(targetKw, 1) }) : tr("meterEmpty", { t: targetPanels, kw: nf(targetKw, 1) })}>
+                  <div className="sd-meter-bar"><span className={placed >= targetPanels ? "full" : ""} style={{ width: meterPct + "%" }} /></div>
+                  <p>{placed > targetPanels ? tr("meterOver", { n: placed, kw: nf(targetKw, 1) }) : placed ? tr("meter", { n: placed, t: targetPanels, kw: nf(targetKw, 1) }) : tr("meterEmpty", { t: targetPanels, kw: nf(targetKw, 1) })}</p>
+                </div>
+              )}
               {!layout ? (
                 <p className="sd-result-empty">{tr("resultEmpty")}</p>
               ) : (

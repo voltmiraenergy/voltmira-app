@@ -365,8 +365,11 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
     function endTool() {
       const map = mapRef.current;
       if (map) {
-        map.pm.disableDraw();
-        if (map.pm.globalEditModeEnabled()) map.pm.disableGlobalEditMode();
+        // the drawing layer can be gone while the planner closes: ending a tool then is a no-op
+        if (map.pm) {
+          map.pm.disableDraw();
+          if (map.pm.globalEditModeEnabled()) map.pm.disableGlobalEditMode();
+        }
         map.getContainer().style.cursor = "";
       }
       pendingKind.current = null;
@@ -378,7 +381,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
     function startTool(next) {
       endTool();
       const map = mapRef.current;
-      if (!next || !map) return;
+      if (!next || !map || !map.pm) return;
       if (next === "plot" || next === "excl") {
         pendingKind.current = next;
         map.pm.enableDraw("Polygon", { pathOptions: next === "plot" ? PLOT_ON : EXCL_STYLE, snappable: true, snapDistance: 14, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
@@ -477,7 +480,9 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       const map = L.map(mapEl.current, { zoomControl: false, maxZoom: 20, zoomSnap: 0.25, zoomDelta: 0.5 });
       mapRef.current = map;
       L.control.zoom({ position: "bottomright" }).addTo(map);
-      map.pm.setLang(lang === "ru" ? "ru" : lang === "uk" ? "ua" : lang === "ro" ? "ro" : "en");
+      // leaflet-geoman attaches map.pm when the map is made; if it missed this map, attach it now
+      if (!map.pm && L.PM?.Map) map.pm = new L.PM.Map(map);
+      map.pm?.setLang(lang === "ru" ? "ru" : lang === "uk" ? "ua" : lang === "ro" ? "ro" : "en");
       // Google's satellite when the installer's key is set (sharper over most of Moldova); else Esri,
       // which has nothing past about z18 there, so it upscales the last real tile instead
       const google = await loadGoogleSatelliteLayer(L, undefined, { maxZoom: 20 });
