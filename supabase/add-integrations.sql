@@ -16,6 +16,15 @@ begin
   raise exception '% rows are append-only: add a new version instead', tg_table_name;
 end $$;
 
+-- The guard for a history that belongs to a quote: no row is ever changed or
+-- removed on its own, but deleting the quote takes its history with it (a
+-- cascade runs this trigger one level deeper than a direct statement).
+create or replace function refuse_change_direct() returns trigger language plpgsql as $$
+begin
+  if tg_op = 'DELETE' and pg_trigger_depth() > 1 then return old; end if;
+  raise exception '% rows are append-only', tg_table_name;
+end $$;
+
 -- 1. Qualified signatures (MSign with MPass). The signed container is kept as
 --    it came back; proposals.signature_level says which kind signed the offer.
 create table if not exists qualified_signatures (
@@ -132,4 +141,4 @@ drop policy if exists grid_submission_events_read on grid_submission_events;
 create policy grid_submission_events_read on grid_submission_events for select using (company_id = my_company_id());
 drop trigger if exists grid_submission_events_append_only on grid_submission_events;
 create trigger grid_submission_events_append_only before update or delete on grid_submission_events
-  for each row execute function refuse_change();
+  for each row execute function refuse_change_direct();
