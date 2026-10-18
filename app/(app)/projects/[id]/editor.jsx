@@ -48,7 +48,7 @@ import { xt } from "../../../../lib/integrationText.js";
 import { autoBom, recommendMount } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
 import { designCheck } from "../../../../lib/designCheck.js";
-import { fitPanels, fitOptions } from "../../../../lib/roofLayout.js";
+import { fitPanels, fitOptions, limitPanels } from "../../../../lib/roofLayout.js";
 import { moneyFormatter, numFor } from "../../../../lib/money.js";
 import { effectiveOfferCurrency, currencyOnMarketChange, betterCurrencyFor, normCurrency } from "../../../../lib/offerCurrency.js";
 import { saveOutbox, readOutbox, clearOutbox, isNetworkError } from "../../../../lib/offline.js";
@@ -548,9 +548,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     const obstacles = Array.isArray(p.siteDesign?.obstacles)
       ? p.siteDesign.obstacles.map((o) => o.polygon).filter((o) => Array.isArray(o) && o.length >= 3)
       : [];
-    const { w, h } = designCheck({ bom: p.bom, kw: p.kw }).panel.dimensionsMm || { w: 1909, h: 1134 };
+    const dc = designCheck({ bom: p.bom, kw: p.kw });
+    const { w, h } = dc.panel.dimensionsMm || { w: 1909, h: 1134 };
     const opts = fitOptions(p.siteDesign?.layout);
-    return validPlanes.flatMap((pl) => fitPanels(pl.polygon, obstacles, h, w, opts).rows);
+    // rails for the panels the quote sells, not for every place on the roof
+    return limitPanels(validPlanes.map((pl) => ({ ...fitPanels(pl.polygon, obstacles, h, w, opts), azimuthDeg: Number(pl.azimuthDeg) || 0 })),
+      Math.max(0, Number(dc.modules) || 0)).flatMap((f) => f.rows);
   }, [p.siteDesign, p.bom, p.kw]);
 
   async function applySiteDesignLayout(layout) {

@@ -33,7 +33,7 @@ import { loadGoogleSatelliteLayer } from "../lib/googleSatellite.js";
 import { tilesAround, postTiles } from "../lib/tileWarm.js";
 
 const SAT_ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-import { fitPanels, compassLabel, project, polygonAreaM2, facingFromShape, fitOptions } from "../lib/roofLayout.js";
+import { fitPanels, compassLabel, project, polygonAreaM2, facingFromShape, fitOptions, limitPanels } from "../lib/roofLayout.js";
 import { drawReadout } from "./drawReadout.js";
 import { PANELS, findPanel, recommendPanel } from "../lib/supplierCatalog.js";
 import { designCheck } from "../lib/designCheck.js";
@@ -141,6 +141,13 @@ const TX = {
   meter: { en: "{n} of about {t} panels for {kw} kW", ro: "{n} din circa {t} panouri pentru {kw} kW", ru: "{n} из примерно {t} панелей для {kw} кВт", uk: "{n} з приблизно {t} панелей для {kw} кВт" },
   meterOver: { en: "{n} fit, more than the {kw} kW the quote asks for", ro: "Încap {n}, mai multe decât cei {kw} kW din ofertă", ru: "Помещается {n}, больше, чем {kw} кВт в расчёте", uk: "Вміщується {n}, більше, ніж {kw} кВт у розрахунку" },
   resultEmpty: { en: "Draw a side of the roof and the panels that fit on it appear here.", ro: "Desenează o parte a acoperișului și aici apar panourile care încap pe ea.", ru: "Обведите скат, и здесь появятся панели, которые на нём помещаются.", uk: "Обведіть схил, і тут з’являться панелі, які на ньому вміщаються." },
+  howMany: { en: "How many panels", ro: "Câte panouri", ru: "Сколько панелей", uk: "Скільки панелей" },
+  fillTarget: { en: "As the quote needs ({n})", ro: "Cât cere oferta ({n})", ru: "Сколько нужно в расчёте ({n})", uk: "Скільки потрібно в розрахунку ({n})" },
+  fillRoof: { en: "Whole roof ({n})", ro: "Tot acoperișul ({n})", ru: "Вся крыша ({n})", uk: "Увесь дах ({n})" },
+  fillOwn: { en: "My number", ro: "Alt număr", ru: "Своё число", uk: "Своє число" },
+  fillOwnLbl: { en: "Panels to place", ro: "Panouri de pus", ru: "Сколько поставить", uk: "Скільки поставити" },
+  fillHelp: { en: "Panels go on the sides facing nearest south first. Places left free show as grey outlines on the map.", ro: "Panourile se pun întâi pe părțile orientate cel mai aproape de sud. Locurile rămase libere apar pe hartă ca un contur gri.", ru: "Панели ставятся сначала на стороны, ближе всего к югу. Свободные места видны на карте серым контуром.", uk: "Панелі ставляться спершу на сторони, найближчі до півдня. Вільні місця видно на мапі сірим контуром." },
+  spareLine: { en: "{fit} fit on the roof; {free} places left free.", ro: "Pe acoperiș încap {fit}; {free} locuri rămân libere.", ru: "На крыше помещается {fit}; {free} мест остаются свободными.", uk: "На даху вміщується {fit}; {free} місць лишаються вільними." },
   roofUse: { en: "{used} m² of panels on {roof} m² of roof", ro: "{used} m² de panouri pe {roof} m² de acoperiș", ru: "{used} м² панелей на {roof} м² крыши", uk: "{used} м² панелей на {roof} м² даху" },
   price: { en: "System price", ro: "Preț sistem", ru: "Цена системы", uk: "Ціна системи" },
   payback: { en: "Pays back in", ro: "Se recuperează în", ru: "Окупается за", uk: "Окуповується за" },
@@ -368,7 +375,18 @@ export default function SiteDesigner({
   const [clusterMaxW, setClusterMaxW] = useState(() => savedNum(saved.clusterMaxW, 0));
   const [clusterMaxH, setClusterMaxH] = useState(() => savedNum(saved.clusterMaxH, 0));
   const [clusterGap, setClusterGap] = useState(() => savedNum(saved.clusterGap, 0));
-  const settings = { panelId, orientation, rowSpacingCm, colSpacingCm, setbackCm, clusterMaxW, clusterMaxH, clusterGap };
+  // how many of the panels that fit go on the roof: what the quote needs, the whole roof, or the installer's own number.
+  // A roof drawn before this choice existed was filled whole, and stays so until changed.
+  const [fill, setFill] = useState(() => (["target", "roof", "own"].includes(saved.fill) ? saved.fill
+    : Array.isArray(siteDesign?.planes) && siteDesign.planes.length ? "roof" : "target"));
+  const [fillOwn, setFillOwn] = useState(() => savedNum(saved.fillOwn, 0));
+  // what the quote asks for, in panels of the chosen model; its kW is kept to 0.1, so a
+  // quarter panel of slack keeps a roof applied from here at the same count when reopened
+  const targetKw = Number(projectInputs?.kw) || 0;
+  const panelW = Number(findPanel(panelId)?.watt) || 0;
+  const targetPanels = targetKw > 0 && panelW > 0 ? Math.max(1, Math.ceil((targetKw * 1000) / panelW - 0.25)) : 0;
+  const fillCount = fill === "own" ? fillOwn : fill === "target" ? targetPanels : 0;
+  const settings = { panelId, orientation, rowSpacingCm, colSpacingCm, setbackCm, clusterMaxW, clusterMaxH, clusterGap, fill, fillOwn, fillCount };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -781,13 +799,18 @@ export default function SiteDesigner({
     const opts = fitOptions(s);
     ensurePanelPattern(map);
 
-    let totalCount = 0, roofAreaM2 = 0;
+    let totalCount = 0, roofAreaM2 = 0, fitCount = 0;
     const perPlane = [];
+    const fits = [];
     for (const [id, layer] of planeLayers.current) {
       const polygon = ringToLatLon(layer);
       // Portrait: the panel's long side runs up the slope, its short side along the ridge.
-      const { panels, count, rows } = fitPanels(polygon, obstaclePolys, h, w, opts);
+      fits.push({ id, layer, polygon, azimuthDeg: layer._sdAzimuth ?? 0, ...fitPanels(polygon, obstaclePolys, h, w, opts) });
+    }
+    // only as many as chosen, the sides facing nearest south first; the rest stay as faint outlines
+    for (const { id, layer, polygon, panels, count, rows, spare } of limitPanels(fits, s.fillCount)) {
       totalCount += count;
+      fitCount += count + spare.length;
       const areaM2 = polygonAreaM2(polygon);
       roofAreaM2 += areaM2;
       const [clat, clon] = centroidOf(polygon);
@@ -800,11 +823,14 @@ export default function SiteDesigner({
       panels.forEach((corners) => {
         L.polygon(corners, { color: "#B9C4CE", weight: 1, fillColor: "url(#sdPanelCells)", fillOpacity: 1, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
       });
+      spare.forEach((corners) => {
+        L.polygon(corners, { color: "#DDE3E8", weight: 1, opacity: 0.6, dashArray: "3 3", fill: false, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
+      });
     }
     const kw = Math.round(((totalCount * panel.watt) / 1000) * 10) / 10;
     setLayout({
       totalCount, kw, perPlane, panelId: panel.id, panelBrand: panel.brand, panelModel: panel.model, panelWatt: panel.watt,
-      panelAreaM2: (totalCount * w * h) / 1e6, roofAreaM2,
+      panelAreaM2: (totalCount * w * h) / 1e6, roofAreaM2, fitCount,
     });
   }
   api.current.runLayout = runLayout;
@@ -897,10 +923,7 @@ export default function SiteDesigner({
   const panel = findPanel(panelId);
   // what the quote asks for: its kW in panels of the chosen model, and the clear roof they need
   // (the panels' own area plus about a quarter for the gaps, the edges and the walkways)
-  const targetKw = Number(projectInputs?.kw) || 0;
-  const panelW = Number(panel?.watt) || 0;
   const panelM2 = panel?.dimensionsMm ? (panel.dimensionsMm.w / 1000) * (panel.dimensionsMm.h / 1000) : 2;
-  const targetPanels = targetKw > 0 && panelW > 0 ? Math.ceil((targetKw * 1000) / panelW) : 0;
   const targetM2 = Math.round(targetPanels * panelM2 * 1.25);
   const placed = layout?.totalCount || 0;
   const meterPct = targetPanels ? Math.min(100, Math.round((placed / targetPanels) * 100)) : 0;
@@ -1200,6 +1223,25 @@ export default function SiteDesigner({
                     <h3>{tr("st3h")}</h3>
                     <p>{tr("st3p")}</p>
                   </header>
+                  <div className="sd-field">
+                    <span className="sd-lbl" id="sd-fill">{tr("howMany")}</span>
+                    <div className="sd-seg" role="radiogroup" aria-labelledby="sd-fill">
+                      {targetPanels > 0 && <button type="button" role="radio" aria-checked={fill === "target"} className={fill === "target" ? "on" : ""} onClick={() => setFill("target")}>{tr("fillTarget", { n: targetPanels })}</button>}
+                      <button type="button" role="radio" aria-checked={fill === "roof" || (fill === "target" && !targetPanels)} className={fill === "roof" || (fill === "target" && !targetPanels) ? "on" : ""} onClick={() => setFill("roof")}>{tr("fillRoof", { n: layout?.fitCount ?? 0 })}</button>
+                      <button type="button" role="radio" aria-checked={fill === "own"} className={fill === "own" ? "on" : ""}
+                        onClick={() => { if (!fillOwn) setFillOwn(layout?.totalCount || targetPanels || 1); setFill("own"); }}>{tr("fillOwn")}</button>
+                    </div>
+                    {fill === "own" && (
+                      <span className="sd-lbl-row">
+                        <span className="sd-lbl" id="sd-fill-own">{tr("fillOwnLbl")}</span>
+                        <span className="sd-numwrap">
+                          <input type="number" className="sd-num" min="1" max="2000" step="1" value={fillOwn || ""} aria-labelledby="sd-fill-own"
+                            onChange={(e) => setFillOwn(e.target.value === "" ? 0 : clampNum(e.target.value, 1, 2000))} />
+                        </span>
+                      </span>
+                    )}
+                    <span className="sd-note">{tr("fillHelp")}</span>
+                  </div>
                   <label className="sd-field">
                     <span className="sd-lbl">{tr("module")}</span>
                     <select className="sd-select" value={panelId} onChange={(e) => setPanelId(e.target.value)}>
@@ -1281,6 +1323,7 @@ export default function SiteDesigner({
                     )}
                   </div>
                   {layout.totalCount === 0 && <p className="sd-warn" role="alert">{tr("noFit")}</p>}
+                  {layout.fitCount > layout.totalCount && layout.totalCount > 0 && <p className="sd-help">{tr("spareLine", { fit: layout.fitCount, free: layout.fitCount - layout.totalCount })}</p>}
                   {quoteResult && (
                     <dl className="sd-metrics">
                       <div><dt>{tr("price")}</dt><dd>{fmtMoney(quoteResult.e.cost)}</dd></div>
