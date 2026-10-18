@@ -45,6 +45,7 @@ import { financials, bomTotal } from "../../../../lib/quoteAnalysis.js";
 import { startYearOf, mdFeedFor } from "../../../../lib/quoteInput.js";
 import { applyCalibration } from "../../../../lib/yieldCalibration.js";
 import { t } from "../../../../lib/i18n.js";
+import { xt } from "../../../../lib/integrationText.js";
 import { autoBom, recommendMount } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
 import { designCheck } from "../../../../lib/designCheck.js";
@@ -1509,6 +1510,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 href={`/projects/${initial.id}/invoice${depPct > 0 ? `?deposit=${depPct}` : ""}`}
                 onClick={() => setInvOpen(false)}>{tr("inv_dep_open")}</a>
             </div>
+            {/* e-Factura and the client's payments: their own page (billing/) */}
+            <a className="btn ghost sm" style={{ marginTop: 10, width: "100%", justifyContent: "center" }} href={`/projects/${initial.id}/billing`}>{xt("bl_link", lang)}</a>
           </div>
         </div>
       )}

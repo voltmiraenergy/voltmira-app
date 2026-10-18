@@ -1,0 +1,41 @@
+/* app/(app)/projects/[id]/billing/billing.css — the billing page, on the
+ * workspace look (dx.css) and the app tokens, so both themes follow. Every
+ * selector starts with .app, as dx.css explains. */
+.app .bl { max-width: 860px; }
+.app .bl .dx-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.app .bl-card { display: grid; gap: 14px; }
+.app .bl-note { font-size: 13px; line-height: 1.5; padding: 10px 12px; border-radius: 10px; }
+.app .bl-note.warn { background: var(--amber-tint); color: var(--amber-ink); font-weight: 600; }
+.app .bl-note.bad { background: var(--red-tint); color: var(--red); }
+.app .bl-status { font-size: 15px; font-weight: 700; color: var(--ink); }
+.app .bl-status.s-accepted { color: var(--green); }
+.app .bl-status.s-rejected, .app .bl-status.s-error { color: var(--red); }
+.app .bl-status.s-submitted { color: var(--amber-ink); }
+.app .bl-status.s-none { color: var(--muted); font-weight: 600; }
+.app .bl-ready { display: grid; gap: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; }
+.app .bl-ready h3 { font-size: 13px; font-weight: 700; color: var(--ink); }
+.app .bl-ready ul { padding-left: 18px; display: grid; gap: 4px; font-size: 13.5px; color: var(--ink); }
+.app .bl-ready a { color: var(--green); font-weight: 600; }
+.app .bl-ok { font-size: 13.5px; color: var(--green); font-weight: 600; }
+.app .bl-field { display: grid; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--muted); min-width: 0; }
+.app .bl-field .input { width: 100%; min-width: 0; }
+.app .bl-acts { display: flex; gap: 10px; flex-wrap: wrap; }
+.app .bl-hist summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); }
+.app .bl-hist ol { margin-top: 8px; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; color: var(--ink); }
+.app .bl-sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.app .bl-sum dt { font-size: 12px; color: var(--muted); }
+.app .bl-sum dd { font-size: 17px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.app .bl-sum dd.ok { color: var(--green); }
+.app .bl-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: end; }
+.app .bl-form .bl-wide { grid-column: span 3; }
+.app .bl-muted { font-size: 13px; color: var(--muted); }
+.app .bl-list { list-style: none; display: grid; }
+.app .bl-list li { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--ink); }
+.app .bl-amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .app .bl-sum { grid-template-columns: 1fr 1fr; }
+  .app .bl-form { grid-template-columns: 1fr 1fr; }
+  .app .bl-form .bl-wide { grid-column: 1 / -1; }
+  .app .bl-list li { grid-template-columns: 1fr auto; }
+  .app .bl-list li > span:nth-child(2) { grid-column: 1 / -1; grid-row: 2; color: var(--muted); }
+}

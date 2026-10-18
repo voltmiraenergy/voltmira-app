@@ -24,6 +24,8 @@ import { fmtDate } from "../../../../../lib/tz.js";
 import PrintNow from "./PrintNow.jsx";
 import BackLink from "../../../../../components/BackLink.jsx";
 import { appTitle } from "../../../../../lib/pageTitle.js";
+import { xt } from "../../../../../lib/integrationText.js";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 export const generateMetadata = appTitle("inv_button");
@@ -117,6 +119,9 @@ export default async function InvoicePage(props) {
     }
   }
   if (!invNo) invNo = `${prefix}-${today.getFullYear()}-${String(params.id).replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+  // the invoice's e-Factura status (billing page, docs/INTEGRATIONS.md): once
+  // SFS has accepted it, its fiscal number prints on the proforma
+  const { data: ef } = await sb.from("efactura_submissions").select("status, fiscal_number, provider").eq("project_id", p.id).order("attempt", { ascending: false }).limit(1).maybeSingle();
   // Decimals the way the client writes them ("6,0 kW" in Romanian), like the
   // amounts below: toFixed() printed "6.0" on a Romanian invoice.
   const dec = (n, d) => Number(n).toLocaleString(locale, { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -169,11 +174,14 @@ export default async function InvoicePage(props) {
           own reachable from the sidebar/bottom-tab bar — in the standalone
           Home Screen app there's no Safari swipe-back to fall back on, so
           without this the page was a dead end. */}
-      <div className="inv-back-row no-print">
+      <div className="inv-back-row no-print" style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <BackLink href={`/projects/${params.id}`}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
           {t("back_quote", lang)}
         </BackLink>
+        <Link href={`/projects/${params.id}/billing`} className="btn ghost sm">
+          {xt("bl_link", lang)}{ef?.status ? `: ${ef.status === "accepted" ? (ef.fiscal_number || "") : xt("ef_st_" + ef.status, lang, { n: "", reason: "" }).replace(/[:,]\s*$/, "")}` : ""}
+        </Link>
       </div>
 
       <div className="inv-page" style={S.page}>
@@ -201,6 +209,7 @@ export default async function InvoicePage(props) {
             <div style={{ ...S.muted, marginTop: 8 }}>
               {t("inv_no", lang)}: <b style={{ color: "#142A21" }}>{invNo}</b><br />
               {t("inv_date", lang)}: {fmtDate(today.toISOString(), locale, { day: "numeric", month: "short", year: "numeric" })}
+              {ef?.status === "accepted" && ef.fiscal_number && ef.provider === "sfs" && <><br />{t("inv_efactura_no", lang)}: <b style={{ color: "#142A21" }}>{ef.fiscal_number}</b></>}
             </div>
           </div>
         </div>
