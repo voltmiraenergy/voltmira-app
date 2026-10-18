@@ -197,37 +197,37 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
                 <h5>{plt("ox_h", lang)}</h5>
                 <p className="pf-hint">{plt("ox_p", lang)}</p>
                 {!anyCost && <p className="pf-warn">{plt("ox_need_costs", lang)}</p>}
-                <div className="pf-scroll">
-                  <table className="pf-t gr-ox">
-                    <thead><tr>
-                      <th>{plt("ox_col_opt", lang)}</th><th className="r">{plt("ox_col_route", lang)}</th><th>{plt("ox_col_carry", lang)}</th>
-                      <th className="r">{plt("ox_col_loss", lang)}</th><th className="r">{plt("ox_col_cost", lang)}</th><th className="r">{plt("ox_col_effect", lang)}</th><th />
-                    </tr></thead>
-                    <tbody>
-                      {cmp.options.map((o) => {
-                        const best = cmp.recommended === o.key;
-                        const inUse = g.applied?.key === o.key;
-                        // the option in use, after its route changed: its cost or losses moved
-                        const stale = inUse && o.costEur != null && (Math.abs(o.costEur - g.applied.costEur) > 0.005 * Math.max(1, g.applied.costEur) || Math.abs(o.loss.pct - g.applied.lossPct) > 0.005);
-                        return (
-                          <tr key={o.key} className={(o.chosen ? "on " : "") + (best ? "best" : "")}>
-                            <td><i className={"gr-k gr-k-" + o.cls} /><b>{nameOf(o)}</b>
-                              <small>{o.kvAt} kV, {plt(o.kind === "sub" ? "grid_sub" : "grid_line", lang).toLowerCase()}{best ? <em className="gr-best"> {plt("ox_best", lang)}</em> : null}</small></td>
-                            <td className="r nw">{km(o.route.km)}<small>{o.route.drawn ? plt("ox_drawn", lang) : plt("ox_straight", lang, { f: fnum(g.routeFactor, lang, 2) })}</small></td>
-                            <td className={o.fits ? "gr-yes" : "gr-no"}>{o.fits ? plt("ox_yes", lang, { cap: fnum(o.capacityMw, lang, 0) })
-                              : plt("ox_no", lang, { mw: fnum(o.totalMw, lang, 0), cap: fnum(o.capacityMw, lang, 0) })}{o.othersMw > 0 ? <small>{plt("ox_with", lang)}</small> : null}</td>
-                            <td className="r nw">{fnum(o.loss.pct, lang, 2)}%<small>{fnum(o.loss.mwh, lang, 0)} MWh, {eur(o.loss.eurYr)}</small></td>
-                            <td className="r nw">{o.costEur != null ? eur(o.costEur) : "-"}</td>
-                            <td className="r nw">{o.effect ? <>{o.effect.dscrMin == null ? "-" : dscr(o.effect.dscrMin, lang)}<small>{o.effect.irr == null ? "-" : pct(o.effect.irr, lang)}</small></> : "-"}</td>
-                            <td>{inUse && stale ? <button type="button" className="btn primary sm" onClick={() => apply(o)}>{plt("ox_update", lang)}</button>
-                              : inUse ? <span className="gr-inuse">{plt("ox_in_use", lang)}</span>
-                              : <button type="button" className={"btn sm" + (best ? " primary" : " ghost")} disabled={!o.effect} onClick={() => apply(o)}>{plt("ox_use", lang)}</button>}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                {/* one card per option: the figures wrap to the column's width, the action stays inside */}
+                <ul className="gr-oc">
+                  {cmp.options.map((o) => {
+                    const best = cmp.recommended === o.key;
+                    const inUse = g.applied?.key === o.key;
+                    // the option in use, after its route changed: its cost or losses moved
+                    const stale = inUse && o.costEur != null && (Math.abs(o.costEur - g.applied.costEur) > 0.005 * Math.max(1, g.applied.costEur) || Math.abs(o.loss.pct - g.applied.lossPct) > 0.005);
+                    return (
+                      <li key={o.key} className={"gr-oc-i" + (o.chosen ? " on" : "") + (best ? " best" : "") + (inUse ? " used" : "")}>
+                        <div className="gr-oc-h">
+                          <i className={"gr-k gr-k-" + o.cls} aria-hidden="true" />
+                          <span className="gr-oc-n"><b>{nameOf(o)}</b><small>{o.kvAt} kV, {plt(o.kind === "sub" ? "grid_sub" : "grid_line", lang).toLowerCase()}</small></span>
+                          {best && <em className="gr-oc-tag">{plt("ox_best", lang)}</em>}
+                        </div>
+                        <dl className="gr-oc-m">
+                          <div><dt>{plt("ox_col_route", lang)}</dt><dd>{km(o.route.km)}<small>{o.route.drawn ? plt("ox_drawn", lang) : plt("ox_straight", lang, { f: fnum(g.routeFactor, lang, 2) })}</small></dd></div>
+                          <div><dt>{plt("ox_col_carry", lang)}</dt><dd className={o.fits ? "gr-yes" : "gr-no"}>{o.fits ? plt("ox_yes", lang, { cap: fnum(o.capacityMw, lang, 0) })
+                            : plt("ox_no", lang, { mw: fnum(o.totalMw, lang, 0), cap: fnum(o.capacityMw, lang, 0) })}{o.othersMw > 0 ? <small>{plt("ox_with", lang)}</small> : null}</dd></div>
+                          <div><dt>{plt("ox_col_loss", lang)}</dt><dd>{fnum(o.loss.pct, lang, 2)}%<small>{fnum(o.loss.mwh, lang, 0)} MWh, {eur(o.loss.eurYr)}</small></dd></div>
+                          <div><dt>{plt("ox_col_cost", lang)}</dt><dd>{o.costEur != null ? eur(o.costEur) : "-"}</dd></div>
+                          <div><dt>{plt("ox_col_effect", lang)}</dt><dd>{o.effect ? <>{o.effect.dscrMin == null ? "-" : dscr(o.effect.dscrMin, lang)}<small>{o.effect.irr == null ? "-" : pct(o.effect.irr, lang)}</small></> : "-"}</dd></div>
+                        </dl>
+                        <div className="gr-oc-a">
+                          {inUse && stale ? <button type="button" className="btn primary sm" onClick={() => apply(o)}>{plt("ox_update", lang)}</button>
+                            : inUse ? <span className="gr-inuse">{plt("ox_in_use", lang)}</span>
+                            : <button type="button" className={"btn sm" + (best ? " primary" : " ghost")} disabled={!o.effect} onClick={() => apply(o)}>{plt("ox_use", lang)}</button>}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
                 {applied && <p className="pl-line">{plt("ox_used", lang, { opt: optName(applied), cost: eur(g.applied.costEur), loss: `${fnum(g.applied.lossPct, lang, 2)}%` })}</p>}
                 {applied && applied.costEur != null && Math.abs(applied.costEur - g.applied.costEur) > 0.005 * Math.max(1, g.applied.costEur)
                   && <p className="pf-warn">{plt("ox_stale", lang, { cost: eur(applied.costEur) })}</p>}

@@ -607,8 +607,28 @@ html[data-theme="dark"] .app .pf-su-seg em { color: #0B120E; }
 .app .gr-main > div { display: flex; flex-direction: column; gap: 6px; }
 .app .gr-route { padding: 10px 12px; border-radius: 10px; background: var(--paper); }
 .app .gr-shared { padding: 10px 12px; border-radius: 10px; background: var(--amber-tint); }
-/* the two tables beside the map fit their column: headers wrap, nothing scrolls sideways */
-.app .gr-main .pf-scroll { overflow-x: visible; }
+/* the tables beside the map fit their column: headers wrap; a table that still
+   cannot fit scrolls inside its own box instead of running under the map */
+.app .gr-main .pf-scroll { overflow-x: auto; max-width: 100%; }
+/* the connection options, one card each */
+.app .gr-oc { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.app .gr-oc-i { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2, #fff); min-width: 0; }
+.app .gr-oc-i.on { border-color: var(--green); box-shadow: inset 3px 0 0 var(--green); }
+.app .gr-oc-i.best { background: var(--green-tint); }
+.app .gr-oc-h { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.app .gr-oc-h .gr-k { margin-top: 4px; flex: none; }
+.app .gr-oc-n { flex: 1; min-width: 0; }
+.app .gr-oc-n b { display: block; font-size: 14px; overflow-wrap: anywhere; }
+.app .gr-oc-n small { display: block; font-size: 12px; color: var(--muted); }
+.app .gr-oc-tag { flex: none; font-style: normal; font-size: 11.5px; font-weight: 700; color: var(--green); padding: 2px 8px; border-radius: 99px; border: 1px solid var(--green); white-space: nowrap; }
+.app .gr-oc-m { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px 14px; }
+.app .gr-oc-m div { min-width: 0; }
+.app .gr-oc-m dt { font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); }
+.app .gr-oc-m dd { margin: 2px 0 0; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.app .gr-oc-m dd small { display: block; font-size: 11.5px; font-weight: 500; color: var(--muted); }
+.app .gr-oc-a { display: flex; justify-content: flex-end; }
+.app .gr-oc .gr-yes { color: var(--green); }
+.app .gr-oc .gr-no { color: var(--pf-warn, #8A5A0F); }
 .app .gr-ox, .app .gr-ct { table-layout: fixed; font-size: 12.5px; }
 .app .gr-ox th, .app .gr-ct th { white-space: normal; padding: 8px 5px; font-size: 10.5px; letter-spacing: .03em; line-height: 1.25; vertical-align: bottom; }
 .app .gr-ox td, .app .gr-ct td { padding: 9px 5px; }

@@ -293,6 +293,16 @@ html[data-theme="dark"] .app .sd-shell { --sd-on-green: #07130D; }
 .app .sd-metrics dd { font-size: 14.5px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .app .sd-warn { font-size: 13px; color: var(--red); line-height: 1.45; }
 .app .sd-apply { min-height: 54px; }
+/* the pinned result never takes more than half the panel: the settings above keep their room */
+.app .sd-side { overflow: hidden; }
+.app .sd-result { max-height: 50%; overflow-y: auto; overscroll-behavior: contain; }
+.app .sd-result-more summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 13px; font-weight: 650; color: var(--muted); }
+.app .sd-result-more summary::-webkit-details-marker { display: none; }
+.app .sd-result-more summary:hover { color: var(--ink); }
+.app .sd-result-more summary svg { transition: transform .15s; }
+.app .sd-result-more[open] summary svg { transform: rotate(90deg); }
+.app .sd-result-more-b { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.app .sd-btn.ghost { background: transparent; }
 
 /* --------------------------------------------------------- tablet & phone */
 @media (max-width: 1280px) {
@@ -311,11 +321,11 @@ html[data-theme="dark"] .app .sd-shell { --sd-on-green: #07130D; }
   .app .sd-head-sep { display: none; }
   .app .sd-body { display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; }
   .app .sd-stage { flex: none; height: min(56vh, 520px); min-height: 300px; }
-  .app .sd-side { flex: none; border-left: 0; border-top: 1px solid var(--line); }
+  .app .sd-side { flex: none; border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
   .app .sd-tabs { position: sticky; top: 0; z-index: 6; }
   .app .sd-scroll { overflow: visible; }
   .app .sd-result {
-    position: sticky; bottom: 0; z-index: 5; gap: 10px; padding-top: 12px;
+    position: sticky; bottom: 0; z-index: 5; gap: 10px; padding-top: 12px; max-height: 46vh;
     padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   }
   .app .sd-big b { font-size: 24px; }

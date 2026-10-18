@@ -23,7 +23,7 @@ import { loadGoogleSatelliteLayer } from "../../lib/googleSatellite.js";
 import { tilesAround, postTiles } from "../../lib/tileWarm.js";
 import { layoutInputs, layoutPlots } from "../../lib/plantLayout.js";
 import { rotorDiameterM, turbineAt } from "../../lib/windLayout.js";
-import { plotHectares, EXCLUSION_KINDS, TABLE_FORMATS, TRACKER_GCR_DEFAULT, TRACKER_GCR_RANGE, tableGeometry } from "../../lib/siteLayout.js";
+import { plotHectares, EXCLUSION_KINDS, TABLE_FORMATS, TRACKER_GCR_DEFAULT, TRACKER_GCR_RANGE, SHADE_WINDOWS, tableGeometry } from "../../lib/siteLayout.js";
 
 /* --------------------------------------------------------------- words --- */
 const TX = {
@@ -69,7 +69,12 @@ const TX = {
   noneExcl: { en: "None yet. Skip this if the plot is clear.", ro: "Niciuna încă. Sari peste dacă terenul este liber.", ru: "Пока нет. Пропустите, если участок свободен.", uk: "Поки немає. Пропустіть, якщо ділянка вільна." },
   next3: { en: "Next: panels", ro: "Mai departe: panouri", ru: "Далее: панели", uk: "Далі: панелі" },
   st3h: { en: "Lay out the panels", ro: "Așază panourile", ru: "Расставьте панели", uk: "Розставте панелі" },
-  st3p: { en: "Rows are spaced so none shades the next at noon on 21 December. The tilt and facing are saved on the equipment list too.", ro: "Rândurile sunt distanțate astfel încât niciunul să nu umbrească următorul la amiază pe 21 decembrie. Înclinarea și orientarea se salvează și în lista de echipamente.", ru: "Ряды разнесены так, чтобы ни один не затенял следующий в полдень 21 декабря. Наклон и ориентация сохраняются и в списке оборудования.", uk: "Ряди рознесено так, щоб жоден не затінював наступний опівдні 21 грудня. Нахил і орієнтація зберігаються і в списку обладнання." },
+  st3p: { en: "Rows are spaced so none shades the next on 21 December, through the hours you choose below. The tilt and facing are saved on the equipment list too.", ro: "Rândurile sunt distanțate astfel încât niciunul să nu umbrească următorul pe 21 decembrie, în orele alese mai jos. Înclinarea și orientarea se salvează și în lista de echipamente.", ru: "Ряды разнесены так, чтобы ни один не затенял следующий 21 декабря в часы, выбранные ниже. Наклон и ориентация сохраняются и в списке оборудования.", uk: "Ряди рознесено так, щоб жоден не затінював наступний 21 грудня в години, вибрані нижче. Нахил і орієнтація зберігаються і в списку обладнання." },
+  shade: { en: "No shade between rows", ro: "Fără umbră între rânduri", ru: "Без тени между рядами", uk: "Без тіні між рядами" },
+  shade0: { en: "At noon", ro: "La amiază", ru: "В полдень", uk: "Опівдні" },
+  shade2: { en: "10:00 to 14:00", ro: "Între 10 și 14", ru: "С 10 до 14", uk: "З 10 до 14" },
+  shade3: { en: "9:00 to 15:00", ro: "Între 9 și 15", ru: "С 9 до 15", uk: "З 9 до 15" },
+  shadeHelp: { en: "On 21 December, the shortest day. 10:00 to 14:00 is the usual design rule; noon only packs the rows tighter, and on winter mornings and afternoons part of each row is in shade.", ro: "Pe 21 decembrie, cea mai scurtă zi. Între 10 și 14 este regula obișnuită de proiectare; doar la amiază strânge rândurile, iar în diminețile și după-amiezile de iarnă o parte din fiecare rând stă în umbră.", ru: "21 декабря, в самый короткий день. С 10 до 14 это обычное проектное правило; только полдень ставит ряды плотнее, и зимой утром и после обеда часть каждого ряда в тени.", uk: "21 грудня, у найкоротший день. З 10 до 14 це звичайне проєктне правило; лише полудень ставить ряди щільніше, і взимку зранку та після обіду частина кожного ряду в тіні." },
   mount: { en: "Mounting", ro: "Montaj", ru: "Монтаж", uk: "Монтаж" },
   mountFixed: { en: "Fixed tilt", ro: "Înclinare fixă", ru: "Фиксированный наклон", uk: "Фіксований нахил" },
   mountTracker: { en: "Tracker", ro: "Tracker", ru: "Трекер", uk: "Трекер" },
@@ -95,6 +100,7 @@ const TX = {
   turbinesFit: { en: "Wind: {n} of {need} turbines fit, rotor about {d} m, each with a {r} m keep-out circle.", ro: "Vânt: încap {n} din {need} turbine, rotor de circa {d} m, fiecare cu un cerc de siguranță de {r} m.", ru: "Ветер: помещается {n} из {need} турбин, ротор около {d} м, у каждой защитный круг {r} м.", uk: "Вітер: вміщується {n} з {need} турбін, ротор близько {d} м, у кожної захисне коло {r} м." },
   turbinesShort: { en: "Not every turbine fits: {n} of {need}. Add a plot or move the keep-out zones.", ro: "Nu încap toate turbinele: {n} din {need}. Adaugă o parcelă sau mută zonele excluse.", ru: "Не все турбины помещаются: {n} из {need}. Добавьте участок или передвиньте запретные зоны.", uk: "Не всі турбіни вміщуються: {n} з {need}. Додайте ділянку або пересуньте заборонені зони." },
   apply: { en: "Save the plan", ro: "Salvează planul", ru: "Сохранить план", uk: "Зберегти план" },
+  details: { en: "Details", ro: "Detalii", ru: "Подробнее", uk: "Докладніше" },
   saved: { en: "Saved with the plant. It goes into the credit summary and the report.", ro: "Salvat cu centrala. Intră în fișa de credit și în raport.", ru: "Сохранено со станцией. Попадёт в кредитную справку и отчёт.", uk: "Збережено зі станцією. Потрапить у кредитну довідку та звіт." },
 };
 const KIND = {
@@ -186,6 +192,8 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   const [gcr, setGcr] = useState(saved.trackerGcr ?? TRACKER_GCR_DEFAULT);
   const [fmt, setFmt] = useState(Math.max(0, TABLE_FORMATS.findIndex((t) => t.high === (saved.high || 2) && t.wide === (saved.wide || 26))));
   const [setback, setSetback] = useState(saved.setbackM ?? 5);
+  // hours either side of noon on 21 December with no row shading the next; a plan saved before this keeps noon only
+  const [shadeH, setShadeH] = useState(base.inputs.shadeH ?? 0);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [tool, setTool] = useState(null);
@@ -224,12 +232,12 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   // the mounting (tilt, facing, or tracker and its ground-cover target) goes on the equipment list only once the user has set it here
   const mountTouched = useRef(false);
   const settingsTouched = useRef(false);
-  const settingsRef = useRef({ tilt, az, mountKind, gcr, fmt, setback });
+  const settingsRef = useRef({ tilt, az, mountKind, gcr, fmt, setback, shadeH });
   const onSaveRef = useRef(onSave);
   const onCloseRef = useRef(onClose);
   const baseRef = useRef(base);
   useEffect(() => {
-    settingsRef.current = { tilt, az, mountKind, gcr, fmt, setback };
+    settingsRef.current = { tilt, az, mountKind, gcr, fmt, setback, shadeH };
     onSaveRef.current = onSave; onCloseRef.current = onClose; baseRef.current = base;
   });
 
@@ -327,7 +335,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
     // What is saved on the plant: the plots, the zones, the table format, the setback, the ground-cover target; the mounting goes on the equipment list.
     function save(snap) {
       const s = settingsRef.current, f = TABLE_FORMATS[s.fmt] || TABLE_FORMATS[0];
-      const layout = snap.plots.length ? { plots: snap.plots.map((p) => p.ring), exclusions: snap.exclusions.map((e) => ({ ring: e.ring, kind: e.kind })), high: f.high, wide: f.wide, setbackM: s.setback, trackerGcr: s.gcr, ...(snap.turbines?.length ? { turbines: snap.turbines } : {}) } : null;
+      const layout = snap.plots.length ? { plots: snap.plots.map((p) => p.ring), exclusions: snap.exclusions.map((e) => ({ ring: e.ring, kind: e.kind })), high: f.high, wide: f.wide, setbackM: s.setback, trackerGcr: s.gcr, shadeH: s.shadeH, ...(snap.turbines?.length ? { turbines: snap.turbines } : {}) } : null;
       const mounting = mountTouched.current ? (s.mountKind === "tracker" ? { kind: "tracker" } : { kind: "fixed", tiltDeg: s.tilt, azimuthDeg: s.az }) : null;
       onSaveRef.current?.({ layout, mounting });
     }
@@ -441,7 +449,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       if (!panelGroup.current) panelGroup.current = L.layerGroup().addTo(map);
       panelGroup.current.clearLayers();
       if (!snap.plots.length) { setResult(null); return; }
-      const inputs = { ...baseRef.current.inputs, tiltDeg: s.tilt, azimuthDeg: s.az, tracker: s.mountKind === "tracker", trackerGcr: s.gcr, high: f.high, wide: f.wide, setbackM: s.setback };
+      const inputs = { ...baseRef.current.inputs, tiltDeg: s.tilt, azimuthDeg: s.az, tracker: s.mountKind === "tracker", trackerGcr: s.gcr, high: f.high, wide: f.wide, setbackM: s.setback, shadeH: s.shadeH };
       const r = layoutPlots(snap.plots.map((p) => p.ring), snap.exclusions, inputs, snap.turbines);
       setResult(r ? { ...r, inputs } : null);
       if (!r) return;
@@ -569,7 +577,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
     if (!ready || !settingsTouched.current) return;
     const id = setTimeout(() => { api.current.save?.(); api.current.run?.(); }, 220);
     return () => clearTimeout(id);
-  }, [tilt, az, mountKind, gcr, fmt, setback, ready]);
+  }, [tilt, az, mountKind, gcr, fmt, setback, shadeH, ready]);
 
   const touch = (mounting) => { settingsTouched.current = true; if (mounting) mountTouched.current = true; };
   const putTilt = (v) => { touch(true); setTilt(v); };
@@ -578,6 +586,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   const putGcr = (v) => { touch(true); setGcr(v); };
   const putFmt = (v) => { touch(false); setFmt(v); };
   const putSetback = (v) => { touch(false); setSetback(v); };
+  const putShade = (v) => { touch(false); setShadeH(v); };
 
   /* ------------------------------------------------------------- render --- */
   const TOOLS = [
@@ -607,7 +616,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   const dir = nearestDir(az);
   const f = TABLE_FORMATS[fmt] || TABLE_FORMATS[0];
   const tracker = mountKind === "tracker";
-  const geo = site ? tableGeometry(base.inputs.wp, tilt, site.lat, { wide: f.wide, high: f.high, tracker, trackerGcr: gcr }) : null;
+  const geo = site ? tableGeometry(base.inputs.wp, tilt, site.lat, { wide: f.wide, high: f.high, tracker, trackerGcr: gcr, azimuthDeg: az, shadeH }) : null;
   const perPlot = (i) => result?.plots?.find((p) => p.k === i)?.stats.placedTables ?? 0;
   const s = result?.stats;
   const hasWind = !!base.inputs.wind;
@@ -787,6 +796,15 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                           </div>
                         </div>
                       </div>
+                      <div className="sd-field">
+                        <span className="sd-lbl" id="pd-shade">{tr("shade")}</span>
+                        <div className="sd-seg" role="radiogroup" aria-labelledby="pd-shade">
+                          {SHADE_WINDOWS.map((h) => (
+                            <button key={h} type="button" role="radio" aria-checked={shadeH === h} className={shadeH === h ? "on" : ""} onClick={() => putShade(h)}>{tr("shade" + h)}</button>
+                          ))}
+                        </div>
+                        <span className="sd-note">{tr("shadeHelp")}</span>
+                      </div>
                     </>
                   )}
                   {tracker && (
@@ -834,20 +852,25 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                   <div className="sd-result-top">
                     <div className="sd-big"><b>{nf(s.placedTables, 0)}</b><span>{tr("tables")}</span></div>
                     <div className="sd-big"><b>{nf(s.mwpPlaced, 2)}</b><span>MWp</span></div>
-                    <span className="sd-use">{tr("need", { need: nf(s.mwpNeed, 2), fit: nf(s.mwpFit, 2), ha: nf(s.plotHa, 1) })}</span>
                   </div>
-                  {s.short
-                    ? <p className="sd-warn" role="alert">{tr("short", { miss: nf(Math.max(0, s.mwpNeed - s.mwpFit), 2) })}</p>
-                    : result.stations.length > 0 && <p className="sd-help">{tr("grid", { n: result.stations.length, m: nf(s.cableM, 0) })}</p>}
-                  {hasWind && (s.turbinesShort
-                    ? <p className="sd-warn" role="alert">{tr("turbinesShort", { n: s.turbineCount, need: s.needTurbines })}</p>
-                    : <p className="sd-help">{tr("turbinesFit", { n: s.turbineCount, need: s.needTurbines, d: nf(s.rotorM, 0), r: nf(s.keepoutRadiusM || 0, 0) })}</p>)}
-                  {hasWind && s.turbineCount > 0 && <p className="sd-help">{tr("turbinesDrag")}</p>}
-                  {hasWind && tbFixed && <button type="button" className="sd-btn" onClick={() => api.current.autoTurbines?.()}>{tr("turbinesAuto")}</button>}
+                  {/* only what needs acting on stays pinned; the rest folds away so the
+                      settings above keep their room on a laptop screen */}
+                  {s.short && <p className="sd-warn" role="alert">{tr("short", { miss: nf(Math.max(0, s.mwpNeed - s.mwpFit), 2) })}</p>}
+                  {hasWind && s.turbinesShort && <p className="sd-warn" role="alert">{tr("turbinesShort", { n: s.turbineCount, need: s.needTurbines })}</p>}
+                  <details className="sd-result-more">
+                    <summary><ChevronRight size={15} aria-hidden="true" />{tr("details")}</summary>
+                    <div className="sd-result-more-b">
+                      <p className="sd-help">{tr("need", { need: nf(s.mwpNeed, 2), fit: nf(s.mwpFit, 2), ha: nf(s.plotHa, 1) })}</p>
+                      {!s.short && result.stations.length > 0 && <p className="sd-help">{tr("grid", { n: result.stations.length, m: nf(s.cableM, 0) })}</p>}
+                      {hasWind && !s.turbinesShort && <p className="sd-help">{tr("turbinesFit", { n: s.turbineCount, need: s.needTurbines, d: nf(s.rotorM, 0), r: nf(s.keepoutRadiusM || 0, 0) })}</p>}
+                      {hasWind && s.turbineCount > 0 && <p className="sd-help">{tr("turbinesDrag")}</p>}
+                      {hasWind && tbFixed && <button type="button" className="sd-btn ghost" onClick={() => api.current.autoTurbines?.()}>{tr("turbinesAuto")}</button>}
+                      <p className="sd-help">{tr("saved")}</p>
+                    </div>
+                  </details>
                   <button type="button" className="sd-btn primary big sd-apply" disabled={!fits} onClick={() => { api.current.save?.(); onClose?.(); }}>
                     <Check size={19} aria-hidden="true" />{tr("apply")}
                   </button>
-                  <p className="sd-help">{tr("saved")}</p>
                 </>
               )}
             </div>
