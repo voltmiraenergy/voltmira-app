@@ -24,6 +24,7 @@ import { tilesAround, postTiles } from "../../lib/tileWarm.js";
 import { layoutInputs, layoutPlots } from "../../lib/plantLayout.js";
 import { rotorDiameterM, turbineAt } from "../../lib/windLayout.js";
 import { drawReadout } from "../drawReadout.js";
+import NumInput from "../NumInput.jsx";
 import { plotHectares, EXCLUSION_KINDS, TABLE_FORMATS, TRACKER_GCR_DEFAULT, TRACKER_GCR_RANGE, SHADE_WINDOWS, tableGeometry } from "../../lib/siteLayout.js";
 
 /* --------------------------------------------------------------- words --- */
@@ -248,9 +249,22 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   // Escape ends a tool or closes; Ctrl+Z / Ctrl+Shift+Z undo and redo; Delete removes the selected shape.
   useEffect(() => {
     function onKey(e) {
-      if (e.key === "Escape") { e.preventDefault(); if (toolRef.current) api.current.endTool?.(); else onCloseRef.current?.(); return; }
-      if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target?.tagName || "")) return;
+      const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(e.target?.tagName || "");
+      if (e.key === "Escape") {
+        e.preventDefault();
+        // in a field, Esc leaves the field; it never throws the whole designer away
+        if (typing) e.target.blur();
+        else if (toolRef.current) api.current.endTool?.();
+        else onCloseRef.current?.();
+        return;
+      }
+      if (typing) return;
       const k = e.key.toLowerCase();
+      // while an outline is being drawn, Ctrl+Z takes back its last corner, not the shape before it
+      const draw = mapRef.current?.pm?.Draw?.Polygon;
+      if ((e.ctrlKey || e.metaKey) && k === "z" && !e.shiftKey && toolRef.current && draw?._enabled && draw._layer?.getLatLngs?.().length) {
+        e.preventDefault(); draw._removeLastVertex?.(); return;
+      }
       if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); if (e.shiftKey) api.current.redo?.(); else api.current.undo?.(); }
       else if ((e.ctrlKey || e.metaKey) && k === "y") { e.preventDefault(); api.current.redo?.(); }
       else if ((e.key === "Delete" || e.key === "Backspace") && selectedRef.current && !toolRef.current) { e.preventDefault(); api.current.removeShape?.(selectedRef.current); }
@@ -399,7 +413,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       if (next === "plot" || next === "excl") {
         pendingKind.current = next;
         stopReadout = drawReadout(map, (m, a) => readoutText.current?.(m, a) || "");
-        map.pm.enableDraw("Polygon", { pathOptions: next === "plot" ? PLOT_ON : EXCL_STYLE, snappable: true, snapDistance: 14, allowSelfIntersection: false, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
+        map.pm.enableDraw("Polygon", { pathOptions: next === "plot" ? PLOT_ON : EXCL_STYLE, snappable: true, snapDistance: 8, allowSelfIntersection: false, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
       } else if (next === "measure") {
         map.getContainer().style.cursor = "crosshair";
       } else if (next === "edit") {
@@ -576,7 +590,8 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   useEffect(() => {
     selectedRef.current = selectedId;
     api.current.restyle?.();
-    if (selectedId) document.getElementById("pd-item-" + selectedId)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    // on a phone the list sits under the map: scrolling to it would push the map off screen
+    if (selectedId && !window.matchMedia("(max-width: 860px)").matches) document.getElementById("pd-item-" + selectedId)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [selectedId]);
 
   // a setting moved: save it and lay the tables out again (a slider sends many small moves)
@@ -647,7 +662,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
 
         <div className="sd-body">
           {/* ------------------------------------------------------ map */}
-          <div className="sd-stage" ref={stageRef}>
+          <div className={"sd-stage" + (tool ? " tooling" : "")} ref={stageRef}>
             <div ref={mapEl} className="sd-map" />
             {ready && (
               <div className="sd-tools" role="toolbar" aria-label={tr("tools")}>
@@ -771,7 +786,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                         <span className="sd-lbl-row">
                           <span className="sd-lbl" id="pd-tilt">{tr("tilt")}</span>
                           <span className="sd-numwrap">
-                            <input type="number" className="sd-num" min="5" max="45" step="1" value={tilt} aria-labelledby="pd-tilt" onChange={(e) => e.target.value !== "" && putTilt(Math.min(45, Math.max(5, +e.target.value)))} />
+                            <NumInput className="sd-num" min="5" max="45" step="1" value={tilt} aria-labelledby="pd-tilt" onValue={putTilt} />
                             <span className="sd-unit">°</span>
                           </span>
                         </span>
@@ -795,7 +810,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                             <label className="sd-field">
                               <span className="sd-lbl">{tr("exact")}</span>
                               <span className="sd-numwrap">
-                                <input type="number" className="sd-num" min="-180" max="180" step="5" value={az} onChange={(e) => e.target.value !== "" && e.target.value !== "-" && putAz(Math.min(180, Math.max(-180, +e.target.value)))} />
+                                <NumInput className="sd-num" min="-180" max="180" step="5" value={az} onValue={putAz} />
                                 <span className="sd-unit">°</span>
                               </span>
                             </label>
@@ -819,7 +834,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                       <span className="sd-lbl-row">
                         <span className="sd-lbl" id="pd-gcr">{tr("gcr")}</span>
                         <span className="sd-numwrap">
-                          <input type="number" className="sd-num" min={TRACKER_GCR_RANGE[0]} max={TRACKER_GCR_RANGE[1]} step="0.01" value={gcr} aria-labelledby="pd-gcr" onChange={(e) => e.target.value !== "" && putGcr(Math.min(TRACKER_GCR_RANGE[1], Math.max(TRACKER_GCR_RANGE[0], +e.target.value)))} />
+                          <NumInput className="sd-num" min={TRACKER_GCR_RANGE[0]} max={TRACKER_GCR_RANGE[1]} step="0.01" value={gcr} aria-labelledby="pd-gcr" onValue={putGcr} />
                         </span>
                       </span>
                       <input type="range" className="sd-slider" min={TRACKER_GCR_RANGE[0]} max={TRACKER_GCR_RANGE[1]} step="0.01" value={gcr} aria-labelledby="pd-gcr" style={{ "--fill": ((gcr - TRACKER_GCR_RANGE[0]) / (TRACKER_GCR_RANGE[1] - TRACKER_GCR_RANGE[0])) * 100 + "%" }} onChange={(e) => putGcr(+e.target.value)} />
@@ -838,7 +853,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                     <span className="sd-lbl-row">
                       <span className="sd-lbl" id="pd-sb">{tr("setback")}</span>
                       <span className="sd-numwrap">
-                        <input type="number" className="sd-num" min="0" max="30" value={setback} aria-labelledby="pd-sb" onChange={(e) => e.target.value !== "" && putSetback(Math.min(30, Math.max(0, +e.target.value)))} />
+                        <NumInput className="sd-num" min="0" max="30" value={setback} aria-labelledby="pd-sb" onValue={putSetback} />
                         <span className="sd-unit">m</span>
                       </span>
                     </span>

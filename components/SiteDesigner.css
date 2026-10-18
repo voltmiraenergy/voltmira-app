@@ -335,7 +335,11 @@ html[data-theme="dark"] .app .sd-shell { --sd-on-green: #07130D; }
   .app .sd-metrics > div { padding: 6px 8px; }
   .app .sd-metrics dd { font-size: 13px; }
   .app .sd-apply { min-height: 50px; }
-  .app .sd-hint { top: auto; bottom: 66px; }
+  .app .sd-hint { top: auto; bottom: 10px; }
+  /* while a tool is on, its hint takes the bottom of the map: the chips and zoom step aside (pinch zooms) */
+  .app .sd-stage.tooling .sd-mapctl, .app .sd-stage.tooling .leaflet-control-zoom { display: none; }
+  /* the pinned result keeps to the numbers and the action; the line on free places waits for a wider screen */
+  .app .sd-result > .sd-help { display: none; }
   .app .sd-tools { top: 10px; }
   .app .sd-tool { height: 42px; padding: 0 11px; font-size: 13px; }
   .app .sd-select, .app .sd-num { font-size: 16px; }

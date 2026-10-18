@@ -33,8 +33,9 @@ import { loadGoogleSatelliteLayer } from "../lib/googleSatellite.js";
 import { tilesAround, postTiles } from "../lib/tileWarm.js";
 
 const SAT_ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-import { fitPanels, compassLabel, project, polygonAreaM2, facingFromShape, fitOptions, limitPanels } from "../lib/roofLayout.js";
+import { fitPanels, compassLabel, project, polygonAreaM2, slopeAreaM2, facingFromShape, fitOptions, limitPanels } from "../lib/roofLayout.js";
 import { drawReadout } from "./drawReadout.js";
+import NumInput from "./NumInput.jsx";
 import { PANELS, findPanel, recommendPanel } from "../lib/supplierCatalog.js";
 import { designCheck } from "../lib/designCheck.js";
 import { SOLAR_SEASON, effectiveConsumption } from "@voltmira/engine";
@@ -56,7 +57,7 @@ const TX = {
   t_edit: { en: "Adjust shapes", ro: "Ajustează forme", ru: "Изменить формы", uk: "Змінити форми" },
   h_plane: { en: "Click each corner of this side of the roof. Click the first corner again to close it.", ro: "Apasă pe fiecare colț al acestei părți de acoperiș. Apasă din nou pe primul colț ca să închizi forma.", ru: "Щёлкните по каждому углу ската. Щёлкните по первому углу ещё раз, чтобы замкнуть контур.", uk: "Клацніть по кожному куту схилу. Клацніть по першому куту ще раз, щоб замкнути контур." },
   h_obstacle: { en: "Click around the chimney, roof window or dormer. Click the first point again to close it.", ro: "Apasă în jurul coșului, ferestrei de mansardă sau lucarnei. Apasă din nou pe primul punct ca să închizi forma.", ru: "Обведите дымоход, мансардное или слуховое окно. Щёлкните по первой точке, чтобы замкнуть контур.", uk: "Обведіть димар, мансардне чи слухове вікно. Клацніть по першій точці, щоб замкнути контур." },
-  h_tree: { en: "Press on the trunk and drag out to the edge of the crown.", ro: "Apasă pe trunchi și trage până la marginea coroanei.", ru: "Нажмите на ствол и потяните до края кроны.", uk: "Натисніть на стовбур і потягніть до краю крони." },
+  h_tree: { en: "Click the trunk, then click the edge of the crown.", ro: "Apasă pe trunchi, apoi pe marginea coroanei.", ru: "Нажмите на ствол, затем на край кроны.", uk: "Натисніть на стовбур, потім на край крони." },
   h_measure: { en: "Click two points to measure the distance between them.", ro: "Apasă pe două puncte ca să măsori distanța dintre ele.", ru: "Щёлкните по двум точкам, чтобы измерить расстояние.", uk: "Клацніть по двох точках, щоб виміряти відстань." },
   h_measured: { en: "{d} m between the two points. Click two more to measure again.", ro: "{d} m între cele două puncte. Apasă pe alte două ca să măsori din nou.", ru: "{d} м между точками. Щёлкните ещё две, чтобы измерить снова.", uk: "{d} м між точками. Клацніть ще дві, щоб виміряти знову." },
   h_marker: { en: "Pick what it is, then click where it sits.", ro: "Alege ce este, apoi apasă unde se află.", ru: "Выберите, что это, и щёлкните, где оно находится.", uk: "Виберіть, що це, і клацніть, де воно розташоване." },
@@ -487,7 +488,7 @@ export default function SiteDesigner({
     function mirror() {
       setShapes({
         planes: [...planeLayers.current.entries()].map(([id, l]) => ({
-          id, tilt: l._sdTilt, az: l._sdAzimuth, roofType: l._sdRoofType, guessed: !!l._sdAzGuess, area: polygonAreaM2(ringToLatLon(l)),
+          id, tilt: l._sdTilt, az: l._sdAzimuth, roofType: l._sdRoofType, guessed: !!l._sdAzGuess, area: slopeAreaM2(ringToLatLon(l), l._sdTilt ?? 35),
         })),
         obstacles: [...obstacleLayers.current.entries()].map(([id, l]) => ({ id, kind: l._sdObstacleKind })),
         markers: [...markerLayers.current.entries()].map(([id, m]) => ({ id, type: m._sdMarkerType })),
@@ -586,7 +587,7 @@ export default function SiteDesigner({
       if (next === "plane" || next === "obstacle") {
         pendingKind.current = next;
         stopReadout = drawReadout(map, (m, a) => readoutText.current?.(m, a) || "");
-        map.pm.enableDraw("Polygon", { pathOptions: next === "plane" ? PLANE_ON : OBSTACLE_STYLE, snappable: true, snapDistance: 14, allowSelfIntersection: false, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
+        map.pm.enableDraw("Polygon", { pathOptions: next === "plane" ? PLANE_ON : OBSTACLE_STYLE, snappable: true, snapDistance: 8, allowSelfIntersection: false, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
       } else if (next === "tree") {
         map.pm.enableDraw("Circle", { pathOptions: TREE_STYLE, snappable: true });
       } else if (next === "measure" || next === "marker") {
@@ -629,7 +630,7 @@ export default function SiteDesigner({
       mirror();
       // a slider sends many small moves: save and remember the last one
       clearTimeout(commitTimer.current);
-      commitTimer.current = setTimeout(() => commit({ geometry: false }), 280);
+      commitTimer.current = setTimeout(() => { commitTimer.current = null; commit({ geometry: false }); }, 280);
     }
     function updateObstacle(id, kind) {
       const l = obstacleLayers.current.get(id);
@@ -642,7 +643,7 @@ export default function SiteDesigner({
       showDimensionsRef.current = on;
       renderDimensionLabels();
     }
-    api.current = { ...api.current, undo, redo, startTool, endTool, removeShape, focusShape, recenter, updatePlane, updateObstacle, restyle, setDimensions, snapshotShapes, scheduleLayout };
+    api.current = { ...api.current, commitNow: () => commit({ geometry: false }), undo, redo, startTool, endTool, removeShape, focusShape, recenter, updatePlane, updateObstacle, restyle, setDimensions, snapshotShapes, scheduleLayout };
 
     async function init() {
       // leaflet-geoman's bundle expects a global `L` (it was built to run after
@@ -758,7 +759,8 @@ export default function SiteDesigner({
     return () => {
       cancelled = true;
       clearTimeout(layoutTimer.current);
-      clearTimeout(commitTimer.current);
+      // closed within a moment of a change: save it now rather than drop it
+      if (commitTimer.current) { clearTimeout(commitTimer.current); commitTimer.current = null; try { api.current.commitNow?.(); } catch { /* the map is already gone */ } }
       mapRef.current?.remove();
       mapRef.current = null;
       planeLayers.current.clear();
@@ -781,7 +783,8 @@ export default function SiteDesigner({
   useEffect(() => {
     selectedRef.current = selectedId;
     api.current.restyle?.();
-    if (selectedId) document.getElementById("sd-item-" + selectedId)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    // on a phone the cards sit under the map: scrolling to one would push the map off screen
+    if (selectedId && !window.matchMedia("(max-width: 860px)").matches) document.getElementById("sd-item-" + selectedId)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [selectedId]);
 
   // Fits the chosen module into every drawn side, skipping every obstacle,
@@ -805,13 +808,14 @@ export default function SiteDesigner({
     for (const [id, layer] of planeLayers.current) {
       const polygon = ringToLatLon(layer);
       // Portrait: the panel's long side runs up the slope, its short side along the ridge.
-      fits.push({ id, layer, polygon, azimuthDeg: layer._sdAzimuth ?? 0, ...fitPanels(polygon, obstaclePolys, h, w, opts) });
+      // on the real slope: the outline is seen from above, so a pitched side holds more rows than it looks
+      fits.push({ id, layer, polygon, azimuthDeg: layer._sdAzimuth ?? 0, ...fitPanels(polygon, obstaclePolys, h, w, { ...opts, tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0 }) });
     }
     // only as many as chosen, the sides facing nearest south first; the rest stay as faint outlines
     for (const { id, layer, polygon, panels, count, rows, spare } of limitPanels(fits, s.fillCount)) {
       totalCount += count;
       fitCount += count + spare.length;
-      const areaM2 = polygonAreaM2(polygon);
+      const areaM2 = slopeAreaM2(polygon, layer._sdTilt ?? 35);
       roofAreaM2 += areaM2;
       const [clat, clon] = centroidOf(polygon);
       perPlane.push({ id, tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0, roofType: layer._sdRoofType || "tile", lat: clat, lon: clon, count, areaM2 });
@@ -850,14 +854,22 @@ export default function SiteDesigner({
   // redo, Delete removes what is selected. Never while typing in a field.
   useEffect(() => {
     function onKey(e) {
+      const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(e.target?.tagName || "");
       if (e.key === "Escape") {
         e.preventDefault();
-        if (toolRef.current) api.current.endTool?.();
+        // in a field, Esc leaves the field; it never throws the whole designer away
+        if (typing) e.target.blur();
+        else if (toolRef.current) api.current.endTool?.();
         else onCloseRef.current?.();
         return;
       }
-      if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target?.tagName || "")) return;
+      if (typing) return;
       const k = e.key.toLowerCase();
+      // while an outline is being drawn, Ctrl+Z takes back its last corner, not the shape before it
+      const draw = mapRef.current?.pm?.Draw?.Polygon;
+      if ((e.ctrlKey || e.metaKey) && k === "z" && !e.shiftKey && toolRef.current && draw?._enabled && draw._layer?.getLatLngs?.().length) {
+        e.preventDefault(); draw._removeLastVertex?.(); return;
+      }
       if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); if (e.shiftKey) api.current.redo?.(); else api.current.undo?.(); }
       else if ((e.ctrlKey || e.metaKey) && k === "y") { e.preventDefault(); api.current.redo?.(); }
       else if ((e.key === "Delete" || e.key === "Backspace") && selectedRef.current && !toolRef.current) { e.preventDefault(); api.current.removeShape?.(selectedRef.current); }
@@ -975,8 +987,8 @@ export default function SiteDesigner({
               <span className="sd-lbl-row">
                 <span className="sd-lbl" id={"sd-pitch-" + pl.id}>{tr("pitch")}</span>
                 <span className="sd-numwrap">
-                  <input type="number" className="sd-num" min="0" max="60" step="1" value={pl.tilt} aria-labelledby={"sd-pitch-" + pl.id}
-                    onChange={(e) => e.target.value !== "" && api.current.updatePlane?.(pl.id, { tilt: +e.target.value })} />
+                  <NumInput className="sd-num" min="0" max="60" step="1" value={pl.tilt} aria-labelledby={"sd-pitch-" + pl.id}
+                    onValue={(v) => api.current.updatePlane?.(pl.id, { tilt: v })} />
                   <span className="sd-unit">°</span>
                 </span>
               </span>
@@ -1042,7 +1054,7 @@ export default function SiteDesigner({
 
         <div className="sd-body">
           {/* ------------------------------------------------------ map */}
-          <div className="sd-stage" ref={stageRef}>
+          <div className={"sd-stage" + (tool ? " tooling" : "")} ref={stageRef}>
             <div ref={mapEl} className="sd-map" />
             {ready && (
               <div className="sd-tools" role="toolbar" aria-label={tr("tools")}>
@@ -1235,8 +1247,7 @@ export default function SiteDesigner({
                       <span className="sd-lbl-row">
                         <span className="sd-lbl" id="sd-fill-own">{tr("fillOwnLbl")}</span>
                         <span className="sd-numwrap">
-                          <input type="number" className="sd-num" min="1" max="2000" step="1" value={fillOwn || ""} aria-labelledby="sd-fill-own"
-                            onChange={(e) => setFillOwn(e.target.value === "" ? 0 : clampNum(e.target.value, 1, 2000))} />
+                          <NumInput className="sd-num" min="1" max="2000" step="1" value={fillOwn || ""} aria-labelledby="sd-fill-own" onValue={(v) => setFillOwn(Math.round(v))} />
                         </span>
                       </span>
                     )}
@@ -1264,7 +1275,7 @@ export default function SiteDesigner({
                     <span className="sd-lbl-row">
                       <span className="sd-lbl" id="sd-setback">{tr("setback")}</span>
                       <span className="sd-numwrap">
-                        <input type="number" className="sd-num" min="0" max="100" value={setbackCm} onChange={(e) => setSetbackCm(clampNum(e.target.value, 0, 100))} aria-labelledby="sd-setback" />
+                        <NumInput className="sd-num" min="0" max="100" value={setbackCm} onValue={setSetbackCm} aria-labelledby="sd-setback" />
                         <span className="sd-unit">cm</span>
                       </span>
                     </span>
@@ -1274,15 +1285,15 @@ export default function SiteDesigner({
                     <summary><ChevronDown size={17} aria-hidden="true" />{tr("more")}</summary>
                     <div className="sd-grid2">
                       <label className="sd-field"><span className="sd-lbl">{tr("rowGap")} (cm)</span>
-                        <input type="number" className="sd-num wide" min="0" max="20" value={rowSpacingCm} onChange={(e) => setRowSpacingCm(clampNum(e.target.value, 0, 20))} /></label>
+                        <NumInput className="sd-num wide" min="0" max="20" value={rowSpacingCm} onValue={setRowSpacingCm} /></label>
                       <label className="sd-field"><span className="sd-lbl">{tr("colGap")} (cm)</span>
-                        <input type="number" className="sd-num wide" min="0" max="20" value={colSpacingCm} onChange={(e) => setColSpacingCm(clampNum(e.target.value, 0, 20))} /></label>
+                        <NumInput className="sd-num wide" min="0" max="20" value={colSpacingCm} onValue={setColSpacingCm} /></label>
                       <label className="sd-field"><span className="sd-lbl">{tr("blockW")} (m)</span>
-                        <input type="number" className="sd-num wide" min="0" max="30" step="0.5" value={clusterMaxW} onChange={(e) => setClusterMaxW(clampNum(e.target.value, 0, 30))} /></label>
+                        <NumInput className="sd-num wide" min="0" max="30" step="0.5" value={clusterMaxW} onValue={setClusterMaxW} /></label>
                       <label className="sd-field"><span className="sd-lbl">{tr("blockH")} (m)</span>
-                        <input type="number" className="sd-num wide" min="0" max="30" step="0.5" value={clusterMaxH} onChange={(e) => setClusterMaxH(clampNum(e.target.value, 0, 30))} /></label>
+                        <NumInput className="sd-num wide" min="0" max="30" step="0.5" value={clusterMaxH} onValue={setClusterMaxH} /></label>
                       <label className="sd-field"><span className="sd-lbl">{tr("blockGap")} (m)</span>
-                        <input type="number" className="sd-num wide" min="0" max="10" step="0.1" value={clusterGap} onChange={(e) => setClusterGap(clampNum(e.target.value, 0, 10))} /></label>
+                        <NumInput className="sd-num wide" min="0" max="10" step="0.1" value={clusterGap} onValue={setClusterGap} /></label>
                       <p className="sd-help">{tr("blockHelp")}</p>
                     </div>
                   </details>
