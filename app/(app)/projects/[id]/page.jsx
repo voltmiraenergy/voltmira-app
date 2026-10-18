@@ -107,13 +107,26 @@ export default async function ProjectPage(props) {
     }
   }
 
+  // the grid file sent to the operator (docs/INTEGRATIONS.md): the latest
+  // submission with its history, and where each operator's package goes
+  // (an address set in the environment, else the test mode that only records)
+  let gridSub = { latest: null, events: [], needsDb: false, channels: { premier: process.env.GRID_EMAIL_PREMIER || "", rednord: process.env.GRID_EMAIL_REDNORD || "" } };
+  if (p.market === "MD" || !p.market) {
+    const { data: gs, error: gsErr } = await sb.from("grid_submissions").select("id, operator, channel, reference, status, checklist, note, created_at, updated_at").eq("project_id", params.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (gsErr && /grid_submissions|does not exist|schema cache/i.test(gsErr.message || "")) gridSub.needsDb = true;
+    if (gs) {
+      const { data: ev } = await sb.from("grid_submission_events").select("id, from_status, to_status, source, note, created_at").eq("submission_id", gs.id).order("created_at", { ascending: true }).limit(50);
+      gridSub = { ...gridSub, latest: gs, events: ev || [] };
+    }
+  }
+
   return <Editor initial={p} engineSettings={E} team={team || []} catalog={catalog || []}
     canEditTechnical={canEditTech}
     prosumerLimitKw={Number(co?.prosumer_limit_kw ?? 10.8)} lang={normLang(co?.lang)} currency={co?.currency || "EUR"}
     proposalSentAt={prop?.created_at || null} companyName={co?.name || "VoltMira"} companyLogo={co?.logo_url || ""}
     companyLegal={{ legal_name: co?.legal_name || "", reg_no: co?.reg_no || "", legal_address: co?.legal_address || "", iban: co?.iban || "", install_warranty_years: co?.install_warranty_years || null,
       contract_template_override: wl?.contract_template_override || "", commissioning_template_override: wl?.commissioning_template_override || "" }}
-    signed={signed} calibration={calibration} loans={loans} vatRatePct={Number(co?.vat_rate) || 0} cnedOn={cnedEnabled()} />;
+    signed={signed} calibration={calibration} loans={loans} vatRatePct={Number(co?.vat_rate) || 0} cnedOn={cnedEnabled()} gridSub={gridSub} />;
 }
 
 /**
