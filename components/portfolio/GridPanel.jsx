@@ -23,6 +23,7 @@ import { normalizePlant } from "../../lib/plantFinance.js";
 import { plt } from "../../lib/plantText.js";
 import { namesList } from "../../lib/portfolioDisplay.js";
 import { num as fnum, dscr, pct } from "../../lib/portfolioFormat.js";
+import NumInput from "../NumInput.jsx";
 
 const GridMap = dynamic(() => import("./GridMap.jsx"), { ssr: false, loading: () => <div className="gr-map" /> });
 const today = () => new Date().toISOString().slice(0, 10);
@@ -191,6 +192,40 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
               </div>
             )}
 
+            {/* ---- the user's figures per voltage */}
+            <div className="gr-costs">
+              <h5>{plt("cs_h", lang)}</h5>
+              <div className="pf-scroll">
+                <table className="pf-t gr-ct">
+                  <thead><tr><th /><th>{plt("cs_perkm", lang)}</th><th>{plt("cs_sub", lang)}</th><th>{plt("cs_tap", lang)}</th><th>{plt("cs_cond", lang)}</th></tr></thead>
+                  <tbody>
+                    {GRID_CLASSES.map((c) => (
+                      <tr key={c}>
+                        <th scope="row"><i className={"gr-k gr-k-" + c} />{clsName(c)}</th>
+                        {["perKm", "sub", "tap"].map((k) => (
+                          <td key={k}><input className="input" type="number" inputMode="decimal" min="0" step="1000" aria-label={`${clsName(c)}: ${plt("cs_" + (k === "perKm" ? "perkm" : k), lang)}`}
+                            value={raw.grid?.costs?.[c]?.[k] ?? ""} onChange={(e) => setCost(c, k, e.target.value)} /></td>
+                        ))}
+                        <td>
+                          <select className="input" aria-label={`${clsName(c)}: ${plt("cs_cond", lang)}`} value={raw.grid?.conductors?.[c] || DEFAULT_CONDUCTOR[c]} onChange={(e) => setConductor(c, e.target.value)}>
+                            {Object.keys(CONDUCTORS).map((k) => <option key={k} value={k}>{k}, {fnum(circuitMw(c === "hv" ? 330 : Number(c), k), lang, 0)} MW</option>)}
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="pl-grid">
+                <div className="field">
+                  <label htmlFor={`gre-rf-${id}`}>{plt("est_route", lang)}</label>
+                  <NumInput id={`gre-rf-${id}`} className="input" inputMode="decimal" step="0.05" min="1" max="3"
+                    value={raw.grid?.routeFactor ?? ROUTE_FACTOR} onValue={(v) => setGrid((prev) => ({ ...prev, routeFactor: v }))} />
+                  <small className="pf-hint">{plt("est_route_h", lang)}</small>
+                </div>
+              </div>
+            </div>
+
             {/* ---- the options compared */}
             {cmp && cmp.options.length > 0 && (
               <div className="gr-cmp">
@@ -222,7 +257,10 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
                         <div className="gr-oc-a">
                           {inUse && stale ? <button type="button" className="btn primary sm" onClick={() => apply(o)}>{plt("ox_update", lang)}</button>
                             : inUse ? <span className="gr-inuse">{plt("ox_in_use", lang)}</span>
-                            : <button type="button" className={"btn sm" + (best ? " primary" : " ghost")} disabled={!o.effect} onClick={() => apply(o)}>{plt("ox_use", lang)}</button>}
+                            : <>
+                              {!o.effect && <small className="pf-hint gr-oc-why">{plt("ox_disabled", lang)}</small>}
+                              <button type="button" className={"btn sm" + (best ? " primary" : " ghost")} disabled={!o.effect} onClick={() => apply(o)}>{plt("ox_use", lang)}</button>
+                            </>}
                         </div>
                       </li>
                     );
@@ -234,40 +272,6 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
                 <p className="pf-hint">{plt("ox_note", lang)}</p>
               </div>
             )}
-
-            {/* ---- the user's figures per voltage */}
-            <div className="gr-costs">
-              <h5>{plt("cs_h", lang)}</h5>
-              <div className="pf-scroll">
-                <table className="pf-t gr-ct">
-                  <thead><tr><th /><th>{plt("cs_perkm", lang)}</th><th>{plt("cs_sub", lang)}</th><th>{plt("cs_tap", lang)}</th><th>{plt("cs_cond", lang)}</th></tr></thead>
-                  <tbody>
-                    {GRID_CLASSES.map((c) => (
-                      <tr key={c}>
-                        <th scope="row"><i className={"gr-k gr-k-" + c} />{clsName(c)}</th>
-                        {["perKm", "sub", "tap"].map((k) => (
-                          <td key={k}><input className="input" type="number" inputMode="decimal" min="0" step="1000" aria-label={`${clsName(c)}: ${plt("cs_" + (k === "perKm" ? "perkm" : k), lang)}`}
-                            value={raw.grid?.costs?.[c]?.[k] ?? ""} onChange={(e) => setCost(c, k, e.target.value)} /></td>
-                        ))}
-                        <td>
-                          <select className="input" aria-label={`${clsName(c)}: ${plt("cs_cond", lang)}`} value={raw.grid?.conductors?.[c] || DEFAULT_CONDUCTOR[c]} onChange={(e) => setConductor(c, e.target.value)}>
-                            {Object.keys(CONDUCTORS).map((k) => <option key={k} value={k}>{k}, {fnum(circuitMw(c === "hv" ? 330 : Number(c), k), lang, 0)} MW</option>)}
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="pl-grid">
-                <div className="field">
-                  <label htmlFor={`gre-rf-${id}`}>{plt("est_route", lang)}</label>
-                  <input id={`gre-rf-${id}`} className="input" type="number" inputMode="decimal" step="0.05" min="1" max="3"
-                    value={raw.grid?.routeFactor ?? ROUTE_FACTOR} onChange={(e) => setGrid((prev) => ({ ...prev, routeFactor: e.target.value === "" ? "" : +e.target.value }))} />
-                  <small className="pf-hint">{plt("est_route_h", lang)}</small>
-                </div>
-              </div>
-            </div>
 
             {/* ---- what the route crosses */}
             {chosenOpt && (
@@ -315,7 +319,7 @@ export default function GridPanel({ id, lang = "en", raw, hasSite, money, E, fin
           </div>
         </div>
       )}
-      {g && <p className="pf-hint">{plt("grid_caveat", lang)} {plt("grid_credit", lang, { date: g.fetched })}</p>}
+      {g && <p className="pf-hint">{plt("grid_caveat", lang)} {g.osmAsOf ? plt("grid_credit_copy", lang, { date: g.osmAsOf }) : plt("grid_credit", lang, { date: g.fetched })}</p>}
     </section>
   );
 }

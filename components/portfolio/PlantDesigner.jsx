@@ -21,7 +21,7 @@ import { X, Undo2, Redo2, Pentagon, Ban, Ruler, Move, LocateFixed, Trash2, Check
 import { labelLayer, LABEL_TILES, namesPref, setNamesPref } from "../../lib/mapLabels.js";
 import { loadGoogleSatelliteLayer } from "../../lib/googleSatellite.js";
 import { tilesAround, postTiles } from "../../lib/tileWarm.js";
-import { layoutInputs, layoutPlots } from "../../lib/plantLayout.js";
+import { layoutInputs, layoutPlots, turbinesAroundField } from "../../lib/plantLayout.js";
 import { rotorDiameterM, turbineAt } from "../../lib/windLayout.js";
 import { drawReadout } from "../drawReadout.js";
 import NumInput from "../NumInput.jsx";
@@ -95,6 +95,7 @@ const TX = {
   resultEmpty: { en: "Draw a plot and the tables that fit on it appear here.", ro: "Desenează o parcelă și aici apar mesele care încap pe ea.", ru: "Нарисуйте участок, и здесь появятся столы, которые на нём помещаются.", uk: "Намалюйте ділянку, і тут з'являться столи, що на ній вміщуються." },
   tables: { en: "tables", ro: "mese", ru: "столов", uk: "столів" },
   need: { en: "The plant needs {need} MWp; the plots hold {fit} MWp on {ha} ha.", ro: "Centrala are nevoie de {need} MWp; parcelele cuprind {fit} MWp pe {ha} ha.", ru: "Станции нужно {need} МВтп; участки вмещают {fit} МВтп на {ha} га.", uk: "Станції потрібно {need} МВтп; ділянки вміщують {fit} МВтп на {ha} га." },
+  shortTracker: { en: "The plots are too small: {miss} MWp does not fit. Add a plot, raise the ground cover or lower the distance from the boundary.", ro: "Parcelele sunt prea mici: {miss} MWp nu încap. Adaugă o parcelă, mărește gradul de acoperire sau micșorează distanța față de limită.", ru: "Участки малы: {miss} МВтп не помещается. Добавьте участок, увеличьте коэффициент покрытия или уменьшите отступ.", uk: "Ділянки замалі: {miss} МВтп не вміщується. Додайте ділянку, збільште коефіцієнт покриття або зменште відступ." },
   short: { en: "The plots are too small: {miss} MWp does not fit. Add a plot, lower the tilt or the distance from the boundary.", ro: "Parcelele sunt prea mici: {miss} MWp nu încap. Adaugă o parcelă, micșorează înclinarea sau distanța față de limită.", ru: "Участки малы: {miss} МВтп не помещается. Добавьте участок, уменьшите наклон или отступ.", uk: "Ділянки замалі: {miss} МВтп не вміщується. Додайте ділянку, зменште нахил або відступ." },
   grid: { en: "{n} inverter stations, about {m} m of medium-voltage cable to the connection point.", ro: "{n} stații de invertoare, circa {m} m de cablu de medie tensiune până la punctul de racordare.", ru: "{n} инверторных станций, около {m} м кабеля среднего напряжения до точки присоединения.", uk: "{n} інверторних станцій, близько {m} м кабелю середньої напруги до точки приєднання." },
   turbinesDrag: { en: "Drag a turbine to move it; the tables make way round its keep-out circle.", ro: "Trage o turbină ca s-o muți; mesele se retrag în jurul cercului ei de siguranță.", ru: "Перетащите турбину, чтобы передвинуть её; столы отступают от её защитного круга.", uk: "Перетягніть турбіну, щоб пересунути її; столи відступають від її захисного кола." },
@@ -237,6 +238,8 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   // the mounting (tilt, facing, or tracker and its ground-cover target) goes on the equipment list only once the user has set it here
   const mountTouched = useRef(false);
   const settingsTouched = useRef(false);
+  // a setting changed and not saved yet (the save waits for a slider to settle)
+  const settingsPending = useRef(false);
   const settingsRef = useRef({ tilt, az, mountKind, gcr, fmt, setback, shadeH });
   const onSaveRef = useRef(onSave);
   const onCloseRef = useRef(onClose);
@@ -452,7 +455,13 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       if (b) map.fitBounds(b, { padding: [40, 40], maxZoom: 18 });
       else if (site) map.setView([site.lat, site.lon], 16);
     }
-    function autoTurbines() { turbinesRef.current = null; commit(); }
+    // the turbines in two rows either side of the solar field, as a hybrid's sample is laid out:
+    // set inside the plots they would take the tables' land
+    function autoTurbines() {
+      const wind = baseRef.current.inputs.wind, plots = snapshot().plots.map((p) => p.ring);
+      turbinesRef.current = turbinesAroundField(plots, wind);
+      commit();
+    }
     function setExclKind(id, kind) {
       const l = exclLayers.current.get(id);
       if (!l) return;
@@ -572,6 +581,8 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
     return () => {
       cancelled = true;
       clearTimeout(timer.current);
+      // closed within a moment of a setting change: save it while the shapes are still here
+      if (settingsPending.current) { settingsPending.current = false; try { api.current.save?.(); } catch { /* nothing drawn to save */ } }
       mapRef.current?.remove();
       mapRef.current = null;
       plots.clear(); excl.clear();
@@ -597,7 +608,8 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
   // a setting moved: save it and lay the tables out again (a slider sends many small moves)
   useEffect(() => {
     if (!ready || !settingsTouched.current) return;
-    const id = setTimeout(() => { api.current.save?.(); api.current.run?.(); }, 220);
+    settingsPending.current = true;
+    const id = setTimeout(() => { settingsPending.current = false; api.current.save?.(); api.current.run?.(); }, 220);
     return () => clearTimeout(id);
   }, [tilt, az, mountKind, gcr, fmt, setback, shadeH, ready]);
 
@@ -877,7 +889,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                   </div>
                   {/* only what needs acting on stays pinned; the rest folds away so the
                       settings above keep their room on a laptop screen */}
-                  {s.short && <p className="sd-warn" role="alert">{tr("short", { miss: nf(Math.max(0, s.mwpNeed - s.mwpFit), 2) })}</p>}
+                  {s.short && <p className="sd-warn" role="alert">{tr(tracker ? "shortTracker" : "short", { miss: nf(Math.max(0, s.mwpNeed - s.mwpFit), 2) })}</p>}
                   {hasWind && s.turbinesShort && <p className="sd-warn" role="alert">{tr("turbinesShort", { n: s.turbineCount, need: s.needTurbines })}</p>}
                   <details className="sd-result-more">
                     <summary><ChevronRight size={15} aria-hidden="true" />{tr("details")}</summary>

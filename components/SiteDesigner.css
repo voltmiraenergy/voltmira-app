@@ -296,6 +296,8 @@ html[data-theme="dark"] .app .sd-shell { --sd-on-green: #07130D; }
 /* the pinned result never takes more than half the panel: the settings above keep their room */
 .app .sd-side { overflow: hidden; }
 .app .sd-result { max-height: 50%; overflow-y: auto; overscroll-behavior: contain; }
+/* when the result scrolls (Details open on a short screen) its action stays at the bottom, in reach */
+.app .sd-result .sd-apply { position: sticky; bottom: 0; z-index: 1; flex: none; box-shadow: 0 0 0 10px var(--paper-2), 0 -14px 14px -4px var(--paper-2); }
 .app .sd-result-more summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 13px; font-weight: 650; color: var(--muted); }
 .app .sd-result-more summary::-webkit-details-marker { display: none; }
 .app .sd-result-more summary:hover { color: var(--ink); }
