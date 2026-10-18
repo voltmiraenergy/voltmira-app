@@ -56,6 +56,8 @@ export default function ClientAudit({ inputs, assumptions: E, lang, currency = "
     // bill of materials, so the audit contradicted the headline proposal.
     battKwh: inputs.battKwh,
     costOverride: Number(inputs.costOverride) || 0,
+    // the export price of the tariff rule the offer was issued under (lib/offerInput.js)
+    ...(Number(inputs.feedOverride) > 0 ? { feedOverride: Number(inputs.feedOverride) } : {}),
     bomHasBattery: !!inputs.bomHasBattery,
   }), [inputs]);
 

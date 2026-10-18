@@ -68,6 +68,25 @@ const CSS = `
     background:var(--ink);color:#fff;
     display:flex;flex-direction:column;padding:0 14px 16px;
     position:sticky;top:0;height:100vh;z-index:40;
+    /* a short screen still reaches the sign-out at the bottom */
+    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent;
+  }
+  /* Desktop and laptop: the whole app a step smaller, so a normal screen shows
+     more of each page and the sidebar down to its sign-out. vh is zoomed too,
+     so the sidebar asks for 100vh / zoom to stay the screen's full height. */
+  @media (min-width: 1024px){
+    .app{--app-zoom:.9;zoom:var(--app-zoom);min-height:calc(100vh / var(--app-zoom))}
+    .sidebar{height:calc(100vh / var(--app-zoom))}
+  }
+  /* a short laptop screen: the sidebar's spacing tightens */
+  @media (min-width: 1024px) and (max-height: 820px){
+    .sidebar{padding-bottom:10px}
+    .logo{height:54px;margin-bottom:10px}
+    .sidebar .side-card .profile,.sidebar .side-credits,.sidebar .side-plan{padding-top:7px;padding-bottom:7px}
+    .sidebar .side-acts{margin-top:8px}
+    .sidebar .side-acts .side-theme{padding-top:8px;padding-bottom:8px}
+    .nav{gap:2px}
+    .nav a{padding-top:7px;padding-bottom:7px}
   }
   /* the logo exactly as on the homepage, on a light green band across the top
      of the sidebar: the app's own green tint (selected tabs, icon tiles), so it
@@ -133,6 +152,22 @@ const CSS = `
     color:var(--white-dim);background:var(--white-line);transition:color .15s,background .15s;
   }
   .side-theme:hover{color:#fff;background:rgba(255,255,255,.18)}
+  /* the sidebar's last line: the theme as an icon (sun or moon), then the sign-out */
+  /* the dashboard's loan applications (dashboard/LoanApps.jsx) */
+  .dx-loan-list{list-style:none;margin:0;padding:0;display:grid}
+  .dx-loan{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 2px;border-top:1px solid var(--line);text-decoration:none;color:inherit}
+  .dx-loan-list li:first-child .dx-loan{border-top:0}
+  .dx-loan-who{display:grid;gap:2px;min-width:0}
+  .dx-loan-who b{font-size:14px;color:var(--ink)}
+  .dx-loan-who small{font-size:12.5px;color:var(--muted)}
+  .dx-loan-st{flex:none;font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--paper);color:var(--ink-2)}
+  .dx-loan-st.s-approved,.dx-loan-st.s-funded{background:var(--green-tint);color:var(--green)}
+  .dx-loan-st.s-rejected,.dx-loan-st.s-failed{background:var(--red-tint,#F7E6E1);color:var(--red,#C4543B)}
+  .side-acts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;margin-top:10px;align-items:stretch}
+  .side-acts .side-theme{margin-top:0;width:auto;padding:10px 12px;justify-content:center}
+  .side-acts .side-theme-tx{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .side-acts .reset-link{margin-top:0;width:auto;display:flex;align-items:center;justify-content:center;padding:0 12px;border-radius:10px;
+    border:1px solid var(--white-line);font-size:13.5px;color:var(--white-dim);white-space:nowrap}
   .reset-link{
     display:block;width:100%;text-align:center;margin-top:10px;
     background:transparent;color:var(--white-faint);font-size:12px;font-weight:500;

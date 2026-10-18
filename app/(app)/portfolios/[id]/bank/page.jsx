@@ -22,6 +22,7 @@ import { supabaseServer } from "../../../../../lib/supabase.js";
 import { docCounts, ITEM_IDS } from "../../../../../lib/dealRoom.js";
 import CreditSummary from "./CreditSummary.jsx";
 import PrintButton from "../report/PrintButton.jsx";
+import CloseDoc from "../report/CloseDoc.jsx";
 import { PLANTS_KEY } from "../../../../../lib/portfolioModel.js";
 import { loadPackAccess } from "../../../../../lib/packAccess.js";
 import { currentUser } from "../../../../../lib/session.js";
@@ -55,7 +56,7 @@ export default async function BankPage(props) {
   return (
     <div className={"rp-wrap" + (pdf ? " is-pdf" : "")}>
       {!pdf && sp?.fallback === "1" && <p className="rp-fallback" role="status">{pt("r_pdf_fallback", lang)}</p>}
-      {!pdf && <div className="rp-bar"><PrintButton label={pt("r_print", lang)} /></div>}
+      {!pdf && <div className="rp-bar"><CloseDoc label={pt("r_close", lang)} href={`/portfolios/${id}`} /><PrintButton label={pt("r_print", lang)} /></div>}
       {!access.open && <p className="rp-draft" role="note">{bt("pk_ribbon", lang)}</p>}
       <CreditSummary model={model} lang={lang} company={d.co?.name || ""} date={date} money={money} fx={d.fx} todayKey={todayKey()} docCounts={counts} rid={rid} />
       <style>{printCss({ lang, title: `${name}, ${bt("title", lang)}, ${bt("rid", lang, { x: rid })}` })}</style>

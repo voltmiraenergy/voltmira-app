@@ -758,3 +758,93 @@
 .rf-jump { display: none; }
 @media (max-width: 899px) { .rf-jump { display: inline-flex; width: 100%; } }
 #rf-form-h { scroll-margin-top: 16px; }
+
+/* ---- support programmes frozen with the offer (SupportOffer.jsx) */
+.pp-sup { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; }
+.pp-sup-i { padding: 14px 16px; display: grid; gap: 6px; }
+.pp-sup-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.pp-sup-top b { font-size: 15.5px; color: var(--ink); }
+.pp-sup-st { font-size: 12.5px; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: var(--sunk); color: var(--text-2); }
+.pp-sup-i.is-ok .pp-sup-st { background: var(--green-tint); color: var(--green); }
+.pp-sup-amt { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.pp-sup-why { margin: 0; font-size: 13.5px; color: var(--muted); }
+.pp-sup-docs { font-size: 13.5px; color: var(--text-2); }
+.pp-sup-docs span { font-weight: 600; }
+.pp-sup-docs ul { margin: 4px 0 0; padding-left: 18px; }
+.pp-sup-total { margin: 12px 0 0; font-size: 14.5px; color: var(--ink); line-height: 1.6; }
+/* on its own line, a lowercase phrase ("până la 16.748 lei") starts with a capital */
+.pp-sup-amt::first-letter, .pp-sup-why::first-letter { text-transform: uppercase; }
+
+/* ---- a lender's portal (app/l/[token]) */
+.lp { max-width: 980px; padding-top: 28px; padding-bottom: 56px; display: grid; gap: 16px; }
+.lp-head { display: grid; gap: 8px; }
+.lp-langs { display: flex; gap: 10px; font-size: 13px; }
+.lp-langs a { color: var(--muted); text-decoration: none; font-weight: 600; }
+.lp-langs a[aria-current] { color: var(--ink); text-decoration: underline; }
+.lp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.lp-item { padding: 16px 18px; display: grid; gap: 10px; }
+.lp-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.lp-top b { font-size: 16px; color: var(--ink); }
+.lp-st { font-size: 12.5px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--sunk); color: var(--text-2); }
+.lp-st.s-approved, .lp-st.s-funded { background: var(--green-tint); color: var(--green); }
+.lp-st.s-rejected, .lp-st.s-failed { background: var(--red-tint); color: var(--red); }
+.lp-facts { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px 16px; font-size: 13.5px; }
+.lp-facts dt { color: var(--muted); font-size: 12px; }
+.lp-facts dd { margin: 0; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.lp-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--line); }
+.lp-row label { display: grid; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.lp-row select, .lp-row input { min-height: 40px; padding: 6px 10px; border: 1.5px solid var(--line-2); border-radius: 9px; font: inherit; background: var(--card); color: var(--ink); }
+.lp-row .pp-btn { min-height: 40px; padding: 0 18px; }
+.lp-msg { font-size: 13px; font-weight: 600; }
+.lp-msg.ok { color: var(--green); }
+.lp-msg.bad { color: var(--red); }
+.lp-final { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* ---- financing from partner banks (LoanCalculator.jsx) */
+.pp-lc-offers { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 14px; }
+.pp-lc-o { padding: 14px 16px; display: grid; gap: 3px; cursor: pointer; position: relative; border-width: 1.5px; }
+.pp-lc-o input { position: absolute; opacity: 0; pointer-events: none; }
+.pp-lc-o.on { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-tint); }
+.pp-lc-o:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+.pp-lc-o b { font-size: 15px; color: var(--ink); }
+.pp-lc-o span { font-size: 13px; color: var(--text-2); }
+.pp-lc-o .pp-lc-rate { font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+.pp-lc-calc { margin-top: 12px; padding: 16px 18px; display: grid; gap: 12px; }
+.pp-lc-term { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: var(--ink); }
+.pp-lc-term select { min-height: 40px; padding: 6px 10px; border: 1.5px solid var(--line-2); border-radius: 9px; font: inherit; background: var(--card); color: var(--ink); }
+.pp-lc-figs { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+@media (min-width: 640px) { .pp-lc-figs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.pp-lc-figs > div { background: var(--card); padding: 12px 14px; display: grid; gap: 3px; }
+.pp-lc-figs dt { font-size: 12px; font-weight: 600; color: var(--muted); }
+.pp-lc-figs dd { margin: 0; font: 700 19px/1.2 var(--f-d); color: var(--ink); font-variant-numeric: tabular-nums; }
+.pp-lc-figs > div.good dd { color: var(--green); }
+.pp-lc-plus { margin: 0; font-size: 14px; font-weight: 600; color: var(--green); }
+.pp-lc-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.pp-lc-yours { margin: 8px 0 0; padding: 10px 14px; border-radius: 12px; background: var(--green-tint); color: var(--green); font-size: 14px; font-weight: 600; }
+.pp-lc-form { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.pp-lc-form h3 { margin: 0; font-size: 16px; }
+.pp-lc-form label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.pp-lc-form input:not([type=checkbox]) { min-height: 44px; padding: 8px 12px; border: 1.5px solid var(--line-2); border-radius: 10px; font: inherit; font-size: 16px; background: var(--card); color: var(--ink); }
+.pp-lc-form .pp-lc-consent { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; font-size: 13px; line-height: 1.5; color: var(--text-2); }
+.pp-lc-consent input { margin-top: 3px; width: 18px; height: 18px; flex: none; }
+.pp-lc-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.pp-lc-acts .pp-btn { min-height: 46px; }
+.pp-lc-err { margin: 0; font-size: 13.5px; color: var(--red); }
+
+/* ---- the qualified signature: the button under click-to-sign, the level line,
+   and the simulated MSign page (app/sign/mock) */
+.pp-qs { margin-top: 12px; display: grid; gap: 8px; }
+.pp-qs-or { margin: 0; font-size: 12.5px; color: var(--muted); text-align: center; }
+.pp-qs-note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); text-align: center; }
+.pp-qs-test { margin: 0; font-size: 12px; line-height: 1.5; color: var(--amber-ink); text-align: center; font-weight: 600; }
+.pp-lvl { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.pp-lvl.is-sim { color: var(--amber-ink); }
+.qm { max-width: 560px; padding-top: 32px; padding-bottom: 56px; display: grid; gap: 16px; }
+.qm-warn { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--amber-tint); color: var(--amber-ink); border: 1.5px solid var(--amber); font-size: 14px; font-weight: 600; line-height: 1.5; }
+.qm-card { padding: 18px; display: grid; gap: 12px; }
+.qm-facts { margin: 0; display: grid; gap: 8px; font-size: 13.5px; }
+.qm-facts dt { color: var(--muted); font-size: 12px; }
+.qm-facts dd { margin: 0; color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+.qm-hash { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-weight: 500; font-size: 12.5px; }
+.qm-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.qm-btns .pp-btn { flex: 1 1 160px; }

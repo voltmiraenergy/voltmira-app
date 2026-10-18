@@ -21,6 +21,9 @@ doubt changes nothing.
 | `add-client-kind.sql` | Who the client on a quote is (`projects.client_kind`: household, sme, company), for the support programmes | in the file above |
 | `add-deal-room.sql` | The deal room: a private `deal-docs` bucket, documents on the checklist, read-only bank links, the bank's questions and the access log (`deal_documents`, `deal_links`, `deal_questions`, `deal_views`) | Already run (2026-10-04), except the two alert columns on `deal_links` (`notify`, `notified_at`) added after |
 | `add-deadline-alerts.sql` | The weekly permits-and-deadlines email: a per-company switch (`companies.notify_deadlines`, on by default) | **Not run yet** |
+| `add-tariffs-subsidies.sql` | Versioned tariff rules (`tariff_rules`), versioned support programmes (`subsidy_programs`), the append-only `audit_log`, and `projects.client_profile`; seeds version 1 equal to the code. Until run, the app uses the same values from code (`lib/tariffSeed.js`, `lib/subsidySeed.js`) and the admin screens say so | **Not run yet** |
+| `add-financing.sql` | Green financing: `lenders` (server only), `financing_offers`, `loan_applications`, the append-only `loan_status_events` and `commission_ledger`; sample MAIB, Moldindconbank and OTP offers. Runs on its own; best after `add-tariffs-subsidies.sql`, which adds the audit log | **Not run yet** |
+| `add-integrations.sql` | Local integrations: `qualified_signatures` and `proposals.signature_level`, `efactura_submissions`, `payments`, `export_mappings` (the 1C column mapping), `grid_submissions` and the append-only `grid_submission_events`. Runs on its own; best after `add-tariffs-subsidies.sql`, which adds the audit log | **Not run yet** |
 | `add-referral-leads.sql` | A lead can be "recommended by a client" (`leads.source = 'referral'`, from the client's page `/r/[code]`); until run, such leads are saved as manual with the note | **Not run yet** |
 
 Do not run `fix-profiles-rls.sql` on its own. It removes the recursion but
@@ -53,6 +56,9 @@ leaves out the guard; `lock-down-2026-09-28.sql` does both and replaces it.
 7. `add-deal-room.sql` (the deal room, with its alert columns)
 8. `add-deadline-alerts.sql` (the weekly deadlines email switch)
 9. `add-referral-leads.sql` (leads recommended by a client)
+10. `add-tariffs-subsidies.sql` (versioned tariffs, support programmes, audit log)
+11. `add-financing.sql` (lenders, offers, loan applications, commissions)
+12. `add-integrations.sql` (qualified signatures, e-Factura, payments, 1C mapping, grid submissions)
 
 ## Checking what a database already has
 

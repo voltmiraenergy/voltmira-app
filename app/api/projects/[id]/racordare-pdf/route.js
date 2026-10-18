@@ -9,11 +9,8 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "../../../../../lib/supabase.js";
 import { currentUser, currentCompany } from "../../../../../lib/session.js";
-import { fillRacordarePdf } from "../../../../../lib/racordarePdf.js";
-import { gridApplicant } from "../../../../../lib/gridDetails.js";
-import { fillRedNordPdf } from "../../../../../lib/racordareRedNordPdf.js";
+import { fillApplication, applicationFileName } from "../../../../../lib/racordareFill.js";
 import { suggestOperator, OPERATORS } from "../../../../../lib/mdGrid.js";
-import { designCheck } from "../../../../../lib/designCheck.js";
 import { gridFileDecision, creditsPaywallOn } from "../../../../../lib/credits.js";
 import { creditBalance, paidBefore, spendCredits } from "../../../../../lib/creditAccess.js";
 
@@ -53,34 +50,12 @@ export async function GET(req, props) {
   // The title usually names the town ("Casa Rusu, Bălți") when the address is short.
   const op = OPERATORS[want] ? want : OPERATORS[saved] ? saved : suggestOperator([project.address, project.title].filter(Boolean).join(", "));
 
-  // the applicant's saved details (GridDetails.jsx), with the quote filling the rest
-  const applicant = gridApplicant(project.install_progress?.gridFile?.details, project);
-
   try {
-    let bytes;
-    if (op === "rednord") {
-      // The chosen inverter's AC power and phases, when the bill of materials
-      // names one; otherwise the system size, and the voltage left to the installer.
-      const bom = Array.isArray(project.bom) ? project.bom : [];
-      const dc = designCheck({ bom, kw: Number(project.kw) || 0, battKwh: project.batt ? Number(project.batt_kwh) || 0 : 0, market: "MD" });
-      const known = Boolean(dc.fromBom?.inverter);
-      bytes = await fillRedNordPdf({
-        applicant,
-        clientName: project.client_name, clientEmail: project.client_email || "",
-        siteAddress: project.address,
-        productionKw: known ? dc.acKw : project.kw,
-        hasBattery: !!project.batt, battKwh: project.batt_kwh,
-        phases: known ? dc.ph : null,
-      });
-    } else {
-      bytes = await fillRacordarePdf({
-        applicant, systemKw: project.kw, hasBattery: !!project.batt, battKwh: project.batt_kwh,
-      });
-    }
+    const bytes = await fillApplication(project, op);
     // taken only once the file exists, so a failed fill costs nothing
     if (spend && !(await spendCredits(project.company_id, spend, "grid_file", project.id)))
       return NextResponse.redirect(new URL("/settings?tab=plan&need=grid", req.url));
-    const file = op === "rednord" ? "cerere-racordare-red-nord.pdf" : "cerere-racordare-premier-energy.pdf";
+    const file = applicationFileName(op);
     return new NextResponse(bytes, {
       headers: {
         "Content-Type": "application/pdf",

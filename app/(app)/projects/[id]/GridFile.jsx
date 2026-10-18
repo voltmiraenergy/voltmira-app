@@ -19,8 +19,9 @@ import { gridFileStatus } from "../../../../lib/mdGrid.js";
 import { gridFor } from "../../../../lib/gridFile.js";
 import { mdDayKey } from "../../../../lib/tz.js";
 import GridDetails from "./GridDetails.jsx";
+import GridSubmit from "./GridSubmit.jsx";
 
-export default function GridFile({ projectId, address, initial, lang, market = "MD", client = {} }) {
+export default function GridFile({ projectId, address, initial, lang, market = "MD", client = {}, submission = null }) {
   const [file, setFile] = useState(() => ({ operator: null, stages: {}, ...(initial || {}) }));
   const [pending, start] = useTransition();
   const [failed, setFailed] = useState(false);
@@ -108,6 +109,8 @@ export default function GridFile({ projectId, address, initial, lang, market = "
           <Download size={16} aria-hidden="true" />
           <span><b>{t("gf_download", lang)}</b><small>{t("gf_download_h", lang)}</small></span>
         </a>
+        {/* the package sent to the operator with a tracked reference, and its answers */}
+        {submission && <GridSubmit projectId={projectId} operator={op} details={file.details} client={client} lang={lang} {...submission} />}
         </>
       )}
 

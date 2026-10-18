@@ -21,6 +21,7 @@ import { saveCompany, seedSampleData, clearSampleData, getMyRole } from "../../.
 import { sendTestEmail, testWebhook } from "../../../lib/notifyTest.js";
 import { defaultEngineSettings } from "@voltmira/engine";
 import { t, normLang, LANGS, LANG_NAMES } from "../../../lib/i18n.js";
+import { xt } from "../../../lib/integrationText.js";
 import { dlt } from "../../../lib/deadlineText.js";
 import { hasFeature, planFor } from "../../../lib/features.js";
 import UpsellModal from "../../../components/UpsellModal.jsx";
@@ -473,7 +474,7 @@ export default function Settings() {
     documents: (
       <>
         <Card title={t("s_invoicing", lang)} desc={t("s_invoicing_sub", lang)}
-          extra={<a className="dx-btn" href="/api/export-invoices"><Download size={14} aria-hidden="true" />CSV</a>}>
+          extra={<><a className="dx-btn" href="/api/export-invoices"><Download size={14} aria-hidden="true" />CSV</a> <a className="dx-btn" href="/documents/export"><Download size={14} aria-hidden="true" />{xt("ex_link", lang)}</a></>}>
           <div className="set-grid">
             {textField("sLegal", t("s_legal_name", lang), "legal_name", co.name || "SolarTech SRL")}
             {textField("sReg", t("s_reg_no", lang), "reg_no", "IDNO")}

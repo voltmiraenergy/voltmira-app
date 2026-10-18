@@ -10,6 +10,7 @@ import SideNav from "./SideNav.jsx";
 import AppTheme from "./AppTheme.jsx";
 import OfflineReady from "./OfflineReady.jsx";
 import MobileBack from "../../components/MobileBack.jsx";
+import KeepSignedIn from "../../components/KeepSignedIn.jsx";
 import Logo from "../../lib/Logo.jsx";
 import HtmlLang from "../../lib/HtmlLang.jsx";
 import { t, normLang } from "../../lib/i18n.js";
@@ -134,8 +135,11 @@ export default async function AppLayout({ children }) {
               );
             })()}
           </div>
-          <ThemeToggle lang={lang} />
-          <SignOut lang={lang} />
+          {/* theme and sign-out on one line, so a short screen still shows both */}
+          <div className="side-acts">
+            <ThemeToggle lang={lang} />
+            <SignOut lang={lang} />
+          </div>
         </div>
       </aside>
       <main className="main" id="main">
@@ -145,6 +149,8 @@ export default async function AppLayout({ children }) {
             with no signal, and says so when there is none. */}
         <OfflineReady lang={lang} demo={isDemoEmail(user.email)} />
         <MobileBack lang={lang} />
+        {/* renews this device's 30-day sign-in once a day (lib/authCookie.js) */}
+        <KeepSignedIn />
         {isDemoEmail(user.email) && (
           <div className="demo-bar">
             <span className="demo-badge">{t("demo_badge", lang)}</span>

@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
 import { regenerateProposal, saveQuoteTemplate, markProjectWon, offerPhone } from "../../../../lib/actions.js";
 import { sendOffer } from "../../../../lib/sendOffer.js";
+import { isStandalone, openPdfInApp } from "../../../../lib/openPdf.js";
 import { aiOn } from "../../../../lib/featureFlags.js";
 import AddressField from "../../../../components/AddressField.jsx";
 import SiteDesigner from "../../../../components/SiteDesigner.jsx";
@@ -41,9 +42,9 @@ import ShareCard from "./ShareCard.jsx";
 import LegalDocsModal from "./LegalDocsModal.jsx";
 import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
 import { financials, bomTotal } from "../../../../lib/quoteAnalysis.js";
-import { startYearOf } from "../../../../lib/quoteInput.js";
-import { applyCalibration } from "../../../../lib/yieldCalibration.js";
+import { startYearOf, mdFeedFor } from "../../../../lib/quoteInput.js";
 import { t } from "../../../../lib/i18n.js";
+import { xt } from "../../../../lib/integrationText.js";
 import { autoBom, recommendMount } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
 import { designCheck } from "../../../../lib/designCheck.js";
@@ -185,7 +186,7 @@ function LocalMoneyInput({ eur, fmt, onEur, dec = 2, allowZero = false, classNam
 
 // `currency` is the WORKSPACE's (companies.currency); the offer may name its
 // own (p.offerCurrency, null = follow the workspace), see lib/offerCurrency.js.
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, calibration = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
@@ -276,7 +277,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const buyback = useBuyback(Number(p.price) || 0.18, FX.MDL);
   const isMD = p.market === "MD";
   const isUA = p.market === "UA";
-  const feedOverride = isMD ? buyback.weightedEur : undefined;
+  // the versioned tariff rule in force today for this job's operator
+  // (lib/tariffRules.js, E.tariffRules from companyEngine): the same price an
+  // offer issued now freezes, so the screen and the offer agree
+  const feedOverride = useMemo(() => (isMD
+    ? mdFeedFor({ install_progress: initial.install_progress, address: p.address, title: p.title }, E.tariffRules)
+    : undefined), [isMD, initial.install_progress, p.address, p.title, E.tariffRules]);
   // Ukraine's green tariff ends with 2029, so the year the system starts decides
   // how many years of it the client gets (engine: startYear).
   const startYear = useMemo(() => startYearOf(initial.created_at), [initial.created_at]);
@@ -649,6 +655,16 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   }
 
   async function downloadPdf() {
+    // The installed app: the PDF opens in the app's own viewer, with an X and
+    // Save (lib/openPdf.js). Opened like a page, it used to fill the app with
+    // no way back.
+    if (isStandalone()) {
+      let code = propUrl ? propUrl.split("/p/")[1] : null;
+      if (!code) { try { code = await sendOffer(initial.id); } catch { return; } }
+      if (p.status === "draft") update({ status: "sent" });
+      openPdfInApp(`/api/proposal/${code}/pdf`, p.title || "");
+      return;
+    }
     // Open the tab synchronously, inside the click gesture, so mobile popup
     // blockers don't swallow it — they do when window.open runs after an await,
     // which is why "Download PDF" appeared to do nothing on a phone.
@@ -798,6 +814,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 </span>
               )}
             </p>
+            {/* the client's loan applications from this offer (docs/FINANCING.md) */}
+            {loans.length > 0 && (
+              <p className="qb-loans">{loans.map((l) => <span key={l.id} className={"qb-loan s-" + l.status}>{l.text}</span>)}</p>
+            )}
           </div>
           <div className="qb-actions">
             {tplOpen ? (
@@ -935,29 +955,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 <div className="pvgis-src">{tr("pvgis_src")}</div>
               </div>
             )}
-
-            {/* What the installed base measured. Offered, never applied on its
-                own: a yield that drifts by itself is the opposite of the
-                promise this product is sold on. */}
-            {calibration?.confident && p.yieldOverride && (() => {
-              const tuned = Math.round(applyCalibration(p.yieldOverride, calibration));
-              const deltaPct = (calibration.factor - 1) * 100;
-              const applied = Math.abs(tuned - Math.round(p.yieldOverride)) < 1;
-              return (
-                <div className="cal-note">
-                  <div className="cal-h">
-                    {tr("cal_title", { n: Math.abs(deltaPct).toFixed(0), d: tr(deltaPct >= 0 ? "cal_above" : "cal_below") })}
-                  </div>
-                  <div className="cal-s">{tr("cal_basis", { s: calibration.systems, m: calibration.months })}</div>
-                  {!applied && (
-                    <button className="btn ghost sm" style={{ marginTop: 8 }}
-                      onClick={() => update({ yieldOverride: tuned })}>
-                      {tr("cal_apply", { n: tuned })}
-                    </button>
-                  )}
-                </div>
-              );
-            })()}
 
             {team.length >= 1 && (
               <div className="field" style={{ marginTop: 15 }}><label>{tr("proj_owner")}</label>
@@ -1401,12 +1398,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             </div>
           </section>
 
-          {/* What programmes may pay for part of this job (Moldova). For the
-              installer only: none of it reaches the client's offer. */}
+          {/* What programmes may pay for part of this job (Moldova). The offer
+              shows the same, frozen on the day it is sent (SupportOffer.jsx). */}
           {isMD && (
             <SupportCard projectId={initial.id} lang={lang} market={p.market} costEur={q.e.grossCost}
               batteryEur={batteryEur({ batt: p.batt, battKwh: p.battKwh, batteryCostPerKwh: E.batteryCostPerKwh })}
-              vatRatePct={vatRatePct} fx={E.fx} initialKind={initial.client_kind ?? null} />
+              vatRatePct={vatRatePct} fx={E.fx} initialKind={initial.client_kind ?? null} initialProfile={initial.client_profile ?? null} />
           )}
 
           {/* The job's area from CNED's register: a local preview while
@@ -1429,7 +1426,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <GridFile key={p.market + (railProg?.gridFile ? JSON.stringify(railProg.gridFile) : "")} projectId={initial.id}
               market={p.market} address={[p.address, p.title].filter(Boolean).join(", ")}
               initial={(railProg || initial.install_progress)?.gridFile} lang={lang}
-              client={{ client_name: p.client || "", client_email: p.clientEmail || "", address: p.address || "" }} />
+              client={{ client_name: p.client || "", client_email: p.clientEmail || "", address: p.address || "" }} submission={gridSub} />
           )}
 
           {/* A signed job in Moldova or Ukraine goes into a portfolio for a
@@ -1489,6 +1486,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 href={`/projects/${initial.id}/invoice${depPct > 0 ? `?deposit=${depPct}` : ""}`}
                 onClick={() => setInvOpen(false)}>{tr("inv_dep_open")}</a>
             </div>
+            {/* e-Factura and the client's payments: their own page (billing/) */}
+            <a className="btn ghost sm" style={{ marginTop: 10, width: "100%", justifyContent: "center" }} href={`/projects/${initial.id}/billing`}>{xt("bl_link", lang)}</a>
           </div>
         </div>
       )}

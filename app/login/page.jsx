@@ -11,7 +11,9 @@
 // inlined into the page and the JS bundle.
 import Image from "next/image";
 import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 import LoginForm from "./LoginForm.jsx";
+import { supabaseServer } from "../../lib/supabase.js";
 import { COPY, pickLoginLang } from "./copy.js";
 
 async function langFor(searchParams) {
@@ -209,6 +211,15 @@ export default async function LoginPage(props) {
   // the "I'm developing a plant" path, from the Project pack on the pricing page
   const dev = searchParams?.for === "developer";
   const c = COPY[lang];
+
+  // Already signed in on this device: straight into the app. The home-screen
+  // app often opens on the page it was added from, and this one used to ask
+  // for the password again every time even with a valid session.
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    let user = null;
+    try { ({ data: { user } } = await (await supabaseServer()).auth.getUser()); } catch { /* no session */ }
+    if (user) redirect(dev ? "/portfolios/start" : "/dashboard");
+  }
 
   return (
     <>

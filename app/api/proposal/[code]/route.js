@@ -22,7 +22,12 @@ import { quote, SOLAR_SEASON } from "@voltmira/engine";
 import { journeySteps, nextStep, productionSeries, journeyFacts } from "../../../../lib/clientJourney.js";
 import { snapshotEngine } from "../../../../lib/engineSettings.js";
 import { bomHasBattery } from "../../../../lib/quoteInput.js";
-import { loadOffers, offerFigures, acceptOffers } from "../../../../lib/proposalOffers.js";
+import { offerQuoteInput, offerTariffNote } from "../../../../lib/offerInput.js";
+import { offerFinancing } from "../../../../lib/financeServer.js";
+import { loadOffers, offerFigures } from "../../../../lib/proposalOffers.js";
+import { acceptProposal } from "../../../../lib/acceptProposal.js";
+import { acceptIo } from "../../../../lib/acceptIo.js";
+import { qsignMode } from "../../../../lib/qsignFlow.js";
 import { effectiveOfferCurrency } from "../../../../lib/offerCurrency.js";
 
 /**
@@ -49,35 +54,6 @@ async function notifyCallRequested(db, prop, { who, title, phone, when, lang }) 
     await sendEmail({ to: owner.email, subject: nt("call_subject", lang, { client: who }), html });
   } catch (err) {
     console.error("call-request notify failed", err?.message);
-  }
-}
-
-/**
- * Email the company owner that a client accepted the offer online. Never
- * breaks the acceptance: a missing email setup only means no email.
- */
-async function notifyAccepted(db, prop, { who, title, signer, pct }) {
-  try {
-    if (!emailConfigured()) return;
-    const [{ data: co }, { data: owner }] = await Promise.all([
-      db.from("companies").select("*").eq("id", prop.company_id).single(),
-      db.from("profiles").select("email").eq("company_id", prop.company_id)
-        .eq("role", "owner").not("email", "eq", "").limit(1).single(),
-    ]);
-    // its own switch once add-notify-more.sql has run; until then it is on
-    if (!co || co.notify_accepted === false || !owner?.email) return;
-    const lang = co.lang || "ro";
-    const loc = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "ro-RO";
-    const when = new Date().toLocaleString(loc, { timeZone: "Europe/Chisinau", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
-    const { html } = ownerAlertEmail({
-      lang, kicker: nt("acc_kicker", lang), heading: nt("acc_heading", lang, { client: who, title }),
-      rows: [[nt("acc_signer", lang), signer || who], [nt("acc_when", lang), when], ...(pct ? [[nt("acc_discount", lang), `${pct}%`]] : [])],
-      lead: nt("acc_lead", lang), cta: { label: nt("acc_cta", lang), href: `/projects/${prop.project_id}` },
-      foot: nt("foot", lang), appUrl: process.env.NEXT_PUBLIC_APP_URL,
-    });
-    await sendEmail({ to: owner.email, subject: nt("acc_subject", lang, { client: who }), html });
-  } catch (err) {
-    console.error("accept notify failed", err?.message);
   }
 }
 
@@ -197,8 +173,10 @@ export async function GET(req, props) {
   const E = snapshotEngine(prop.snapshot.engine, co);
   // Snapshots store the BOM itself, so this is derived rather than frozen — an
   // older snapshot with no BOM simply has no costOverride and is unaffected.
-  prop.snapshot.bomHasBattery = bomHasBattery(prop.snapshot.bom);
-  const q = quote(prop.snapshot, E);
+  // and since tariff rules are versioned, the export price of the rule the
+  // offer was issued under (lib/offerInput.js); older offers are unchanged
+  const input = offerQuoteInput(prop.snapshot);
+  const q = quote(input, E);
 
   // Side-by-side options: extra configs the installer attached (base snapshot with
   // kw / battery overridden). We return only what the comparison cards need; the
@@ -208,7 +186,7 @@ export async function GET(req, props) {
     .filter(o => Number(o?.kw) > 0)
     .map(o => {
       const kw = Number(o.kw), battKwh = Math.max(0, Number(o.battKwh) || 0);
-      const oq = quote({ ...prop.snapshot, kw, batt: battKwh > 0, battKwh }, E).e;
+      const oq = quote({ ...input, kw, batt: battKwh > 0, battKwh }, E).e;
       return { label: String(o.label || "").slice(0, 40), kw, battKwh,
         cost: oq.cost, payback: oq.payback, year1: oq.year1 };
     });
@@ -237,10 +215,37 @@ export async function GET(req, props) {
     after = { steps, next: nextStep(steps), production, facts: journeyFacts(steps, production, { year1: q.e.year1, prod0 }) };
   }
 
+  // green financing: partner lenders' offers that fit this quote, and any
+  // application already sent from it (lib/financeServer.js); Moldova only
+  let financing = null;
+  try {
+    const { data: pk } = await db.from("projects").select("client_kind").eq("id", prop.project_id).maybeSingle();
+    financing = await offerFinancing(db, { prop, snapshot: prop.snapshot, E, clientKind: pk?.client_kind || null });
+  } catch (e) { console.error("[financing] offer page:", e?.message); }
+
+  // the signature's legal level (simple or qualified) and, for a qualified
+  // one, whether it was the simulation (lib/qsignFlow.js); before signing,
+  // whether qualified signing is offered here at all
+  let signature = null;
+  if (prop.accepted_at) {
+    signature = { level: prop.signature_level === "qualified" ? "qualified" : "simple", simulated: false };
+    if (signature.level === "qualified") {
+      const { data: qs } = await db.from("qualified_signatures").select("verification").eq("proposal_code", prop.code).eq("status", "signed").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+      signature.simulated = qs?.verification?.simulated !== false;
+    }
+  }
+
   return NextResponse.json({
     code: prop.code,
     accepted: !!prop.accepted_at,
+    signature,
+    qsign: prop.accepted_at ? null : qsignMode(),
     after,
+    financing,
+    // the tariff rule and the support programmes the offer was issued under,
+    // frozen with it (lib/tariffRules.js, lib/eligibility.js); null on older offers
+    tariff: offerTariffNote(prop.snapshot),
+    support: prop.snapshot.support || null,
     // proof-of-signing only (name + timestamp). The drawn signature IMAGE is
     // sensitive and NOT returned on this public link — the installer views it
     // from their authenticated pipeline.
@@ -270,6 +275,8 @@ export async function GET(req, props) {
       price: Number(prop.snapshot.price), cons: Number(prop.snapshot.cons),
       consMonthly: prop.snapshot.consMonthly || null,
       afmSubsidy: !!prop.snapshot.afmSubsidy,
+      // the frozen tariff rule's export price, so the audit panel recomputes with it
+      feedOverride: input.feedOverride,
       yieldOverride: prop.snapshot.yieldOverride || undefined,
       monthlyYieldShape: prop.snapshot.monthlyYieldShape || undefined,
       // the frozen bill-of-materials total: without it the client-side audit
@@ -406,44 +413,19 @@ export async function POST(req, props) {
   }
   if (kind === "accept" && !prop.accepted_at) {
     // E-signature + audit trail. What gives an electronic signature evidentiary
-    // weight is WHO signed, WHEN, and from WHERE — so the drawn image is stored
-    // alongside the typed name, IP and device. All optional: an acceptance still
-    // succeeds without them (and before add-proposal-signature.sql has run).
+    // weight is WHO signed, WHEN, and from WHERE: so the drawn image is stored
+    // alongside the typed name, IP and device. This is the simple level; the
+    // qualified one (MSign) goes through /api/proposal/[code]/qsign. Both end
+    // in lib/acceptProposal.js, which accepts an offer only once.
     const rawSig = typeof body.signature === "string" ? body.signature : "";
     const okSig = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(rawSig) && rawSig.length <= 260_000;
-    const signature = okSig ? rawSig : null;
-    const signerName = String(body.signerName || "").trim().slice(0, 120) || null;
-
-    const stamp = new Date().toISOString();
-    const full = {
-      accepted_at: stamp,
-      signature,
-      signer_name: signerName,
-      signed_ip: ip || null,
-      signed_ua: String(req.headers.get("user-agent") || "").slice(0, 300) || null,
-    };
-    // Richest write first; fall back if the signature columns aren't there yet.
-    const { error: sigErr } = await db.from("proposals").update(full).eq("code", prop.code);
-    if (sigErr) await db.from("proposals").update({ accepted_at: stamp }).eq("code", prop.code);
-    await db.from("projects").update({ status: "won" }).eq("id", prop.project_id).eq("status", "sent");
-    // Name the human, not the URL slug — "Casa Popescu accepted…" reads far better
-    // than "…proposal crppgt6x".
-    const { data: proj } = await db.from("projects").select("title, client_name").eq("id", prop.project_id).maybeSingle();
-    const who = proj?.client_name || proj?.title || prop.code;
-    // Whatever the proposal assistant agreed (a discount, an attached option)
-    // becomes part of what was signed.
-    const agreed = await acceptOffers(db, prop.code);
-    const pct = Number(agreed.discount?.pct) || 0;
-    await logActivity(db, {
-      companyId: prop.company_id, kind: "won", key: pct ? "act_accepted_offer" : "act_proposal_accepted",
-      params: { b: who, ...(pct ? { n: pct } : {}) },
-      text: pct
-        ? `<b>${escapeHtml(who)}</b> accepted your proposal with the ${pct}% discount the assistant offered`
-        : `<b>${escapeHtml(who)}</b> accepted your proposal`,
-      link: `/projects/${prop.project_id}`,
-    });
-    await notifyAccepted(db, prop, { who, title: proj?.title || prop.code, signer: signerName, pct });
-    await sendCrmWebhook(prop.company_id, "proposal.won", { projectId: prop.project_id, title: proj?.title || "", client_name: proj?.client_name || "", via: "client" });
+    await acceptProposal(db, prop, {
+      signature: okSig ? rawSig : null,
+      signerName: String(body.signerName || "").trim().slice(0, 120) || null,
+      ip: ip || null,
+      ua: String(req.headers.get("user-agent") || "").slice(0, 300) || null,
+      level: "simple",
+    }, acceptIo);
   }
   if (kind === "request") {
     // A call request: one per offer per day (a second tap only updates the

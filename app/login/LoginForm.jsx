@@ -35,6 +35,15 @@ function rememberLang(l) {
 
 // dev: the "I'm developing a plant" path (/login?for=developer): it opens on
 // "Create account" and lands on the guided start of a plant, not the dashboard
+// Keep this device signed in for 30 days (app/api/auth/keep): the server
+// re-sends the session cookies, which Safari then keeps for their full life.
+async function keepSignedIn() {
+  try {
+    const r = await fetch("/api/auth/keep", { method: "POST", credentials: "same-origin" });
+    if (r.ok) localStorage.setItem("voltmira_keep_at", String(Date.now()));
+  } catch { /* the sign-in itself worked; the renewal tries again in the app */ }
+}
+
 export default function LoginForm({ lang, c, error = "", dev = false }) {
   const [mode, setMode] = useState(dev ? "signup" : "signin"); // signin | signup
   const dest = dev ? "/portfolios/start" : "/dashboard";
@@ -129,12 +138,14 @@ export default function LoginForm({ lang, c, error = "", dev = false }) {
         // The workspace starts in the language this page is in.
         const { error: e2 } = await bootstrapWorkspace(sb, { company, lang });
         if (e2) return toast(M.setup);
+        await keepSignedIn();
         location.href = dest;
       } else {
         const { error } = await sb.auth.signInWithPassword({
           email, password, options: { captchaToken },
         });
         if (error) { resetCaptcha(); return toast(M.signin); }
+        await keepSignedIn();
         location.href = dest;
       }
     } finally {

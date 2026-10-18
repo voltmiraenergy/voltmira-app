@@ -269,7 +269,7 @@ export const I18N_V6 = {
       "Te înregistrezi și ești înăuntru. Fără listă de așteptare, fără card: acces complet ca să construiești oferte și să trimiți propuneri urmărite imediat, gratuit pe toată perioada beta.",
 
     // final + footer
-    v6_fin_h: "Fii instalatorul ale cărui numere rezistă.",
+    v6_fin_h: "Trimite clientului o ofertă pe care o poate verifica.",
     v6_fin_p: "Începe gratuit astăzi. Fără listă de așteptare, fără card, configurare în câteva minute.",
     v6_fin_cta: "Începe gratuit",
     v6_fin_demo: "Deschide demo-ul live",
@@ -551,7 +551,7 @@ export const I18N_V6 = {
       "Регистрируетесь, и вы внутри. Без листа ожидания и без карты: сразу полный доступ, создавайте расчёты и отправляйте отслеживаемые предложения, бесплатно на всё время беты.",
 
     // final + footer
-    v6_fin_h: "Станьте монтажником, чьи числа выдерживают проверку.",
+    v6_fin_h: "Отправьте клиенту предложение, которое он может проверить.",
     v6_fin_p: "Начните бесплатно сегодня. Без листа ожидания, без карты, настройка за минуты.",
     v6_fin_cta: "Начать бесплатно",
     v6_fin_demo: "Открыть демо",
@@ -837,7 +837,7 @@ export const I18N_V6 = {
       "Реєструєтеся, і ви всередині. Без списку очікування й без картки: одразу повний доступ, створюйте розрахунки й надсилайте відстежувані пропозиції, безкоштовно на весь час бети.",
 
     // final + footer
-    v6_fin_h: "Станьте монтажником, чиї числа витримують перевірку.",
+    v6_fin_h: "Надішліть клієнту пропозицію, яку він може перевірити.",
     v6_fin_p: "Почніть безкоштовно сьогодні. Без списку очікування, без картки, налаштування за хвилини.",
     v6_fin_cta: "Почати безкоштовно",
     v6_fin_demo: "Відкрити демо",

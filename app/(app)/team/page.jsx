@@ -44,7 +44,7 @@ export default async function Team() {
     counts[o] = (counts[o] || 0) + 1;
     const s = (stats[o] ||= { total: 0, won: 0, lost: 0, pipelineEur: 0, wonEur: 0 });
     s.total++;
-    let gc = 0; try { gc = quote(rowToQuoteInput(p), E).e.grossCost || 0; } catch { gc = 0; }
+    let gc = 0; try { gc = quote(rowToQuoteInput(p, E), E).e.grossCost || 0; } catch { gc = 0; }
     if (p.status === "won") { s.won++; s.wonEur += gc; }
     else if (p.status === "lost") s.lost++;
     else if (p.status === "sent") s.pipelineEur += gc;

@@ -13,6 +13,7 @@ import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
 import { currentCompany, currentUser } from "../../../lib/session.js";
 import { canViewAllProjects } from "../../../lib/rbac.js";
 import { t, normLang } from "../../../lib/i18n.js";
+import { xt } from "../../../lib/integrationText.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { LOCALE } from "../../../lib/relTime.js";
 import { paperworkFor, paperworkTotals } from "../../../lib/paperwork.js";
@@ -154,6 +155,7 @@ export default async function DocumentsPage(props0) {
               : t("doc_summary_none", lang)}
           </p>
         </div>
+        <Link className="btn ghost sm" href="/documents/export">{xt("ex_link", lang)}</Link>
       </header>
 
       <dl className="doc-strip">

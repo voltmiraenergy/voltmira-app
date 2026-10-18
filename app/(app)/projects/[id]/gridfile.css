@@ -90,3 +90,27 @@
 .app .gd-sum.warn > svg { color: var(--amber); }
 .app .gd-sum.warn small { color: var(--ink); }
 @media (max-width: 640px) { .app .gd-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* sending the file to the operator (GridSubmit.jsx) */
+.app .gs { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); }
+.app .gs-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.app .gs-head b { font-size: 14px; color: var(--ink); }
+.app .gs-st { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--paper-2); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.app .gs-st.s-approved, .app .gs-st.s-connected { background: var(--green-tint); border-color: transparent; color: var(--green); }
+.app .gs-st.s-docs_requested { background: var(--amber-tint); border-color: transparent; color: var(--amber-ink); }
+.app .gs-st.s-rejected { background: var(--red-tint); border-color: transparent; color: var(--red); }
+.app .gs-p, .app .gs-hint { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.app .gs-warn { margin: 0; padding: 8px 10px; border-radius: 9px; font-size: 12.5px; line-height: 1.45; background: var(--amber-tint); color: var(--amber-ink); font-weight: 600; }
+.app .gs-list { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.app .gs-list legend { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+.app .gs-doc { display: flex; gap: 9px; align-items: flex-start; font-size: 13px; color: var(--ink); line-height: 1.4; }
+.app .gs-doc input { margin-top: 2px; accent-color: var(--green); flex: none; }
+.app .gs-doc small { display: block; font-size: 11.5px; color: var(--muted); }
+.app .gs-doc.miss span { color: var(--ink); }
+.app .gs-rep { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--line); }
+.app .gs-field { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.app .gs-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.app .gs-send { display: inline-flex; align-items: center; justify-content: center; gap: 7px; align-self: flex-start; }
+.app .gs-send:disabled, .app .gs-acts button:disabled { opacity: .55; cursor: not-allowed; }
+.app .gs-hist summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.app .gs-hist ol { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; font-size: 12.5px; color: var(--ink); }
