@@ -43,7 +43,6 @@ import LegalDocsModal from "./LegalDocsModal.jsx";
 import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
 import { financials, bomTotal } from "../../../../lib/quoteAnalysis.js";
 import { startYearOf, mdFeedFor } from "../../../../lib/quoteInput.js";
-import { applyCalibration } from "../../../../lib/yieldCalibration.js";
 import { t } from "../../../../lib/i18n.js";
 import { xt } from "../../../../lib/integrationText.js";
 import { autoBom, recommendMount } from "../../../../lib/supplierCatalog.js";
@@ -187,7 +186,7 @@ function LocalMoneyInput({ eur, fmt, onEur, dec = 2, allowZero = false, classNam
 
 // `currency` is the WORKSPACE's (companies.currency); the offer may name its
 // own (p.offerCurrency, null = follow the workspace), see lib/offerCurrency.js.
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, calibration = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
@@ -956,29 +955,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 <div className="pvgis-src">{tr("pvgis_src")}</div>
               </div>
             )}
-
-            {/* What the installed base measured. Offered, never applied on its
-                own: a yield that drifts by itself is the opposite of the
-                promise this product is sold on. */}
-            {calibration?.confident && p.yieldOverride && (() => {
-              const tuned = Math.round(applyCalibration(p.yieldOverride, calibration));
-              const deltaPct = (calibration.factor - 1) * 100;
-              const applied = Math.abs(tuned - Math.round(p.yieldOverride)) < 1;
-              return (
-                <div className="cal-note">
-                  <div className="cal-h">
-                    {tr("cal_title", { n: Math.abs(deltaPct).toFixed(0), d: tr(deltaPct >= 0 ? "cal_above" : "cal_below") })}
-                  </div>
-                  <div className="cal-s">{tr("cal_basis", { s: calibration.systems, m: calibration.months })}</div>
-                  {!applied && (
-                    <button className="btn ghost sm" style={{ marginTop: 8 }}
-                      onClick={() => update({ yieldOverride: tuned })}>
-                      {tr("cal_apply", { n: tuned })}
-                    </button>
-                  )}
-                </div>
-              );
-            })()}
 
             {team.length >= 1 && (
               <div className="field" style={{ marginTop: 15 }}><label>{tr("proj_owner")}</label>
