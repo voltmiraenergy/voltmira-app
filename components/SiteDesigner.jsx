@@ -34,7 +34,7 @@ import { tilesAround, postTiles } from "../lib/tileWarm.js";
 
 const SAT_ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 import { fitPanels, compassLabel, project, polygonAreaM2, slopeAreaM2, facingFromShape, fitOptions, limitPanels } from "../lib/roofLayout.js";
-import { drawReadout } from "./drawReadout.js";
+import { drawReadout, drawLang } from "./drawReadout.js";
 import NumInput from "./NumInput.jsx";
 import { PANELS, findPanel, recommendPanel } from "../lib/supplierCatalog.js";
 import { designCheck } from "../lib/designCheck.js";
@@ -131,7 +131,7 @@ const TX = {
   goal: { en: "The quote is for {kw} kW: about {n} panels of {w} W, so about {m2} m² of clear roof.", ro: "Oferta e de {kw} kW: circa {n} panouri de {w} W, deci circa {m2} m² de acoperiș liber.", ru: "В расчёте {kw} кВт: около {n} панелей по {w} Вт, то есть около {m2} м² свободной крыши.", uk: "У розрахунку {kw} кВт: близько {n} панелей по {w} Вт, тобто близько {m2} м² вільного даху." },
   goalNone: { en: "Set the system size in the quote and the designer shows how much roof it needs.", ro: "Pune puterea sistemului în ofertă și aici vezi cât acoperiș îi trebuie.", ru: "Укажите мощность в расчёте, и здесь будет видно, сколько крыши нужно.", uk: "Вкажіть потужність у розрахунку, і тут буде видно, скільки даху потрібно." },
   howH: { en: "How to draw a side", ro: "Cum desenezi o parte", ru: "Как нарисовать скат", uk: "Як намалювати схил" },
-  keys: { en: "Esc stops drawing, Ctrl+Z takes back the last step. Zoom in until the roof's edges are sharp.", ro: "Esc oprește desenul, Ctrl+Z anulează ultimul pas. Mărește harta până vezi clar marginile acoperișului.", ru: "Esc останавливает рисование, Ctrl+Z отменяет последний шаг. Приблизьте карту, пока края крыши не станут чёткими.", uk: "Esc зупиняє малювання, Ctrl+Z скасовує останній крок. Наблизьте карту, доки краї даху не стануть чіткими." },
+  keys: { en: "Keys 1 to 5 pick a tool, Esc stops drawing, Ctrl+Z takes back the last corner. Zoom in until the roof's edges are sharp.", ro: "Tastele 1 până la 5 aleg unealta, Esc oprește desenul, Ctrl+Z anulează ultimul colț. Mărește harta până vezi clar marginile acoperișului.", ru: "Клавиши от 1 до 5 выбирают инструмент, Esc останавливает рисование, Ctrl+Z отменяет последний угол. Приблизьте карту, пока края крыши не станут чёткими.", uk: "Клавіші від 1 до 5 вибирають інструмент, Esc зупиняє малювання, Ctrl+Z скасовує останній кут. Наблизьте карту, доки краї даху не стануть чіткими." },
   sub1_none: { en: "Nothing yet", ro: "Nimic încă", ru: "Пока пусто", uk: "Поки порожньо" },
   sub1_one: { en: "1 side", ro: "1 parte", ru: "1 скат", uk: "1 схил" },
   sub1: { en: "{n} sides", ro: "{n} părți", ru: "Скатов: {n}", uk: "Схилів: {n}" },
@@ -662,7 +662,7 @@ export default function SiteDesigner({
       L.control.zoom({ position: "bottomright" }).addTo(map);
       // leaflet-geoman attaches map.pm when the map is made; if it missed this map, attach it now
       if (!map.pm && L.PM?.Map) map.pm = new L.PM.Map(map);
-      map.pm?.setLang(lang === "ru" ? "ru" : lang === "uk" ? "ua" : lang === "ro" ? "ro" : "en");
+      drawLang(map, lang);
 
       const googleKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
       const googleLayer = googleKey ? await loadGoogleSatelliteLayer(L, googleKey) : null;
@@ -867,6 +867,11 @@ export default function SiteDesigner({
       if ((e.ctrlKey || e.metaKey) && k === "z" && !e.shiftKey && toolRef.current && draw?._enabled && draw._layer?.getLatLngs?.().length) {
         e.preventDefault(); draw._removeLastVertex?.(); return;
       }
+      // 1, 2, 3... pick the tools in the toolbar's order, the same in every language
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && /^[1-9]$/.test(e.key)) {
+        const b = document.querySelectorAll(".sd-tools .sd-tool")[Number(e.key) - 1];
+        if (b) { e.preventDefault(); b.click(); return; }
+      }
       if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); if (e.shiftKey) api.current.redo?.(); else api.current.undo?.(); }
       else if ((e.ctrlKey || e.metaKey) && k === "y") { e.preventDefault(); api.current.redo?.(); }
       else if ((e.key === "Delete" || e.key === "Backspace") && selectedRef.current && !toolRef.current) { e.preventDefault(); api.current.removeShape?.(selectedRef.current); }
@@ -1059,7 +1064,7 @@ export default function SiteDesigner({
                   ? <span key={"sep" + i} className="sd-tool-sep" aria-hidden="true" />
                   : (
                     <button key={tl.id} type="button" className={"sd-tool" + (tool === tl.id ? " on" : "")} aria-pressed={tool === tl.id}
-                      onClick={() => pick(tl.id)} title={tl.label}>
+                      onClick={() => pick(tl.id)} title={`${tl.label} (${TOOLS.filter((x) => x !== "sep").indexOf(tl) + 1})`} aria-keyshortcuts={String(TOOLS.filter((x) => x !== "sep").indexOf(tl) + 1)}>
                       <tl.Icon size={18} aria-hidden="true" /><span>{tl.label}</span>
                     </button>
                   ))}

@@ -53,3 +53,18 @@ export function drawReadout(map, text) {
   map.on("pm:drawend", stop);
   return stop;
 }
+
+// The drawing tool's own hints, in the app's words: the library's speak of
+// "vertices" and "markers" (in Romanian, half in English).
+const TIPS = {
+  en: { firstVertex: "Click the first corner", continueLine: "Click the next corner", finishPoly: "Click the first corner to close the shape", startCircle: "Click the trunk", finishCircle: "Click the edge of the crown" },
+  ro: { firstVertex: "Apasă pe primul colț", continueLine: "Apasă pe colțul următor", finishPoly: "Apasă pe primul colț ca să închizi forma", startCircle: "Apasă pe trunchi", finishCircle: "Apasă pe marginea coroanei" },
+  ru: { firstVertex: "Нажмите на первый угол", continueLine: "Нажмите на следующий угол", finishPoly: "Нажмите на первый угол, чтобы замкнуть фигуру", startCircle: "Нажмите на ствол", finishCircle: "Нажмите на край кроны" },
+  uk: { firstVertex: "Натисніть на перший кут", continueLine: "Натисніть на наступний кут", finishPoly: "Натисніть на перший кут, щоб замкнути фігуру", startCircle: "Натисніть на стовбур", finishCircle: "Натисніть на край крони" },
+};
+
+/** Set leaflet-geoman to the app's language, with the app's own drawing hints. */
+export function drawLang(map, lang) {
+  const code = lang === "ru" ? "ru" : lang === "uk" ? "ua" : lang === "ro" ? "ro" : "en";
+  map?.pm?.setLang(code, { tooltips: TIPS[lang] || TIPS.en }, code);
+}

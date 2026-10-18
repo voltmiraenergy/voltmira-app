@@ -23,7 +23,7 @@ import { loadGoogleSatelliteLayer } from "../../lib/googleSatellite.js";
 import { tilesAround, postTiles } from "../../lib/tileWarm.js";
 import { layoutInputs, layoutPlots, turbinesAroundField } from "../../lib/plantLayout.js";
 import { rotorDiameterM, turbineAt } from "../../lib/windLayout.js";
-import { drawReadout } from "../drawReadout.js";
+import { drawReadout, drawLang } from "../drawReadout.js";
 import NumInput from "../NumInput.jsx";
 import { plotHectares, EXCLUSION_KINDS, TABLE_FORMATS, TRACKER_GCR_DEFAULT, TRACKER_GCR_RANGE, SHADE_WINDOWS, tableGeometry } from "../../lib/siteLayout.js";
 
@@ -266,6 +266,11 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       const draw = mapRef.current?.pm?.Draw?.Polygon;
       if ((e.ctrlKey || e.metaKey) && k === "z" && !e.shiftKey && toolRef.current && draw?._enabled && draw._layer?.getLatLngs?.().length) {
         e.preventDefault(); draw._removeLastVertex?.(); return;
+      }
+      // 1, 2, 3... pick the tools in the toolbar's order, the same in every language
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && /^[1-9]$/.test(e.key)) {
+        const b = document.querySelectorAll(".sd-tools .sd-tool")[Number(e.key) - 1];
+        if (b) { e.preventDefault(); b.click(); return; }
       }
       if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); if (e.shiftKey) api.current.redo?.(); else api.current.undo?.(); }
       else if ((e.ctrlKey || e.metaKey) && k === "y") { e.preventDefault(); api.current.redo?.(); }
@@ -519,7 +524,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
       L.control.zoom({ position: "bottomright" }).addTo(map);
       // leaflet-geoman attaches map.pm when the map is made; if it missed this map, attach it now
       if (!map.pm && L.PM?.Map) map.pm = new L.PM.Map(map);
-      map.pm?.setLang(lang === "ru" ? "ru" : lang === "uk" ? "ua" : lang === "ro" ? "ro" : "en");
+      drawLang(map, lang);
       // Google's satellite when the installer's key is set (sharper over most of Moldova); else Esri,
       // which has nothing past about z18 there, so it upscales the last real tile instead
       const google = await loadGoogleSatelliteLayer(L, undefined, { maxZoom: 20 });
@@ -680,7 +685,7 @@ export default function PlantDesigner({ lang = "en", pl, subtitle = "", onSave, 
                 {TOOLS.map((tl, i) => tl === "sep"
                   ? <span key={"sep" + i} className="sd-tool-sep" aria-hidden="true" />
                   : (
-                    <button key={tl.id} type="button" className={"sd-tool" + (tool === tl.id ? " on" : "")} aria-pressed={tool === tl.id} onClick={() => pick(tl.id)} title={tl.label}>
+                    <button key={tl.id} type="button" className={"sd-tool" + (tool === tl.id ? " on" : "")} aria-pressed={tool === tl.id} onClick={() => pick(tl.id)} title={`${tl.label} (${TOOLS.filter((x) => x !== "sep").indexOf(tl) + 1})`} aria-keyshortcuts={String(TOOLS.filter((x) => x !== "sep").indexOf(tl) + 1)}>
                       <tl.Icon size={18} aria-hidden="true" /><span>{tl.label}</span>
                     </button>
                   ))}
