@@ -114,28 +114,3 @@
 .app .gs-send:disabled, .app .gs-acts button:disabled { opacity: .55; cursor: not-allowed; }
 .app .gs-hist summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--muted); }
 .app .gs-hist ol { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; font-size: 12.5px; color: var(--ink); }
-
-/* the client's account and maintenance, after signing (ClientCare.jsx) */
-.app .cc { margin-top: 16px; display: grid; gap: 18px; }
-.app .cc-block { display: grid; gap: 8px; }
-.app .cc-block + .cc-block { padding-top: 16px; border-top: 1px solid var(--line); }
-.app .cc h3 { margin: 0; font-size: 16px; }
-.app .cc-p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
-.app .cc-p b { color: var(--ink); font-weight: 600; }
-.app .cc-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
-.app .cc-field { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); min-width: 0; }
-.app .cc-grow { flex: 1 1 220px; }
-.app .cc-field .input { min-width: 0; }
-.app .cc-msg { margin: 0; font-size: 12.5px; padding: 8px 10px; border-radius: 9px; }
-.app .cc-msg.ok { background: var(--green-tint); color: var(--green); font-weight: 600; }
-.app .cc-msg.bad { background: var(--red-tint); color: var(--red); }
-.app .cc-list { list-style: none; margin: 0; padding: 0; display: grid; }
-.app .cc-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
-.app .cc-t { display: grid; gap: 2px; font-size: 13.5px; color: var(--ink); }
-.app .cc-t small { font-size: 12px; color: var(--muted); }
-.app .cc-st { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
-.app .cc-st.s-scheduled { background: var(--amber-tint); border-color: transparent; color: var(--amber-ink); }
-.app .cc-st.s-resolved, .app .cc-st.s-closed { background: var(--green-tint); border-color: transparent; color: var(--green); }
-.app .cc-act { grid-column: 1 / -1; justify-self: start; }
-.app .cc-do { grid-column: 1 / -1; display: grid; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--paper); border: 1px solid var(--line); }
-.app .cc-new { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; padding-top: 10px; border-top: 1px dashed var(--line); }

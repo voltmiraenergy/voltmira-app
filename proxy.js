@@ -13,8 +13,7 @@ import { AUTH_COOKIE_MAX_AGE } from "./lib/authCookie.js";
 // Next app (it is where email links point), so without this its copies of the
 // marketing and legal pages compete with the real ones in Google's index.
 const SITE = "https://voltmira.com";
-// the free solar design funnel, one URL per language like the homepage (app/solar)
-const PUBLIC_PAGES = new Set(["/", "/ro", "/ru", "/uk", "/privacy", "/terms", "/refunds", "/cookies", "/credits", "/solar", "/ro/solar", "/ru/solar", "/uk/solar"]);
+const PUBLIC_PAGES = new Set(["/", "/ro", "/ru", "/uk", "/privacy", "/terms", "/refunds", "/cookies", "/credits"]);
 const LANG_PATH = { en: "/", ro: "/ro", ru: "/ru", uk: "/uk" };
 // The homepage is built once and served from the CDN, so it carries its own
 // policy, by hash (lib/landing.js); a nonce here would not match its scripts.
@@ -54,9 +53,6 @@ export async function proxy(req) {
       : withCsp(NextResponse.rewrite(new URL("/_not-found", req.url), { status: 404, request: { headers: reqHeaders } }));
   }
 
-  // an installer's public profile (app/i) is a public page too, on voltmira.com only
-  if (path.startsWith("/i/") && host === "app.voltmira.com") return NextResponse.redirect(SITE + path, 301);
-
   if (PUBLIC_PAGES.has(path)) {
     // Old homepage URLs: each language was once /?lang=xx. Google still has
     // them on file, and they answered 200 with the English page.
@@ -84,11 +80,9 @@ export async function proxy(req) {
     || path.startsWith("/guide") || path.startsWith("/catalog") || path.startsWith("/profile")
     || path.startsWith("/activity") || path.startsWith("/documents")
     || path.startsWith("/studio") || path.startsWith("/traction") || path.startsWith("/portfolios")
-    || path.startsWith("/energy") || path.startsWith("/admin") || path.startsWith("/marketplace");
-  // a homeowner's own pages (app/home): signed in, as a homeowner
-  const isHome = (path === "/home" || path.startsWith("/home/")) && path !== "/home/login" && path !== "/home/enter";
+    || path.startsWith("/energy") || path.startsWith("/admin");
 
-  if (!isProtected && !isHome) return res;
+  if (!isProtected) return res;
 
   // If Supabase isn't configured yet (fresh deploy without env vars), don't
   // crash the whole site: send protected routes to /login.
@@ -117,14 +111,7 @@ export async function proxy(req) {
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session) {
-    const url = req.nextUrl.clone(); url.pathname = isHome ? "/home/login" : "/login";
-    return NextResponse.redirect(url);
-  }
-  // the two kinds of account never cross: a homeowner (app_metadata.role, set
-  // only by the server) has no workspace, and an installer has no /home
-  const homeowner = session.user?.app_metadata?.role === "homeowner";
-  if (isHome !== homeowner) {
-    const url = req.nextUrl.clone(); url.pathname = homeowner ? "/home" : "/dashboard"; url.search = "";
+    const url = req.nextUrl.clone(); url.pathname = "/login";
     return NextResponse.redirect(url);
   }
   return res;

@@ -40,8 +40,6 @@ function initialsOf(name) {
 export default async function AppLayout({ children }) {
   const user = await currentUser();
   if (!user) redirect("/login");
-  // a homeowner's account has its own pages (app/home), never a workspace
-  if (user.app_metadata?.role === "homeowner") redirect("/home");
   const co = await currentCompany();
   const lang = normLang(co?.lang);
 

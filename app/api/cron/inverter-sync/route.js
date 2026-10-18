@@ -1,15 +1,11 @@
 // app/api/cron/inverter-sync/route.js — nightly pull of monthly production from
 // every connected inverter portal (lib/inverterSync.js). Runs on a Vercel cron
 // (vercel.json); oldest-synced accounts go first, so a run that hits the time
-// budget picks up where it stopped the next night. Then the fresh readings are
-// judged against each offer, and a clear shortfall or a stopped feed opens a
-// maintenance ticket (lib/monitorTickets.js).
+// budget picks up where it stopped the next night.
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { keyFromEnv } from "../../../../lib/secretBox.js";
 import { syncAll } from "../../../../lib/inverterSync.js";
-import { runMonitoringTickets } from "../../../../lib/monitorTickets.js";
-import { ticketNotifier } from "../../../../lib/ticketServer.js";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -26,9 +22,6 @@ export async function GET(req) {
   if (!keyFromEnv()) return NextResponse.json({ error: "no_secret_key" }, { status: 503 });
 
   const admin = createClient(url, key, { auth: { persistSession: false } });
-  const out = await syncAll(admin, { key: keyFromEnv(), budgetMs: 40_000 });
-  let tickets = null;
-  try { tickets = await runMonitoringTickets(admin, { notifierFor: (co) => ticketNotifier({ db: admin, co }), budgetMs: 12_000 }); }
-  catch (e) { console.error("[monitoring tickets]", e?.message); }
-  return NextResponse.json({ ...out, tickets }, { status: out.error ? 503 : 200 });
+  const out = await syncAll(admin, { key: keyFromEnv(), budgetMs: 50_000 });
+  return NextResponse.json(out, { status: out.error ? 503 : 200 });
 }
