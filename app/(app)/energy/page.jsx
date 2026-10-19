@@ -111,7 +111,7 @@ export default async function EnergyPage() {
             {ct("k_inst_s", lang, { pv: cn.totals.plants.pv.n, w: cn.totals.plants.wind.n, h: cn.totals.plants.hydro.n, p: num(cn.totals.prosumers.n, lang, 0) })}.{" "}
             {ct("k_total_note", lang, { o: mw(cn.totals.otherKw / 1000) })} {cnSource}
           </p>
-          <CnedExplorer lang={lang} stats={cn.stats} points={snap.points} unlocatedKw={cn.totals.unlocatedKw} companyId={co?.id}
+          <CnedExplorer lang={lang} stats={cn.stats} points={snap.points} unlocatedKw={cn.totals.unlocatedKw} companyId={co?.id} dateLabel={cnDate}
             sources={ct("src", lang, { src: `${ct("src_cned", lang, { date: cnDate })}; ${ct("src_pop", lang)}; ${ct("src_shapes", lang)}` })} />
           <CnedCards lang={lang} yearly={snap.yearly} production={snap.production} totals={cn.totals} stats={cn.stats} source={cnSource} />
         </>
