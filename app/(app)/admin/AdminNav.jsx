@@ -1,9 +1,12 @@
-// app/(app)/admin/AdminNav.jsx — the platform admin's three screens, one line.
+// app/(app)/admin/AdminNav.jsx — the platform admin's screens, one line.
 import Link from "next/link";
 import { at } from "../../../lib/adminText.js";
+import { successFeesOn } from "../../../lib/successFees.js";
 
 export default function AdminNav({ lang, here }) {
-  const links = [["/traction", "ad_traction"], ["/admin/tariffs", "ad_tariffs"], ["/admin/subsidies", "ad_programs"], ["/admin/lenders", "ad_loans"]];
+  const links = [["/traction", "ad_traction"], ["/admin/tariffs", "ad_tariffs"], ["/admin/subsidies", "ad_programs"], ["/admin/lenders", "ad_loans"],
+    // VoltMira's revenue under the pay-per-signed-job model, a local preview while it is on
+    ...(successFeesOn() ? [["/admin/revenue", "ad_revenue"]] : [])];
   return (
     <nav className="adm-nav" aria-label="Admin">
       {links.map(([href, key]) => (

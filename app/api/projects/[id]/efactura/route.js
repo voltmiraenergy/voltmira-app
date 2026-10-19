@@ -10,6 +10,7 @@ import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
 import { buildEfacturaInvoice, efacturaAdapterFor } from "../../../../../lib/efactura.js";
 import { submitEfactura, refreshEfactura } from "../../../../../lib/billingFlow.js";
 import { projectInvoice, billingGuard } from "../../../../../lib/invoiceServer.js";
+import { invoiceBlocked } from "../../../../../lib/successFees.js";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export async function POST(req, props) {
   if (await isRateLimited(`efactura:${clientIp(req)}`, 20, 60_000)) return NextResponse.json({ error: "rate" }, { status: 429 });
   const g = await billingGuard(id);
   if (g instanceof Response) return g;
+  if (invoiceBlocked(g.project.status)) return NextResponse.json({ error: "not_signed" }, { status: 403 });
   const { user, co, project: p } = g;
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }

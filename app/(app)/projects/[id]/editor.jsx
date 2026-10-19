@@ -53,6 +53,10 @@ import { moneyFormatter, numFor } from "../../../../lib/money.js";
 import { effectiveOfferCurrency, currencyOnMarketChange, betterCurrencyFor, normCurrency } from "../../../../lib/offerCurrency.js";
 import { saveOutbox, readOutbox, clearOutbox, isNetworkError } from "../../../../lib/offline.js";
 import LinkLabels from "../../../../components/LinkLabels.jsx";
+import JobFeeCard from "../../../../components/fees/JobFeeCard.jsx";
+import InvoiceGate from "../../../../components/fees/InvoiceGate.jsx";
+import { successFeesOn } from "../../../../lib/successFees.js";
+import { markJobCancelled } from "../../../../lib/feeActions.js";
 import { isPlaceholderTitle } from "../../../../lib/quoteTitle.js";
 
 // System-size slider range — raised to 500 kW: Site Designer's own real,
@@ -238,6 +242,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // of a proforma (asking for money up front) was reachable only by hand-editing
   // the URL. 0 = invoice the full amount.
   const [invOpen, setInvOpen] = useState(false);
+  // the pay-per-signed-job model asks to mark the job signed before its first invoice
+  const [invGate, setInvGate] = useState(false);
   // what the workflow rail last saved (a ticked step, a grid-file stage), so the
   // checklist and grid-file cards below show it without a reload
   const [railProg, setRailProg] = useState(null);
@@ -343,6 +349,29 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     const { batt, battKwh, ...rest } = p;
     return { ...rest, startYear, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) };
   }, [p, feedOverride, startYear]);
+
+  // Signed, from the rail or the invoice prompt: record it (activity, CRM
+  // hook), then save the status through this editor's own autosave, so a
+  // pending edit still waiting on its timer cannot write the old status back.
+  async function markSigned() {
+    clearTimeout(timer.current);
+    await markProjectWon(initial.id);
+    const next = { ...p, status: "won" };
+    setP(next);
+    await persist(next);
+  }
+  // under the pay-per-signed-job model an invoice is for a signed job
+  const openInvoice = () => (successFeesOn() && p.status !== "won" ? setInvGate(true) : setInvOpen(true));
+  // "Client cancelled" on the fee card: the job goes to lost, and its fee with it
+  async function markCancelled() {
+    const r = await markJobCancelled(initial.id);
+    if (!r?.ok) return false;
+    clearTimeout(timer.current);
+    const next = { ...p, status: "lost" };
+    setP(next);
+    await persist(next);
+    return true;
+  }
 
   /* debounced autosave — MUST surface failure: a false "Saved" while the write
      was rejected (expired session, offline, RLS) silently loses the edit. */
@@ -841,7 +870,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               <button className="btn ghost" onClick={openTemplate}><Qi d={tplSaved ? "check" : "bookmark"} />{tplSaved ? tr("tpl_saved") : tr("tpl_save")}</button>
             )}
             <button className="btn ghost" onClick={downloadPdf}><Qi d="pdf" />{tr("dl_pdf")}</button>
-            <button className="btn ghost" onClick={() => setInvOpen(true)}><Qi d="receipt" />{tr("inv_button")}</button>
+            <button className="btn ghost" onClick={openInvoice}><Qi d="receipt" />{tr("inv_button")}</button>
             <button className="btn ghost" onClick={() => { setLegalTab("contract"); setLegalDocsOpen(true); }}><Qi d="scale" />{tr("ld_open")}</button>
             {/* the three ways to send, kept together when the row wraps */}
             <span className="qb-sendgrp">
@@ -877,18 +906,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       <WorkflowRail projectId={initial.id} lang={lang} status={p.status}
         onAction={async (a) => {
           if (a.type === "send" || a.type === "copy_link") { makeProposal(); return true; }
-          if (a.type === "invoice") { setInvOpen(true); return true; }
-          if (a.type === "won") {
-            // Signed from the rail: record it (activity, CRM hook), then save the
-            // status through this editor's own autosave, so a pending edit still
-            // waiting on its timer cannot write the old status back.
-            clearTimeout(timer.current);
-            await markProjectWon(initial.id);
-            const next = { ...p, status: "won" };
-            setP(next);
-            await persist(next);
-            return true;
-          }
+          if (a.type === "invoice") { openInvoice(); return true; }
+          if (a.type === "won") { await markSigned(); return true; }
           return false;
         }}
         onChange={({ installProgress, gridFile }) => {
@@ -1422,6 +1441,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
 
           {signed && <SignedContract signed={signed} lang={lang} />}
 
+          {/* VoltMira's fee for this job: a local preview while the
+              pay-per-signed-job model is on (lib/successFees.js) */}
+          {successFeesOn() && <JobFeeCard projectId={initial.id} status={p.status} kw={p.kw} lang={lang} onCancel={markCancelled} />}
+
           {p.status === "won" && (
             <InstallChecklist key={railProg ? JSON.stringify(railProg) : "init"} projectId={initial.id}
               initial={railProg || initial.install_progress} lang={lang} />
@@ -1452,6 +1475,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           onApply={applySiteDesignLayout} applying={siteDesignApplying}
           projectInputs={p} onComputeQuote={computeSiteDesignQuote} money={fmt}
           onClose={() => setSiteDesignerOpen(false)} />
+      )}
+
+      {/* an invoice is for a signed job (the pay-per-signed-job model) */}
+      {invGate && (
+        <InvoiceGate lang={lang} kw={p.kw} onClose={() => setInvGate(false)}
+          onConfirm={async () => { await markSigned(); setInvGate(false); setInvOpen(true); }} />
       )}
 
       {/* proforma modal: pick a deposit, then open the document */}

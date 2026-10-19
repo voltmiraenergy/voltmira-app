@@ -3,7 +3,7 @@
 // via <AppTheme/>. Responsive (collapses to a bottom bar on mobile).
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Sprout, Zap, Users, Building2, ChevronRight, Coins } from "lucide-react";
+import { Sprout, Zap, Users, Building2, ChevronRight, Coins, ReceiptText } from "lucide-react";
 import SignOut from "./signout.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import SideNav from "./SideNav.jsx";
@@ -23,6 +23,10 @@ import { cr } from "../../lib/creditsText.js";
 import { creditsPaywallOn, FREE_OFFERS_PER_MONTH } from "../../lib/credits.js";
 import { creditBalance, offersThisMonth } from "../../lib/creditAccess.js";
 import { creditsPreview } from "../../lib/creditsPreview.js";
+import { successFeesOn } from "../../lib/successFees.js";
+import { companyFees } from "../../lib/feeData.js";
+import { ft } from "../../lib/feeText.js";
+import { num } from "../../lib/portfolioFormat.js";
 
 // One icon per plan, for the plan row under the profile card.
 const PLAN_ICON = { free: Sprout, pro: Zap, team: Users, enterprise: Building2 };
@@ -55,7 +59,10 @@ export default async function AppLayout({ children }) {
   // charged (or when previewing the free plan locally, lib/creditsPreview.js)
   const preview = creditsPreview();
   const isFree = !co?.plan || co.plan === "free";
-  const credits = co?.id && ((isFree && creditsPaywallOn()) || preview)
+  // the pay-per-signed-job model (lib/successFees.js, a local preview): this
+  // month's amount, or the free jobs left, instead of the plan and credits
+  const fees = successFeesOn() && co?.id ? await companyFees(co.id).catch(() => null) : null;
+  const credits = !fees && co?.id && ((isFree && creditsPaywallOn()) || preview)
     ? { sent: Math.min(await offersThisMonth(co.id), FREE_OFFERS_PER_MONTH), balance: await creditBalance(co.id) }
     : null;
 
@@ -120,7 +127,19 @@ export default async function AppLayout({ children }) {
                 <ChevronRight className="sp-go" size={15} strokeWidth={2} aria-hidden="true" />
               </Link>
             )}
-            {(() => {
+            {fees && (
+              <Link className="side-plan" href="/settings?tab=plan">
+                <i className="sp-ico"><ReceiptText size={15} strokeWidth={2} aria-hidden="true" /></i>
+                <span className="sp-tx">
+                  <b>{ft("badge", lang)}</b>
+                  <small>{fees.statement.totalLei === 0 && fees.next.left > 0
+                    ? ft("sb_free", lang, { n: fees.next.left })
+                    : ft("sb_month", lang, { lei: num(fees.statement.totalLei, lang, 0) })}</small>
+                </span>
+                <ChevronRight className="sp-go" size={15} strokeWidth={2} aria-hidden="true" />
+              </Link>
+            )}
+            {!fees && (() => {
               const free = !co?.plan || co.plan === "free";
               const PlanIcon = PLAN_ICON[free ? "free" : co.plan] || Zap;
               return (

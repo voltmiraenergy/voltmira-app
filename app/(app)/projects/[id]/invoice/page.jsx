@@ -9,6 +9,8 @@
 // Romania a fiscal invoice must be issued through ANAF e-Factura. It's the right
 // document to request a deposit / bank transfer against.
 import { notFound } from "next/navigation";
+import { invoiceBlocked } from "../../../../../lib/successFees.js";
+import NotSigned from "../../../../../components/fees/NotSigned.jsx";
 import { headers } from "next/headers";
 import { supabaseServer } from "../../../../../lib/supabase.js";
 import { currentCompany } from "../../../../../lib/session.js";
@@ -39,6 +41,8 @@ export default async function InvoicePage(props) {
   if (!p || !co) notFound();
 
   const lang = normLang(co.lang);
+  // the pay-per-signed-job model: an invoice is for a signed job (lib/successFees.js)
+  if (invoiceBlocked(p.status)) return <NotSigned projectId={p.id} lang={lang} />;
   const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB";
   // Issued in the QUOTE's currency (lib/offerCurrency.js): the offer's own
   // when the installer chose one (hryvnia for a client in Ukraine), else the

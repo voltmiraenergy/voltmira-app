@@ -22,6 +22,9 @@ import { sendEmail, proformaEmail, emailConfigured } from "../../../../../lib/em
 import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
 import { logActivity } from "../../../../../lib/activity.js";
 import { supabaseAdmin } from "../../../../../lib/supabase.js";
+import { invoiceBlocked } from "../../../../../lib/successFees.js";
+import { ft } from "../../../../../lib/feeText.js";
+import { normLang } from "../../../../../lib/i18n.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,8 +49,10 @@ async function authorize(req, id) {
   if (!co) return NextResponse.json({ error: "no_company" }, { status: 403 });
   // RLS-scoped read: a project outside the caller's company simply isn't there.
   const { data: project } = await (await supabaseServer())
-    .from("projects").select("id, title, client_name, company_id, invoice_no").eq("id", id).maybeSingle();
+    .from("projects").select("id, title, client_name, company_id, invoice_no, status").eq("id", id).maybeSingle();
   if (!project) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  // the pay-per-signed-job model: an invoice is for a signed job (lib/successFees.js)
+  if (invoiceBlocked(project.status)) return NextResponse.json({ error: "not_signed", message: ft("not_signed", normLang(co.lang)) }, { status: 403 });
   return { user, co, project };
 }
 

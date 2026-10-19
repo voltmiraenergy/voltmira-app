@@ -5,6 +5,8 @@
 // Read on the installer's session (RLS); written through
 // /api/projects/[id]/efactura and /payments.
 import { notFound } from "next/navigation";
+import { invoiceBlocked } from "../../../../../lib/successFees.js";
+import NotSigned from "../../../../../components/fees/NotSigned.jsx";
 import { supabaseServer } from "../../../../../lib/supabase.js";
 import { currentCompany } from "../../../../../lib/session.js";
 import { normLang } from "../../../../../lib/i18n.js";
@@ -29,6 +31,8 @@ export default async function BillingPage(props) {
   const { data: p } = await sb.from("projects").select("*").eq("id", id).maybeSingle();
   if (!p || !co) notFound();
   const lang = normLang(co.lang);
+  // the pay-per-signed-job model: an invoice is for a signed job (lib/successFees.js)
+  if (invoiceBlocked(p.status)) return <NotSigned projectId={p.id} lang={lang} />;
   const loc = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "ro-RO";
 
   const inv = await projectInvoice(p, co);

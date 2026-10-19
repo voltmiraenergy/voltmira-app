@@ -29,6 +29,8 @@ import { CONTRACT_TOKENS, COMMISSIONING_TOKENS } from "../../../lib/legalDocs.js
 import LeadAssistant from "./LeadAssistant.jsx";
 import MonitoringBill from "./MonitoringBill.jsx";
 import CreditsPanel from "./CreditsPanel.jsx";
+import { FeePlanLoader } from "../../../components/fees/FeePlan.jsx";
+import { successFeesOn } from "../../../lib/successFees.js";
 import { clearOfflineData } from "../../../lib/offline.js";
 import { aiOn } from "../../../lib/featureFlags.js";
 
@@ -699,30 +701,36 @@ export default function Settings() {
 
     plan: (
       <>
-        <Card title={t("s_plan", lang)} extra={<span className="st-plan-badge">{co.plan}</span>}>
-          {co.plan === "free" ? (
-            <>
-              {/* monthly or yearly: the yearly prices are 10 months for 12 */}
-              {(yearlyReady("pro") || yearlyReady("team")) && (
-                <div className="seg2 cr-seg" role="group" aria-label={cr("period_l", lang)}>
-                  <button type="button" className={period === "month" ? "on" : ""} aria-pressed={period === "month"} onClick={() => setPeriod("month")}>{cr("per_month", lang)}</button>
-                  <button type="button" className={period === "year" ? "on" : ""} aria-pressed={period === "year"} onClick={() => setPeriod("year")}>{cr("per_year", lang)}, {cr("two_free", lang)}</button>
-                </div>
-              )}
-              <div className="st-plan-acts">
-                <button className="dx-btn primary" onClick={() => upgrade("pro")}>{cr(period === "year" ? "pro_year" : "pro_month", lang)}</button>
-                <button className="dx-btn" onClick={() => upgrade("team")}>{cr(period === "year" ? "team_year" : "team_month", lang)}</button>
-              </div>
-              {period === "year" && <p className="st-p cr-dim">{yearlyReady("pro") ? cr("year_note", lang) : cr("year_off", lang)}</p>}
-            </>
-          ) : <p className="st-p">{t("s_billing_note", lang, { plan: co.plan })}</p>}
-        </Card>
-        <Card title={cr("h", lang)}>
-          <CreditsPanel lang={lang} companyId={co.id} plan={creditsPreview() ? "free" : co.plan} />
-        </Card>
-        <Card title={t("mb_title", lang)} desc={t("mb_desc", lang)}>
-          <MonitoringBill lang={lang} />
-        </Card>
+        {/* the pay-per-signed-job model (lib/successFees.js): a local preview
+            while NEXT_PUBLIC_SUCCESS_FEES is on; no plans, credits or limits */}
+        {successFeesOn() ? <FeePlanLoader lang={lang} /> : (
+          <>
+            <Card title={t("s_plan", lang)} extra={<span className="st-plan-badge">{co.plan}</span>}>
+              {co.plan === "free" ? (
+                <>
+                  {/* monthly or yearly: the yearly prices are 10 months for 12 */}
+                  {(yearlyReady("pro") || yearlyReady("team")) && (
+                    <div className="seg2 cr-seg" role="group" aria-label={cr("period_l", lang)}>
+                      <button type="button" className={period === "month" ? "on" : ""} aria-pressed={period === "month"} onClick={() => setPeriod("month")}>{cr("per_month", lang)}</button>
+                      <button type="button" className={period === "year" ? "on" : ""} aria-pressed={period === "year"} onClick={() => setPeriod("year")}>{cr("per_year", lang)}, {cr("two_free", lang)}</button>
+                    </div>
+                  )}
+                  <div className="st-plan-acts">
+                    <button className="dx-btn primary" onClick={() => upgrade("pro")}>{cr(period === "year" ? "pro_year" : "pro_month", lang)}</button>
+                    <button className="dx-btn" onClick={() => upgrade("team")}>{cr(period === "year" ? "team_year" : "team_month", lang)}</button>
+                  </div>
+                  {period === "year" && <p className="st-p cr-dim">{yearlyReady("pro") ? cr("year_note", lang) : cr("year_off", lang)}</p>}
+                </>
+              ) : <p className="st-p">{t("s_billing_note", lang, { plan: co.plan })}</p>}
+            </Card>
+            <Card title={cr("h", lang)}>
+              <CreditsPanel lang={lang} companyId={co.id} plan={creditsPreview() ? "free" : co.plan} />
+            </Card>
+            <Card title={t("mb_title", lang)} desc={t("mb_desc", lang)}>
+              <MonitoringBill lang={lang} />
+            </Card>
+          </>
+        )}
         {isOwner && (
           <>
             <Card title={t("dd_title", lang)} desc={t("dd_desc", lang)}>
