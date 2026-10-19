@@ -8,11 +8,15 @@ import { currentCompany } from "../../../lib/session.js";
 import { normLang } from "../../../lib/i18n.js";
 import CatalogManager from "./CatalogManager.jsx";
 import { appTitle } from "../../../lib/pageTitle.js";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 export const generateMetadata = appTitle("nav_catalog");
 
+// The library is hidden while it is incomplete: out of the menu, and the address answers 404.
+// Set CATALOG_PAGE=on to bring it back; nothing else about it was removed.
 export default async function CatalogPage() {
+  if (String(process.env.CATALOG_PAGE || "").toLowerCase() !== "on") notFound();
   const sb = await supabaseServer();
   const co = await currentCompany();
   const lang = normLang(co?.lang);
