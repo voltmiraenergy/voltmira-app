@@ -123,7 +123,7 @@ const HTML = {
   <div class="g-h"><span class="g-n">3</span><h2>The equipment catalog</h2></div>
   <p class="g-lede">Your own library of panels, inverters and batteries, so a quote's cost comes from real gear, not a round guess.</p>
   <div class="g-card">
-    <p><b>Build it once.</b> On the <b>Catalog</b> tab, add the products you actually install with their prices. New here? Hit <b>Load starter catalog</b> for a ready set of common panels, inverters and batteries, then edit the prices to match your suppliers.</p>
+    <p><b>Coming soon.</b> The equipment library is being completed and is hidden for now. Until it returns, add the equipment lines straight on a quote.</p>
     <p><b>It drives the real cost.</b> When you add equipment to a quote, the bill of materials replaces the rough €/kW estimate, so the number you show the client is your true cost.</p>
     <p><b>It looks the part.</b> Add a photo URL to any product and it shows as a clean thumbnail: handy when a client wants to see exactly what's going on the roof.</p>
   </div>
@@ -232,7 +232,7 @@ const HTML = {
   <div class="g-h"><span class="g-n">3</span><h2>Catalogul de echipamente</h2></div>
   <p class="g-lede">Biblioteca ta de panouri, invertoare și baterii: ca prețul unei oferte să vină din echipamente reale, nu dintr-o estimare rotundă.</p>
   <div class="g-card">
-    <p><b>Construiește-l o dată.</b> În tabul <b>Catalog</b>, adaugă produsele pe care chiar le instalezi, cu prețuri. Ești nou? Apasă <b>Încarcă catalog de start</b> pentru un set gata făcut de panouri, invertoare și baterii uzuale, apoi editează prețurile după furnizorii tăi.</p>
+    <p><b>În curând.</b> Biblioteca de echipamente este în curs de completare și e ascunsă deocamdată. Până revine, adaugă liniile de echipamente direct pe o ofertă.</p>
     <p><b>Determină costul real.</b> Când adaugi echipamente la o ofertă, lista de materiale înlocuiește estimarea aproximativă în €/kW: așa că numărul arătat clientului e costul tău real.</p>
     <p><b>Arată profesionist.</b> Adaugă un URL de imagine la orice produs și apare ca o miniatură curată: util când clientul vrea să vadă exact ce ajunge pe acoperiș.</p>
   </div>

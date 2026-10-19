@@ -356,7 +356,7 @@ export default async function Dashboard() {
   const statusLabels = Object.fromEntries(["draft", "sent", "won", "lost"].map((s) => [s, t("st_" + s, lang)]));
   const pages = [
     ["/leads", "nav_leads"], ["/projects", "nav_projects"], ["/activity", "nav_activity"], ["/studio", "nav_studio"],
-    ["/catalog", "nav_catalog"], ["/team", "nav_team"], ["/settings", "nav_settings"], ["/profile", "pf_title"], ["/guide", "nav_guide"],
+    ["/team", "nav_team"], ["/settings", "nav_settings"], ["/profile", "pf_title"], ["/guide", "nav_guide"],
   ].map(([href, k]) => ({ href, label: t(k, lang) }));
   let lastDay = null;
 
