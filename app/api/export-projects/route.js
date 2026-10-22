@@ -8,6 +8,8 @@ import { companyEngine } from "../../../lib/engineSettings.js";
 import { proposalStatsByProject } from "../../../lib/proposalStats.js";
 import { rowToQuoteInput } from "../../../lib/quoteInput.js";
 import { csvEsc } from "../../../lib/csv.js";
+import { currentCompany } from "../../../lib/session.js";
+import { projectVisibility } from "../../../lib/projectAccess.js";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,7 @@ export async function GET() {
     proposalStatsByProject(sb),
   ]);
   const E = await companyEngine(co);
+  const sees = await projectVisibility(user, await currentCompany());
   const daysAgo = (iso) => iso ? Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)) : "";
 
   // Owner names via service role scoped to the caller's own company
@@ -35,7 +38,7 @@ export async function GET() {
   };
 
   const head = ["Title", "Client", "Address", "Market", "System kW", "Battery", "Payback (years)", "Value (EUR)", "Status", "Owner", "Opens", "Sent (days ago)", "Notes", "Updated"];
-  const lines = (rows || []).map(p => {
+  const lines = (rows || []).filter(sees).map(p => {
     // Same input builder as the dashboard/projects list, so the exported payback
     // and value match the app exactly (this used to omit the battery capacity and
     // the bill-of-materials total, so battery/BOM quotes exported wrong numbers).

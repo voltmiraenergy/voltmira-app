@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "../../../lib/supabase.js";
 import { currentUser, currentCompany } from "../../../lib/session.js";
+import { projectVisibility } from "../../../lib/projectAccess.js";
 import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
 import { projectInvoice } from "../../../lib/invoiceServer.js";
 import { cleanMapping, toCsv, toXml, buildExportRows, rangeOk } from "../../../lib/export1c.js";
@@ -36,7 +37,8 @@ export async function GET(req) {
     sb.from("export_mappings").select("mapping").maybeSingle(),
   ]);
   const mapping = cleanMapping(mp.data?.mapping || {});
-  const list = projects || [];
+  const sees = await projectVisibility(user, co);
+  const list = (projects || []).filter(sees);
   // amounts only for the invoices inside the range, or behind a payment in it
   const payIds = new Set((pm.data || []).map((m) => m.project_id));
   const amounts = new Map();

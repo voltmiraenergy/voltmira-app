@@ -30,6 +30,7 @@ import { invoiceAmounts } from "../../../lib/invoiceMath.js";
 import { effectiveOfferCurrency } from "../../../lib/offerCurrency.js";
 import { getRate } from "../../../lib/fx.js";
 import { csvEsc } from "../../../lib/csv.js";
+import { projectVisibility } from "../../../lib/projectAccess.js";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,7 @@ export async function GET() {
   const { data: rows } = await sb.from("projects").select("*")
     .eq("market", "MD").not("invoice_no", "is", null).order("invoice_no", { ascending: true });
 
+  const sees = await projectVisibility(user, co);
   const E = await companyEngine(co);
   // one rate lookup per currency the invoices use
   const rates = {};
@@ -60,7 +62,7 @@ export async function GET() {
     "Denumire furnizor", "IDNO furnizor", "Cod TVA furnizor",
   ];
   const lines = [];
-  for (const p of rows || []) {
+  for (const p of (rows || []).filter(sees)) {
     const q = quote(rowToQuoteInput(p, E), E).e;
     const cur = effectiveOfferCurrency(p.offer_currency, co.currency, p.market);
     const { gross, net, vat, rate } = invoiceAmounts({ grossEur: Math.max(0, q.cost || 0), fx: await rateFor(cur), vatRatePct: co.vat_rate });

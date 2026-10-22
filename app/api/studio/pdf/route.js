@@ -67,7 +67,10 @@ export async function POST(req) {
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/\son\w+\s*=\s*"[^"]*"/gi, "")
     .replace(/\son\w+\s*=\s*'[^']*'/gi, "")
-    .replace(/<img\b(?![^>]*\bsrc\s*=\s*["']data:)[^>]*>/gi, "");
+    .replace(/<img\b(?![^>]*\bsrc\s*=\s*["']data:)[^>]*>/gi, "")
+    // nothing that loads another page or file: frames, objects, embedded documents, stylesheets by link,
+    // redirects by meta, and a base that would re-point every relative address
+    .replace(/<\/?(?:iframe|frame|frameset|object|embed|applet|link|meta|base|form|portal)\b[^>]*>/gi, "");
   const css = rawCss.replace(/<\/?style[^>]*>/gi, "");
 
   let filename = (String(b.filename || "voltmira-document").replace(/[^\w.-]+/g, "-").slice(0, 60)) || "voltmira-document";

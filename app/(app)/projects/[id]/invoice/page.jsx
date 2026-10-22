@@ -11,7 +11,8 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { supabaseServer } from "../../../../../lib/supabase.js";
-import { currentCompany } from "../../../../../lib/session.js";
+import { currentCompany, currentUser } from "../../../../../lib/session.js";
+import { projectVisibility } from "../../../../../lib/projectAccess.js";
 import { quote } from "@voltmira/engine";
 import { companyEngine } from "../../../../../lib/engineSettings.js";
 import { getRate } from "../../../../../lib/fx.js";
@@ -37,6 +38,8 @@ export default async function InvoicePage(props) {
   const co = await currentCompany();
   const { data: p } = await sb.from("projects").select("*").eq("id", params.id).maybeSingle();
   if (!p || !co) notFound();
+  // access control: a Sales member does not open a colleague's proforma by its address
+  { const u = await currentUser(); if (!u || !(await projectVisibility(u, co))(p)) notFound(); }
 
   const lang = normLang(co.lang);
   const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB";
