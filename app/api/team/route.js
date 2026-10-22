@@ -11,6 +11,9 @@ import { seatCap } from "../../../lib/plans.js";
 import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
 import { sendEmail, teamInviteEmail, emailConfigured } from "../../../lib/email.js";
 import { normalizeTitle } from "../../../lib/teamValidation.js";
+import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
+import { isDemoEmail } from "../../../lib/demo.js";
+import { isPlatformAdmin } from "../../../lib/platformAdmin.js";
 
 async function callerProfile() {
   const sb = await supabaseServer();
@@ -20,7 +23,15 @@ async function callerProfile() {
   // verified auth id — the `profiles` RLS recurses, so a user-session read fails.
   const { data: profile } = await supabaseAdmin().from("profiles")
     .select("id, company_id, role").eq("id", user.id).maybeSingle();
-  return profile;
+  return profile ? { ...profile, email: user.email || "" } : null;
+}
+
+/** Whether an account has ever signed in: a join link may only be handed over for one that has not. */
+async function neverSignedIn(admin, userId) {
+  try {
+    const { data } = await admin.auth.admin.getUserById(userId);
+    return !!data?.user && !data.user.last_sign_in_at;
+  } catch { return false; }
 }
 
 const siteUrl = () => process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com";
@@ -59,6 +70,11 @@ export async function POST(req) {
   const me = await callerProfile();
   if (!me) return NextResponse.json({ error: "auth" }, { status: 401 });
   if (me.role !== "owner") return NextResponse.json({ error: "owner_only" }, { status: 403 });
+  // The public demo hands out an owner session; a team invite mints sign-in links and sends mail from
+  // VoltMira, so neither is for the demo. And one workspace, one address, cannot loop it.
+  if (isDemoEmail(me.email)) return NextResponse.json({ error: "demo" }, { status: 403 });
+  if (await isRateLimited(`team:${me.company_id}`, 20, 3_600_000) || await isRateLimited(`team-ip:${clientIp(req)}`, 40, 3_600_000))
+    return NextResponse.json({ error: "rate" }, { status: 429 });
 
   let b; try { b = await req.json(); } catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }
   const admin = supabaseAdmin();
@@ -68,7 +84,14 @@ export async function POST(req) {
     const { data: target } = await admin.from("profiles")
       .select("id, email").eq("id", String(b.resend)).eq("company_id", me.company_id).maybeSingle();
     if (!target?.email) return NextResponse.json({ error: "bad_target" }, { status: 404 });
-    // They exist in auth already, so recovery is the link that works.
+    // They exist in auth already, so recovery is the link that works. It is a sign-in link: it goes to
+    // the person's own address, and only comes back here for someone who has never signed in (nobody
+    // else's account is opened with it); for anyone else the email carries the plain sign-in page.
+    const fresh = await neverSignedIn(admin, target.id);
+    if (!fresh) {
+      const sent = await deliver(admin, me.company_id, target.email, `${siteUrl()}/login`);
+      return NextResponse.json({ ok: true, inviteLink: null, resent: true, ...sent });
+    }
     const got = await joinLink(admin, target.email, ["recovery", "magiclink", "invite"]);
     if (got.error || !got.link) return NextResponse.json({ error: "invite_failed" }, { status: 502 });
     const sent = await deliver(admin, me.company_id, target.email, got.link);
@@ -81,6 +104,8 @@ export async function POST(req) {
   const title = normalizeTitle(b.title) ?? ""; // an unrecognized title never fails the invite itself
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     return NextResponse.json({ error: "bad_email" }, { status: 400 });
+  // the people who run the platform are never put in a workspace by an invite
+  if (isPlatformAdmin(email) || isDemoEmail(email)) return NextResponse.json({ error: "other_team" }, { status: 409 });
 
   // Seats come from lib/plans.js. This used to read
   //   plan === "enterprise" ? Infinity : 5
@@ -113,6 +138,10 @@ export async function POST(req) {
     .select("id, company_id, role").eq("id", got.user.id).maybeSingle();
   const existing = !!prof;
   let moved = false;
+  // Which link worked says whether this address already has an account: only a brand-new one may have its
+  // sign-in link handed to the inviter (it opens an empty account nobody else uses). An account that
+  // already exists is reached through its own sign-in page, never through a link minted here.
+  const brandNew = got.kind === "invite" && !prof;
 
   if (prof?.company_id === me.company_id)
     return NextResponse.json({ error: "already_member" }, { status: 409 });
@@ -123,24 +152,22 @@ export async function POST(req) {
     // profiles.company_id is single-valued, so joining yours means leaving
     // theirs. That's a real trade-off, so we hand the owner the facts and let
     // them confirm rather than deciding silently in either direction.
-    if (b.confirm !== true) {
-      const [{ data: oldCo }, { count: quotes }, { count: leads }, { count: mates }] = await Promise.all([
+    const [{ data: oldCo }, { count: quotes }, { count: leads }, { count: mates }] = await Promise.all([
         admin.from("companies").select("name").eq("id", prof.company_id).maybeSingle(),
         admin.from("projects").select("id", { count: "exact", head: true }).eq("company_id", prof.company_id),
         admin.from("leads").select("id", { count: "exact", head: true }).eq("company_id", prof.company_id),
         admin.from("profiles").select("id", { count: "exact", head: true }).eq("company_id", prof.company_id),
-      ]);
+    ]);
+    // Only a workspace nobody has used yet (one member, no quotes, no leads) can be left by an invite. A
+    // person with real work in theirs is not moved out of it by someone else, whatever they are told.
+    if ((mates || 0) > 1 || (quotes || 0) > 0 || (leads || 0) > 0) return NextResponse.json({ error: "other_team" }, { status: 409 });
+    if (b.confirm !== true) {
       return NextResponse.json({
         error: "other_team",
-        detail: {
-          company: oldCo?.name || "", quotes: quotes || 0, leads: leads || 0,
-          // If they're the last profile in it, that workspace ends up with
-          // nobody who can open it — the owner must see this before saying yes.
-          lastMember: (mates || 0) <= 1,
-        },
+        detail: { company: oldCo?.name || "", quotes: 0, leads: 0, lastMember: true },
       }, { status: 409 });
     }
-    moved = true;   // owner confirmed with the numbers in front of them
+    moved = true;   // an unused workspace, and the owner confirmed
   }
 
   // Pre-create their profile IN THIS COMPANY (upsert — the invited user may
@@ -158,8 +185,8 @@ export async function POST(req) {
   }
 
   // Best-effort delivery; never blocks the invite.
-  const sent = await deliver(admin, me.company_id, email, got.link);
-  return NextResponse.json({ ok: true, inviteLink: got.link, existing, moved, ...sent });
+  const sent = await deliver(admin, me.company_id, email, brandNew ? got.link : `${siteUrl()}/login`);
+  return NextResponse.json({ ok: true, inviteLink: brandNew ? got.link : null, existing, moved, ...sent });
 }
 
 // PATCH { id, title } → change an existing teammate's job title (owner only).
