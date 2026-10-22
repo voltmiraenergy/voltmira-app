@@ -23,6 +23,7 @@ import RoofSatellite from "../../../components/RoofSatellite.jsx";
 import ClientAudit from "./ClientAudit.jsx";
 import { MonthlySVG, CashflowSVG, CHART, monthNames } from "./charts.jsx";
 import FinanceToggle from "./FinanceToggle.jsx";
+import RoofSides from "./RoofSides.jsx";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { headers } from "next/headers";
@@ -108,7 +109,7 @@ export default async function ProposalPage(props) {
   }
   const { after = null, company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
     offer = null, chosenOption = null, cned = null, support = null, tariff = null, referral = null, financing = null, signature = null, qsign = null,
-    roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null } = data;
+    roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, roofSides = null, roofStatus = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
   const signedDate = signedAt
@@ -126,7 +127,7 @@ export default async function ProposalPage(props) {
       <main lang={lang} style={{ background: "#fff", minHeight: "100vh" }}>
         <HtmlLang lang={lang} />
         <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom}
-          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat} roofPhoto={roofPhoto}
+          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat} roofPhoto={roofPhoto} roofSides={roofSides} roofStatus={roofStatus}
           acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} support={support} tariff={tariff}
           signed={accepted && signedName ? { name: signedName, date: signedDate, ...signature } : null} />
         {/* The PDF route drives printing through CDP and passes auto=0:
@@ -419,6 +420,9 @@ export default async function ProposalPage(props) {
                   {roofOrientation ? <span className="pp-chip">{t("pdf_orient", lang)}: <b>{Math.round(roofOrientation.tiltDeg)}°, {compassLabel(roofOrientation.azimuthDeg, lang)}</b></span> : null}
                 </div>
               )}
+
+              <RoofSides sides={roofSides} status={roofStatus} lang={lang} company={coShort} nf={nf}
+                day={roofStatus?.at ? fmtDate(roofStatus.at + "T12:00:00Z", loc, { day: "numeric", month: "long", year: "numeric" }) : null} />
 
               {roofPhoto ? (
                 <figure className="pp-roof pp-card">

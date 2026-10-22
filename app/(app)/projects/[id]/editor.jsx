@@ -50,7 +50,8 @@ import { xt } from "../../../../lib/integrationText.js";
 import { autoBom, recommendMount, findPanel } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
 import { designCheck } from "../../../../lib/designCheck.js";
-import { fitPanels, fitOptions, limitPanels } from "../../../../lib/roofLayout.js";
+import { fitSidesFor, limitPanels } from "../../../../lib/roofLayout.js";
+import { blendYields, fetchSideYield } from "../../../../lib/sideYield.js";
 import { moneyFormatter, numFor } from "../../../../lib/money.js";
 import { effectiveOfferCurrency, currencyOnMarketChange, betterCurrencyFor, normCurrency } from "../../../../lib/offerCurrency.js";
 import { saveOutbox, readOutbox, clearOutbox, isNetworkError } from "../../../../lib/offline.js";
@@ -166,6 +167,18 @@ const CUR_TXT = {
 const curTxt = (lang, cur, k) => t3(lang, ...(CUR_TXT[cur] || CUR_TXT.EUR)[k]);
 
 /* ---------- editor ---------- */
+// A labelled switch. A component of its own (not a helper called while the page renders), so the handler it is
+// given is never taken for something that runs during render.
+function CheckRow({ on, label, sub, onChange }) {
+  return (
+    <label className="check" style={{ marginTop: 10 }}>
+      <input type="checkbox" checked={on} onChange={(e) => onChange(e.target.checked)} />
+      <span className="toggle-pill" />
+      <span className="txt">{label}<small>{sub}</small></span>
+    </label>
+  );
+}
+
 // A money field typed in the offer's own currency (lei, hryvnia), for the
 // electricity price and the monthly loan payment. The quote stores EUR, so the
 // field keeps the text being typed ("3," then "3,4") and only converts what it
@@ -530,6 +543,18 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     if (!p.address && p.lat == null) return alert(tr("add_address"));
     setPvgisBusy(true);
     try {
+      // a roof drawn side by side has the yield of those sides (their own pitch and facing, weighted by what each
+      // holds); this button used to replace it with 35 degrees facing south and call it "this exact roof"
+      const sides = (Array.isArray(p.siteDesign?.sides) ? p.siteDesign.sides : []).filter((s) => s.count > 0);
+      if (sides.length && p.lat != null && p.lon != null) {
+        const got = await Promise.all(sides.map(async (s) => ({ ...s, ...(await fetchSideYield({ lat: p.lat, lon: p.lon, tiltDeg: s.tiltDeg, azimuthDeg: s.azimuthDeg })) })));
+        const b = blendYields(got);
+        if (b.yieldOverride) {
+          update({ yieldOverride: b.yieldOverride, ...(b.monthlyYieldShape ? { monthlyYieldShape: b.monthlyYieldShape } : {}) });
+          if (b.failed) alert(t3(lang, `Pentru ${b.failed} parte/părți nu s-au găsit date solare: randamentul le numără pe celelalte.`, `No solar data for ${b.failed} side(s): the yield counts the others.`, `Нет данных о солнце для скатов: ${b.failed}. В выработке учтены остальные.`, `Немає даних про сонце для схилів: ${b.failed}. У виробітку враховано решту.`));
+          return;
+        }
+      }
       // Coordinates from a picked address beat re-geocoding its text: the same
       // street name exists in several towns, and the text lookup can resolve to
       // a different one than the installer saw on the pin.
@@ -552,8 +577,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // Lets the Site Designer preview real payback/ROI/CO2 for whatever kW its
   // current drawn layout implies — same engine call as the main quote above,
   // just with kw swapped for the layout's, so the two can never disagree.
-  const computeSiteDesignQuote = useCallback((kw) =>
-    quote({ ...p, kw, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) }, E),
+  const computeSiteDesignQuote = useCallback((kw, extra) =>
+    quote({ ...p, kw, costOverride: 0, ...(extra || {}), ...(feedOverride ? { feedOverride } : {}) }, E),
     [p, E, feedOverride]);
 
   // Rail/clamp quantities for BosEstimate: the SAME real drawn roof planes
@@ -561,42 +586,41 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // already use, not a separate guess — recomputed live here (not persisted
   // with the project) since a plane's geometry, or the BOM's real panel,
   // can change without reopening Site Designer.
+  // the roof side that holds most of the panels: the one the structural loads and the evening peak read (they read
+  // the first side drawn, which on a roof with a small dormer drawn first was the wrong one)
+  const mainPlane = useMemo(() => {
+    const planes = Array.isArray(p.siteDesign?.planes) ? p.siteDesign.planes : [];
+    const sides = Array.isArray(p.siteDesign?.sides) ? p.siteDesign.sides : [];
+    const best = [...sides].sort((a, b) => (b.count || 0) - (a.count || 0))[0];
+    return (best && planes.find((pl) => pl.id === best.id)) || planes[0] || null;
+  }, [p.siteDesign]);
   const siteRows = useMemo(() => {
     const planes = Array.isArray(p.siteDesign?.planes) ? p.siteDesign.planes : [];
-    const validPlanes = planes.filter((pl) => Array.isArray(pl.polygon) && pl.polygon.length >= 3);
-    if (!validPlanes.length) return [];
-    const obstacles = Array.isArray(p.siteDesign?.obstacles)
-      ? p.siteDesign.obstacles.map((o) => o.polygon).filter((o) => Array.isArray(o) && o.length >= 3)
-      : [];
+    if (!planes.some((pl) => Array.isArray(pl.polygon) && pl.polygon.length >= 3)) return [];
     const dc = designCheck({ bom: p.bom, kw: p.kw });
     const { w, h } = dc.panel.dimensionsMm || { w: 1909, h: 1134 };
-    const opts = fitOptions(p.siteDesign?.layout);
     // rails for the panels the quote sells, not for every place on the roof
-    return limitPanels(validPlanes.map((pl) => ({ ...fitPanels(pl.polygon, obstacles, h, w, { ...opts, tiltDeg: Number(pl.tiltDeg) || 0, azimuthDeg: Number(pl.azimuthDeg) || 0 }), azimuthDeg: Number(pl.azimuthDeg) || 0 })),
-      Math.max(0, Number(dc.modules) || 0)).flatMap((f) => f.rows);
+    return limitPanels(fitSidesFor(p.siteDesign, { w, h }), Math.max(0, Number(dc.modules) || 0)).flatMap((f) => f.rows);
   }, [p.siteDesign, p.bom, p.kw]);
 
   async function applySiteDesignLayout(layout) {
     if (!layout || !layout.totalCount) return;
     setSiteDesignApplying(true);
     try {
-      const results = await Promise.all(layout.perPlane.filter((pl) => pl.count > 0).map(async (pl) => {
-        try {
-          const r = await fetch(`/api/pvgis?lat=${pl.lat}&lon=${pl.lon}&angle=${pl.tiltDeg}&aspect=${pl.azimuthDeg}`);
-          const j = await r.json();
-          return { ...pl, yieldPerKwp: j.yieldPerKwp, monthlyShape: j.monthlyShape };
-        } catch { return { ...pl, yieldPerKwp: null }; }
-      }));
-      const valid = results.filter((r) => r.yieldPerKwp);
+      // each side's own yield: the designer already looked it up while it was open; any side still without one is
+      // looked up now
+      const results = await Promise.all(layout.perPlane.filter((pl) => pl.count > 0).map(async (pl) =>
+        (pl.yieldPerKwp > 0 ? pl : { ...pl, ...(await fetchSideYield(pl)) })));
+      const blend = blendYields(results);
       let patch = { kw: layout.kw };
-      if (valid.length) {
-        const totalCount = valid.reduce((s, r) => s + r.count, 0) || 1;
-        patch.yieldOverride = valid.reduce((s, r) => s + r.yieldPerKwp * r.count, 0) / totalCount;
-        if (valid.every((r) => Array.isArray(r.monthlyShape) && r.monthlyShape.length === 12)) {
-          patch.monthlyYieldShape = Array.from({ length: 12 },
-            (_, i) => valid.reduce((s, r) => s + r.monthlyShape[i] * r.count, 0) / totalCount);
-        }
+      if (blend.yieldOverride) {
+        patch.yieldOverride = blend.yieldOverride;
+        if (blend.monthlyYieldShape) patch.monthlyYieldShape = blend.monthlyYieldShape;
       }
+      // a side that got no solar data is counted in the roof's yield by the others: said, not dropped in silence
+      if (blend.failed) alert(t3(lang, `Pentru ${blend.failed} parte/părți nu s-au găsit date solare: randamentul acoperișului le numără pe celelalte.`, `No solar data for ${blend.failed} side(s): the roof's yield counts the others.`, `Нет данных о солнце для скатов: ${blend.failed}. В выработке крыши учтены остальные.`, `Немає даних про сонце для схилів: ${blend.failed}. У виробітку даху враховано решту.`));
+      // the sides' own figures stay with the roof: the offer shows them
+      if (Array.isArray(layout.sides)) patch.siteDesign = { ...(pRef.current.siteDesign || {}), sides: layout.sides };
       // The roof material the most panels actually sit on, so a building with
       // one small trapezoidal-sheet dormer and one large tile main roof still
       // gets the mount that matches where the array actually is.
@@ -796,13 +820,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     ? { kind: "mismatch", currency: betterCurrencyFor(offerCur, p.market) } : null);
 
   // A demo-style .check toggle row.
-  const check = (on, l, sub, fn) => (
-    <label className="check" style={{ marginTop: 10 }}>
-      <input type="checkbox" checked={on} onChange={e => fn(e.target.checked)} />
-      <span className="toggle-pill" />
-      <span className="txt">{l}<small>{sub}</small></span>
-    </label>
-  );
 
   // The margin behind the price, from the same bill-of-materials total BomCard shows.
   const materials = bomTotal(p.bom);
@@ -1083,18 +1100,18 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 price above implies. Defaults off: every existing/new project
                 keeps computing against the flat price unless explicitly
                 switched. */}
-            {p.market === "MD" && check(p.tariffMode === "differentiated", tr("md_tariff_diff"), tr("md_tariff_diff_sub"),
-              v => update({ tariffMode: v ? "differentiated" : "flat" }))}
+            {p.market === "MD" && <CheckRow on={p.tariffMode === "differentiated"} label={tr("md_tariff_diff")} sub={tr("md_tariff_diff_sub")}
+              onChange={(v) => update({ tariffMode: v ? "differentiated" : "flat" })} />}
             {!p.useMonthly && (
               <div className="field"><label>{tr("annual_cons")}</label>
                 <NumInput className="input" step="100" min="1" max="50000000" value={p.cons}
                   onValue={(v) => update({ cons: v })} /></div>
             )}
-            {check(p.useMonthly, tr("use_monthly"), tr("use_monthly_sub"),
-              v => update(v
+            <CheckRow on={p.useMonthly} label={tr("use_monthly")} sub={tr("use_monthly_sub")}
+              onChange={(v) => update(v
                 ? { useMonthly: true, consMonthly: (Array.isArray(p.consMonthly) && p.consMonthly.length === 12)
                     ? p.consMonthly : Array(12).fill(Math.round((p.cons || 5000) / 12)) }
-                : { useMonthly: false }))}
+                : { useMonthly: false })} />
             {p.useMonthly && (
               <div style={{ marginTop: 12 }}>
                 <div className="mo-grid">
@@ -1343,7 +1360,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             market={p.market}
           />
 
-          <StructuralLoads lang={lang} roofPitchDeg={p.siteDesign?.planes?.[0]?.tiltDeg} />
+          <StructuralLoads lang={lang} roofPitchDeg={mainPlane?.tiltDeg} />
 
           <BosEstimate lang={lang} bom={p.bom} kw={p.kw}
             battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} consKwh={consEff} phases={undefined} market={p.market}
@@ -1351,7 +1368,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
 
           <PeakShaving lang={lang} lat={p.lat} lon={p.lon} kw={p.kw} cons={consEff}
             battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} market={p.market}
-            roofPitchDeg={p.siteDesign?.planes?.[0]?.tiltDeg} roofAzimuthDeg={p.siteDesign?.planes?.[0]?.azimuthDeg} />
+            roofPitchDeg={mainPlane?.tiltDeg} roofAzimuthDeg={mainPlane?.azimuthDeg} />
 
           {/* Compare every inverter that could serve this array, not just the
               one in the BOM — applying a row swaps the BOM's inverter line. */}

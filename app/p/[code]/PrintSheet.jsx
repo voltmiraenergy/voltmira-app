@@ -28,6 +28,7 @@ import { ppt, yearsN } from "./text.js";
 import { Moon, Scale, Snowflake, ThermometerSun, TriangleAlert } from "lucide-react";
 import UaSection from "./UaSection.jsx";
 import RoofSatellite from "../../../components/RoofSatellite.jsx";
+import RoofSides from "./RoofSides.jsx";
 
 // Per-market export data (same table as the demo's MARKETS).
 const MKT = {
@@ -232,7 +233,7 @@ const CSS = `
   }
 `;
 
-export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, acceptUrl = "", fx = null, support = null, tariff = null, signed = null }) {
+export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, roofSides = null, roofStatus = null, acceptUrl = "", fx = null, support = null, tariff = null, signed = null }) {
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
   // Minus ahead of the currency symbol: "€-31" reads as a broken string.
   // Lei for a Moldovan installer at the rate frozen with the proposal, with
@@ -445,6 +446,8 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
           <span className="p-chip">{tr("pdf_orient")}: <b>{orientText}</b></span>
           {installWarrantyYears > 0 && <span className="p-chip"><b>{tr("pdf_warranty_install_v", { n: installWarrantyYears, co: company?.name || "" })}</b></span>}
         </div>
+        <RoofSides sides={roofSides} status={roofStatus} lang={lang} company={company.shortName || company.name || ""} nf={nf}
+          day={roofStatus?.at ? fmtDate(new Date(roofStatus.at + "T12:00:00Z"), loc) : null} />
         {/* A battery is its own product (keeping the lights on), not just a
             savings add-on: the honest, computable claim is hours of backup at
             this household's own average draw. */}

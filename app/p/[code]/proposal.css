@@ -252,6 +252,20 @@
 }
 .pp-chip b { color: var(--ink); font-weight: 600; }
 .pp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+/* the roof side by side, and how it was designed */
+.pp-sides { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+.pp-sides .pp-h3 { margin: 0; }
+.pp-sides-scroll { overflow-x: auto; }
+.pp-sides table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.pp-sides th, .pp-sides td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.pp-sides th[scope=col]:first-child, .pp-sides th[scope=row] { text-align: left; }
+.pp-sides thead th { font-size: 12px; font-weight: 600; color: var(--muted); }
+.pp-sides tbody th { font-weight: 600; }
+.pp-sides td small { display: block; font-size: 11.5px; color: var(--muted); }
+.pp-sides-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.pp-mark { margin: 0; padding: 10px 14px; border-radius: 10px; font-size: 13.5px; line-height: 1.45; border: 1px solid var(--line); background: var(--sunk); color: inherit; }
+.pp-mark.is-ver { border-color: #1E6B4E; }
+.p-doc .pp-sides, .p-page .pp-sides { margin-top: 10px; }
 .pp-link {
   display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--green);
   text-decoration: underline; text-decoration-color: rgba(30, 107, 78, 0.35); text-underline-offset: 3px;

@@ -33,7 +33,9 @@ import { loadGoogleSatelliteLayer } from "../lib/googleSatellite.js";
 import { tilesAround, postTiles } from "../lib/tileWarm.js";
 
 const SAT_ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-import { fitPanels, compassLabel, project, polygonAreaM2, slopeAreaM2, facingFromShape, fitOptions, limitPanels } from "../lib/roofLayout.js";
+import { compassLabel, project, polygonAreaM2, slopeAreaM2, facingFromShape, limitPanels, fitSidesFor, presetRing, OBSTACLE_PRESETS, OBSTACLE_HEIGHT_DEFAULT, shadeElevationDeg, RACK_ROOFS } from "../lib/roofLayout.js";
+import { measurePhoneTilt } from "../lib/phoneTilt.js";
+import { blendYields, sideSummaries, sideKey, fetchSideYield } from "../lib/sideYield.js";
 import { drawReadout, drawLang } from "./drawReadout.js";
 import NumInput from "./NumInput.jsx";
 import { PANELS, findPanel, recommendPanel } from "../lib/supplierCatalog.js";
@@ -74,7 +76,33 @@ const TX = {
   plane: { en: "Side {n}", ro: "Partea {n}", ru: "Скат {n}", uk: "Схил {n}" },
   planeSum: { en: "{a} m², {tilt}° pitch, faces {dir}", ro: "{a} m², înclinare {tilt}°, spre {dir}", ru: "{a} м², наклон {tilt}°, на {dir}", uk: "{a} м², нахил {tilt}°, на {dir}" },
   del: { en: "Delete {name}", ro: "Șterge {name}", ru: "Удалить: {name}", uk: "Видалити: {name}" },
+  presetsH: { en: "One click for the small things", ro: "Un clic pentru lucrurile mici", ru: "Один щелчок для мелочей", uk: "Один клік для дрібниць" },
+  presetsP: { en: "Pick one, then click the roof where it stands. It is set down at its real size; drag its corners if it is not exact.", ro: "Alege unul, apoi apasă pe acoperiș unde se află. Se așază la mărimea reală; trage de colțuri dacă nu e exact.", ru: "Выберите и щёлкните по крыше там, где он стоит. Он ставится в реальный размер; потяните за углы, если не точно.", uk: "Виберіть і клацніть по даху там, де він стоїть. Він ставиться в реальний розмір; потягніть за кути, якщо не точно." },
+  h_place: { en: "Click the roof where it stands.", ro: "Apasă pe acoperiș unde se află.", ru: "Щёлкните по крыше там, где он стоит.", uk: "Клацніть по даху там, де він стоїть." },
+  obHeight: { en: "Height above the roof, m", ro: "Înălțime deasupra acoperișului, m", ru: "Высота над крышей, м", uk: "Висота над дахом, м" },
+  clearance: { en: "Distance kept round vents, chimneys and skylights", ro: "Distanța păstrată în jurul ventilațiilor, coșurilor și ferestrelor", ru: "Отступ вокруг вентиляции, дымоходов и окон", uk: "Відступ навколо вентиляції, димарів і вікон" },
+  clearanceHelp: { en: "A thing taller than 30 cm also shades the panels north of it; the shade is worked out for the equinox at noon (sun {deg}° high). Winter, mornings and evenings are worse.", ro: "Un lucru mai înalt de 30 cm umbrește și panourile din nordul lui; umbra e calculată la echinocțiu, la amiază (soarele la {deg}°). Iarna, dimineața și seara e mai rău.", ru: "Всё выше 30 см также затеняет панели севернее; тень считается на равноденствие в полдень (солнце {deg}°). Зимой, утром и вечером хуже.", uk: "Усе вище 30 см також затінює панелі на північ; тінь розраховано на рівнодення опівдні (сонце {deg}°). Взимку, зранку й ввечері гірше." },
+  planeHeight: { en: "Height above the lowest roof, m", ro: "Înălțime peste cel mai jos acoperiș, m", ru: "Высота над самой низкой крышей, м", uk: "Висота над найнижчим дахом, м" },
+  planeHeightHelp: { en: "Only for a roof with steps. A side 30 cm or more higher shades the lower one beside it.", ro: "Doar pentru un acoperiș în trepte. O parte cu 30 cm sau mai sus umbrește partea mai joasă de lângă ea.", ru: "Только для крыши со ступенями. Скат на 30 см и выше затеняет соседний, более низкий.", uk: "Лише для даху зі сходинками. Схил на 30 см і вище затінює сусідній нижчий." },
+  pitchEst: { en: "This pitch is an estimate: measure it, or type the real one.", ro: "Înclinarea aceasta este o estimare: măsoar-o sau scrie-o pe cea reală.", ru: "Этот наклон приблизительный: измерьте его или введите настоящий.", uk: "Цей нахил приблизний: виміряйте його або введіть справжній." },
+  pitchMeasured: { en: "Measured with the phone.", ro: "Măsurată cu telefonul.", ru: "Измерено телефоном.", uk: "Виміряно телефоном." },
+  pitchTyped: { en: "Entered by you.", ro: "Introdusă de tine.", ru: "Введено вами.", uk: "Введено вами." },
+  pitchMeasure: { en: "Measure with the phone", ro: "Măsoară cu telefonul", ru: "Измерить телефоном", uk: "Виміряти телефоном" },
+  pitchHow: { en: "Lay the phone flat on the roof slope, or along a rafter, top edge up the slope. Hold it still.", ro: "Așază telefonul pe panta acoperișului, sau de-a lungul unei căpriori, cu marginea de sus spre coamă. Ține-l nemișcat.", ru: "Положите телефон на скат или вдоль стропила, верхним краем вверх по скату. Держите неподвижно.", uk: "Покладіть телефон на схил або вздовж крокви, верхнім краєм угору по схилу. Тримайте нерухомо." },
+  pitchReading: { en: "Reading...", ro: "Se citește...", ru: "Считывание...", uk: "Зчитування..." },
+  pitchNoSensor: { en: "This phone or browser gives no tilt sensor. Type the pitch instead.", ro: "Telefonul sau browserul acesta nu are senzor de înclinare. Scrie înclinarea.", ru: "У этого телефона или браузера нет датчика наклона. Введите наклон.", uk: "У цього телефона чи браузера немає датчика нахилу. Введіть нахил." },
+  pitchDenied: { en: "The tilt sensor was not allowed. Type the pitch instead.", ro: "Senzorul de înclinare nu a fost permis. Scrie înclinarea.", ru: "Доступ к датчику наклона не разрешён. Введите наклон.", uk: "Доступ до датчика нахилу не дозволено. Введіть нахил." },
+  statusH: { en: "How this roof was designed", ro: "Cum a fost proiectat acoperișul", ru: "Как спроектирована крыша", uk: "Як спроєктовано дах" },
+  status_sat: { en: "From satellite imagery", ro: "Din imagini din satelit", ru: "По спутниковым снимкам", uk: "За супутниковими знімками" },
+  status_ver: { en: "Verified on site", ro: "Verificat la fața locului", ru: "Проверено на объекте", uk: "Перевірено на об’єкті" },
+  statusHelp: { en: "The offer states which. Mark it verified once you have measured the roof on site.", ro: "Oferta spune care este. Marchează-l verificat după ce ai măsurat acoperișul la fața locului.", ru: "В предложении это указано. Отметьте «проверено» после замера крыши на объекте.", uk: "У пропозиції це зазначено. Позначте «перевірено» після замірів даху на об’єкті." },
+  yieldSide: { en: "Sun on this side: {y} kWh per kWp, about {kwh} kWh a year.", ro: "Soarele pe această parte: {y} kWh pe kWp, circa {kwh} kWh pe an.", ru: "Солнце на этом скате: {y} кВт·ч на кВт, около {kwh} кВт·ч в год.", uk: "Сонце на цьому схилі: {y} кВт·год на кВт, близько {kwh} кВт·год на рік." },
+  yieldLoading: { en: "Looking up the sun for this side...", ro: "Se caută soarele pentru această parte...", ru: "Ищем данные о солнце для этого ската...", uk: "Шукаємо дані про сонце для цього схилу..." },
+  yieldNone: { en: "No solar data for this side yet.", ro: "Încă nu sunt date solare pentru această parte.", ru: "Пока нет данных о солнце для этого ската.", uk: "Поки немає даних про сонце для цього схилу." },
+  yieldFailed: { en: "No solar data for {n} side(s): the roof's yield counts the others.", ro: "Nu sunt date solare pentru {n} parte/părți: randamentul acoperișului le numără pe celelalte.", ru: "Нет данных о солнце для скатов: {n}. В выработке крыши учтены остальные.", uk: "Немає даних про сонце для схилів: {n}. У виробітку даху враховано решту." },
   material: { en: "Roof material", ro: "Tip acoperiș", ru: "Тип кровли", uk: "Тип покрівлі" },
+  rackAngle: { en: "Angle of the racks", ro: "Unghiul suporturilor", ru: "Угол стоек", uk: "Кут стійок" },
+  rackHelp: { en: "On a flat roof or the ground the panels stand on racks at this angle, with space between the rows so none shades the next (no shade from 10:00 to 14:00 on 21 December).", ro: "Pe un acoperiș plat sau pe sol, panourile stau pe suporturi la acest unghi, cu spațiu între rânduri ca niciunul să nu umbrească pe următorul (fără umbră între 10 și 14 pe 21 decembrie).", ru: "На плоской крыше или на земле панели стоят на стойках под этим углом, между рядами оставлен зазор, чтобы ни один не затенял следующий (без тени с 10 до 14 21 декабря).", uk: "На пласкому даху чи на землі панелі стоять на стійках під цим кутом, між рядами залишено проміжок, щоб жоден не затінював наступний (без тіні з 10 до 14 21 грудня)." },
   pitch: { en: "Pitch", ro: "Înclinare", ru: "Наклон", uk: "Нахил" },
   facing: { en: "Faces", ro: "Orientare", ru: "Направление", uk: "Напрямок" },
   facesDir: { en: "Faces {dir}", ro: "Spre {dir}", ru: "На {dir}", uk: "На {dir}" },
@@ -198,19 +226,23 @@ const TREE_STYLE = { color: "#6E8F3E", weight: 2, fillColor: "#6E8F3E", fillOpac
 
 // Matches lib/supplierCatalog.js's ROOF_TYPE_MOUNT_TEST keys exactly, so a
 // plane's chosen roof type maps straight to a real, verified mount SKU.
-const ROOF_TYPES = ["tile", "trapezoidal", "standingSeam", "flat", "ground"];
+const ROOF_TYPES = ["tile", "metalTile", "fibreCement", "trapezoidal", "standingSeam", "flat", "ground"];
 const ROOF_TYPE_LABEL = {
   tile: { ro: "Țiglă", en: "Tile", ru: "Черепица", uk: "Черепиця" },
+  metalTile: { ro: "Țiglă metalică", en: "Metal tile", ru: "Металлочерепица", uk: "Металочерепиця" },
+  fibreCement: { ro: "Ardezie (fibrociment)", en: "Fibre-cement sheet", ru: "Шифер", uk: "Шифер" },
   trapezoidal: { ro: "Tablă cutată", en: "Trapezoidal sheet", ru: "Профлист", uk: "Профнастил" },
   standingSeam: { ro: "Tablă fălțuită", en: "Standing-seam metal", ru: "Фальцевая кровля", uk: "Фальцева покрівля" },
   flat: { ro: "Terasă (acoperiș plat)", en: "Flat roof or terrace", ru: "Плоская крыша", uk: "Плаский дах або тераса" },
   ground: { ro: "Sol sau carport", en: "Ground or carport", ru: "Грунт или навес", uk: "Ґрунт або навіс" },
 };
 
-const OBSTACLE_KINDS = ["chimney", "vent", "dormer", "tree", "other"];
+const OBSTACLE_KINDS = ["chimney", "vent", "pipe", "skylight", "dormer", "tree", "other"];
 const KIND_LABEL = {
   chimney: { ro: "Coș", en: "Chimney", ru: "Дымоход", uk: "Димар" },
   vent: { ro: "Ventilație", en: "Vent", ru: "Вентиляция", uk: "Вентиляція" },
+  pipe: { ro: "Țeavă", en: "Pipe", ru: "Труба", uk: "Труба" },
+  skylight: { ro: "Fereastră de acoperiș", en: "Skylight", ru: "Мансардное окно", uk: "Мансардне вікно" },
   dormer: { ro: "Lucarnă", en: "Dormer", ru: "Слуховое окно", uk: "Слухове вікно" },
   tree: { ro: "Copac", en: "Tree", ru: "Дерево", uk: "Дерево" },
   other: { ro: "Altceva", en: "Something else", ru: "Другое", uk: "Інше" },
@@ -331,6 +363,7 @@ export default function SiteDesigner({
   const pendingKind = useRef(null);
   const toolRef = useRef(null);
   const markerTypeRef = useRef("mainPanel");
+  const placeKindRef = useRef("vent");
   const selectedRef = useRef(null);
   const showDimensionsRef = useRef(true);
   const layoutTimer = useRef(null);
@@ -355,6 +388,16 @@ export default function SiteDesigner({
   const [shapes, setShapes] = useState({ planes: [], obstacles: [], markers: [] });
   const [selectedId, setSelectedId] = useState(null);
   const [layout, setLayout] = useState(null);
+  // how the roof was designed: from the satellite until the installer has measured it on site; the offer says which
+  const [designStatus, setDesignStatus] = useState(() => (siteDesign?.status === "verified" ? "verified" : "satellite"));
+  const [verifiedAt, setVerifiedAt] = useState(() => (/^\d{4}-\d{2}-\d{2}$/.test(String(siteDesign?.verifiedAt || "")) ? siteDesign.verifiedAt : ""));
+  const statusRef = useRef({ status: designStatus, verifiedAt: designStatus === "verified" ? verifiedAt : "" });
+  // what the sun gives each side, worked out per side (lib/sideYield.js), and kept for the quote and the offer
+  const [yields, setYields] = useState({});
+  const yieldCache = useRef(new Map());
+  const sidesRef = useRef(Array.isArray(siteDesign?.sides) ? siteDesign.sides : []);
+  const aliveRef = useRef(true);
+  useEffect(() => { aliveRef.current = true; return () => { aliveRef.current = false; }; }, []);
   const [step, setStep] = useState(1);
   markerTypeRef.current = markerType;
 
@@ -387,7 +430,10 @@ export default function SiteDesigner({
   const panelW = Number(findPanel(panelId)?.watt) || 0;
   const targetPanels = targetKw > 0 && panelW > 0 ? Math.max(1, Math.ceil((targetKw * 1000) / panelW - 0.25)) : 0;
   const fillCount = fill === "own" ? fillOwn : fill === "target" ? targetPanels : 0;
-  const settings = { panelId, orientation, rowSpacingCm, colSpacingCm, setbackCm, clusterMaxW, clusterMaxH, clusterGap, fill, fillOwn, fillCount };
+  // the distance kept round vents and chimneys: none on a roof drawn before the setting existed (its panels do not
+  // move), 15 cm on a new one
+  const [clearanceCm, setClearanceCm] = useState(() => savedNum(saved.obstacleClearanceCm, Array.isArray(siteDesign?.planes) && siteDesign.planes.length ? 0 : 15));
+  const settings = { panelId, orientation, rowSpacingCm, colSpacingCm, setbackCm, clusterMaxW, clusterMaxH, clusterGap, fill, fillOwn, fillCount, obstacleClearanceCm: clearanceCm };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -430,8 +476,10 @@ export default function SiteDesigner({
       markerLayers.current.set(mid, m);
       return m;
     }
-    function attachPlane(layer, id, { tilt = 35, az = 0, roofType = "tile", guessed = false } = {}) {
+    function attachPlane(layer, id, { tilt = 35, az = 0, roofType = "tile", guessed = false, heightM = 0, tiltSource = "estimated" } = {}) {
       layer._sdKind = "plane"; layer._sdId = id;
+      layer._sdHeight = clampNum(heightM, 0, 30);
+      layer._sdTiltSrc = ["estimated", "measured", "typed"].includes(tiltSource) ? tiltSource : "estimated";
       layer._sdTilt = clampNum(tilt, 0, 60); layer._sdAzimuth = clampNum(az, -180, 180);
       layer._sdRoofType = ROOF_TYPES.includes(roofType) ? roofType : "tile";
       layer._sdAzGuess = guessed;
@@ -441,9 +489,10 @@ export default function SiteDesigner({
       layer.on("click", (ev) => selectFromMap(ev, id));
       planeLayers.current.set(id, layer);
     }
-    function attachObstacle(layer, id, kind) {
+    function attachObstacle(layer, id, kind, heightM) {
       layer._sdKind = "obstacle"; layer._sdId = id;
       layer._sdObstacleKind = OBSTACLE_KINDS.includes(kind) ? kind : "chimney";
+      layer._sdHeight = Number.isFinite(Number(heightM)) && heightM !== null && heightM !== "" ? clampNum(heightM, 0, 30) : (OBSTACLE_HEIGHT_DEFAULT[layer._sdObstacleKind] ?? 0);
       layer.setStyle(styleOf(layer));
       layer.on("pm:edit", () => commit({ geometry: true }));
       layer.on("click", (ev) => selectFromMap(ev, id));
@@ -479,8 +528,9 @@ export default function SiteDesigner({
       return {
         planes: [...planeLayers.current.entries()].map(([id, l]) => ({
           id, polygon: ringToLatLon(l), tiltDeg: l._sdTilt, azimuthDeg: l._sdAzimuth, roofType: l._sdRoofType,
+          heightM: l._sdHeight || 0, tiltSource: l._sdTiltSrc || "estimated",
         })),
-        obstacles: [...obstacleLayers.current.entries()].map(([id, l]) => ({ id, polygon: ringToLatLon(l), kind: l._sdObstacleKind })),
+        obstacles: [...obstacleLayers.current.entries()].map(([id, l]) => ({ id, polygon: ringToLatLon(l), kind: l._sdObstacleKind, heightM: l._sdHeight ?? 0 })),
         markers: [...markerLayers.current.entries()].map(([id, m]) => { const ll = m.getLatLng(); return { id, type: m._sdMarkerType, lat: ll.lat, lon: ll.lng }; }),
       };
     }
@@ -488,9 +538,9 @@ export default function SiteDesigner({
     function mirror() {
       setShapes({
         planes: [...planeLayers.current.entries()].map(([id, l]) => ({
-          id, tilt: l._sdTilt, az: l._sdAzimuth, roofType: l._sdRoofType, guessed: !!l._sdAzGuess, area: slopeAreaM2(ringToLatLon(l), l._sdTilt ?? 35),
+          id, tilt: l._sdTilt, az: l._sdAzimuth, roofType: l._sdRoofType, guessed: !!l._sdAzGuess, heightM: l._sdHeight || 0, tiltSource: l._sdTiltSrc || "estimated", area: slopeAreaM2(ringToLatLon(l), RACK_ROOFS.includes(l._sdRoofType) ? 0 : l._sdTilt ?? 35),
         })),
-        obstacles: [...obstacleLayers.current.entries()].map(([id, l]) => ({ id, kind: l._sdObstacleKind })),
+        obstacles: [...obstacleLayers.current.entries()].map(([id, l]) => ({ id, kind: l._sdObstacleKind, heightM: l._sdHeight ?? 0 })),
         markers: [...markerLayers.current.entries()].map(([id, m]) => ({ id, type: m._sdMarkerType })),
       });
     }
@@ -507,11 +557,13 @@ export default function SiteDesigner({
       clearAllLayers();
       (snap?.planes || []).forEach((pl) => {
         if (!Array.isArray(pl.polygon) || pl.polygon.length < 3) return;
-        attachPlane(L.polygon(pl.polygon).addTo(map), pl.id || uid(), { tilt: pl.tiltDeg ?? 35, az: pl.azimuthDeg ?? 0, roofType: pl.roofType });
+        // a roof drawn before the pitch was marked as an estimate or measured counts as one the installer entered
+        attachPlane(L.polygon(pl.polygon).addTo(map), pl.id || uid(), { tilt: pl.tiltDeg ?? 35, az: pl.azimuthDeg ?? 0, roofType: pl.roofType, heightM: pl.heightM ?? 0, tiltSource: pl.tiltSource || "typed" });
       });
       (snap?.obstacles || []).forEach((ob) => {
         if (!Array.isArray(ob.polygon) || ob.polygon.length < 3) return;
-        attachObstacle(L.polygon(ob.polygon).addTo(map), ob.id || uid(), ob.kind);
+        // no height recorded (drawn before heights existed): none, so its roof keeps the panels it had
+        attachObstacle(L.polygon(ob.polygon).addTo(map), ob.id || uid(), ob.kind, ob.heightM ?? 0);
       });
       (snap?.markers || []).forEach((mk) => {
         if (mk.lat == null || mk.lon == null || !MARKER_ABBR[mk.type]) return;
@@ -535,7 +587,7 @@ export default function SiteDesigner({
       history.restoring = true;
       history.index = i;
       loadSnapshot(history.list[i]);
-      onChangeRef.current?.({ ...history.list[i], layout: settingsRef.current });
+      onChangeRef.current?.({ ...history.list[i], layout: settingsRef.current, sides: sidesRef.current, ...statusRef.current });
       history.restoring = false;
       setCanUndo(history.index > 0);
       setCanRedo(history.index < history.list.length - 1);
@@ -550,7 +602,7 @@ export default function SiteDesigner({
     function commit({ geometry }) {
       const snap = snapshotShapes();
       mirror();
-      onChangeRef.current?.({ ...snap, layout: settingsRef.current });
+      onChangeRef.current?.({ ...snap, layout: settingsRef.current, sides: sidesRef.current, ...statusRef.current });
       renderDimensionLabels();
       pushHistory(snap);
       if (geometry) panelGroupRef.current?.clearLayers();
@@ -590,7 +642,7 @@ export default function SiteDesigner({
         map.pm.enableDraw("Polygon", { pathOptions: next === "plane" ? PLANE_ON : OBSTACLE_STYLE, snappable: true, snapDistance: 8, allowSelfIntersection: false, templineStyle: { color: "#E89B2D" }, hintlineStyle: { color: "#E89B2D", dashArray: [5, 5] } });
       } else if (next === "tree") {
         map.pm.enableDraw("Circle", { pathOptions: TREE_STYLE, snappable: true });
-      } else if (next === "measure" || next === "marker") {
+      } else if (next === "measure" || next === "marker" || next === "place") {
         map.getContainer().style.cursor = next === "measure" ? "crosshair" : "copy";
       } else if (next === "edit") {
         map.pm.enableGlobalEditMode({ allowSelfIntersection: false, snappable: true });
@@ -624,20 +676,41 @@ export default function SiteDesigner({
     function updatePlane(id, patch) {
       const l = planeLayers.current.get(id);
       if (!l) return;
-      if (patch.tilt != null && Number.isFinite(patch.tilt)) l._sdTilt = Math.round(clampNum(patch.tilt, 0, 60));
+      if (patch.tilt != null && Number.isFinite(patch.tilt)) { l._sdTilt = Math.round(clampNum(patch.tilt, 0, 60)); l._sdTiltSrc = patch.tiltSource === "measured" ? "measured" : "typed"; }
+      if (patch.heightM != null && Number.isFinite(patch.heightM)) l._sdHeight = Math.round(clampNum(patch.heightM, 0, 30) * 10) / 10;
       if (patch.az != null && Number.isFinite(patch.az)) { l._sdAzimuth = Math.round(clampNum(patch.az, -180, 180)); l._sdAzGuess = false; }
-      if (patch.roofType) l._sdRoofType = patch.roofType;
+      if (patch.roofType) {
+        l._sdRoofType = patch.roofType;
+        // on a flat roof or the ground the pitch is the racks' angle: an estimated pitch follows to a usual one
+        if (l._sdTiltSrc === "estimated" && RACK_ROOFS.includes(patch.roofType)) l._sdTilt = patch.roofType === "ground" ? 25 : 15;
+      }
       mirror();
       // a slider sends many small moves: save and remember the last one
       clearTimeout(commitTimer.current);
       commitTimer.current = setTimeout(() => { commitTimer.current = null; commit({ geometry: false }); }, 280);
     }
-    function updateObstacle(id, kind) {
+    function updateObstacle(id, patch) {
       const l = obstacleLayers.current.get(id);
       if (!l) return;
-      l._sdObstacleKind = kind;
+      const p = typeof patch === "string" ? { kind: patch } : patch || {};
+      if (p.kind && OBSTACLE_KINDS.includes(p.kind)) {
+        l._sdObstacleKind = p.kind;
+        // a new kind brings that kind's usual height, unless the height was set in the same breath
+        if (p.heightM == null) l._sdHeight = OBSTACLE_HEIGHT_DEFAULT[p.kind] ?? 0;
+      }
+      if (p.heightM != null && Number.isFinite(Number(p.heightM))) l._sdHeight = Math.round(clampNum(p.heightM, 0, 30) * 10) / 10;
       l.setStyle(styleOf(l));
-      commit({ geometry: false });
+      mirror();
+      commit({ geometry: true });
+    }
+    // One click sets a vent, a pipe, a chimney or a skylight down at its real size.
+    function placePreset(latlng, kind) {
+      const L = Lref.current, map = mapRef.current;
+      const ring = presetRing(kind, [latlng.lat, latlng.lng]);
+      if (!ring) return null;
+      const id = uid();
+      attachObstacle(L.polygon(ring).addTo(map), id, kind, OBSTACLE_HEIGHT_DEFAULT[kind]);
+      return id;
     }
     function setDimensions(on) {
       showDimensionsRef.current = on;
@@ -717,6 +790,16 @@ export default function SiteDesigner({
       });
       map.on("click", (e) => {
         const t = toolRef.current;
+        if (t === "place") {
+          const id = placePreset(e.latlng, placeKindRef.current);
+          if (!id) return;
+          // stay in the tool: a roof usually has several vents; Esc or Done ends it
+          selectedRef.current = id;
+          setSelectedId(id);
+          restyle();
+          commit({ geometry: true });
+          return;
+        }
         if (t === "marker") {
           const id = uid();
           placeMarker(e.latlng, markerTypeRef.current, id);
@@ -798,27 +881,22 @@ export default function SiteDesigner({
     const s = settingsRef.current;
     const panel = findPanel(s.panelId) || recommendPanel();
     const { w, h } = panel.dimensionsMm || { w: 1909, h: 1134 };
-    const obstaclePolys = [...obstacleLayers.current.values()].map(ringToLatLon);
-    const opts = fitOptions(s);
     ensurePanelPattern(map);
 
     let totalCount = 0, roofAreaM2 = 0, fitCount = 0;
     const perPlane = [];
-    const fits = [];
-    for (const [id, layer] of planeLayers.current) {
-      const polygon = ringToLatLon(layer);
-      // Portrait: the panel's long side runs up the slope, its short side along the ridge.
-      // on the real slope: the outline is seen from above, so a pitched side holds more rows than it looks
-      fits.push({ id, layer, polygon, azimuthDeg: layer._sdAzimuth ?? 0, ...fitPanels(polygon, obstaclePolys, h, w, { ...opts, tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0 }) });
-    }
+    // the one fit the quote and the offer use too (lib/roofLayout.js fitSidesFor): on the real slope, obstacles kept
+    // clear with their shadows, a higher roof level shading the lower one
+    const fits = fitSidesFor({ ...api.current.snapshotShapes(), layout: s }, { w, h });
     // only as many as chosen, the sides facing nearest south first; the rest stay as faint outlines
-    for (const { id, layer, polygon, panels, count, rows, spare } of limitPanels(fits, s.fillCount)) {
+    for (const { id, polygon, panels, count, rows, spare } of limitPanels(fits, s.fillCount)) {
+      const layer = planeLayers.current.get(id);
       totalCount += count;
       fitCount += count + spare.length;
-      const areaM2 = slopeAreaM2(polygon, layer._sdTilt ?? 35);
+      const areaM2 = slopeAreaM2(polygon, RACK_ROOFS.includes(layer._sdRoofType) ? 0 : layer._sdTilt ?? 35);
       roofAreaM2 += areaM2;
       const [clat, clon] = centroidOf(polygon);
-      perPlane.push({ id, tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0, roofType: layer._sdRoofType || "tile", lat: clat, lon: clon, count, areaM2 });
+      perPlane.push({ id, tiltDeg: layer._sdTilt ?? 35, azimuthDeg: layer._sdAzimuth ?? 0, roofType: layer._sdRoofType || "tile", tiltSource: layer._sdTiltSrc || "estimated", lat: clat, lon: clon, count, areaM2 });
       // rails first, panels on top: the same rows lib/mountingEstimate.js counts
       rows.forEach((r) => {
         L.polyline(r.rail1, { color: "#5B6B7A", weight: 3, opacity: 0.85, interactive: false, pmIgnore: true }).addTo(panelGroupRef.current);
@@ -843,7 +921,7 @@ export default function SiteDesigner({
   useEffect(() => {
     if (!ready || settingsJson === lastSettings.current) return;
     lastSettings.current = settingsJson;
-    onChangeRef.current?.({ ...api.current.snapshotShapes(), layout: settingsRef.current });
+    onChangeRef.current?.({ ...api.current.snapshotShapes(), layout: settingsRef.current, sides: sidesRef.current, ...statusRef.current });
     api.current.scheduleLayout?.(200);
   }, [ready, settingsJson]);
 
@@ -891,14 +969,54 @@ export default function SiteDesigner({
   /* ------------------------------------------------------------ numbers --- */
   // Real payback/CO2 for the layout's own kWp: the same engine call the
   // quote uses, with only kw swapped, so the two can never disagree.
+  const perYield = useMemo(() => (layout?.perPlane || []).map((pl) => ({ ...pl, ...(yields[sideKey(pl)] || {}) })), [layout, yields]);
+  // a side still being looked up is neither used nor counted as failed
+  const liveBlend = useMemo(() => blendYields(perYield.filter((x) => !x.pending)), [perYield]);
+  const sidesNow = useMemo(() => sideSummaries(perYield, layout?.panelWatt), [perYield, layout]);
+  useEffect(() => {
+    const per = layout?.perPlane || [];
+    const todo = per.filter((pl) => pl.count > 0 && !yieldCache.current.has(sideKey(pl)));
+    if (!todo.length) return;
+    const t = setTimeout(async () => {
+      todo.forEach((pl) => yieldCache.current.set(sideKey(pl), { pending: true }));
+      if (aliveRef.current) setYields(Object.fromEntries(yieldCache.current));
+      for (const pl of todo) {
+        const r = await fetchSideYield(pl);
+        // a failed lookup is not remembered: the next refit tries again
+        if (r.yieldPerKwp) yieldCache.current.set(sideKey(pl), r); else yieldCache.current.set(sideKey(pl), { failed: true });
+      }
+      if (aliveRef.current) setYields(Object.fromEntries(yieldCache.current));
+    }, 700);
+    return () => clearTimeout(t);
+  }, [layout]);
+  // the sides' own figures go to the quote with the roof (and to the offer from there)
+  const sidesJson = JSON.stringify(sidesNow);
+  const lastSides = useRef(JSON.stringify(Array.isArray(siteDesign?.sides) ? siteDesign.sides : []));
+  useEffect(() => {
+    if (!ready || !layout || sidesJson === lastSides.current) return;
+    lastSides.current = sidesJson;
+    sidesRef.current = sidesNow;
+    onChangeRef.current?.({ ...api.current.snapshotShapes(), layout: settingsRef.current, sides: sidesNow, ...statusRef.current });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, sidesJson]);
+  // the design status is saved with the roof as soon as it changes
+  useEffect(() => {
+    const next = { status: designStatus, verifiedAt: designStatus === "verified" ? verifiedAt : "" };
+    if (JSON.stringify(next) === JSON.stringify(statusRef.current)) return;
+    statusRef.current = next;
+    if (ready) onChangeRef.current?.({ ...api.current.snapshotShapes(), layout: settingsRef.current, sides: sidesRef.current, ...next });
+  }, [ready, designStatus, verifiedAt]);
   const quoteResult = useMemo(
-    () => (layout && layout.totalCount > 0 && typeof onComputeQuote === "function" ? onComputeQuote(layout.kw) : null),
-    [layout, onComputeQuote]);
+    () => (layout && layout.totalCount > 0 && typeof onComputeQuote === "function"
+      // the sun each side really gets, so a changed pitch or facing moves the payback too
+      ? onComputeQuote(layout.kw, liveBlend.yieldOverride ? { yieldOverride: liveBlend.yieldOverride, ...(liveBlend.monthlyYieldShape ? { monthlyYieldShape: liveBlend.monthlyYieldShape } : {}) } : undefined)
+      : null),
+    [layout, onComputeQuote, liveBlend]);
   let bands = null, prodMonthly = null, consMonthly = null, co2Year = 0;
   if (quoteResult) {
     bands = { pess: quoteResult.p, expc: quoteResult.e, opti: quoteResult.o };
-    const shape = Array.isArray(projectInputs?.monthlyYieldShape) && projectInputs.monthlyYieldShape.length === 12
-      ? projectInputs.monthlyYieldShape : SOLAR_SEASON;
+    const shape = liveBlend.monthlyYieldShape || (Array.isArray(projectInputs?.monthlyYieldShape) && projectInputs.monthlyYieldShape.length === 12
+      ? projectInputs.monthlyYieldShape : SOLAR_SEASON);
     const shapeSum = shape.reduce((a, b) => a + (Number(b) || 0), 0) || 1;
     prodMonthly = shape.map((f) => (quoteResult.e.prod0 * (Number(f) || 0)) / shapeSum);
     const consEff = Math.max(0, Number(effectiveConsumption(projectInputs || {})) || 0);
@@ -929,6 +1047,34 @@ export default function SiteDesigner({
     const r = stageRef.current?.getBoundingClientRect();
     if (next && r && (r.top < 0 || r.bottom > window.innerHeight + 1)) stageRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+  // the pitch from the phone's tilt sensor
+  const [measuring, setMeasuring] = useState(null);
+  const [pitchMsg, setPitchMsg] = useState("");
+  const [placeKind, setPlaceKind] = useState("vent");
+  async function measurePitch(id) {
+    setPitchMsg(""); setMeasuring(id);
+    const r = await measurePhoneTilt();
+    setMeasuring(null);
+    if (r.ok) api.current.updatePlane?.(id, { tilt: r.tiltDeg, tiltSource: "measured" });
+    else setPitchMsg(tr(r.error === "denied" ? "pitchDenied" : "pitchNoSensor"));
+  }
+  const pickPlace = (kind) => {
+    const same = tool === "place" && placeKind === kind;
+    placeKindRef.current = kind; setPlaceKind(kind);
+    api.current.startTool?.(same ? null : "place");
+    const r = stageRef.current?.getBoundingClientRect();
+    if (!same && r && (r.top < 0 || r.bottom > window.innerHeight + 1)) stageRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  // what the sun gives this side, once looked up
+  const sideYieldLine = (pl) => {
+    const lp = layout?.perPlane.find((x) => x.id === pl.id);
+    if (!lp || !(lp.count > 0)) return null;
+    const y = yields[sideKey(lp)];
+    const row = sidesNow.find((s) => s.id === pl.id);
+    if (!y || y.pending) return <p className="sd-note">{tr("yieldLoading")}</p>;
+    if (y.failed || !row?.yieldPerKwp) return <p className="sd-note">{tr("yieldNone")}</p>;
+    return <p className="sd-note">{tr("yieldSide", { y: nf(row.yieldPerKwp, 0), kwh: nf(row.kwh, 0) })}</p>;
+  };
   const hasPlanes = shapes.planes.length > 0;
   const hasObstacles = shapes.obstacles.length > 0;
   const hasPoints = shapes.markers.length > 0;
@@ -953,6 +1099,7 @@ export default function SiteDesigner({
   else if (tool === "tree") hint = tr("h_tree");
   else if (tool === "measure") hint = tr("h_measure");
   else if (tool === "marker") hint = tr("h_marker");
+  else if (tool === "place") hint = tr("h_place");
   else if (tool === "edit") hint = tr("h_edit");
 
   // One roof side: a summary row, and when it is the one being worked on,
@@ -987,7 +1134,7 @@ export default function SiteDesigner({
             </label>
             <div className="sd-field">
               <span className="sd-lbl-row">
-                <span className="sd-lbl" id={"sd-pitch-" + pl.id}>{tr("pitch")}</span>
+                <span className="sd-lbl" id={"sd-pitch-" + pl.id}>{tr(RACK_ROOFS.includes(pl.roofType) ? "rackAngle" : "pitch")}</span>
                 <span className="sd-numwrap">
                   <NumInput className="sd-num" min="0" max="60" step="1" value={pl.tilt} aria-labelledby={"sd-pitch-" + pl.id}
                     onValue={(v) => api.current.updatePlane?.(pl.id, { tilt: v })} />
@@ -996,8 +1143,31 @@ export default function SiteDesigner({
               </span>
               <input type="range" className="sd-slider" min="0" max="60" step="1" value={pl.tilt} aria-labelledby={"sd-pitch-" + pl.id}
                 style={{ "--fill": (pl.tilt / 60) * 100 + "%" }} onChange={(e) => api.current.updatePlane?.(pl.id, { tilt: +e.target.value })} />
+              {RACK_ROOFS.includes(pl.roofType) && <span className="sd-note">{tr("rackHelp")}</span>}
+              {/* a pitch nobody measured or entered is an estimate, and said to be: the yield rests on it */}
+              {pl.tiltSource === "estimated" && <p className="sd-guess"><Info size={15} aria-hidden="true" />{tr("pitchEst")}</p>}
+              {pl.tiltSource === "measured" && <p className="sd-note">{tr("pitchMeasured")}</p>}
+              <button type="button" className="sd-btn" disabled={measuring === pl.id} onClick={() => measurePitch(pl.id)}>
+                {measuring === pl.id ? tr("pitchReading") : tr("pitchMeasure")}
+              </button>
+              <span className="sd-note">{tr("pitchHow")}</span>
+              {pitchMsg && measuring === null && selectedId === pl.id && <p className="sd-warn" role="alert">{pitchMsg}</p>}
+              {sideYieldLine(pl)}
               <span className="sd-scale" aria-hidden="true"><span>0° {tr("flat")}</span><span>30°</span><span>60°</span></span>
             </div>
+            {shapes.planes.length > 1 && (
+              <div className="sd-field">
+                <span className="sd-lbl-row">
+                  <span className="sd-lbl" id={"sd-h-" + pl.id}>{tr("planeHeight")}</span>
+                  <span className="sd-numwrap">
+                    <NumInput className="sd-num" min="0" max="30" step="0.5" value={pl.heightM || 0} aria-labelledby={"sd-h-" + pl.id}
+                      onValue={(v) => api.current.updatePlane?.(pl.id, { heightM: v })} />
+                    <span className="sd-unit">m</span>
+                  </span>
+                </span>
+                <span className="sd-note">{tr("planeHeightHelp")}</span>
+              </div>
+            )}
             <div className="sd-field">
               <span className="sd-lbl">{tr("facing")}</span>
               <div className="sd-compass-row">
@@ -1084,7 +1254,7 @@ export default function SiteDesigner({
                   )}
                 </div>
                 <button type="button" className="sd-hint-end" onClick={() => api.current.endTool?.()}>
-                  {tool === "edit" || tool === "measure" ? tr("done") : tr("cancel")}
+                  {tool === "edit" || tool === "measure" || tool === "place" ? tr("done") : tr("cancel")}
                 </button>
               </div>
             )}
@@ -1177,6 +1347,16 @@ export default function SiteDesigner({
                     <h3>{tr("st2h")}</h3>
                     <p>{tr("st2p")}</p>
                   </header>
+                  <div className="sd-sub sd-presets">
+                    <div className="sd-sub-h"><h4>{tr("presetsH")}</h4></div>
+                    <p className="sd-help">{tr("presetsP")}</p>
+                    <div className="sd-seg" role="group" aria-label={tr("presetsH")}>
+                      {Object.keys(OBSTACLE_PRESETS).map((k) => (
+                        <button key={k} type="button" aria-pressed={tool === "place" && placeKind === k} className={tool === "place" && placeKind === k ? "on" : ""}
+                          disabled={!ready} onClick={() => pickPlace(k)}>{L3(KIND_LABEL[k])}</button>
+                      ))}
+                    </div>
+                  </div>
                   <div className="sd-pair">
                     <button type="button" className={"sd-btn big" + (tool === "obstacle" ? " on" : "")} onClick={() => pick("obstacle")} disabled={!ready}>
                       <Box size={19} aria-hidden="true" />{tr("addOb")}
@@ -1193,9 +1373,14 @@ export default function SiteDesigner({
                             aria-label={L3(KIND_LABEL[ob.kind] || KIND_LABEL.other)}>
                             {ob.kind === "tree" ? <TreeDeciduous size={17} aria-hidden="true" /> : <Box size={17} aria-hidden="true" />}
                           </button>
-                          <select className="sd-select" value={ob.kind} onChange={(e) => api.current.updateObstacle?.(ob.id, e.target.value)} aria-label={tr("obstacles")}>
+                          <select className="sd-select" value={ob.kind} onChange={(e) => api.current.updateObstacle?.(ob.id, { kind: e.target.value })} aria-label={tr("obstacles")}>
                             {OBSTACLE_KINDS.map((k) => <option key={k} value={k}>{L3(KIND_LABEL[k])}</option>)}
                           </select>
+                          <span className="sd-numwrap" title={tr("obHeight")}>
+                            <NumInput className="sd-num" min="0" max="30" step="0.1" value={ob.heightM ?? 0} aria-label={tr("obHeight")}
+                              onValue={(v) => api.current.updateObstacle?.(ob.id, { heightM: v })} />
+                            <span className="sd-unit">m</span>
+                          </span>
                           <button type="button" className="sd-ibtn del" onClick={() => api.current.removeShape?.(ob.id)}
                             aria-label={tr("del", { name: L3(KIND_LABEL[ob.kind] || KIND_LABEL.other) })}><Trash2 size={17} /></button>
                         </li>
@@ -1283,6 +1468,26 @@ export default function SiteDesigner({
                     </span>
                     <input type="range" className="sd-slider" min="0" max="100" step="5" value={setbackCm} style={{ "--fill": setbackCm + "%" }} onChange={(e) => setSetbackCm(+e.target.value)} aria-labelledby="sd-setback" />
                   </div>
+                  <div className="sd-field">
+                    <span className="sd-lbl-row">
+                      <span className="sd-lbl" id="sd-clear">{tr("clearance")}</span>
+                      <span className="sd-numwrap">
+                        <NumInput className="sd-num" min="0" max="50" value={clearanceCm} onValue={setClearanceCm} aria-labelledby="sd-clear" />
+                        <span className="sd-unit">cm</span>
+                      </span>
+                    </span>
+                    <span className="sd-note">{tr("clearanceHelp", { deg: Math.round(shadeElevationDeg(lat)) })}</span>
+                  </div>
+                  <div className="sd-field">
+                    <span className="sd-lbl" id="sd-status">{tr("statusH")}</span>
+                    <div className="sd-seg" role="radiogroup" aria-labelledby="sd-status">
+                      {["satellite", "verified"].map((k) => (
+                        <button key={k} type="button" role="radio" aria-checked={designStatus === k} className={designStatus === k ? "on" : ""}
+                          onClick={() => { setDesignStatus(k); if (k === "verified" && !verifiedAt) setVerifiedAt(new Date().toISOString().slice(0, 10)); }}>{tr("status_" + (k === "verified" ? "ver" : "sat"))}</button>
+                      ))}
+                    </div>
+                    <span className="sd-note">{tr("statusHelp")}</span>
+                  </div>
                   <details className="sd-more">
                     <summary><ChevronDown size={17} aria-hidden="true" />{tr("more")}</summary>
                     <div className="sd-grid2">
@@ -1336,6 +1541,7 @@ export default function SiteDesigner({
                     )}
                   </div>
                   {layout.totalCount === 0 && <p className="sd-warn" role="alert">{tr("noFit")}</p>}
+                  {liveBlend.failed > 0 && <p className="sd-warn" role="status">{tr("yieldFailed", { n: liveBlend.failed })}</p>}
                   {layout.fitCount > layout.totalCount && layout.totalCount > 0 && <p className="sd-help">{tr("spareLine", { fit: layout.fitCount, free: layout.fitCount - layout.totalCount })}</p>}
                   {quoteResult && (
                     <dl className="sd-metrics">
@@ -1345,7 +1551,7 @@ export default function SiteDesigner({
                     </dl>
                   )}
                   <button type="button" className="sd-btn primary big sd-apply" disabled={!fitsAny || applying} aria-busy={applying}
-                    onClick={() => onApply?.(layout)}>
+                    onClick={() => onApply?.({ ...layout, perPlane: perYield, sides: sidesNow, blend: liveBlend })}>
                     {applying ? tr("applying") : <><Check size={19} aria-hidden="true" />{tr("apply", { n: `${layout.totalCount} ${panelsNoun(layout.totalCount, lang)}` })}</>}
                   </button>
                 </>
