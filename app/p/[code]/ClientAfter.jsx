@@ -13,7 +13,7 @@ import ProdBars from "./ProdBars.jsx";
 
 const LOC = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
 
-export default function ClientAfter({ after, lang, code, company, nf, fmt, preparedBy = null, market = "MD" }) {
+export default function ClientAfter({ after, lang, code, referral = null, company, nf, fmt, preparedBy = null, market = "MD" }) {
   const loc = LOC[lang] || LOC.en;
   const day = (d) => fmtDate(`${d}T12:00:00Z`, loc, { day: "numeric", month: "long" });
   const monthLong = (m) => fmtDate(`${m}-15T12:00:00Z`, loc, { month: "long", year: "numeric" });
@@ -109,7 +109,7 @@ export default function ClientAfter({ after, lang, code, company, nf, fmt, prepa
       <div className="pp-card pp-rec">
         <h3>{ppt("rec_h", lang)}</h3>
         <p>{ppt("rec_p", lang, { co })}</p>
-        <RecommendShare code={code} lang={lang} company={co} />
+        <RecommendShare code={referral || code} lang={lang} company={co} />
         <p className="pp-rec-note">{ppt("rec_get", lang)}</p>
       </div>
 

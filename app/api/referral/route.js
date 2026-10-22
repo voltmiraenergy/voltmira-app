@@ -12,6 +12,7 @@ import { sendEmail, emailConfigured, ownerAlertEmail } from "../../../lib/email.
 import { sendCrmWebhook } from "../../../lib/crmWebhook.js";
 import { nt } from "../../../lib/notifyText.js";
 import { firstName } from "../../../lib/clientJourney.js";
+import { findByReferral } from "../../../lib/referral.js";
 
 export const runtime = "nodejs";
 
@@ -21,16 +22,16 @@ export async function POST(req) {
   if (await isRateLimited(`ref:${clientIp(req)}`, 5, 60 * 60 * 1000)) return NextResponse.json({ error: "rate" }, { status: 429 });
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }
-  const code = clip(body.code, 16);
+  const code = clip(body.code, 40);
   const name = clip(body.name, 120);
   const phone = clip(body.phone, 30).replace(/[^\d+()\s-]/g, "");
   const locality = clip(body.locality, 80);
   const bill = Math.min(1e6, Math.max(0, Math.round(Number(String(body.bill ?? "").replace(/[^\d]/g, "")) || 0)));
   if (clip(body.hp, 200)) return NextResponse.json({ ok: true });
-  if (!/^[a-z0-9]{6,16}$/i.test(code) || name.length < 2 || phone.replace(/\D/g, "").length < 6) return NextResponse.json({ error: "invalid" }, { status: 400 });
+  if (!/^[a-z0-9]{6,40}$/i.test(code) || name.length < 2 || phone.replace(/\D/g, "").length < 6) return NextResponse.json({ error: "invalid" }, { status: 400 });
 
   const db = supabaseAdmin();
-  const { data: prop } = await db.from("proposals").select("code, project_id, company_id, accepted_at").eq("code", code).maybeSingle();
+  const prop = await findByReferral(db, code, "code, project_id, company_id, accepted_at");
   if (!prop || !prop.accepted_at) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const [{ data: co }, { data: pj }] = await Promise.all([
     db.from("companies").select("*").eq("id", prop.company_id).maybeSingle(),

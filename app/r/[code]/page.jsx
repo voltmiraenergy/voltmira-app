@@ -15,6 +15,7 @@ import { bomHasBattery } from "../../../lib/quoteInput.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { toIntlPhone } from "../../../lib/phone.js";
 import { journeySteps, nextStep, productionSeries, journeyFacts, firstName, localityOf } from "../../../lib/clientJourney.js";
+import { findByReferral } from "../../../lib/referral.js";
 import { rt } from "./text.js";
 import ReferralForm from "./ReferralForm.jsx";
 import ProdBars from "../../p/[code]/ProdBars.jsx";
@@ -27,9 +28,9 @@ const LOC = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
 const BILL_UNIT = { MDL: "lei", RON: "lei", UAH: "грн", EUR: "€" };
 
 async function load(code) {
-  if (!/^[a-z0-9]{6,16}$/i.test(String(code || ""))) return null;
   const db = supabaseAdmin();
-  const { data: prop } = await db.from("proposals").select("code, project_id, company_id, accepted_at, snapshot").eq("code", code).maybeSingle();
+  // the link carries the referral token, not the offer's own code
+  const prop = await findByReferral(db, code, "code, project_id, company_id, accepted_at, snapshot");
   if (!prop || !prop.accepted_at || !prop.snapshot) return null;
   const [{ data: co }, { data: pj }, { data: reads }] = await Promise.all([
     db.from("companies").select("name, short_name, logo_url, lang, engine, currency").eq("id", prop.company_id).maybeSingle(),

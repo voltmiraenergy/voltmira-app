@@ -107,7 +107,7 @@ export default async function ProposalPage(props) {
     );
   }
   const { after = null, company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
-    offer = null, chosenOption = null, cned = null, support = null, tariff = null, financing = null, signature = null, qsign = null,
+    offer = null, chosenOption = null, cned = null, support = null, tariff = null, referral = null, financing = null, signature = null, qsign = null,
     roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
@@ -333,7 +333,7 @@ export default async function ProposalPage(props) {
           <div className="pp-main">
 
             {/* signed: the client's own page, their installation and their production */}
-            {accepted && after && <ClientAfter after={after} lang={lang} code={params.code} company={company} nf={nf} fmt={fmt} preparedBy={preparedBy} market={inputs.market} />}
+            {accepted && after && <ClientAfter after={after} lang={lang} code={params.code} referral={referral || params.code} company={company} nf={nf} fmt={fmt} preparedBy={preparedBy} market={inputs.market} />}
 
             {/* Ukraine: outages first, the way a Ukrainian household decides. */}
             {inputs.market === "UA" && (
