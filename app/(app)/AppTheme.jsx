@@ -14,7 +14,7 @@
 const CSS = `
   :root{
     --paper:#F6F5F0; --paper-2:#FFFFFF;
-    --ink:#142A21; --ink-2:#0D1F18;
+    --ink:#142A21; --ink-2:#0D1F18; --ink-soft:#2B4438;
     --green:#1E6B4E; --green-soft:#2A8563; --green-tint:#E4EFE9;
     --amber:#E89B2D; --amber-soft:#F4B45C; --amber-tint:#FBF0DD;
     --muted:#5A695F; --line:#E3E1D6;
@@ -30,7 +30,7 @@ const CSS = `
     --font-m:'Inter',system-ui,sans-serif;
   }
   html[data-theme="dark"]{
-    --paper:#0F1310; --paper-2:#171B16; --ink:#EEF1EA; --ink-2:#F1EFE8;
+    --paper:#0F1310; --paper-2:#171B16; --ink:#EEF1EA; --ink-2:#F1EFE8; --ink-soft:#C3CCC1;
     --green:#4FB584; --green-soft:#3FAE6A; --green-tint:rgba(79,181,132,.16);
     --amber:#EBA542; --amber-soft:#F2B85F; --amber-tint:rgba(232,155,45,.15);
     --muted:#8E998F; --line:#28302A;

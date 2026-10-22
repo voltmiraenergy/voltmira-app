@@ -18,6 +18,8 @@ import { aiOn } from "../../../../lib/featureFlags.js";
 import AddressField from "../../../../components/AddressField.jsx";
 import SiteDesigner from "../../../../components/SiteDesigner.jsx";
 import BackLink from "../../../../components/BackLink.jsx";
+import NumInput from "../../../../components/NumInput.jsx";
+import { productionPower } from "../../../../lib/gridPower.js";
 import BomCard from "../../../../components/BomCard.jsx";
 import DesignChecks from "../../../../components/DesignChecks.jsx";
 import StructuralLoads from "../../../../components/StructuralLoads.jsx";
@@ -186,7 +188,7 @@ function LocalMoneyInput({ eur, fmt, onEur, dec = 2, allowZero = false, classNam
 
 // `currency` is the WORKSPACE's (companies.currency); the offer may name its
 // own (p.offerCurrency, null = follow the workspace), see lib/offerCurrency.js.
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, signedOffer = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
@@ -214,6 +216,13 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     // The currency this offer is written in; null follows the workspace.
     offerCurrency: normCurrency(initial.offer_currency),
   });
+  // The newest state, for handlers that run after an await (a PVGIS lookup, the designer closing):
+  // merging into the render's copy of `p` would put back whatever was typed in the meantime.
+  const pRef = useRef(null);
+  if (pRef.current === null) pRef.current = p;
+  // The status the database is known to hold. The autosave never writes a status it read at page
+  // load: a client who signed meanwhile turned the job to won, and writing "sent" back undid it.
+  const statusRef = useRef(initial.status);
   // What the database holds for offer_currency, so the autosave writes it only
   // when it changes (it is stored best-effort, see persist).
   const storedOfferCur = useRef(normCurrency(initial.offer_currency));
@@ -241,6 +250,9 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // what the workflow rail last saved (a ticked step, a grid-file stage), so the
   // checklist and grid-file cards below show it without a reload
   const [railProg, setRailProg] = useState(null);
+  // after the grid card sends or records a step the page is refreshed: what the server now holds replaces what the
+  // rail last saved here, or the grid-file and checklist cards kept showing the stages from before
+  useEffect(() => { setRailProg(null); }, [initial.install_progress]);
   const [legalDocsOpen, setLegalDocsOpen] = useState(false);
   const [legalTab, setLegalTab] = useState("contract");
   const [siteDesignerOpen, setSiteDesignerOpen] = useState(false);
@@ -351,7 +363,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       const sb = supabaseBrowser();
       const { error } = await sb.from("projects").update({
         title: next.title, client_name: next.client, address: next.address,
-        market: next.market, status: next.status,
+        market: next.market,
         kw: next.kw, price: next.price, cons: next.cons,
         batt: next.batt,
         loan_monthly: next.loan,
@@ -364,6 +376,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         next_follow_up: next.nextFollowUp || null,
         notes: next.notes ?? "",
       }).eq("id", initial.id);
+      // The one status change the editor makes itself, draft to sent when the offer goes out: written
+      // only while the job is still a draft, so a job won, lost or signed meanwhile keeps its status.
+      if (!error && next.status === "sent" && statusRef.current === "draft") {
+        const { error: se } = await sb.from("projects").update({ status: "sent" }).eq("id", initial.id).eq("status", "draft");
+        if (!se) statusRef.current = "sent";
+      }
       // No signal: keep the edit on this device and save it when the signal
       // is back (lib/offline.js), instead of calling it a failure.
       if (error && isNetworkError(error)) { if (saveOutbox(initial.id, next)) { setSaved("device"); return; } }
@@ -426,6 +444,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     const flush = () => {
       const box = readOutbox(initial.id);
       if (!box) return;
+      pRef.current = box.data;
       setP(box.data);
       setSaved(navigator.onLine === false ? "device" : "saving");
       if (navigator.onLine !== false) persist(box.data);
@@ -437,7 +456,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial.id]);
   function update(patch) {
-    const next = { ...p, ...patch };
+    const next = { ...pRef.current, ...patch };
+    pRef.current = next;
     setP(next); setSaved("saving");
     clearTimeout(timer.current);
     timer.current = setTimeout(() => persist(next), 600);
@@ -884,7 +904,9 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             // waiting on its timer cannot write the old status back.
             clearTimeout(timer.current);
             await markProjectWon(initial.id);
-            const next = { ...p, status: "won" };
+            const next = { ...pRef.current, status: "won" };
+            pRef.current = next;
+            statusRef.current = "won";
             setP(next);
             await persist(next);
             return true;
@@ -1044,17 +1066,17 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 {/* A drag is imprecise once the range spans 2-500 kW — this
                     lets an exact figure (from a real design, a client ask) be
                     typed directly instead of hunted for on the slider. */}
-                <input type="number" className="slider-num" inputMode="decimal" step="0.1"
+                <NumInput className="slider-num" inputMode="decimal" step="0.1" min={KW_MIN} max={KW_MAX}
                   aria-label={tr("system_size")} value={p.kw}
-                  onChange={e => update({ kw: +e.target.value || KW_MIN })} />
+                  onValue={(v) => update({ kw: v })} />
               </div>
             </div>
             {/* Typed in the offer's currency (lei, hryvnia or euro); stored in EUR. */}
             <div className="field"><label>{fmt.local ? tr("elec_price_local", { u: fmt.unit }) : tr("elec_price")}</label>
               {fmt.local
                 ? <LocalMoneyInput eur={p.price} fmt={fmt} onEur={(v) => update({ price: v })} />
-                : <input className="input" type="number" step="0.01" value={p.price}
-                    onChange={e => update({ price: +e.target.value || 0.21 })} />}</div>
+                : <NumInput className="input" step="0.01" min="0.01" max="5" value={p.price}
+                    onValue={(v) => update({ price: v })} />}</div>
             {/* Only Moldova has this plan (Premier Energy/RED Nord, ANRE-
                 approved) — real self-consumption is ~entirely daytime, so a
                 differentiated plan makes solar worth more than the flat
@@ -1065,8 +1087,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               v => update({ tariffMode: v ? "differentiated" : "flat" }))}
             {!p.useMonthly && (
               <div className="field"><label>{tr("annual_cons")}</label>
-                <input className="input" type="number" step="100" value={p.cons}
-                  onChange={e => update({ cons: +e.target.value || 5000 })} /></div>
+                <NumInput className="input" step="100" min="1" max="50000000" value={p.cons}
+                  onValue={(v) => update({ cons: v })} /></div>
             )}
             {check(p.useMonthly, tr("use_monthly"), tr("use_monthly_sub"),
               v => update(v
@@ -1079,12 +1101,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                   {monthLabels(lang).map((m, i) => (
                     <div className="mo-cell" key={i}>
                       <label>{m}</label>
-                      <input className="input mo-in" type="number" min="0" step="10"
+                      <NumInput className="input mo-in" min="0" max="5000000" step="10"
                         value={(p.consMonthly && p.consMonthly[i]) ?? 0}
-                        onChange={e => {
-                          const arr = (Array.isArray(p.consMonthly) && p.consMonthly.length === 12)
-                            ? p.consMonthly.slice() : Array(12).fill(0);
-                          arr[i] = +e.target.value || 0;
+                        onValue={(v) => {
+                          const cur = pRef.current.consMonthly;
+                          const arr = (Array.isArray(cur) && cur.length === 12) ? cur.slice() : Array(12).fill(0);
+                          arr[i] = v;
                           update({ consMonthly: arr });
                         }} />
                     </div>
@@ -1144,8 +1166,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 <div className="field" style={{ margin: "2px 0 4px 30px" }}>
                   <label>{tr("battery_cap")}</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                    <input className="input" type="number" min="0" step="0.5" style={{ width: 120 }}
-                      value={p.battKwh} onChange={e => update({ battKwh: +e.target.value || 0 })} />
+                    <NumInput className="input" min="0" max="5000" step="0.5" style={{ width: 120 }}
+                      value={p.battKwh} onValue={(v) => update({ battKwh: v })} />
                     <span style={{ color: "var(--muted)", fontSize: 13 }}>kWh, {fmt(battCost)}</span>
                   </div>
                 </div>
@@ -1394,7 +1416,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 {fmt.local
                   ? <LocalMoneyInput eur={p.loan || 0} fmt={fmt} dec={0} allowZero className=""
                       onEur={(v) => update({ loan: v })} />
-                  : <input type="number" value={p.loan} onChange={e => update({ loan: +e.target.value || 0 })} />}
+                  : <NumInput min="0" max="1000000" value={p.loan} onValue={(v) => update({ loan: v })} />}
               </div>
               <div className="fin-box">
                 <div className="lbl">{tr("est_savings")}</div>
@@ -1434,7 +1456,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <GridFile key={p.market + (railProg?.gridFile ? JSON.stringify(railProg.gridFile) : "")} projectId={initial.id}
               market={p.market} address={[p.address, p.title].filter(Boolean).join(", ")}
               initial={(railProg || initial.install_progress)?.gridFile} lang={lang}
-              client={{ client_name: p.client || "", client_email: p.clientEmail || "", address: p.address || "" }} submission={gridSub} />
+              client={{ client_name: p.client || "", client_email: p.clientEmail || "", address: p.address || "", client_kind: initial.client_kind || null }} submission={{ ...gridSub, installedKw: productionPower({ kw: p.kw, bom: p.bom, batt: p.batt, batt_kwh: p.battKwh }).kw }} />
           )}
 
           {/* A signed job in Moldova or Ukraine goes into a portfolio for a
@@ -1505,7 +1527,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       {legalDocsOpen && (
         <LegalDocsModal lang={lang} onClose={() => setLegalDocsOpen(false)} initialTab={legalTab}
           company={{ name: companyName, ...companyLegal }}
-          project={{ id: initial.id, clientName: p.client, address: p.address, kw: p.kw, price: fmt.toLocal(q.e.cost), currency: fmt.currency, batt: p.batt, battKwh: p.battKwh, market: p.market, bom: p.bom, gridOperator: initial.install_progress?.gridFile?.operator, title: p.title }} />
+          project={{ id: initial.id, clientName: signedOffer?.clientName ?? p.client, address: signedOffer?.address ?? p.address, kw: signedOffer?.kw ?? p.kw, price: signedOffer?.price ?? fmt.toLocal(q.e.cost), currency: signedOffer?.currency ?? fmt.currency, batt: signedOffer ? signedOffer.batt : p.batt, battKwh: signedOffer?.battKwh ?? p.battKwh, market: p.market, bom: signedOffer?.bom ?? p.bom, gridOperator: initial.install_progress?.gridFile?.operator, title: p.title }} />
       )}
 
       {/* proposal modal */}
@@ -1567,7 +1589,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 { label: tr("expected"), years: yrs(q.e.payback) + " " + tr("yrs") },
                 { label: tr("optimistic"), years: yrs(q.o.payback) + " " + tr("yrs") },
               ]}
-              savings={fmt(q.e.rows[q.e.rows.length - 1])}
+              savings={fmt(lifetime)}
               waText={shareMsg} />
             <div className="modal-acts">
               <button className="btn ghost" onClick={() => setPropUrl(null)}>{tr("close")}</button>

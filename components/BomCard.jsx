@@ -18,6 +18,7 @@
 // modules to cover the array, a phase-matched inverter, an LFP battery near the
 // target capacity, and mounting per kWp.
 import { useMemo, useState } from "react";
+import NumInput from "./NumInput.jsx";
 import {
   ALL_SUPPLIER_PRODUCTS, recommendInverter, recommendBattery, recommendPanel,
   findMount, findSupplier, DEFAULT_IDS, autoBom,
@@ -123,13 +124,16 @@ export default function BomCard({
                 <span>{kindLabel(l.kind, lang)}{l.spec ? `, ${localSpec(l.spec, lang)}` : ""}</span>
               </div>
               <div className="bom-nums">
-                <input className="input bom-qty" type="number" min="0" step="0.1" value={l.qty}
+                <NumInput className="input bom-qty" min="0" step="0.1" value={l.qty}
                   aria-label={t3(lang, "cantitate", "quantity", "количество", "кількість")}
-                  onChange={(e) => setLine(i, { qty: +e.target.value || 0 })} />
+                  onValue={(v) => setLine(i, { qty: v })} />
                 <span className="bom-op">×</span>
-                <input className="input bom-price" type="number" min="0" step="1" value={l.unit_price}
-                  aria-label={t3(lang, "preț unitar", "unit price", "цена за единицу", "ціна за одиницю")}
-                  onChange={(e) => setLine(i, { unit_price: +e.target.value || 0 })} />
+                {/* The price is in euros whatever the offer is written in: the total beside it is shown in the
+                    offer's currency, so a price typed in lei read as euros made margins about 20 times off. */}
+                <NumInput className="input bom-price" min="0" step="1" value={l.unit_price}
+                  aria-label={t3(lang, "preț unitar, în euro", "unit price, in euros", "цена за единицу, в евро", "ціна за одиницю, в євро")}
+                  onValue={(v) => setLine(i, { unit_price: v })} />
+                <span className="bom-cur" title={t3(lang, "Prețul unitar se introduce în euro", "Enter the unit price in euros", "Цена вводится в евро", "Ціна вводиться в євро")}>€</span>
                 <b className="bom-total">{money((Number(l.qty) || 0) * (Number(l.unit_price) || 0))}</b>
                 <button type="button" className="bom-del" aria-label={t3(lang, "șterge", "remove", "удалить", "видалити")}
                   onClick={() => onChange(bom.filter((_, j) => j !== i))}>✕</button>
@@ -205,6 +209,7 @@ export default function BomCard({
         .bom-desc b{display:block;font-size:13px;font-weight:600;color:var(--ink);line-height:1.35}
         .bom-desc span{display:block;font-size:11px;color:var(--muted);margin-top:1px}
         .bom-nums{display:flex;align-items:center;gap:7px}
+        .bom-cur{font-size:12.5px;font-weight:700;color:var(--muted);margin-left:-3px}
         .bom-row .input{padding:6px 8px;font-size:12.5px;text-align:right;width:62px;flex:none}
         .bom-row .bom-price{width:76px}
         .bom-op{font-size:12px;color:var(--muted)}

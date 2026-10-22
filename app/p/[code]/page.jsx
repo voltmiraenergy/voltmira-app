@@ -24,6 +24,10 @@ import ClientAudit from "./ClientAudit.jsx";
 import { MonthlySVG, CashflowSVG, CHART, monthNames } from "./charts.jsx";
 import FinanceToggle from "./FinanceToggle.jsx";
 import { notFound } from "next/navigation";
+import { cache } from "react";
+import { headers } from "next/headers";
+import { isRateLimited } from "../../../lib/ratelimit.js";
+import { publicProposalResponse } from "../../../lib/proposalPublic.js";
 import OfferBanner from "./OfferBanner.jsx";
 import UaSection from "./UaSection.jsx";
 import LivePrice from "./LivePrice.jsx";
@@ -41,18 +45,24 @@ import { findWarrantyInfo } from "../../../lib/supplierCatalog.js";
 import { backupHours } from "../../../lib/batteryBackup.js";
 import { designCheck, designCheckRows } from "../../../lib/designCheck.js";
 import { compassLabel } from "../../../lib/roofLayout.js";
-import { weightedExportPriceMdl } from "../../../lib/prosumerPrice.js";
 import { SOLAR_SEASON, FX, effectiveConsumption, amortizedMonthlyPayment } from "@voltmira/engine";
 import { ppt, yearsN, kwhUnit, kwUnit } from "./text.js";
 import { ArrowUpRight, BatteryCharging, CalendarClock, ChevronDown, Info, Moon, Package, Phone, Plug, Scale, Snowflake, SolarPanel, ThermometerSun, TrendingUp, TriangleAlert, Wrench, Zap, Award, MapPin } from "lucide-react";
 
-async function getProposal(code) {
-  const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const res = await fetch(`${base}/api/proposal/${code}`, { cache: "no-store" });
+// Read straight from the server (lib/proposalPublic.js), not through an HTTP call to our own API: that call
+// reached the limiter with the server's address, so a few visits to made-up links could lock every client
+// out of their real one. The visitor's own address is what is limited here. cache(): the page and its
+// metadata share one read and one count.
+const getProposal = cache(async (code) => {
+  if (!/^[a-z0-9]{4,32}$/i.test(String(code || ""))) return { missing: true };
+  const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0].trim() || h.get("x-real-ip") || "anon";
+  if (await isRateLimited(`prop:page:${ip}`, 60, 60_000)) return null;
+  const res = await publicProposalResponse(code);
   if (res.status === 404) return { missing: true };
   if (!res.ok) return null;
   return res.json();
-}
+});
 
 export const dynamic = "force-dynamic";
 
@@ -89,14 +99,15 @@ export default async function ProposalPage(props) {
     return (
       <main className="pp">
         <div className="pp-wrap" style={{ paddingTop: 64 }}>
-          <h1 className="pp-h2">{t("pp_not_found", "en")}</h1>
-          <p className="pp-lead">{t("pp_expired", "en")}</p>
+          {/* a short failure or a rate limit, not a revoked offer: say so, in the languages clients here read */}
+          <h1 className="pp-h2">Oferta nu se poate încărca acum</h1>
+          <p className="pp-lead">Încercați din nou peste un minut. / Предложение временно недоступно, попробуйте снова через минуту. / The offer cannot load right now, please try again in a minute.</p>
         </div>
       </main>
     );
   }
   const { after = null, company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
-    offer = null, chosenOption = null, cned = null, support = null, financing = null, signature = null, qsign = null,
+    offer = null, chosenOption = null, cned = null, support = null, tariff = null, financing = null, signature = null, qsign = null,
     roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
@@ -116,7 +127,7 @@ export default async function ProposalPage(props) {
         <HtmlLang lang={lang} />
         <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom}
           roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat} roofPhoto={roofPhoto}
-          acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} support={support}
+          acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} support={support} tariff={tariff}
           signed={accepted && signedName ? { name: signedName, date: signedDate, ...signature } : null} />
         {/* The PDF route drives printing through CDP and passes auto=0:
             window.print() inside headless Chromium blocks rather than returns. */}
@@ -134,7 +145,7 @@ export default async function ProposalPage(props) {
   const E = q.assumptions;
   const hz = q.horizon;
   const bands = q.bands;
-  const yrs = (n) => n === null ? "25+" : n === 0 ? t("pp_immediate", lang) : nf(n, 1);
+  const yrs = (n) => n === null ? `${hz}+` : n === 0 ? t("pp_immediate", lang) : nf(n, 1);
   const yrsUnit = (n) => (n === 0 ? "" : t("pp_years", lang));
   const kwU = kwUnit(lang), kwhU = kwhUnit(lang);
   const kw = Number(inputs.kw) || 0;
@@ -178,13 +189,16 @@ export default async function ProposalPage(props) {
   // for the whole horizon, inflating at the expected band's rate (PrintSheet.jsx).
   const inflPct = Number(E?.bands?.expc?.infl ?? 0);
   const infl = inflPct / 100;
-  const consY = Number(inputs.cons) || 0, priceY = Number(inputs.price) || 0;
+  // the consumption the offer was computed on (the monthly profile when it was used), not the annual figure
+  // left in the form: they can differ by a lot, and the headline and this comparison must agree
+  const consY = consEff, priceY = Number(inputs.price) || 0;
   const doNothing = consY > 0 && priceY > 0 ? consY * priceY * (infl === 0 ? hz : ((Math.pow(1 + infl, hz) - 1) / infl)) : 0;
   const withSolar = Math.max(0, doNothing - lifeGross) + q.cost;
   const vsMax = Math.max(doNothing, withSolar, 1);
 
   // What the exported surplus earns (Moldova's net billing only).
-  const surplus = inputs.market === "MD" ? surplusRevenue(q.prod0, q.self, FX.MDL) : null;
+  // at the rate and the export price the offer was frozen with
+  const surplus = inputs.market === "MD" ? surplusRevenue(q.prod0, q.self, Number(fx?.MDL) || FX.MDL, tariff?.exportMdlPerKwh) : null;
 
   // Valid for the company's validity window from when the link was created.
   // (A per-request server render: reading the clock once here is the point.)
@@ -490,7 +504,7 @@ export default async function ProposalPage(props) {
               {surplus && surplus.totalKwh > 0 && (
                 <p className="pp-note">{t("pdf2_surplus", lang, {
                   k: Math.round(surplus.totalKwh).toLocaleString(loc),
-                  p: nf(weightedExportPriceMdl(SOLAR_SEASON), 2),
+                  p: nf(surplus.effectiveMdlPerKwh, 2),
                   // already in lei when the offer is: say it once
                   v: fmt.currency === "MDL" ? fmt(surplus.eur) : `${Math.round(surplus.mdl).toLocaleString(loc)} lei (${fmt(surplus.eur)})`,
                 })}</p>

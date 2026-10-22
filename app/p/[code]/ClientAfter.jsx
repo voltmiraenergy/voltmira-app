@@ -5,7 +5,7 @@
 // energy is worth at the offer's prices, the steps folded away. Always: a way
 // to recommend the installer (RecommendShare.jsx). Data from the offer
 // route's `after` (lib/clientJourney.js). Server-rendered.
-import { ppt } from "./text.js";
+import { ppt, kwhUnit } from "./text.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { toIntlPhone } from "../../../lib/phone.js";
 import RecommendShare from "./RecommendShare.jsx";
@@ -81,7 +81,7 @@ export default function ClientAfter({ after, lang, code, company, nf, fmt, prepa
           {rows.length ? (
             <>
               <dl className="pp-af-tiles">
-                <div><dt>{ppt("af_t_total", lang)}</dt><dd>{nf(production.total, 0)} <small>kWh</small></dd><dd className="s">{ppt("af_t_total_s", lang, { n: rows.length })}</dd></div>
+                <div><dt>{ppt("af_t_total", lang)}</dt><dd>{nf(production.total, 0)} <small>{kwhUnit(lang)}</small></dd><dd className="s">{ppt("af_t_total_s", lang, { n: rows.length })}</dd></div>
                 {production.pct != null && (
                   <div className={production.pct >= 100 ? "up" : ""}><dt>{ppt("af_t_pct", lang)}</dt><dd>{nf(production.pct, 0)}%</dd><dd className="s">{ppt("af_t_pct_s", lang)}</dd></div>
                 )}
@@ -89,7 +89,7 @@ export default function ClientAfter({ after, lang, code, company, nf, fmt, prepa
                   <div><dt>{ppt("af_t_value", lang)}</dt><dd>{fmt(facts.valueEur)}</dd><dd className="s">{ppt("af_t_value_s", lang)}</dd></div>
                 )}
                 {facts.best && (
-                  <div><dt>{ppt("af_t_best", lang)}</dt><dd>{nf(facts.best.kwh, 0)} <small>kWh</small></dd><dd className="s">{monthLong(facts.best.month)}</dd></div>
+                  <div><dt>{ppt("af_t_best", lang)}</dt><dd>{nf(facts.best.kwh, 0)} <small>{kwhUnit(lang)}</small></dd><dd className="s">{monthLong(facts.best.month)}</dd></div>
                 )}
               </dl>
               <ProdBars rows={rows} lang={lang} nf={nf} best={facts.best} />

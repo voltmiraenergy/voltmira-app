@@ -23,7 +23,6 @@ import { kindLabel, bomLineText, surplusRevenue } from "../../../lib/quoteAnalys
 import { findWarrantyInfo } from "../../../lib/supplierCatalog.js";
 import { backupHours } from "../../../lib/batteryBackup.js";
 import { compassLabel } from "../../../lib/roofLayout.js";
-import { weightedExportPriceMdl } from "../../../lib/prosumerPrice.js";
 import { CashflowSVG, MonthlySVG, CHART } from "./charts.jsx";
 import { ppt, yearsN } from "./text.js";
 import { Moon, Scale, Snowflake, ThermometerSun, TriangleAlert } from "lucide-react";
@@ -233,14 +232,14 @@ const CSS = `
   }
 `;
 
-export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, acceptUrl = "", fx = null, support = null, signed = null }) {
+export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, acceptUrl = "", fx = null, support = null, tariff = null, signed = null }) {
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
   // Minus ahead of the currency symbol: "€-31" reads as a broken string.
   // Lei for a Moldovan installer at the rate frozen with the proposal, with
   // the minus ahead of the symbol (lib/money.js); decimals with a comma.
   const fmt = moneyFormatter({ currency: company.currency, lang, fx });
   const nf = numFor(lang);
-  const yrsF = (n) => n === null ? "25+" : n === 0 ? t("pp_immediate", lang) : nf(n, 1);
+  const yrsF = (n) => n === null ? `${Number(q.horizon) || 25}+` : n === 0 ? t("pp_immediate", lang) : nf(n, 1);
   const pct = (n) => (n == null ? "∞" : Math.round(n) + "%");
   const tr = (k, v) => t(k, lang, v);
   const E = q.assumptions;
@@ -260,7 +259,8 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   // Cost of doing nothing: the client's own consumption bought from the grid
   // for the whole horizon, inflating at the expected band's rate.
   const inflPct = Number(E.bands?.expc?.infl ?? 0);
-  const consY = Number(inputs.cons) || 0;
+  // the consumption the offer was computed on (the monthly profile when used), as the live page does
+  const consY = Math.max(0, Number(effectiveConsumption(inputs)) || 0);
   const priceY = Number(inputs.price) || 0;
   const infl = inflPct / 100;
   const doNothing = consY > 0 && priceY > 0 ? consY * priceY * (infl === 0 ? hz : ((Math.pow(1 + infl, hz) - 1) / infl)) : 0;
@@ -306,8 +306,8 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   // ---- what the exported surplus earns (Moldova's net billing only; Romania
   // credits exports 1:1 at the retail price).
   const isMD = inputs.market === "MD";
-  const surplus = isMD ? surplusRevenue(q.prod0, q.self, FX.MDL) : null;
-  const weightedMdl = isMD ? weightedExportPriceMdl(SOLAR_SEASON) : 0;
+  const surplus = isMD ? surplusRevenue(q.prod0, q.self, Number(fx?.MDL) || FX.MDL, tariff?.exportMdlPerKwh) : null;
+  const weightedMdl = isMD ? surplus.effectiveMdlPerKwh : 0;
 
   // ---- energy, month by month (PVGIS's own monthly shape when looked up).
   const shape = Array.isArray(inputs.monthlyYieldShape) && inputs.monthlyYieldShape.length === 12 ? inputs.monthlyYieldShape : SOLAR_SEASON;

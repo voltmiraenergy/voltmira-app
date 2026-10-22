@@ -9,8 +9,6 @@
 
 import { NextResponse } from "next/server";
 import { nt, CALL_TIMES } from "../../../../lib/notifyText.js";
-import { cnedEnabled } from "../../../../lib/cnedData.js";
-import { isCnedQualified } from "../../../../lib/cnedInstallers.js";
 import { supabaseAdmin, supabaseServer } from "../../../../lib/supabase.js";
 import { escapeHtml } from "../../../../lib/safe.js";
 import { logActivity } from "../../../../lib/activity.js";
@@ -18,17 +16,9 @@ import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
 import { sendEmail, proposalOpenedEmail, emailConfigured, ownerAlertEmail } from "../../../../lib/email.js";
 import { sendCrmWebhook } from "../../../../lib/crmWebhook.js";
 import { openNow } from "../../../../lib/openDigest.js";
-import { quote, SOLAR_SEASON } from "@voltmira/engine";
-import { journeySteps, nextStep, productionSeries, journeyFacts } from "../../../../lib/clientJourney.js";
-import { snapshotEngine } from "../../../../lib/engineSettings.js";
-import { bomHasBattery } from "../../../../lib/quoteInput.js";
-import { offerQuoteInput, offerTariffNote } from "../../../../lib/offerInput.js";
-import { offerFinancing } from "../../../../lib/financeServer.js";
-import { loadOffers, offerFigures } from "../../../../lib/proposalOffers.js";
 import { acceptProposal } from "../../../../lib/acceptProposal.js";
 import { acceptIo } from "../../../../lib/acceptIo.js";
-import { qsignMode } from "../../../../lib/qsignFlow.js";
-import { effectiveOfferCurrency } from "../../../../lib/offerCurrency.js";
+import { publicProposalResponse } from "../../../../lib/proposalPublic.js";
 
 /**
  * Email the company owner that a client asked for a call. Never breaks the
@@ -125,217 +115,8 @@ export async function GET(req, props) {
   const ip = clientIp(req);
   if (await isRateLimited(`prop:get:${ip}`, 60, 60_000))
     return NextResponse.json({ error: "rate" }, { status: 429 });
-
-  const db = supabaseAdmin();
-  // select("*") so the signature columns come through when present but a
-  // workspace that hasn't run add-proposal-signature.sql yet still works.
-  const { data: prop } = await db.from("proposals")
-    .select("*")
-    .eq("code", params.code).single();
-  if (!prop) return NextResponse.json({ error: "not_found" }, { status: 404 });
-
-  // Graceful before add-install-warranty.sql runs: retry without the column
-  // rather than 500ing every client-facing proposal link on a missing column.
-  let { data: co, error: coErr } = await db.from("companies")
-    .select("name, short_name, logo_url, engine, currency, lang, plan, install_warranty_years")
-    .eq("id", prop.company_id).single();
-  if (coErr && /install_warranty_years/i.test(coErr.message || "")) {
-    ({ data: co } = await db.from("companies")
-      .select("name, short_name, logo_url, engine, currency, lang, plan")
-      .eq("id", prop.company_id).single());
-  }
-
-  // Social proof, computed rather than typed: the installer's real count of won
-  // projects. A hand-entered "trusted by N homeowners" is an unverifiable claim;
-  // this one is true by construction, cannot be inflated, and grows on its own —
-  // which is the only kind of badge that belongs on a document whose whole pitch
-  // is that the client can check it. head:true = count only, no rows shipped.
-  const { count: wonCount } = await db.from("projects")
-    .select("id", { count: "exact", head: true })
-    .eq("company_id", prop.company_id).eq("status", "won");
-
-  // "Prepared by": the rep who owns the quote, so the client can reach the actual
-  // person. Live lookup via the service role (no RLS recursion). Falls back to the
-  // frozen snapshot value for very old proposals if present.
-  let preparedBy = prop.snapshot?.preparedBy || null;
-  if (!preparedBy && prop.project_id) {
-    const { data: proj } = await db.from("projects").select("owner_id").eq("id", prop.project_id).maybeSingle();
-    if (proj?.owner_id) {
-      const { data: pf } = await db.from("profiles").select("*").eq("id", proj.owner_id).maybeSingle();
-      if (pf?.name) preparedBy = { name: pf.name, phone: pf.phone || "" };
-    }
-  }
-
-  // Frozen-snapshot integrity: proposals created after 2026-07 carry the engine
-  // settings they were computed with, so later Settings changes can never alter
-  // what the client was shown. Older proposals (no snapshot.engine) fall back
-  // to the company's current engine — same behaviour they always had.
-  const E = snapshotEngine(prop.snapshot.engine, co);
-  // Snapshots store the BOM itself, so this is derived rather than frozen — an
-  // older snapshot with no BOM simply has no costOverride and is unaffected.
-  // and since tariff rules are versioned, the export price of the rule the
-  // offer was issued under (lib/offerInput.js); older offers are unchanged
-  const input = offerQuoteInput(prop.snapshot);
-  const q = quote(input, E);
-
-  // Side-by-side options: extra configs the installer attached (base snapshot with
-  // kw / battery overridden). We return only what the comparison cards need; the
-  // primary quote above stays the recommended one.
-  const options = (Array.isArray(prop.snapshot.options) ? prop.snapshot.options : [])
-    .slice(0, 3)
-    .filter(o => Number(o?.kw) > 0)
-    .map(o => {
-      const kw = Number(o.kw), battKwh = Math.max(0, Number(o.battKwh) || 0);
-      const oq = quote({ ...input, kw, batt: battKwh > 0, battKwh }, E).e;
-      return { label: String(o.label || "").slice(0, 40), kw, battKwh,
-        cost: oq.cost, payback: oq.payback, year1: oq.year1 };
-    });
-
-  // CNED's register (a local preview while CNED_DATA is on, lib/cnedData.js):
-  // the area line frozen with this offer, and the qualified-installer badge
-  // checked by the workspace's IDNO. Off, neither field is sent.
-  let cned = null;
-  if (cnedEnabled()) {
-    const { data: reg } = await db.from("companies").select("reg_no").eq("id", prop.company_id).maybeSingle();
-    cned = { raionLine: prop.snapshot?.raionLine || null, qualified: isCnedQualified(reg?.reg_no) };
-  }
-
-  // after signing, the client's own page: the installation's steps and the
-  // system's production against the offer (lib/clientJourney.js)
-  let after = null;
-  if (prop.accepted_at) {
-    const [{ data: pj }, { data: reads }] = await Promise.all([
-      db.from("projects").select("install_progress").eq("id", prop.project_id).maybeSingle(),
-      db.from("production_readings").select("month, kwh").eq("project_id", prop.project_id).order("month", { ascending: false }).limit(24),
-    ]);
-    const steps = journeySteps({ signedAt: prop.accepted_at, progress: pj?.install_progress });
-    const shape = Array.isArray(prop.snapshot?.monthlyYieldShape) && prop.snapshot.monthlyYieldShape.length === 12 ? prop.snapshot.monthlyYieldShape : SOLAR_SEASON;
-    const prod0 = Number(q.e.solar0) || Number(q.e.prod0) || 0;
-    const production = productionSeries(reads || [], prod0, shape);
-    after = { steps, next: nextStep(steps), production, facts: journeyFacts(steps, production, { year1: q.e.year1, prod0 }) };
-  }
-
-  // green financing: partner lenders' offers that fit this quote, and any
-  // application already sent from it (lib/financeServer.js); Moldova only
-  let financing = null;
-  try {
-    const { data: pk } = await db.from("projects").select("client_kind").eq("id", prop.project_id).maybeSingle();
-    financing = await offerFinancing(db, { prop, snapshot: prop.snapshot, E, clientKind: pk?.client_kind || null });
-  } catch (e) { console.error("[financing] offer page:", e?.message); }
-
-  // the signature's legal level (simple or qualified) and, for a qualified
-  // one, whether it was the simulation (lib/qsignFlow.js); before signing,
-  // whether qualified signing is offered here at all
-  let signature = null;
-  if (prop.accepted_at) {
-    signature = { level: prop.signature_level === "qualified" ? "qualified" : "simple", simulated: false };
-    if (signature.level === "qualified") {
-      const { data: qs } = await db.from("qualified_signatures").select("verification").eq("proposal_code", prop.code).eq("status", "signed").order("updated_at", { ascending: false }).limit(1).maybeSingle();
-      signature.simulated = qs?.verification?.simulated !== false;
-    }
-  }
-
-  return NextResponse.json({
-    code: prop.code,
-    accepted: !!prop.accepted_at,
-    signature,
-    qsign: prop.accepted_at ? null : qsignMode(),
-    after,
-    financing,
-    // the tariff rule and the support programmes the offer was issued under,
-    // frozen with it (lib/tariffRules.js, lib/eligibility.js); null on older offers
-    tariff: offerTariffNote(prop.snapshot),
-    support: prop.snapshot.support || null,
-    // proof-of-signing only (name + timestamp). The drawn signature IMAGE is
-    // sensitive and NOT returned on this public link — the installer views it
-    // from their authenticated pipeline.
-    signedName: prop.signer_name || null,
-    signedAt: prop.accepted_at || null,
-    sentAt: prop.created_at,   // when the link was created, drives "valid until"
-    // lang drives the client-facing proposal copy — the client reads it in the
-    // installer's chosen language, not always English.
-    // currency is the OFFER's, frozen in the snapshot (hryvnia for a client in
-    // Ukraine even when the workspace is in lei); a proposal sent before the
-    // snapshot carried one keeps the workspace's, as it always showed. The
-    // page, its PDF and the emailed copy all format money with this.
-    company: { name: co?.name, shortName: co?.short_name, logoUrl: co?.logo_url, currency: effectiveOfferCurrency(prop.snapshot?.offerCurrency, co?.currency, prop.snapshot?.market), lang: co?.lang, plan: co?.plan || "free", wonCount: wonCount || 0, installWarrantyYears: co?.install_warranty_years || null },
-    preparedBy,
-    cned,
-    // the exchange rates frozen with the proposal, so a client in Moldova reads
-    // the same lei figure on every visit (lib/money.js)
-    fx: E?.fx || null,
-    inputs: {
-      title: prop.snapshot.title, client: prop.snapshot.client, address: prop.snapshot.address,
-      kw: prop.snapshot.kw, batt: prop.snapshot.batt, battKwh: prop.snapshot.battKwh ?? 10,
-      loan: prop.snapshot.loanMonthly ?? prop.snapshot.loan ?? 0,
-      market: prop.snapshot.market || "RO",
-      useMonthly: !!prop.snapshot.useMonthly,
-      // exposed so the client-side "audit your assumptions" panel can recompute
-      // the payback bands live from their own price/inflation (their own data).
-      price: Number(prop.snapshot.price), cons: Number(prop.snapshot.cons),
-      consMonthly: prop.snapshot.consMonthly || null,
-      afmSubsidy: !!prop.snapshot.afmSubsidy,
-      // the frozen tariff rule's export price, so the audit panel recomputes with it
-      feedOverride: input.feedOverride,
-      yieldOverride: prop.snapshot.yieldOverride || undefined,
-      monthlyYieldShape: prop.snapshot.monthlyYieldShape || undefined,
-      // the frozen bill-of-materials total: without it the client-side audit
-      // panel recomputes a BOM quote from kW x EUR/kW and disagrees with the
-      // headline price the client is actually being shown.
-      costOverride: Number(prop.snapshot.costOverride) || 0,
-      // Derived from the frozen BOM's own line kinds, so the client-side audit
-      // panel prices the battery exactly the way the server did.
-      bomHasBattery: bomHasBattery(prop.snapshot.bom),
-      // Ukraine: when the system starts (the green tariff ends with 2029) and
-      // the outage and loan plan the installer chose (lib/uaMarket.js).
-      startYear: Number(prop.snapshot.startYear) || undefined,
-      uaPlan: prop.snapshot.uaPlan || undefined,
-    },
-    quote: {
-      cost: q.e.cost, prod0: q.e.prod0, year1: q.e.year1, self: q.e.self,
-      // rows (cumulative cash position per year) power the print-mode chart
-      bands: {
-        pess: { payback: q.p.payback, roi: q.p.roi, rows: q.p.rows },
-        expc: { payback: q.e.payback, roi: q.e.roi, rows: q.e.rows },
-        opti: { payback: q.o.payback, roi: q.o.roi, rows: q.o.rows },
-      },
-      horizon: q.e.horizon,
-      assumptions: E, // full transparency, the honesty engine, server-verified
-      // the yield actually used (PVGIS override when the roof was looked up)
-      yieldPerKwp: prop.snapshot.yieldOverride || E.baseYield,
-      afmSubsidy: !!prop.snapshot.afmSubsidy,
-    },
-    options,
-    // What the proposal assistant agreed and is still open (lib/proposalOffers.js):
-    // the price with the discount applied, and the option the client chose.
-    ...(await (async () => {
-      const st = await loadOffers(db, prop.code, Date.now(), { signed: !!prop.accepted_at });
-      const d = st.discount ? offerFigures({ grossEur: q.e.grossCost, costEur: q.e.cost }, st.discount) : null;
-      return {
-        offer: d ? { pct: d.pct, priceEur: d.costEur, discountEur: d.discountEur, since: st.discount.created_at } : null,
-        chosenOption: st.option ? st.option.option_no : null,
-      };
-    })()),
-    // Never the installer's purchase cost or margin — this is a public,
-    // capability-URL endpoint (the code IS the auth), and unit_price/
-    // cost_price were never meant to reach it. Nothing client-facing has
-    // ever rendered them (PrintSheet.jsx/page.jsx only read kind/brand/
-    // model/spec/qty), so this was a latent leak in the raw JSON response
-    // rather than something anything legitimate depended on.
-    bom: (Array.isArray(prop.snapshot.bom) ? prop.snapshot.bom : [])
-      .map(({ unit_price, cost_price, ...safe }) => safe),
-    // Real, drawn roof area/orientation (Site Designer), frozen at "Generate
-    // offer" time same as everything else here — undefined on any proposal
-    // made before that plane existed, or with no single unambiguous plane.
-    roofAreaM2: prop.snapshot.roofAreaM2 || undefined,
-    roofOrientation: prop.snapshot.roofOrientation || undefined,
-    // The real drawn geometry itself (outline + obstacles + fitted panel
-    // rectangles, already projected to local meters) — undefined on any
-    // proposal made before this existed or where nothing was ever drawn.
-    roofPlanes: Array.isArray(prop.snapshot.roofPlanes) ? prop.snapshot.roofPlanes : undefined,
-    roofSat: prop.snapshot.roofSat && Array.isArray(prop.snapshot.roofSat.planes) ? prop.snapshot.roofSat : undefined,
-    roofPhoto: /^https:\/\//.test(String(prop.snapshot.roofPhoto || "")) ? prop.snapshot.roofPhoto : undefined,
-  });
+  if (!/^[a-z0-9]{4,32}$/i.test(String(params.code || ""))) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  return publicProposalResponse(params.code);
 }
 
 export async function POST(req, props) {
@@ -352,7 +133,7 @@ export async function POST(req, props) {
 
   const db = supabaseAdmin();
   const { data: prop } = await db.from("proposals")
-    .select("code, project_id, company_id, accepted_at")
+    .select("code, project_id, company_id, accepted_at, signer_name")
     .eq("code", params.code).single();
   if (!prop) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
@@ -378,6 +159,9 @@ export async function POST(req, props) {
 
   if (kind === "open") {
     await db.rpc("bump_proposal_stat", { p_code: prop.code, p_field: "opens", p_by: 1 });
+    // The deal is won: the client rereading their own offer is not a buying signal, and must not
+    // tell the installer to "call now" about a job already signed.
+    if (prop.accepted_at) return NextResponse.json({ ok: true, signed: true });
     // Repeat opens are the strongest buying signal we capture — word the activity
     // so a 3rd/4th open reads as "call them NOW", not just another open event.
     const [{ data: pr }, { data: proj }] = await Promise.all([
@@ -411,6 +195,10 @@ export async function POST(req, props) {
   if (kind === "toggle_batt") {
     await db.rpc("bump_proposal_stat", { p_code: prop.code, p_field: "batt_toggles", p_by: 1 });
   }
+  if (kind === "accept" && prop.accepted_at) {
+    // only the first signature counts; the second signer is shown whose it is, not their own name
+    return NextResponse.json({ ok: true, already: true, signedName: prop.signer_name || null });
+  }
   if (kind === "accept" && !prop.accepted_at) {
     // E-signature + audit trail. What gives an electronic signature evidentiary
     // weight is WHO signed, WHEN, and from WHERE: so the drawn image is stored
@@ -419,9 +207,12 @@ export async function POST(req, props) {
     // in lib/acceptProposal.js, which accepts an offer only once.
     const rawSig = typeof body.signature === "string" ? body.signature : "";
     const okSig = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(rawSig) && rawSig.length <= 260_000;
+    const signerName = String(body.signerName || "").trim().slice(0, 120);
+    // a signature is a name and a drawing; the page asks for both, and the server does not take less
+    if (signerName.length < 2 || !okSig) return NextResponse.json({ error: "signature_required" }, { status: 400 });
     await acceptProposal(db, prop, {
-      signature: okSig ? rawSig : null,
-      signerName: String(body.signerName || "").trim().slice(0, 120) || null,
+      signature: rawSig,
+      signerName,
       ip: ip || null,
       ua: String(req.headers.get("user-agent") || "").slice(0, 300) || null,
       level: "simple",
