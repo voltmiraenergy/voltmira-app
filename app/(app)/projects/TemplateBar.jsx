@@ -7,6 +7,8 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createProjectFromTemplate, deleteQuoteTemplate } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
+import { dec } from "../../../lib/decimals.js";
+import { kwUnit } from "../../p/[code]/text.js";
 
 export default function TemplateBar({ templates = [], lang }) {
   const router = useRouter();
@@ -42,7 +44,7 @@ export default function TemplateBar({ templates = [], lang }) {
           <button className="tpl-chip-use" disabled={pending}
             onClick={() => use(tp.id)} title={t("tpl_use_hint", lang)}>
             <b>{tp.name}</b>
-            <small>{Number(tp.kw).toFixed(1)} kW, {tp.market}{tp.batt ? ", batt" : ""}</small>
+            <small>{dec(tp.kw, 1, lang)} {kwUnit(lang)}{tp.batt ? t("pp_plus_batt", lang) : ""}, {tp.market}</small>
           </button>
           <button className="tpl-chip-del" disabled={pending}
             onClick={() => del(tp.id)} aria-label={t("tpl_delete", lang)} title={t("tpl_delete", lang)}>✕</button>

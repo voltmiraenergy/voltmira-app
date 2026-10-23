@@ -504,7 +504,7 @@
   display: block; width: 100%; min-height: 50px; padding: 0 14px; border-radius: 12px;
   border: 1.5px solid var(--line-2); background: var(--card); color: var(--ink); font: 16px var(--f);
 }
-.pp-input::placeholder { color: #7C877F; }
+.pp-input::placeholder { color: var(--muted); }
 .pp-input:focus { outline: none; border-color: var(--green-2); box-shadow: 0 0 0 3px rgba(31, 122, 85, 0.18); }
 .pp-pad { position: relative; border: 1.5px dashed var(--line-2); border-radius: 12px; background: var(--card); }
 .pp-pad canvas { display: block; width: 100%; touch-action: none; cursor: crosshair; border-radius: 12px; }

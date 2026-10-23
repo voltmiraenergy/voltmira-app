@@ -24,7 +24,7 @@ import { findWarrantyInfo } from "../../../lib/supplierCatalog.js";
 import { backupHours } from "../../../lib/batteryBackup.js";
 import { compassLabel } from "../../../lib/roofLayout.js";
 import { CashflowSVG, MonthlySVG, CHART } from "./charts.jsx";
-import { ppt, yearsN } from "./text.js";
+import { ppt, yearsN, kwhUnit, kwUnit } from "./text.js";
 import { Moon, Scale, Snowflake, ThermometerSun, TriangleAlert } from "lucide-react";
 import UaSection from "./UaSection.jsx";
 import RoofSatellite from "../../../components/RoofSatellite.jsx";
@@ -417,8 +417,8 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
             }) : (
               <>
                 <tr><td className="k">{tr("pdf_panels")}</td><td className="g">{tr("pdf_panels_v", { n: panels })}</td>{anyWarranty && <td />}<td className="q" /></tr>
-                <tr><td className="k">{tr("pdf_inverter")}</td><td className="g">~{nf(inputs.kw, 1)} kW</td>{anyWarranty && <td />}<td className="q" /></tr>
-                {inputs.batt && <tr><td className="k">{tr("pdf_batt_row")}</td><td className="g">{battKwh ? `${battKwh} kWh` : tr("pdf_included")}</td>{anyWarranty && <td />}<td className="q" /></tr>}
+                <tr><td className="k">{tr("pdf_inverter")}</td><td className="g">~{nf(inputs.kw, 1)} {kwUnit(lang)}</td>{anyWarranty && <td />}<td className="q" /></tr>
+                {inputs.batt && <tr><td className="k">{tr("pdf_batt_row")}</td><td className="g">{battKwh ? `${battKwh} ${kwhUnit(lang)}` : tr("pdf_included")}</td>{anyWarranty && <td />}<td className="q" /></tr>}
               </>
             )}
           </tbody></table>
@@ -519,7 +519,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
             k: Math.round(surplus.totalKwh).toLocaleString(loc),
             p: nf(weightedMdl, 2),
             // already in lei when the workspace is: say it once
-            v: fmt.local ? fmt(surplus.eur) : `${Math.round(surplus.mdl).toLocaleString(loc)} lei (${fmt(surplus.eur)})`,
+            v: fmt.local ? fmt(surplus.eur) : `${Math.round(surplus.mdl).toLocaleString(loc)} ${lang === "ru" || lang === "uk" ? "лей" : "lei"} (${fmt(surplus.eur)})`,
           })}</p>
         )}
       </section>

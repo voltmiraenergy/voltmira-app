@@ -666,7 +666,8 @@ const CSS = `
   .lead-ed-input{padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;
     font-family:inherit;color:var(--ink);background:var(--paper);min-width:0;
     transition:border-color .2s,box-shadow .2s}
-  .lead-ed-input::placeholder{color:#A9B1AA}
+  .app input::placeholder,.app textarea::placeholder{color:var(--muted);opacity:1}
+  .lead-ed-input::placeholder{color:var(--muted)}
   .lead-ed-input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-tint);outline:none}
   .lead-ed-actions{display:flex;gap:8px;align-items:center;margin-left:auto}
   @media (prefers-reduced-motion:reduce){ .lead-editor{transition:opacity .12s} }
@@ -866,7 +867,7 @@ const CSS = `
     .more-sheet a{display:flex;align-items:center;gap:14px;padding:14px 14px;border-radius:11px;
       color:var(--white-dim);font-size:15px;font-weight:500;text-decoration:none}
     .more-sheet a svg{width:20px;height:20px;flex:none;opacity:.9}
-    .more-sheet a.active{background:var(--amber);color:var(--ink)}
+    .more-sheet a.active{background:var(--amber);color:var(--on-amber)}
     .more-sheet a.active svg{opacity:1}
     /* account footer inside the sheet: profile, theme toggle, sign out */
     .more-foot{display:flex;flex-direction:column;gap:2px;margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12)}

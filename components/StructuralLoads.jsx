@@ -8,6 +8,7 @@
 // to it.
 import { useMemo, useState } from "react";
 import { snowLoad, windLoad, windPeakPressure, TERRAIN_CATEGORIES, FLAT_ROOF_CPE_ZONES, MD_WIND_ZONES_MPS, MD_SNOW_EXAMPLE } from "../lib/ncmLoads.js";
+import { dec } from "../lib/decimals.js";
 
 const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
 
@@ -112,15 +113,15 @@ export default function StructuralLoads({ lang, roofPitchDeg }) {
 
       <div className="sl-results">
         <div className="sl-stat">
-          <b>{snow != null ? `${snow.toFixed(2)} kN/m²` : "—"}</b>
+          <b>{snow != null ? `${dec(snow, 2, lang)} kN/m²` : "—"}</b>
           <span>{t3(lang, "Sarcină zăpadă (s)", "Snow load (s)", "Снеговая нагрузка (s)", "Снігове навантаження (s)")}</span>
         </div>
         <div className="sl-stat">
-          <b>{qp != null ? `${qp.toFixed(2)} kN/m²` : "—"}</b>
+          <b>{qp != null ? `${dec(qp, 2, lang)} kN/m²` : "—"}</b>
           <span>{t3(lang, "Presiune vânt de vârf, qp(z)", "Peak wind pressure, qp(z)", "Пиковое давление ветра, qp(z)", "Піковий тиск вітру, qp(z)")}</span>
         </div>
         <div className="sl-stat">
-          <b>{wind != null ? `${wind.toFixed(2)} kN/m²` : "—"}</b>
+          <b>{wind != null ? `${dec(wind, 2, lang)} kN/m²` : "—"}</b>
           <span>{t3(lang, "Acțiune netă vânt pe structură", "Net wind action on structure", "Чистое ветровое воздействие", "Чиста вітрова дія на конструкцію")}</span>
         </div>
       </div>

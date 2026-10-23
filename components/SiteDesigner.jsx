@@ -45,6 +45,7 @@ import { PANELS, findPanel, recommendPanel } from "../lib/supplierCatalog.js";
 import { designCheck } from "../lib/designCheck.js";
 import { SOLAR_SEASON, effectiveConsumption } from "@voltmira/engine";
 import { CashflowSVG, MonthlySVG } from "../app/p/[code]/charts.jsx";
+import { yearsN } from "../app/p/[code]/text.js";
 
 /* --------------------------------------------------------------- words --- */
 const TX = {
@@ -227,15 +228,8 @@ function panelsNoun(n, lang) {
 }
 function yearsLabel(y, lang) {
   if (y == null) return lang === "ro" ? "25+ ani" : lang === "ru" ? "25+ лет" : lang === "uk" ? "25+ років" : "25+ years";
-  const v = y.toLocaleString({ ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB", { maximumFractionDigits: 1 });
-  if (lang === "uk") {
-    // 7,4 року; 5 років; 2 роки; 1 рік
-    const r = Math.round(y * 10) / 10;
-    if (!Number.isInteger(r)) return `${v} року`;
-    const f = new Intl.PluralRules("uk").select(r);
-    return `${v} ${f === "one" ? "рік" : f === "few" ? "роки" : "років"}`;
-  }
-  return lang === "ro" ? `${v} ani` : lang === "ru" ? `${v} года` : `${v} years`;
+  // the word follows the language's own plural rule: 7,4 года; 5 лет; 25 de ani; 1 рік
+  return yearsN(Math.round(y * 10) / 10, lang);
 }
 
 /* ------------------------------------------------------------ constants --- */

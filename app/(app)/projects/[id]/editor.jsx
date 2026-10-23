@@ -46,6 +46,8 @@ import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
 import { financials, bomTotal } from "../../../../lib/quoteAnalysis.js";
 import { startYearOf, mdFeedFor } from "../../../../lib/quoteInput.js";
 import { t } from "../../../../lib/i18n.js";
+import { dec } from "../../../../lib/decimals.js";
+import { kwUnit } from "../../../p/[code]/text.js";
 import { xt } from "../../../../lib/integrationText.js";
 import { autoBom, recommendMount, findPanel } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
@@ -1090,7 +1092,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           <section className="card">
             <h3>{tr("system")}</h3>
             <div className="field">
-              <label>{tr("system_size")}<output>{p.kw.toFixed(1)} kW</output></label>
+              <label>{tr("system_size")}<output>{dec(p.kw, 1, lang)} {kwUnit(lang)}</output></label>
               <div className="slider-row">
                 <input type="range" min={KW_MIN} max={KW_MAX} step="0.5" value={p.kw} style={{ "--fill": kwFill + "%" }}
                   aria-valuemin={KW_MIN} aria-valuemax={KW_MAX} aria-valuenow={p.kw}
@@ -1299,11 +1301,11 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             {oversize > 1.8 && (
               <div className="warn-card">
                 {tr("oversize_warn", {
-                  x: oversize < 10 ? oversize.toFixed(1) : Math.round(oversize),
+                  x: oversize < 10 ? dec(oversize, 1, lang) : Math.round(oversize),
                   p: Math.round((1 - q.e.self) * 100),
                   fe: eurKwh(mkt.feed), pr: eurKwh(Number(p.price) || 0),
                 })}
-                {suggestKw > 0 ? " " + tr("oversize_hint", { kw: suggestKw.toFixed(1) }) : ""}
+                {suggestKw > 0 ? " " + tr("oversize_hint", { kw: dec(suggestKw, 1, lang) }) : ""}
               </div>
             )}
 
@@ -1351,13 +1353,13 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             {/* NPV / IRR / LCOE — what a commercial client or a lender asks for
                 once payback alone stops being the whole question. */}
             <div className="fin-metrics">
-              <div className="fm"><b>{fmt(fin.npv)}</b><span>{tr("m_npv")} @ {disc.toFixed(0)}%</span></div>
-              <div className="fm"><b>{fin.irr == null ? "—" : (fin.irr * 100).toFixed(1) + "%"}</b><span>{tr("m_irr")}</span></div>
+              <div className="fm"><b>{fmt(fin.npv)}</b><span>{tr("m_npv")} @ {dec(disc, 0, lang)}%</span></div>
+              <div className="fm"><b>{fin.irr == null ? "—" : dec(fin.irr * 100, 1, lang) + "%"}</b><span>{tr("m_irr")}</span></div>
               <div className="fm"><b>{eurKwh(fin.lcoe)}</b>
                 <span>{tr("m_lcoe")}, {tr("m_vs_price")} {eurKwh(Number(p.price) || 0)}</span></div>
             </div>
             <label className="disc-row">
-              {tr("m_disc")}<output>{disc.toFixed(1)}%</output>
+              {tr("m_disc")}<output>{dec(disc, 1, lang)}%</output>
               <input type="range" min="3" max="12" step="0.5" value={disc}
                 style={{ "--fill": ((disc - 3) / 9) * 100 + "%" }}
                 onChange={e => setDisc(+e.target.value)} />

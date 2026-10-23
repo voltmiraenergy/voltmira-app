@@ -27,7 +27,7 @@ export default function RoofSides({ sides, status, lang, company, day, nf }) {
           <div className="pp-sides-scroll">
             <table>
               <thead>
-                <tr><th scope="col">{ppt("rs_face", lang)}</th><th scope="col">{ppt("rs_pitch", lang)}</th><th scope="col">{ppt("rs_panels", lang)}</th><th scope="col">kWp</th><th scope="col">{ppt("rs_kwh", lang)}</th></tr>
+                <tr><th scope="col">{ppt("rs_face", lang)}</th><th scope="col">{ppt("rs_pitch", lang)}</th><th scope="col">{ppt("rs_panels", lang)}</th><th scope="col">{lang === "ru" || lang === "uk" ? "кВт" : "kWp"}</th><th scope="col">{ppt("rs_kwh", lang)}</th></tr>
               </thead>
               <tbody>
                 {list.map((s, i) => (

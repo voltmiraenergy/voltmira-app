@@ -17,6 +17,7 @@ import { toIntlPhone } from "../../../lib/phone.js";
 import { journeySteps, nextStep, productionSeries, journeyFacts, firstName, localityOf } from "../../../lib/clientJourney.js";
 import { findByReferral } from "../../../lib/referral.js";
 import { rt } from "./text.js";
+import { kwUnit, kwhUnit } from "../../p/[code]/text.js";
 import ReferralForm from "./ReferralForm.jsx";
 import ProdBars from "../../p/[code]/ProdBars.jsx";
 import HtmlLang from "../../../lib/HtmlLang.jsx";
@@ -110,12 +111,12 @@ export default async function ReferralPage(props) {
             <section className="pp-card rf-proof" aria-labelledby="rf-proof-h">
               <h2 id="rf-proof-h">{d.who ? rt("proof_h_who", lang, { who: d.who }) : rt("proof_h", lang)}</h2>
               <dl className="rf-facts">
-                <div><dt>{rt("k_kw", lang)}</dt><dd>{kw} <small>kW</small></dd></div>
-                {d.battKwh > 0 && <div><dt>{rt("k_batt", lang)}</dt><dd>{nf(d.battKwh, d.battKwh % 1 ? 1 : 0)} <small>kWh</small></dd></div>}
+                <div><dt>{rt("k_kw", lang)}</dt><dd>{kw} <small>{kwUnit(lang)}</small></dd></div>
+                {d.battKwh > 0 && <div><dt>{rt("k_batt", lang)}</dt><dd>{nf(d.battKwh, d.battKwh % 1 ? 1 : 0)} <small>{kwhUnit(lang)}</small></dd></div>}
                 {d.where && <div><dt>{rt("k_where", lang)}</dt><dd>{d.where}</dd></div>}
                 {d.liveAt && <div><dt>{rt("k_since", lang)}</dt><dd>{monthYear(d.liveAt)}</dd></div>}
                 {facts.days != null && <div><dt>{rt("k_days", lang)}</dt><dd>{rt("k_days_v", lang, { d: facts.days })}</dd></div>}
-                {hasProd && <div><dt>{rt("k_prod", lang, { n: rows.length })}</dt><dd>{nf(pr.total)} <small>kWh</small></dd></div>}
+                {hasProd && <div><dt>{rt("k_prod", lang, { n: rows.length })}</dt><dd>{nf(pr.total)} <small>{kwhUnit(lang)}</small></dd></div>}
                 {hasProd && pr.pct != null && <div className={pr.pct >= 100 ? "up" : ""}><dt>{rt("k_pct", lang)}</dt><dd>{nf(pr.pct)}%</dd></div>}
                 {!d.live && <div><dt>{rt("k_state", lang)}</dt><dd>{rt("k_state_v", lang)}</dd></div>}
               </dl>

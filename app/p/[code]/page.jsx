@@ -50,6 +50,7 @@ import { compassLabel } from "../../../lib/roofLayout.js";
 import { SOLAR_SEASON, FX, effectiveConsumption, amortizedMonthlyPayment } from "@voltmira/engine";
 import { ppt, yearsN, kwhUnit, kwUnit } from "./text.js";
 import { ArrowUpRight, BatteryCharging, CalendarClock, ChevronDown, Info, Moon, Package, Phone, Plug, Scale, Snowflake, SolarPanel, ThermometerSun, TrendingUp, TriangleAlert, Wrench, Zap, Award, MapPin } from "lucide-react";
+import { LogoMark } from "../../../lib/Logo.jsx";
 
 // Read straight from the server (lib/proposalPublic.js), not through an HTTP call to our own API: that call
 // reached the limiter with the server's address, so a few visits to made-up links could lock every client
@@ -516,7 +517,7 @@ export default async function ProposalPage(props) {
                   k: Math.round(surplus.totalKwh).toLocaleString(loc),
                   p: nf(surplus.effectiveMdlPerKwh, 2),
                   // already in lei when the offer is: say it once
-                  v: fmt.currency === "MDL" ? fmt(surplus.eur) : `${Math.round(surplus.mdl).toLocaleString(loc)} lei (${fmt(surplus.eur)})`,
+                  v: fmt.currency === "MDL" ? fmt(surplus.eur) : `${Math.round(surplus.mdl).toLocaleString(loc)} ${lang === "ru" || lang === "uk" ? "лей" : "lei"} (${fmt(surplus.eur)})`,
                 })}</p>
               )}
             </section>
@@ -726,9 +727,7 @@ export default async function ProposalPage(props) {
           {company.plan === "free" ? (
             <a className="pp-credit" href="https://voltmira.com" target="_blank" rel="noopener noreferrer">
               <span>
-                <span style={{ display: "inline-grid", placeItems: "center", width: 22, height: 22, borderRadius: 6, background: "#142A21" }} aria-hidden="true">
-                  <svg width="13" height="13" viewBox="0 0 34 34"><path d="M8 25 L14 12" stroke="#C4543B" strokeWidth="3" strokeLinecap="round" /><path d="M14.5 25 L20.5 9" stroke="#E89B2D" strokeWidth="3" strokeLinecap="round" /><path d="M21 25 L27 6.5" stroke="#3FAE6A" strokeWidth="3" strokeLinecap="round" /></svg>
-                </span>
+                <LogoMark size={22} />
                 {t("powered_by", lang)}
               </span>
               <small>{t("powered_by_sub", lang)}</small>
