@@ -76,10 +76,7 @@ export default async function ProjectPage(props) {
   // Live FX comes in via companyEngine so the editor's grant maths matches the
   // dashboard's. The editor is a client component, so the rate has to arrive as
   // a prop — it cannot fetch it itself.
-  const E = {
-    ...(await companyEngine(co)),
-    subsidyAmountRon: Number(co?.subsidy_amount_ron ?? 20000),
-  };
+  const E = await companyEngine(co);
   const signed = signedProp ? {
     signature: signedProp.signature || null,
     signerName: signedProp.signer_name || null,

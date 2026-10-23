@@ -10,6 +10,7 @@ import { verifyAutomationBearer } from "../../../../../lib/automationAuth.js";
 import { nextNudgeTier } from "../../../../../lib/nudgeTiers.js";
 import { quote } from "@voltmira/engine";
 import { snapshotEngine, companyEngine } from "../../../../../lib/engineSettings.js";
+import { offerQuoteInput } from "../../../../../lib/offerInput.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +30,7 @@ export async function GET(req) {
   // list instead of a 500 either way. Confirmed via direct testing, not
   // an accident to "fix" later.
   const { data: companies } = await db.from("companies")
-    .select("id, name, lang, engine").eq("nudge_enabled", true);
+    .select("id, name, lang, engine, subsidy_amount_ron").eq("nudge_enabled", true);
   if (!companies?.length) return NextResponse.json({ ok: true, proposals: [] });
   const companyById = new Map(companies.map((c) => [c.id, c]));
 
@@ -54,9 +55,9 @@ export async function GET(req) {
 
     try {
       const eThen = snapshotEngine(prop.snapshot?.engine, co);
-      const qThen = quote(prop.snapshot, eThen);
+      const qThen = quote(offerQuoteInput(prop.snapshot), eThen);
       const eNow = await companyEngine(co);
-      const qNow = quote(prop.snapshot, eNow);
+      const qNow = quote(offerQuoteInput(prop.snapshot), eNow);
 
       out.push({
         code: prop.code,

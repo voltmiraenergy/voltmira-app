@@ -19,7 +19,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
 
   const [{ data: co }, { data: rows }, stats] = await Promise.all([
-    sb.from("companies").select("id, engine").maybeSingle(),
+    sb.from("companies").select("id, engine, subsidy_amount_ron").maybeSingle(),
     sb.from("projects").select("*").order("updated_at", { ascending: false }),
     proposalStatsByProject(sb),
   ]);

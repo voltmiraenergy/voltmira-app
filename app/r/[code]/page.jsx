@@ -11,7 +11,7 @@ import { quote, SOLAR_SEASON } from "@voltmira/engine";
 import { supabaseAdmin } from "../../../lib/supabase.js";
 import { normLang } from "../../../lib/i18n.js";
 import { snapshotEngine } from "../../../lib/engineSettings.js";
-import { bomHasBattery } from "../../../lib/quoteInput.js";
+import { offerQuoteInput } from "../../../lib/offerInput.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { toIntlPhone } from "../../../lib/phone.js";
 import { journeySteps, nextStep, productionSeries, journeyFacts, firstName, localityOf } from "../../../lib/clientJourney.js";
@@ -41,7 +41,7 @@ async function load(code) {
   const snap = prop.snapshot;
   let prod0 = 0, year1 = 0;
   try {
-    const q = quote({ ...snap, bomHasBattery: bomHasBattery(snap.bom) }, snapshotEngine(snap.engine, co));
+    const q = quote(offerQuoteInput(snap), snapshotEngine(snap.engine, co));
     prod0 = Number(q.e.solar0) || Number(q.e.prod0) || 0;
     year1 = Number(q.e.year1) || 0;
   } catch { /* an old snapshot the engine cannot read: no forecast line */ }
