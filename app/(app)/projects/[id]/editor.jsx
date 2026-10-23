@@ -1582,6 +1582,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 setCopied(true); setTimeout(() => setCopied(false), 1800);
               }}>{copied ? tr("t_copied") : tr("copy")}</button>
             </div>
+            {/* a quote with no address shows the client no picture of their house from above */}
+            {!String(p.address || "").trim() && p.lat == null && <p className="sub" role="note">{tr("offer_site_hint")}</p>}
             {/* The link stays the same; this refreshes what it SHOWS from the
                 project's current state — the escape hatch for edits made after
                 the first "Generate" click, which createProposal() itself will

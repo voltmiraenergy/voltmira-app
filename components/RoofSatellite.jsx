@@ -10,15 +10,19 @@ import { SAT_TILES as SAT } from "../lib/satZoom.js";
 
 /**
  * @param {object} p
- * @param {{ planes: {outline:number[][], panels:number[][][]}[], obstacles?: number[][][] }} p.roof  rings of [lat, lon]
+ * @param {{ planes: {outline:number[][], panels:number[][][]}[], obstacles?: number[][][], center?: {lat:number, lon:number}, tileZoom?: number }} p.roof
+ *   rings of [lat, lon]; with no roof drawn, `center` frames the property with a pin instead
  * @param {number} [p.width]
  * @param {number} [p.height]
  * @param {string} [p.credit]  the imagery credit line
  */
 export default function RoofSatellite({ roof, width = 680, height = 380, credit = "Imagery © Esri, Maxar" }) {
   const outlines = (roof?.planes || []).map((pl) => pl.outline).filter((r) => Array.isArray(r) && r.length >= 3);
-  if (!outlines.length) return null;
-  const pts = outlines.flat().map(([lat, lon]) => ({ lat, lon }));
+  const center = roof?.center && Number.isFinite(Number(roof.center.lat)) && Number.isFinite(Number(roof.center.lon))
+    ? { lat: Number(roof.center.lat), lon: Number(roof.center.lon), approx: !!roof.center.approx } : null;
+  if (!outlines.length && !center) return null;
+  // with a roof, the view is framed on it; with only the place, it is framed on the place at the sharpest zoom
+  const pts = outlines.length ? outlines.flat().map(([lat, lon]) => ({ lat, lon })) : [center];
   // a little of the street around the roof, so the client recognises the house;
   // at most one level past the deepest real imagery here (lib/satZoom.js), as
   // stretching zoom-18 tiles four times over shows only blur
@@ -34,6 +38,16 @@ export default function RoofSatellite({ roof, width = 680, height = 380, credit 
         {v.tiles.map((t) => (
           <image key={t.key} href={t.src} x={t.left.toFixed(1)} y={t.top.toFixed(1)} width={(t.size + 0.6).toFixed(1)} height={(t.size + 0.6).toFixed(1)} preserveAspectRatio="none" />
         ))}
+        {/* a pin only where the installer pinned the place; a place found from the address could be the street */}
+        {!outlines.length && !center.approx && (() => {
+          const [cx, cy] = v.xy(center.lat, center.lon);
+          return (
+            <g>
+              <circle cx={cx.toFixed(1)} cy={cy.toFixed(1)} r="17" fill="rgba(232,155,45,.28)" />
+              <circle cx={cx.toFixed(1)} cy={cy.toFixed(1)} r="8" fill="#E89B2D" stroke="#fff" strokeWidth="3" />
+            </g>
+          );
+        })()}
         {(roof.planes || []).map((pl, i) => (
           <g key={i}>
             <polygon points={ring(pl.outline)} fill="rgba(255,255,255,.10)" stroke="#FFD54A" strokeWidth="2" />

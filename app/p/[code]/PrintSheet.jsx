@@ -234,7 +234,7 @@ const CSS = `
   }
 `;
 
-export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, roofPhotoPlace = null, roofSides = null, roofStatus = null, acceptUrl = "", fx = null, support = null, tariff = null, signed = null }) {
+export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofSite = null, roofPhoto = null, roofPhotoPlace = null, roofSides = null, roofStatus = null, acceptUrl = "", fx = null, support = null, tariff = null, signed = null }) {
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
   // Minus ahead of the currency symbol: "€-31" reads as a broken string.
   // Lei for a Moldovan installer at the rate frozen with the proposal, with
@@ -440,12 +440,17 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
               <RoofSatellite roof={roofSat} />
               <small>{tr("pdf_roof_sat_note", { n: roofSat.quoted || roofSat.planes.reduce((s, pl) => s + pl.panels.length, 0) })}</small>
             </div>
-          ) : hasRoof && (
+          ) : hasRoof ? (
             <div className="p-roof">
               <RoofSnapshotSVG planes={roofPlanes} />
               <small>{tr("pdf_roof_snap_note", { n: roofPlanes.reduce((s, pl) => s + pl.panels.length, 0) })}</small>
             </div>
-          )}
+          ) : roofSite ? (
+            <div className="p-roof">
+              <RoofSatellite roof={{ planes: [], center: roofSite, tileZoom: roofSite.tileZoom }} />
+              <small>{tr(roofSite.approx ? "pdf_roof_area_note" : "pdf_roof_site_note")}</small>
+            </div>
+          ) : null}
         </div>
         <div className="p-chips">
           <span className="p-chip">{tr(roofAreaM2 ? "pdf_roof_real" : "pdf_roof")}: <b>~{roofArea} m²</b></span>

@@ -111,7 +111,7 @@ export default async function ProposalPage(props) {
   }
   const { after = null, company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
     offer = null, chosenOption = null, cned = null, support = null, tariff = null, referral = null, financing = null, signature = null, qsign = null,
-    roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, roofPhotoPlace = null, roofSides = null, roofStatus = null } = data;
+    roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofSite = null, roofPhoto = null, roofPhotoPlace = null, roofSides = null, roofStatus = null } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
   const signedDate = signedAt
@@ -129,7 +129,7 @@ export default async function ProposalPage(props) {
       <main lang={lang} style={{ background: "#fff", minHeight: "100vh" }}>
         <HtmlLang lang={lang} />
         <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom}
-          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat} roofPhoto={roofPhoto} roofPhotoPlace={roofPhotoPlace} roofSides={roofSides} roofStatus={roofStatus}
+          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat} roofSite={roofSite} roofPhoto={roofPhoto} roofPhotoPlace={roofPhotoPlace} roofSides={roofSides} roofStatus={roofStatus}
           acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} support={support} tariff={tariff}
           signed={accepted && signedName ? { name: signedName, date: signedDate, ...signature } : null} />
         {/* The PDF route drives printing through CDP and passes auto=0:
@@ -439,15 +439,21 @@ export default async function ProposalPage(props) {
                 </figure>
               ) : roofSat ? (
                 <figure className="pp-roof pp-card">
-                  <RoofSatellite roof={roofSat} />
+                  <RoofSatellite roof={roofSat} width={900} height={400} />
                   <figcaption>{t("pdf_roof_sat_note", lang, { n: roofSat.quoted || roofSat.planes.reduce((s, pl) => s + pl.panels.length, 0) })}</figcaption>
                 </figure>
-              ) : hasRoof && (
+              ) : hasRoof ? (
                 <figure className="pp-roof pp-card">
                   <RoofSnapshotSVG planes={roofPlanes} />
                   <figcaption>{t("pdf_roof_snap_note", lang, { n: roofPlanes.reduce((s, pl) => s + pl.panels.length, 0) })}</figcaption>
                 </figure>
-              )}
+              ) : roofSite ? (
+                // the roof was not drawn: the client still sees their own house from above
+                <figure className="pp-roof pp-card">
+                  <RoofSatellite roof={{ planes: [], center: roofSite, tileZoom: roofSite.tileZoom }} width={900} height={400} />
+                  <figcaption>{t(roofSite.approx ? "pdf_roof_area_note" : "pdf_roof_site_note", lang)}</figcaption>
+                </figure>
+              ) : null}
 
               {backupHrs != null && (
                 <div className="pp-callout">
