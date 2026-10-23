@@ -13,7 +13,7 @@ import { NextResponse } from "next/server";
 import { renderHtmlPdf } from "../../../../lib/renderProposalPdf.js";
 import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
 import { supabaseServer } from "../../../../lib/supabase.js";
-import { JOBS_KEY } from "../../../../lib/studioLink.js";
+import { JOBS_KEY } from "../../../../lib/studioKeys.js";
 import { docDecision, creditsPaywallOn, DOC_KINDS } from "../../../../lib/credits.js";
 import { creditBalance, paidBefore, spendCredits } from "../../../../lib/creditAccess.js";
 

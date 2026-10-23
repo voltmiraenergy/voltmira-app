@@ -15,20 +15,16 @@
 // and nothing here claims to be an official interchange format it isn't.
 //
 // Scope: only projects with a real invoice_no (a proforma was actually
-// issued — see the invoice page's next_invoice_no()) and market = MD. Same
-// net/VAT/gross math as the invoice PDF itself (lib/invoiceMath.js
-// invoiceAmounts), and each row in that invoice's own currency (the quote's
-// offer currency, lib/offerCurrency.js), so this export can never show a
-// different total or currency than the document the client has.
+// issued, lib/invoiceIssue.js) and market = MD. The figures are the ones fixed
+// with the invoice number (lib/invoiceFreeze.js, read through projectInvoice),
+// in that invoice's own currency, so this file shows the total and currency
+// the client's document has, whatever the rate or the quote's size has since
+// done. An invoice issued before the figures were kept is worked out as the
+// invoice page worked it out.
 import { NextResponse } from "next/server";
 import { supabaseServer } from "../../../lib/supabase.js";
 import { currentCompany } from "../../../lib/session.js";
-import { quote } from "@voltmira/engine";
-import { companyEngine } from "../../../lib/engineSettings.js";
-import { rowToQuoteInput } from "../../../lib/quoteInput.js";
-import { invoiceAmounts } from "../../../lib/invoiceMath.js";
-import { effectiveOfferCurrency } from "../../../lib/offerCurrency.js";
-import { getRate } from "../../../lib/fx.js";
+import { projectInvoice } from "../../../lib/invoiceServer.js";
 import { csvEsc } from "../../../lib/csv.js";
 import { projectVisibility } from "../../../lib/projectAccess.js";
 import { dayKeyOf } from "../../../lib/tz.js";
@@ -46,17 +42,6 @@ export async function GET() {
     .eq("market", "MD").not("invoice_no", "is", null).order("invoice_no", { ascending: true });
 
   const sees = await projectVisibility(user, co);
-  const E = await companyEngine(co);
-  // one rate lookup per currency the invoices use
-  const rates = {};
-  const rateFor = async (cur) => {
-    if (!(cur in rates)) {
-      const info = await getRate(cur);
-      rates[cur] = Number(info.rate) > 0 ? Number(info.rate) : 1;
-    }
-    return rates[cur];
-  };
-
   const head = [
     "Numar factura", "Data", "Client", "Adresa client",
     "Suma neta", "Cota TVA (%)", "TVA", "Suma totala", "Moneda",
@@ -64,9 +49,9 @@ export async function GET() {
   ];
   const lines = [];
   for (const p of (rows || []).filter(sees)) {
-    const q = quote(rowToQuoteInput(p, E), E).e;
-    const cur = effectiveOfferCurrency(p.offer_currency, co.currency, p.market);
-    const { gross, net, vat, rate } = invoiceAmounts({ grossEur: Math.max(0, q.cost || 0), fx: await rateFor(cur), vatRatePct: co.vat_rate });
+    const inv = await projectInvoice(p, co);
+    const { gross, net, vat, rate } = inv.amounts;
+    const cur = inv.cur;
     const date = dayKeyOf(p.invoiced_at);
     lines.push([
       p.invoice_no || "", date, p.client_name || "", p.address || "",

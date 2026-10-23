@@ -11,7 +11,7 @@ import "../../dx.css";
 import "./builder.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
-import { regenerateProposal, saveQuoteTemplate, markProjectWon, offerPhone } from "../../../../lib/actions.js";
+import { regenerateProposal, saveQuoteTemplate, markProjectWon, offerPhone, issueInvoice } from "../../../../lib/actions.js";
 import { sendOffer } from "../../../../lib/sendOffer.js";
 import { isStandalone, openPdfInApp } from "../../../../lib/openPdf.js";
 import { aiOn } from "../../../../lib/featureFlags.js";
@@ -745,6 +745,21 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     if (!propUrl && !invOpen) return;
     fetch("/api/proposal/warm", { method: "POST", keepalive: true }).catch(() => { });
   }, [propUrl, invOpen]);
+
+  // The PDF is of an issued invoice: Download issues it first (the one click that draws the number), then opens it.
+  async function downloadProforma() {
+    const w = window.open("", "_blank");
+    setInvMsg(null);
+    try {
+      const r = await issueInvoice(initial.id, depPct);
+      if (!r?.ok) throw new Error("issue");
+      const url = `/api/projects/${initial.id}/invoice${depPct > 0 ? `?deposit=${depPct}` : ""}`;
+      if (w) w.location.href = url; else window.open(url, "_blank");
+    } catch {
+      w?.close();
+      setInvMsg({ ok: false, text: tr("inv_issue_fail") });
+    }
+  }
 
   async function sendProforma() {
     if (!invTo.trim()) return;
@@ -1533,8 +1548,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               <button className="btn ghost" onClick={() => setInvOpen(false)}>{tr("close")}</button>
               {/* Server-rendered: the browser print path stamped Chrome's header
                   and the internal /projects/<uuid> URL onto a financial document. */}
-              <a className="btn ghost" target="_blank" rel="noopener noreferrer"
-                href={`/api/projects/${initial.id}/invoice${depPct > 0 ? `?deposit=${depPct}` : ""}`}>{tr("inv_dl")}</a>
+              <button type="button" className="btn ghost" onClick={downloadProforma}>{tr("inv_dl")}</button>
               <a className="btn primary" target="_blank" rel="noopener noreferrer"
                 href={`/projects/${initial.id}/invoice${depPct > 0 ? `?deposit=${depPct}` : ""}`}
                 onClick={() => setInvOpen(false)}>{tr("inv_dep_open")}</a>

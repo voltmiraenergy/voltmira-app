@@ -22,6 +22,10 @@ import { sendEmail, proformaEmail, emailConfigured } from "../../../../../lib/em
 import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
 import { logActivity } from "../../../../../lib/activity.js";
 import { supabaseAdmin } from "../../../../../lib/supabase.js";
+import { projectVisibility } from "../../../../../lib/projectAccess.js";
+import { projectInvoice } from "../../../../../lib/invoiceServer.js";
+import { issueInvoiceFor } from "../../../../../lib/invoiceIssue.js";
+import { sendCrmWebhook } from "../../../../../lib/crmWebhook.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,8 +50,10 @@ async function authorize(req, id) {
   if (!co) return NextResponse.json({ error: "no_company" }, { status: 403 });
   // RLS-scoped read: a project outside the caller's company simply isn't there.
   const { data: project } = await (await supabaseServer())
-    .from("projects").select("id, title, client_name, company_id, invoice_no").eq("id", id).maybeSingle();
+    .from("projects").select("id, title, client_name, company_id, owner_id, invoice_no").eq("id", id).maybeSingle();
   if (!project) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  // a Sales member does not take a colleague's proforma by its address
+  if (!(await projectVisibility(user, co))(project)) return NextResponse.json({ error: "not_found" }, { status: 404 });
   return { user, co, project };
 }
 
@@ -72,6 +78,8 @@ export async function GET(req, props) {
   const auth = await authorize(req, params.id);
   if (auth instanceof NextResponse) return auth;
 
+  // Downloading never draws a number: the invoice is issued first (the invoice page, or the editor's Download).
+  if (!auth.project.invoice_no) return NextResponse.json({ error: "not_issued" }, { status: 409 });
   const dep = depositOf(new URL(req.url).searchParams.get("deposit"));
   try {
     const { pdf, timings } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page" });
@@ -106,6 +114,18 @@ export async function POST(req, props) {
   if (!EMAIL_RE.test(to)) return NextResponse.json({ error: "bad_email" }, { status: 400 });
   const dep = depositOf(body?.deposit);
 
+  // Sending the proforma is an explicit act, so it issues the invoice if it is not yet (the PDF then carries the number)
+  let invoiceNo = auth.project.invoice_no;
+  if (!invoiceNo) {
+    const sb = await supabaseServer();
+    const { data: full } = await sb.from("projects").select("*").eq("id", params.id).maybeSingle();
+    if (!full) return NextResponse.json({ error: "not_found" }, { status: 404 });
+    const inv = await projectInvoice(full, auth.co, { depositPct: dep });
+    const r = await issueInvoiceFor({ sb, co: auth.co, project: full, inv, webhook: (ev, payload) => sendCrmWebhook(auth.co.id, ev, payload) });
+    if (!r.ok) return NextResponse.json({ error: "issue_failed" }, { status: 500 });
+    invoiceNo = r.invoiceNo;
+  }
+
   let pdf;
   try {
     ({ pdf } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page" }));
@@ -124,7 +144,7 @@ export async function POST(req, props) {
   const res = await sendEmail({
     to, subject, html,
     replyTo: auth.user.email || undefined,
-    attachments: [{ filename: `${auth.project.invoice_no || "proforma"}.pdf`.replace(/[^\w.-]+/g, "-"), content: pdf.toString("base64") }],
+    attachments: [{ filename: `${invoiceNo || "proforma"}.pdf`.replace(/[^\w.-]+/g, "-"), content: pdf.toString("base64") }],
   });
   if (!res.sent) return NextResponse.json({ error: res.error || "send_failed" }, { status: 502 });
 
