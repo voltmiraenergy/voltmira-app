@@ -50,6 +50,11 @@ export async function POST(req, props) {
   const to = String(body?.to || "").trim();
   const note = String(body?.note || "").slice(0, 1000);
   if (!EMAIL_RE.test(to)) return NextResponse.json({ error: "bad_email" }, { status: 400 });
+  // This sends mail from VoltMira's own domain to any address typed in: a day's cap for the workspace, and for
+  // one recipient, so an account cannot be used to flood a stranger's inbox or burn the sender's reputation.
+  if (await isRateLimited(`pdfmail-co:${co.id}`, 100, 86_400_000) || await isRateLimited(`pdfmail-to:${co.id}:${to.toLowerCase()}`, 5, 86_400_000)) {
+    return NextResponse.json({ error: "rate" }, { status: 429 });
+  }
 
   const admin = supabaseAdmin();
   const { data: prop } = await admin.from("proposals")

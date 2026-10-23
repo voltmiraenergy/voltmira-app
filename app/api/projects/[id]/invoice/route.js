@@ -112,6 +112,10 @@ export async function POST(req, props) {
   try { body = await req.json(); } catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }
   const to = String(body?.to || "").trim();
   if (!EMAIL_RE.test(to)) return NextResponse.json({ error: "bad_email" }, { status: 400 });
+  // a day's cap for the workspace and for one recipient (the mail goes out from VoltMira's own domain)
+  if (await isRateLimited(`invmail-co:${auth.co.id}`, 100, 86_400_000) || await isRateLimited(`invmail-to:${auth.co.id}:${to.toLowerCase()}`, 5, 86_400_000)) {
+    return NextResponse.json({ error: "rate" }, { status: 429 });
+  }
   const dep = depositOf(body?.deposit);
 
   // Sending the proforma is an explicit act, so it issues the invoice if it is not yet (the PDF then carries the number)
