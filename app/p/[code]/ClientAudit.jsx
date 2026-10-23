@@ -51,6 +51,8 @@ export default function ClientAudit({ inputs, assumptions: E, lang, currency = "
     batt: inputs.batt, market: inputs.market, useMonthly: inputs.useMonthly,
     consMonthly: inputs.consMonthly, afmSubsidy: inputs.afmSubsidy,
     yieldOverride: inputs.yieldOverride, monthlyYieldShape: inputs.monthlyYieldShape,
+    // what the headline was computed with: the day/night plan, and for Ukraine the start year and plan
+    tariffMode: inputs.tariffMode || "flat", startYear: inputs.startYear, uaPlan: inputs.uaPlan,
     // Carry the real battery capacity and the frozen BOM total, otherwise this
     // panel priced a 20 kWh battery as 10 kWh (engine fallback) and ignored the
     // bill of materials, so the audit contradicted the headline proposal.
@@ -71,7 +73,7 @@ export default function ClientAudit({ inputs, assumptions: E, lang, currency = "
     return [run(1, 0), run(priceMul, inflDelta)];
   }, [priceMul, inflDelta, params, E, basePrice]);
 
-  const yrs = (n) => n === null ? "25+" : n === 0 ? t("pp_immediate", lang) : nf(n, 1);
+  const yrs = (n) => n === null ? `${Number(E?.horizon) || 25}+` : n === 0 ? t("pp_immediate", lang) : nf(n, 1);
   const unit = (n) => (n === 0 ? "" : t("pp_years", lang));
   const touched = priceMul !== 1 || inflDelta !== 0;
 

@@ -53,7 +53,7 @@ const CSS = `
 .guide .g-tip p{margin:0;font-size:14px;color:var(--ink);line-height:1.55}
 .guide .nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0 4px}
 .guide .num-c{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:13px 14px;border-top:3px solid var(--bc)}
-.guide .num-c .t{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--bc);font-weight:700}
+.guide .num-c .t{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink);font-weight:700}
 .guide .num-c p{margin:5px 0 0;font-size:13px;color:var(--ink);opacity:.8;line-height:1.45}
 .guide details{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:0 18px;margin-bottom:9px;transition:border-color .15s}
 .guide details[open]{border-color:color-mix(in srgb,var(--green) 40%,var(--line))}
@@ -245,7 +245,7 @@ const HTML = {
     <p><b>Amortizare: trei scenarii oneste.</b> În loc de o singură cifră măgulitoare, fiecare ofertă arată trei, ca să aibă clientul încredere:</p>
     <div class="nums">
       <div class="num-c" style="--bc:#C4543B"><div class="t">Pesimist</div><p>Ghinion: soare mai slab, uzură mai rapidă, prețuri constante.</p></div>
-      <div class="num-c" style="--bc:var(--amber)"><div class="t">Așteptat</div><p>Mijlocul realist: ce ai oferta.</p></div>
+      <div class="num-c" style="--bc:var(--amber)"><div class="t">Așteptat</div><p>Mijlocul realist: ce ai oferi.</p></div>
       <div class="num-c" style="--bc:var(--green)"><div class="t">Optimist</div><p>Soare puternic, prețuri în creștere.</p></div>
     </div>
   </div>

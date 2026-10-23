@@ -120,6 +120,13 @@ html[data-theme="dark"] .app .sd-shell { --sd-on-green: #07130D; }
 .app .sd-map .leaflet-control-zoom a:hover { background: var(--paper); color: var(--green); }
 .app .sd-map .leaflet-control-attribution { font-size: 10px; background: rgba(255, 255, 255, .72); }
 .app .sd-pin-wrap { pointer-events: none; }
+/* the two handles on a photo laid over the map: a dot moves it, the square on its right edge sizes and turns it */
+.app .sd-photo-h { position: relative; box-sizing: border-box; width: 28px; height: 28px; background: #fff; border: 3px solid var(--amber); box-shadow: 0 1px 7px rgba(0, 0, 0, .5); cursor: grab; }
+.app .sd-photo-h:active { cursor: grabbing; }
+.app .sd-photo-h.move { border-radius: 50%; }
+.app .sd-photo-h.move::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--amber); }
+.app .sd-photo-h.size { border-radius: 8px; }
+.app .sd-photo-h.size::after { content: ""; position: absolute; left: 4px; right: 4px; top: 50%; height: 3px; margin-top: -1.5px; border-radius: 2px; background: var(--amber); }
 .app .sd-pin { width: 32px; height: 40px; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .45)); }
 .app .sd-mk-wrap { background: none; border: 0; }
 .app .sd-mk {

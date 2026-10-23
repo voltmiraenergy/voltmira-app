@@ -42,7 +42,7 @@ export default async function LenderPortal(props) {
         <header className="lp-head">
           <h1 className="pp-h2">{lt("lp_title", lang, { lender: lender.name })}</h1>
           <p className="pp-lead">{lt("lp_sub", lang)}</p>
-          <nav className="lp-langs" aria-label="Language">{LANGS.map((l) => <a key={l} href={`?lang=${l}`} aria-current={l === lang ? "true" : undefined}>{l.toUpperCase()}</a>)}</nav>
+          <nav className="lp-langs" aria-label={{ ro: "Limba", ru: "Язык", en: "Language", uk: "Мова" }[lang] || "Language"}>{LANGS.map((l) => <a key={l} href={`?lang=${l}`} aria-current={l === lang ? "true" : undefined}>{l.toUpperCase()}</a>)}</nav>
         </header>
         {!apps?.length ? <p className="pp-lead">{lt("lp_none", lang)}</p> : (
           <ul className="lp-list">

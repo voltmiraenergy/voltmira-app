@@ -7,6 +7,7 @@
 // "Continue with Google" bounced straight back to /login with no session.
 import { NextResponse } from "next/server";
 import { supabaseServer } from "../../../lib/supabase.js";
+import { safeNext } from "../../../lib/safeRedirect.js";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +15,7 @@ export async function GET(req) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
   // only allow same-site relative paths — never an open redirect
-  const nextParam = url.searchParams.get("next") || "/dashboard";
-  const next = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/dashboard";
+  const next = safeNext(url.searchParams.get("next")) || "/dashboard";
 
   // OAuth error (e.g. user cancelled the Google consent screen)
   if (url.searchParams.get("error")) {

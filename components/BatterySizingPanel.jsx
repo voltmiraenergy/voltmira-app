@@ -8,10 +8,11 @@
 // the solid dot is the capacity currently quoted.
 import { useMemo } from "react";
 import { batterySweep } from "../lib/quoteAnalysis.js";
+import { dec } from "../lib/decimals.js";
 
 const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
 
-function Curve({ pts, deltas, knee, paysOff, current, max, step, money, narrow = false }) {
+function Curve({ pts, deltas, knee, paysOff, current, max, step, money, lang, narrow = false }) {
   // Plot the value ADDED over having no battery at all, not the absolute yearly
   // saving. Against an absolute axis the whole curve sits near the top and looks
   // flat — the €100 that decides the battery is invisible next to the €700 the
@@ -37,7 +38,7 @@ function Curve({ pts, deltas, knee, paysOff, current, max, step, money, narrow =
   const good = deltas[curIdx] >= 0;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: 640, display: "block" }} role="img"
-      aria-label="Valoare anuală adăugată de baterie, pe capacitate">
+      aria-label={t3(lang, "Valoare anuală adăugată de baterie, pe capacitate", "Yearly value the battery adds, by capacity", "Годовая ценность батареи по ёмкости", "Річна цінність батареї за ємністю")}>
       {/* the area is clipped at the zero line on each side, so a loss reads red */}
       <path d={area} fill={hi > 0 ? "var(--green)" : "#C4543B"} opacity=".14" />
       <line x1={PADL} y1={zero} x2={W - PADR} y2={zero} stroke="var(--line)" strokeWidth="1.2" />
@@ -48,7 +49,7 @@ function Curve({ pts, deltas, knee, paysOff, current, max, step, money, narrow =
       {paysOff && (
         <>
           <line x1={X(knee)} y1={PADT} x2={X(knee)} y2={Y(bot)} stroke="var(--amber)" strokeWidth="1.3" strokeDasharray="3 3" />
-          <text x={X(knee)} y={PADT - 6} textAnchor="middle" fontSize={FS_K} fontWeight="700" fill="var(--amber)">{knee.toFixed(1)} kWh</text>
+          <text x={X(knee)} y={PADT - 6} textAnchor="middle" fontSize={FS_K} fontWeight="700" fill="var(--amber)">{dec(knee, 1, lang)} kWh</text>
         </>
       )}
       <circle cx={X(pts[curIdx].b)} cy={Y(deltas[curIdx])} r="4.5"
@@ -81,9 +82,9 @@ export default function BatterySizingPanel({ lang, base, E, battKwh, onApply, mo
       <p className="bsp-lead">
         {spread
           ? t3(lang,
-              `Fiecare kWh exportat se răscumpără la ${spread.buybackMdl.toFixed(2)} lei; același kWh, stocat și folosit seara, valorează tariful din factură (${spread.retailMdl.toFixed(2)} lei). Diferența de ${spread.spreadMdl.toFixed(2)} lei e tot ce câștigă bateria pe kWh: curba de mai jos e calculul motorului pentru acest client.`,
-              `Every exported kWh is bought back at ${spread.buybackMdl.toFixed(2)} lei; the same kWh, stored and used in the evening, is worth the retail tariff (${spread.retailMdl.toFixed(2)} lei). The ${spread.spreadMdl.toFixed(2)} lei difference is all the battery earns per kWh: the curve below is the engine's calculation for this client.`,
-              `Каждый экспортированный кВт·ч выкупается по ${spread.buybackMdl.toFixed(2)} лей; тот же кВт·ч, сохранённый на вечер, стоит розничный тариф (${spread.retailMdl.toFixed(2)} лей). Разница в ${spread.spreadMdl.toFixed(2)} лей: весь заработок батареи на кВт·ч.`, `Кожна експортована кВт·год викуповується по ${spread.buybackMdl.toFixed(2)} лей; та сама кВт·год, збережена на вечір, коштує за роздрібним тарифом (${spread.retailMdl.toFixed(2)} лей). Різниця в ${spread.spreadMdl.toFixed(2)} лей і є всім заробітком батареї на кВт·год: крива нижче це розрахунок рушія для цього клієнта.`)
+              `Fiecare kWh exportat se răscumpără la ${dec(spread.buybackMdl, 2, lang)} lei; același kWh, stocat și folosit seara, valorează tariful din factură (${dec(spread.retailMdl, 2, lang)} lei). Diferența de ${dec(spread.spreadMdl, 2, lang)} lei e tot ce câștigă bateria pe kWh: curba de mai jos e calculul motorului pentru acest client.`,
+              `Every exported kWh is bought back at ${dec(spread.buybackMdl, 2, lang)} lei; the same kWh, stored and used in the evening, is worth the retail tariff (${dec(spread.retailMdl, 2, lang)} lei). The ${dec(spread.spreadMdl, 2, lang)} lei difference is all the battery earns per kWh: the curve below is the engine's calculation for this client.`,
+              `Каждый экспортированный кВт·ч выкупается по ${dec(spread.buybackMdl, 2, lang)} лей; тот же кВт·ч, сохранённый на вечер, стоит розничный тариф (${dec(spread.retailMdl, 2, lang)} лей). Разница в ${dec(spread.spreadMdl, 2, lang)} лей: весь заработок батареи на кВт·ч.`, `Кожна експортована кВт·год викуповується по ${dec(spread.buybackMdl, 2, lang)} лей; та сама кВт·год, збережена на вечір, коштує за роздрібним тарифом (${dec(spread.retailMdl, 2, lang)} лей). Різниця в ${dec(spread.spreadMdl, 2, lang)} лей і є всім заробітком батареї на кВт·год: крива нижче це розрахунок рушія для цього клієнта.`)
           : t3(lang,
               "Surplusul exportat se creditează sub prețul din factură, iar același kWh stocat și folosit seara valorează tariful întreg. Curba de mai jos e calculul motorului pentru acest client, nu o ilustrare.",
               "Exported surplus is credited below the retail price, while the same kWh stored and used in the evening is worth the full tariff. The curve below is the engine's own calculation for this client, not an illustration.",
@@ -92,20 +93,20 @@ export default function BatterySizingPanel({ lang, base, E, battKwh, onApply, mo
 
       <div className="bsp-cw">
         <Curve pts={sweep.pts} deltas={sweep.deltas} knee={sweep.knee} paysOff={sweep.paysOff}
-        current={battKwh} max={sweep.max} step={sweep.step} money={money} />
+        current={battKwh} max={sweep.max} step={sweep.step} money={money} lang={lang} />
       </div>
       <div className="bsp-cn">
         <Curve narrow pts={sweep.pts} deltas={sweep.deltas} knee={sweep.knee} paysOff={sweep.paysOff}
-        current={battKwh} max={sweep.max} step={sweep.step} money={money} />
+        current={battKwh} max={sweep.max} step={sweep.step} money={money} lang={lang} />
       </div>
 
       <div className="bsp-metrics">
         <div className={"bsp-m" + (sweep.paysOff ? " good" : " bad")}>
-          <b>{sweep.paysOff ? `${sweep.knee.toFixed(1)} kWh` : t3(lang, "fără baterie", "no battery", "без батареи", "без батареї")}</b>
+          <b>{sweep.paysOff ? `${dec(sweep.knee, 1, lang)} kWh` : t3(lang, "fără baterie", "no battery", "без батареи", "без батареї")}</b>
           <span>{t3(lang, "recomandat pentru acest client", "recommended for this client", "рекомендовано клиенту", "рекомендовано клієнту")}</span>
         </div>
         <div className="bsp-m"><b>{money(sweep.atKnee - sweep.base0)}</b><span>{t3(lang, "valoare anuală la recomandare", "annual value at the recommendation", "годовая ценность (рекоменд.)", "річна цінність (рекоменд.)")}</span></div>
-        <div className="bsp-m"><b>{battKwh.toFixed(1)} kWh</b><span>{t3(lang, "baterie aleasă acum", "battery picked now", "выбрано сейчас", "вибрано зараз")}</span></div>
+        <div className="bsp-m"><b>{dec(battKwh, 1, lang)} kWh</b><span>{t3(lang, "baterie aleasă acum", "battery picked now", "выбрано сейчас", "вибрано зараз")}</span></div>
         <div className={"bsp-m" + (curDelta < 0 ? " bad" : "")}>
           <b>{money(curDelta)}</b><span>{t3(lang, "valoare anuală la alegerea actuală", "annual value at the current pick", "годовая ценность сейчас", "річна цінність зараз")}</span>
         </div>
@@ -117,16 +118,16 @@ export default function BatterySizingPanel({ lang, base, E, battKwh, onApply, mo
       {!sweep.paysOff && (
         <div className="bsp-verdict">
           {t3(lang,
-            `Pe acest client bateria nu se amortizează la nicio capacitate: fiecare kWh de stocare costă mai mult decât economisește${netMetering ? ", pentru că la contorizare netă 1:1 exportul se creditează deja la prețul din factură" : ""}. ${battKwh > 0 ? `Capacitatea aleasă acum (${battKwh.toFixed(1)} kWh) scade economia anuală cu ${money(Math.abs(curDelta))}.` : ""}`,
-            `Storage doesn't pay for this client at any capacity: every stored kWh costs more than it saves${netMetering ? ", because 1:1 net metering already credits exports at the retail price" : ""}. ${battKwh > 0 ? `The ${battKwh.toFixed(1)} kWh currently quoted reduces the annual saving by ${money(Math.abs(curDelta))}.` : ""}`,
-            `Для этого клиента батарея не окупается ни при какой ёмкости${netMetering ? ": при нетто-учёте 1:1 экспорт и так кредитуется по розничной цене" : ""}. ${battKwh > 0 ? `Выбранные ${battKwh.toFixed(1)} кВт·ч уменьшают годовую экономию на ${money(Math.abs(curDelta))}.` : ""}`, `Для цього клієнта батарея не окупається за жодної ємності${netMetering ? ": за нетметерингу 1:1 експорт і так зараховується за роздрібною ціною" : ""}. ${battKwh > 0 ? `Вибрані ${battKwh.toFixed(1)} кВт·год зменшують річну економію на ${money(Math.abs(curDelta))}.` : ""}`)}
+            `Pe acest client bateria nu se amortizează la nicio capacitate: fiecare kWh de stocare costă mai mult decât economisește${netMetering ? ", pentru că la contorizare netă 1:1 exportul se creditează deja la prețul din factură" : ""}. ${battKwh > 0 ? `Capacitatea aleasă acum (${dec(battKwh, 1, lang)} kWh) scade economia anuală cu ${money(Math.abs(curDelta))}.` : ""}`,
+            `Storage doesn't pay for this client at any capacity: every stored kWh costs more than it saves${netMetering ? ", because 1:1 net metering already credits exports at the retail price" : ""}. ${battKwh > 0 ? `The ${dec(battKwh, 1, lang)} kWh currently quoted reduces the annual saving by ${money(Math.abs(curDelta))}.` : ""}`,
+            `Для этого клиента батарея не окупается ни при какой ёмкости${netMetering ? ": при нетто-учёте 1:1 экспорт и так кредитуется по розничной цене" : ""}. ${battKwh > 0 ? `Выбранные ${dec(battKwh, 1, lang)} кВт·ч уменьшают годовую экономию на ${money(Math.abs(curDelta))}.` : ""}`, `Для цього клієнта батарея не окупається за жодної ємності${netMetering ? ": за нетметерингу 1:1 експорт і так зараховується за роздрібною ціною" : ""}. ${battKwh > 0 ? `Вибрані ${dec(battKwh, 1, lang)} кВт·год зменшують річну економію на ${money(Math.abs(curDelta))}.` : ""}`)}
         </div>
       )}
 
       {onApply && gap > 0.4 && (
         <button type="button" className="btn ghost sm" style={{ marginTop: 12 }} onClick={() => onApply(sweep.knee)}>
           {sweep.paysOff
-            ? t3(lang, `Aplică ${sweep.knee.toFixed(1)} kWh`, `Apply ${sweep.knee.toFixed(1)} kWh`, `Применить ${sweep.knee.toFixed(1)} кВт·ч`, `Застосувати ${sweep.knee.toFixed(1)} кВт·год`)
+            ? t3(lang, `Aplică ${dec(sweep.knee, 1, lang)} kWh`, `Apply ${dec(sweep.knee, 1, lang)} kWh`, `Применить ${dec(sweep.knee, 1, lang)} кВт·ч`, `Застосувати ${dec(sweep.knee, 1, lang)} кВт·год`)
             : t3(lang, "Scoate bateria din ofertă", "Remove the battery from the offer", "Убрать батарею из предложения", "Прибрати батарею з пропозиції")}
         </button>
       )}

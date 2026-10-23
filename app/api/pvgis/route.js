@@ -3,6 +3,8 @@
 import { NextResponse } from "next/server";
 import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
 import { getSolarYield, geocode, cacheKey } from "@voltmira/engine/pvgis";
+import { isRateLimited } from "../../../lib/ratelimit.js";
+import { pvgisAngles } from "../../../lib/pvgisAngles.js";
 
 function dbCache(admin) {
   const TTL = 30 * 24 * 3600 * 1000;
@@ -24,13 +26,15 @@ export async function GET(req) {
   const sb = await supabaseServer();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // each distinct angle or aspect is a fresh call to the JRC service and a new cache row: bounded, and a
+  // signed-in session (the public demo too) cannot loop them
+  if (await isRateLimited(`pvgis:${user.id}`, 120, 3_600_000)) return NextResponse.json({ error: "rate" }, { status: 429 });
 
   const url = new URL(req.url);
   let lat = parseFloat(url.searchParams.get("lat"));
   let lon = parseFloat(url.searchParams.get("lon"));
   const address = url.searchParams.get("address");
-  const angle = parseFloat(url.searchParams.get("angle") || "35");
-  const aspect = parseFloat(url.searchParams.get("aspect") || "0");
+  const { angle, aspect } = pvgisAngles(url.searchParams.get("angle"), url.searchParams.get("aspect"));
 
   try {
     if ((isNaN(lat) || isNaN(lon)) && address) {

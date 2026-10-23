@@ -9,6 +9,8 @@
 // appears on is public anyway.
 import { NextResponse } from "next/server";
 import { supabaseServer, supabaseAdmin } from "../../../../../lib/supabase.js";
+import { currentCompany } from "../../../../../lib/session.js";
+import { projectVisibility } from "../../../../../lib/projectAccess.js";
 import { isRateLimited } from "../../../../../lib/ratelimit.js";
 
 export const runtime = "nodejs";
@@ -20,8 +22,8 @@ export async function POST(req, props) {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (await isRateLimited(`roofphoto:${user.id}`, 20, 60 * 60 * 1000)) return NextResponse.json({ error: "rate" }, { status: 429 });
-  const { data: p } = await sb.from("projects").select("id, company_id").eq("id", id).maybeSingle();
-  if (!p) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const { data: p } = await sb.from("projects").select("id, company_id, owner_id").eq("id", id).maybeSingle();
+  if (!p || !(await projectVisibility(user, await currentCompany()))(p)) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   let file;
   try { file = (await req.formData()).get("photo"); } catch { return NextResponse.json({ error: "bad_form" }, { status: 400 }); }

@@ -26,6 +26,8 @@ import { proposalStatsByProject } from "../../../lib/proposalStats.js";
 import { rowToQuoteInput } from "../../../lib/quoteInput.js";
 import { activityHtml } from "../../../lib/activity.js";
 import { mdDayKey, fmtDate, fmtTime, APP_TZ } from "../../../lib/tz.js";
+import { dec } from "../../../lib/decimals.js";
+import { kwUnit } from "../../p/[code]/text.js";
 import { leadChannel, CHANNEL_DOT } from "../../../lib/leadChannels.js";
 import { systemRatio } from "../../../lib/yieldCalibration.js";
 import { relTime } from "../../../lib/relTime.js";
@@ -162,7 +164,7 @@ export default async function Dashboard() {
   const winRate = (won + lost) ? Math.round(won / (won + lost) * 100) + "%" : NONE;
   const avgPbVal = pbN ? pbSum / pbN : null;
   const avgPb = avgPbVal === null ? NONE : (avgPbVal >= E.horizon ? `${E.horizon}+` : avgPbVal.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })) + " " + t("yrs", lang);
-  const yrsF = (p) => p === null ? "25+" : p === 0 ? "now" : p.toFixed(1);
+  const yrsF = (p) => p === null ? `${E.horizon}+` : p === 0 ? t("pp_immediate", lang) : dec(p, 1, lang);
   const avgDeal = won ? wonValueSum / won : null;
 
   // ---------- time to close ----------
@@ -494,7 +496,7 @@ export default async function Dashboard() {
                           </div>
                         </div>
                       </td>
-                      <td className="dx-num">{Number(p.kw).toFixed(1)} kW{p.batt ? t("pp_plus_batt", lang) : ""}</td>
+                      <td className="dx-num">{dec(p.kw, 1, lang)} {kwUnit(lang)}{p.batt ? t("pp_plus_batt", lang) : ""}</td>
                       <td className={"dx-eng" + (st?.opens >= 3 ? " hot" : "")}>{eng}</td>
                       <td className="dx-num">{yrsF(q.payback)} {t("yrs", lang)}</td>
                       <td className="dx-num">{fmt(q.cost)}</td>

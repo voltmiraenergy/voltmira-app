@@ -6,6 +6,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createProject, createProjectFromTemplate } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
+import { dec } from "../../../lib/decimals.js";
+import { kwUnit } from "../../p/[code]/text.js";
 import { isNetworkError } from "../../../lib/offline.js";
 import { offlineDraftGo } from "../../../components/NewQuoteOffline.jsx";
 
@@ -26,7 +28,7 @@ export default function NewQuoteMenu({ templates = [], lang }) {
       <button className="btn primary" disabled={pending} style={{ borderRadius: templates.length ? "11px 0 0 11px" : 11 }}
         onClick={() => go(() => createProject())}>{plus}{t("btn_new_quote", lang)}</button>
       {templates.length > 0 && (
-        <button className="btn primary" disabled={pending} aria-label="Templates" aria-expanded={open}
+        <button className="btn primary" disabled={pending} aria-label={t("tpl_from", lang)} aria-expanded={open}
           onClick={() => setOpen(o => !o)}
           style={{ borderRadius: "0 11px 11px 0", borderLeft: "1px solid rgba(255,255,255,.25)", padding: "10.5px 11px" }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
@@ -42,7 +44,7 @@ export default function NewQuoteMenu({ templates = [], lang }) {
               style={{ display: "flex", width: "100%", alignItems: "center", gap: 10, textAlign: "left",
                 padding: "9px 10px", borderRadius: 8, cursor: "pointer", background: "none", border: "none", color: "var(--ink)" }}>
               <span style={{ fontWeight: 600, fontSize: 13.5, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tp.name}</span>
-              <span style={{ fontSize: 11.5, color: "var(--muted)", whiteSpace: "nowrap" }}>{Number(tp.kw).toFixed(1)} kW, {tp.market}{tp.batt ? ", batt" : ""}</span>
+              <span style={{ fontSize: 11.5, color: "var(--muted)", whiteSpace: "nowrap" }}>{dec(tp.kw, 1, lang)} {kwUnit(lang)}{tp.batt ? t("pp_plus_batt", lang) : ""}, {tp.market}</span>
             </button>
           ))}
         </div>

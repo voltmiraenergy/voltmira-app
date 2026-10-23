@@ -11,6 +11,7 @@ import { useMemo, useState } from "react";
 import { designCheck, stringInputs } from "../lib/designCheck.js";
 import { dcCableSize, dcCableLengthM, dcBreakerA, acBreakerA, spdCount } from "../lib/bosEstimate.js";
 import { railLengthM, clampCount } from "../lib/mountingEstimate.js";
+import { dec } from "../lib/decimals.js";
 
 const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
 
@@ -48,7 +49,7 @@ export default function BosEstimate({ lang, bom, kw, battKwh, consKwh, phases, m
   const rows = [
     { label: t3(lang, "Secțiune cablu DC", "DC cable cross-section", "Сечение кабеля DC", "Переріз кабелю DC"),
       value: cable ? `${cable.crossSectionMm2} mm²${cable.overThreshold ? ` (${t3(lang, "peste 1%!", "over 1%!", "выше 1%!", "понад 1%!")})` : ""}` : "—",
-      note: cable ? `${t3(lang, "cădere de tensiune", "voltage drop", "падение напряжения", "спад напруги")} ${cable.voltageDropPct.toFixed(2)}%` : "" },
+      note: cable ? `${t3(lang, "cădere de tensiune", "voltage drop", "падение напряжения", "спад напруги")} ${dec(cable.voltageDropPct, 2, lang)}%` : "" },
     { label: t3(lang, "Metraj cablu DC estimat", "Estimated DC cable length", "Расчётная длина кабеля DC", "Розрахункова довжина кабелю DC"),
       value: `${cableLenM.toLocaleString(({ ru: "ru-RU", uk: "uk-UA", en: "en-GB" }[lang] || "ro-RO"))} m`, note: "" },
     { label: t3(lang, "Întrerupătoare DC", "DC breakers", "Автоматы DC", "Автомати DC"),

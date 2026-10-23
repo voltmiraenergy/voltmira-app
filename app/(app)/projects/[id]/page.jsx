@@ -9,6 +9,12 @@ import Editor from "./editor.jsx";
 import { cnedEnabled } from "../../../../lib/cnedData.js";
 import { appTitle } from "../../../../lib/pageTitle.js";
 import { lt } from "../../../../lib/loanText.js";
+import { productionPower } from "../../../../lib/gridPower.js";
+import { quote } from "@voltmira/engine";
+import { snapshotEngine } from "../../../../lib/engineSettings.js";
+import { offerQuoteInput } from "../../../../lib/offerInput.js";
+import { effectiveOfferCurrency } from "../../../../lib/offerCurrency.js";
+import { moneyFormatter } from "../../../../lib/money.js";
 
 export const dynamic = "force-dynamic";
 export const generateMetadata = appTitle("col_project");
@@ -18,7 +24,7 @@ export default async function ProjectPage(props) {
   const sb = await supabaseServer();
   // The project fetch is RLS-scoped to the caller's company (projects_all uses
   // the security-definer my_company_id(), no recursion).
-  const [{ data: p }, { data: co }, { data: prop }, { data: catalog }, { data: signedProp }, { data: wl }] = await Promise.all([
+  const [{ data: p }, { data: co }, { data: prop }, { data: catalog }, { data: signedProp }, { data: wl }, { data: rb }] = await Promise.all([
     sb.from("projects").select("*").eq("id", params.id).single(),
     sb.from("companies").select("name, logo_url, engine, currency, prosumer_limit_kw, subsidy_amount_ron, lang, legal_name, reg_no, legal_address, iban, install_warranty_years, vat_rate").single(),
     sb.from("proposals").select("created_at").eq("project_id", params.id).limit(1).maybeSingle(),
@@ -33,7 +39,12 @@ export default async function ProjectPage(props) {
     // blank) every other real company field (name/logo/legal address/…)
     // this whole page depends on. An error here just means "no override".
     sb.from("companies").select("contract_template_override, commissioning_template_override").single(),
+    // the access-control switch, on its own: it was never loaded here, so a Sales user could open a
+    // colleague's quote by its address even when the owner had turned access control on. A missing
+    // column is "off", as everywhere else.
+    sb.from("companies").select("rbac_enabled").single(),
   ]);
+  const rbacOn = !!rb?.rbac_enabled;
   if (!p) return (
     <div className="empty" style={{ maxWidth: 460, margin: "40px auto" }}>
       <b>{t("proj_not_found", normLang(co?.lang))}</b>
@@ -52,7 +63,7 @@ export default async function ProjectPage(props) {
   // that, not instead of it.
   const user = await currentUser();
   const me = (team || []).find((m) => m.id === user?.id) || null;
-  if (!canViewAllProjects(me, co?.rbac_enabled) && p.owner_id !== user?.id) {
+  if (!canViewAllProjects(me, rbacOn) && p.owner_id !== user?.id) {
     return (
       <div className="empty" style={{ maxWidth: 460, margin: "40px auto" }}>
         <b>{t("proj_not_yours", normLang(co?.lang))}</b>
@@ -60,15 +71,12 @@ export default async function ProjectPage(props) {
       </div>
     );
   }
-  const canEditTech = canEditTechnical(me, co?.rbac_enabled);
+  const canEditTech = canEditTechnical(me, rbacOn);
 
   // Live FX comes in via companyEngine so the editor's grant maths matches the
   // dashboard's. The editor is a client component, so the rate has to arrive as
   // a prop — it cannot fetch it itself.
-  const E = {
-    ...(await companyEngine(co)),
-    subsidyAmountRon: Number(co?.subsidy_amount_ron ?? 20000),
-  };
+  const E = await companyEngine(co);
   const signed = signedProp ? {
     signature: signedProp.signature || null,
     signerName: signedProp.signer_name || null,
@@ -78,6 +86,23 @@ export default async function ProjectPage(props) {
     level: signedProp.signature_level === "qualified" ? "qualified" : "simple",
     qualified: null,
   } : null;
+  // What the client signed, for the contract: the offer's frozen figures, at the rate and prices it was
+  // issued with. The contract used today's rate and today's price, so it could differ from the offer
+  // the client put their name to.
+  let signedOffer = null;
+  if (signedProp?.snapshot && typeof signedProp.snapshot === "object") {
+    try {
+      const snap = signedProp.snapshot;
+      const Es = snapshotEngine(snap.engine, co);
+      const qq = quote(offerQuoteInput(snap), Es);
+      const f = moneyFormatter({ currency: effectiveOfferCurrency(snap.offerCurrency, co?.currency, snap.market), lang: normLang(co?.lang), fx: Es?.fx });
+      signedOffer = {
+        price: f.toLocal(qq.e.cost), currency: f.currency,
+        kw: Number(snap.kw) || null, batt: !!snap.batt, battKwh: snap.battKwh != null ? Number(snap.battKwh) : null,
+        bom: Array.isArray(snap.bom) ? snap.bom : null, clientName: snap.client || null, address: snap.address || null,
+      };
+    } catch (e) { console.error("[contract] signed offer not rebuilt:", e?.message); }
+  }
   // a qualified signature's evidence: the provider's container, the hash of
   // what was signed, and whether it was the simulation (lib/qsignFlow.js)
   if (signed?.level === "qualified") {
@@ -102,7 +127,7 @@ export default async function ProjectPage(props) {
   // the grid file sent to the operator (docs/INTEGRATIONS.md): the latest
   // submission with its history, and where each operator's package goes
   // (an address set in the environment, else the test mode that only records)
-  let gridSub = { latest: null, events: [], needsDb: false, channels: { premier: process.env.GRID_EMAIL_PREMIER || "", rednord: process.env.GRID_EMAIL_REDNORD || "" } };
+  let gridSub = { latest: null, events: [], needsDb: false, installedKw: productionPower(p).kw, ceilingKw: Number(co?.prosumer_limit_kw) > 0 ? Number(co.prosumer_limit_kw) : null, channels: { premier: process.env.GRID_EMAIL_PREMIER || "", rednord: process.env.GRID_EMAIL_REDNORD || "" } };
   if (p.market === "MD" || !p.market) {
     const { data: gs, error: gsErr } = await sb.from("grid_submissions").select("id, operator, channel, reference, status, checklist, note, created_at, updated_at").eq("project_id", params.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
     if (gsErr && /grid_submissions|does not exist|schema cache/i.test(gsErr.message || "")) gridSub.needsDb = true;
@@ -118,6 +143,6 @@ export default async function ProjectPage(props) {
     proposalSentAt={prop?.created_at || null} companyName={co?.name || "VoltMira"} companyLogo={co?.logo_url || ""}
     companyLegal={{ legal_name: co?.legal_name || "", reg_no: co?.reg_no || "", legal_address: co?.legal_address || "", iban: co?.iban || "", install_warranty_years: co?.install_warranty_years || null,
       contract_template_override: wl?.contract_template_override || "", commissioning_template_override: wl?.commissioning_template_override || "" }}
-    signed={signed} loans={loans} vatRatePct={Number(co?.vat_rate) || 0} cnedOn={cnedEnabled()} gridSub={gridSub} />;
+    signed={signed} signedOffer={signedOffer} loans={loans} vatRatePct={Number(co?.vat_rate) || 0} cnedOn={cnedEnabled()} gridSub={gridSub} />;
 }
 

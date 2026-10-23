@@ -77,12 +77,16 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
     if (signing && focusName.current) { focusName.current = false; nameRef.current?.focus(); }
   }, [signing]);
 
-  const ready = Boolean(sig) && Boolean(signer.trim()) && !sending;
+  const [signedBy, setSignedBy] = useState("");
+  const ready = Boolean(sig) && signer.trim().length >= 2 && !sending;
 
   async function confirm() {
     if (!ready) return;
     setSending(true); setFailed(false);
     const res = await send("accept", { signature: sig, signerName: signer.trim() });
+    // someone else signed first: show their name, not the one typed here (that signature was not taken)
+    const out = res && res.ok ? await res.clone().json().catch(() => null) : null;
+    if (out?.already) setSignedBy(out.signedName || "");
     // Only a confirmed write closes the deal on screen; a dropped connection or a
     // rate limit used to read as "signed" while nothing reached the installer.
     if (!res || !res.ok) { setFailed(true); setSending(false); return; }
@@ -113,7 +117,7 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
   }
 
   const REF = ["recommend", "google", "social", "installer", "other"];
-  const who = signedName || signer.trim();
+  const who = signedBy || signedName || signer.trim();
   const signedLine = who
     ? (signedDate ? ppt("signed_by", lang, { name: who, date: signedDate }) : ppt("signed_by_nd", lang, { name: who }))
     : ppt("sig_done", lang);

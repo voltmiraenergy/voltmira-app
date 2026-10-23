@@ -624,7 +624,7 @@ export default function PlantsPanel({ plants = [], onChange, lang = "en", E, fin
         <SitePicker id="new" mode="add" lang={lang} others={sites} onPick={addAt} onCancel={() => setAdding(false)} />
       ) : (
         <div className="pl-row pl-adds">
-          <button type="button" className="btn pl-add" onClick={() => onChange([...list, blankPlant("")])}>{plt("add_plant", lang)}</button>
+          <button type="button" className="btn ghost pl-add" onClick={() => onChange([...list, blankPlant("")])}>{plt("add_plant", lang)}</button>
           <button type="button" className="btn ghost pl-add" onClick={() => setAdding(true)}>{plt("pick_add", lang)}</button>
         </div>
       )}

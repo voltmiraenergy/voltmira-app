@@ -33,6 +33,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { buildServiceContract, buildCommissioningAct, docLocale } from "../../../../lib/legalDocs.js";
 import { t } from "../../../../lib/i18n.js";
+import { dec } from "../../../../lib/decimals.js";
+import { kwUnit, kwhUnit } from "../../../p/[code]/text.js";
 import SingleLineDiagram from "../../../../components/SingleLineDiagram.jsx";
 import { OPERATORS, suggestOperator } from "../../../../lib/mdGrid.js";
 
@@ -174,9 +176,9 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
             <div className="ld-rec-card">
               <div className="ld-rec-row"><span>{t("ld_rec_name", lang)}</span><b>{project.clientName || "—"}</b></div>
               <div className="ld-rec-row"><span>{t("ld_rec_address", lang)}</span><b>{project.address || "—"}</b></div>
-              <div className="ld-rec-row"><span>{t("ld_rec_kw", lang)}</span><b>{project.kw ? `${Number(project.kw).toFixed(1)} kW` : "—"}</b></div>
+              <div className="ld-rec-row"><span>{t("ld_rec_kw", lang)}</span><b>{project.kw ? `${dec(project.kw, 1, lang)} ${kwUnit(lang)}` : "—"}</b></div>
               {project.batt && (
-                <div className="ld-rec-row"><span>{t("ld_rec_batt", lang)}</span><b>{project.battKwh ? `${Number(project.battKwh).toFixed(1)} kWh` : "—"}</b></div>
+                <div className="ld-rec-row"><span>{t("ld_rec_batt", lang)}</span><b>{project.battKwh ? `${dec(project.battKwh, 1, lang)} ${kwhUnit(lang)}` : "—"}</b></div>
               )}
             </div>
             <p className="ld-rec-note">{t("ld_rec_blank_note", lang)}</p>

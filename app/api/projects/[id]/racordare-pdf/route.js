@@ -9,6 +9,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "../../../../../lib/supabase.js";
 import { currentUser, currentCompany } from "../../../../../lib/session.js";
+import { projectVisibility } from "../../../../../lib/projectAccess.js";
 import { fillApplication, applicationFileName } from "../../../../../lib/racordareFill.js";
 import { suggestOperator, OPERATORS } from "../../../../../lib/mdGrid.js";
 import { gridFileDecision, creditsPaywallOn } from "../../../../../lib/credits.js";
@@ -31,7 +32,7 @@ export async function GET(req, props) {
 
   const { data: project } = await (await supabaseServer())
     .from("projects").select("*").eq("id", id).maybeSingle();
-  if (!project) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (!project || !(await projectVisibility(user, co))(project)) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (project.market !== "MD")
     return NextResponse.json({ error: "md_only" }, { status: 400 });
 

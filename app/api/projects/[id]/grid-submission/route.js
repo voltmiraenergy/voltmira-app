@@ -10,6 +10,7 @@ import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
 import { billingGuard } from "../../../../../lib/invoiceServer.js";
 import { OPERATORS } from "../../../../../lib/mdGrid.js";
 import { gridApplicant, gridMissing } from "../../../../../lib/gridDetails.js";
+import { productionPower } from "../../../../../lib/gridPower.js";
 import { checkPackage, gridAdapterFor } from "../../../../../lib/gridSubmission.js";
 import { submitGrid, updateGridStatus, resendGrid } from "../../../../../lib/gridFlow.js";
 import { buildGridPackage, gridNotifier } from "../../../../../lib/gridServer.js";
@@ -65,7 +66,13 @@ export async function POST(req, props) {
   if (!OPERATORS[operator]) return NextResponse.json({ error: "bad_operator" }, { status: 400 });
   const attached = Array.isArray(body.attached) ? body.attached.map(String).slice(0, 20) : [];
   const representative = body.representative === true;
-  const missingDetails = gridMissing(gridApplicant(project.install_progress?.gridFile?.details, project));
+  const applicant = gridApplicant(project.install_progress?.gridFile?.details, project);
+  const missingDetails = gridMissing(applicant);
+  // who applies decides the documents; the power is checked against what the operator's form allows
+  const check = {
+    kind: applicant.kind, installedKw: productionPower(project).kw,
+    contractedKw: applicant.contractedKw, ceilingKw: Number(co.prosumer_limit_kw) > 0 ? Number(co.prosumer_limit_kw) : null,
+  };
 
   // the filled application costs a credit on the free plan, as its download does
   let spend = 0;
@@ -76,8 +83,8 @@ export async function POST(req, props) {
   }
   const adapter = gridAdapterFor(operator, { sendEmail, emailConfigured });
   const r = await submitGrid(db, {
-    project, operator, missingDetails, attached, representative, note: body.note, adapter, actor, today, io: notifier,
-    buildPackage: (reference) => buildGridPackage({ project, co, operator, reference, checklist: checkPackage({ operator, missingDetails, attached, representative }).checklist, note: body.note, replyTo: user.email }),
+    project, operator, ...check, missingDetails, attached, representative, note: body.note, adapter, actor, today, io: notifier,
+    buildPackage: (reference) => buildGridPackage({ project, co, operator, reference, checklist: checkPackage({ operator, ...check, missingDetails, attached, representative }).checklist, note: body.note, replyTo: user.email }),
   });
   if (r.ok && spend) await spendCredits(co.id, spend, "grid_file", project.id);
   return answer(r);

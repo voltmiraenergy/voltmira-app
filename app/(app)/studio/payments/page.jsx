@@ -165,7 +165,7 @@ export default function PaymentsPreview() {
       {/* fiscal invoice */}
       <DocReveal lang={lang}>
         <div className="pv-doc">
-          <div className="doc-co">VoltMira, {new Date().toLocaleDateString(({ ru: "ru-RU", uk: "uk-UA", en: "en-GB" }[lang] || "ro-RO"))}, {tx({ ro: "factură, verificați cu contabilul", en: "invoice, verify with your accountant", ru: "проверьте с бухгалтером", uk: "перевірте з бухгалтером" }, lang)}</div>
+          <div className="doc-co">VoltMira, {new Date().toLocaleDateString(({ ru: "ru-RU", uk: "uk-UA", en: "en-GB" }[lang] || "ro-RO"))}, {tx({ ro: "factură, verifică cu contabilul", en: "invoice, verify with your accountant", ru: "проверьте с бухгалтером", uk: "перевірте з бухгалтером" }, lang)}</div>
           <h1>{T(TX.invoice).toUpperCase()}</h1>
           <div className="doc-grid">
             <div className="doc-kv"><span>{T(TX.invNo)}</span><b>FF-2026-0148</b></div>

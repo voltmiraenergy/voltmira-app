@@ -12,6 +12,7 @@ import {
   annualAverages, storageSpreadMdl, MONTHS_RO, BUYBACK_SOURCE,
 } from "../lib/prosumerPrice.js";
 import { surplusRevenue } from "../lib/quoteAnalysis.js";
+import { dec } from "../lib/decimals.js";
 
 const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
 
@@ -48,7 +49,7 @@ function BuybackChart({ seasonal, weights, weighted, months, lang }) {
   const ticks = [1, 2, 3, 4].filter((v) => v < maxP);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: 700, display: "block" }} role="img"
-      aria-label="Preț lunar de răscumpărare vs. lunile în care sistemul exportă surplus">
+      aria-label={t3(lang, "Preț lunar de răscumpărare vs. lunile în care sistemul exportă surplus", "Monthly buy-back price against the months the system exports surplus", "Ежемесячная цена выкупа и месяцы, когда система отдаёт излишек", "Щомісячна ціна викупу й місяці, коли система віддає надлишок")}>
       {ticks.map((v) => (
         <g key={v}>
           <line x1={PADL} y1={Y(v)} x2={W - PADR} y2={Y(v)} stroke="var(--line)" strokeWidth="1" strokeDasharray="2 4" />
@@ -64,12 +65,12 @@ function BuybackChart({ seasonal, weights, weighted, months, lang }) {
         return (
           <g key={i}>
             <rect x={x} y={Y(p)} width={bw * 0.6} height={Math.max(1, base - Y(p))} rx="2.5" fill="var(--green)" opacity=".86" />
-            <text x={x + bw * 0.3} y={Y(p) - 4} textAnchor="middle" fontSize="8.5" fontWeight="700" fill="var(--green)">{p.toFixed(2)}</text>
+            <text x={x + bw * 0.3} y={Y(p) - 4} textAnchor="middle" fontSize="8.5" fontWeight="700" fill="var(--green)">{dec(p, 2, lang)}</text>
           </g>
         );
       })}
       <line x1={PADL} y1={Y(weighted)} x2={W - PADR + 6} y2={Y(weighted)} stroke="var(--ink)" strokeWidth="1.4" strokeDasharray="5 3" />
-      <text x={W - PADR + 10} y={Y(weighted) - 1} fontSize="11" fontWeight="700" fill="var(--ink)">{weighted.toFixed(2)} lei</text>
+      <text x={W - PADR + 10} y={Y(weighted) - 1} fontSize="11" fontWeight="700" fill="var(--ink)">{dec(weighted, 2, lang)} lei</text>
       <text x={W - PADR + 10} y={Y(weighted) + 11} fontSize="8" fill="var(--muted)">{t3(lang, "ponderat", "weighted", "взвеш.", "зваж.")}</text>
       <line x1={PADL} y1={base} x2={W - PADR} y2={base} stroke="var(--line)" strokeWidth="1" />
       {months.map((m, i) => (
@@ -114,28 +115,28 @@ export default function SurplusPanel({ lang, buyback, prodKwh, selfRatio, mdlPer
       <BuybackChart lang={lang} seasonal={buyback.seasonal} weights={SOLAR_SEASON} weighted={buyback.weightedMdl} months={MONTHS_RO} />
 
       <div className="sp-metrics">
-        <div className="sp-m good"><b>{buyback.weightedMdl.toFixed(2)} lei</b><span>{t3(lang, "preț ponderat cu surplusul, /kWh", "surplus-weighted price, /kWh", "взвеш. цена, /кВт·ч", "зваж. ціна, /кВт·год")}</span></div>
-        <div className="sp-m"><b>{buyback.flatMdl.toFixed(2)} lei</b><span>{t3(lang, "medie calendaristică simplă", "plain calendar average", "простое среднее", "просте середнє")}</span></div>
+        <div className="sp-m good"><b>{dec(buyback.weightedMdl, 2, lang)} lei</b><span>{t3(lang, "preț ponderat cu surplusul, /kWh", "surplus-weighted price, /kWh", "взвеш. цена, /кВт·ч", "зваж. ціна, /кВт·год")}</span></div>
+        <div className="sp-m"><b>{dec(buyback.flatMdl, 2, lang)} lei</b><span>{t3(lang, "medie calendaristică simplă", "plain calendar average", "простое среднее", "просте середнє")}</span></div>
         <div className="sp-m"><b>{num(surplus.totalKwh)} kWh</b><span>{t3(lang, "surplus exportat / an", "surplus exported / yr", "излишек за год", "надлишок за рік")}</span></div>
         <div className="sp-m good"><b>{num(surplus.mdl)} lei</b><span>{t3(lang, "venit din surplus / an", "surplus revenue / yr", "доход с излишка / год", "дохід із надлишку / рік")}</span></div>
       </div>
 
       <div className="sp-spread">
-        <b>{buyback.spread.spreadMdl.toFixed(2)} lei</b>
+        <b>{dec(buyback.spread.spreadMdl, 2, lang)} lei</b>
         <span>
           {t3(lang,
-            `este cât valorează un kWh STOCAT, nu vândut: ${buyback.spread.retailMdl.toFixed(2)} lei tarif de la rețea − ${buyback.spread.buybackMdl.toFixed(2)} lei răscumpărare = ${buyback.spread.spreadMdl.toFixed(2)} lei (${buyback.spread.sharePct.toFixed(0)}% din tarif). Asta câștigă bateria pe fiecare kWh ciclat, nu tariful întreg, cum se scrie des în oferte.`,
-            `is what a kWh is worth STORED rather than sold: ${buyback.spread.retailMdl.toFixed(2)} lei grid tariff − ${buyback.spread.buybackMdl.toFixed(2)} lei buy-back = ${buyback.spread.spreadMdl.toFixed(2)} lei (${buyback.spread.sharePct.toFixed(0)}% of the tariff). That is what the battery earns per cycled kWh, not the full tariff, as offers often claim.`,
-            `— столько стоит кВт·ч, ОСТАВЛЕННЫЙ в батарее, а не проданный: ${buyback.spread.retailMdl.toFixed(2)} лей тариф − ${buyback.spread.buybackMdl.toFixed(2)} лей выкуп = ${buyback.spread.spreadMdl.toFixed(2)} лей (${buyback.spread.sharePct.toFixed(0)}% тарифа).`, `це вартість кВт·год, ЗАЛИШЕНОЇ в батареї, а не проданої: ${buyback.spread.retailMdl.toFixed(2)} лей тариф − ${buyback.spread.buybackMdl.toFixed(2)} лей викуп = ${buyback.spread.spreadMdl.toFixed(2)} лей (${buyback.spread.sharePct.toFixed(0)}% тарифу). Саме це заробляє батарея на кожній циклованій кВт·год, а не весь тариф, як часто стверджують пропозиції.`)}
+            `este cât valorează un kWh STOCAT, nu vândut: ${dec(buyback.spread.retailMdl, 2, lang)} lei tarif de la rețea − ${dec(buyback.spread.buybackMdl, 2, lang)} lei răscumpărare = ${dec(buyback.spread.spreadMdl, 2, lang)} lei (${dec(buyback.spread.sharePct, 0, lang)}% din tarif). Asta câștigă bateria pe fiecare kWh ciclat, nu tariful întreg, cum se scrie des în oferte.`,
+            `is what a kWh is worth STORED rather than sold: ${dec(buyback.spread.retailMdl, 2, lang)} lei grid tariff − ${dec(buyback.spread.buybackMdl, 2, lang)} lei buy-back = ${dec(buyback.spread.spreadMdl, 2, lang)} lei (${dec(buyback.spread.sharePct, 0, lang)}% of the tariff). That is what the battery earns per cycled kWh, not the full tariff, as offers often claim.`,
+            `— столько стоит кВт·ч, ОСТАВЛЕННЫЙ в батарее, а не проданный: ${dec(buyback.spread.retailMdl, 2, lang)} лей тариф − ${dec(buyback.spread.buybackMdl, 2, lang)} лей выкуп = ${dec(buyback.spread.spreadMdl, 2, lang)} лей (${dec(buyback.spread.sharePct, 0, lang)}% тарифа).`, `це вартість кВт·год, ЗАЛИШЕНОЇ в батареї, а не проданої: ${dec(buyback.spread.retailMdl, 2, lang)} лей тариф − ${dec(buyback.spread.buybackMdl, 2, lang)} лей викуп = ${dec(buyback.spread.spreadMdl, 2, lang)} лей (${dec(buyback.spread.sharePct, 0, lang)}% тарифу). Саме це заробляє батарея на кожній циклованій кВт·год, а не весь тариф, як часто стверджують пропозиції.`)}
         </span>
       </div>
 
       <div className="sp-yoy">
         {buyback.years.map((r) => (
           <div key={r.year}>
-            <b>{r.avg.toFixed(2)} lei</b>
+            <b>{dec(r.avg, 2, lang)} lei</b>
             <span>{r.year}{r.months < 12 ? `, ${r.months} ${t3(lang, "luni", "mo", "мес", "міс.")}` : ""}
-              {r.yoyPct != null ? `, ${r.yoyPct > 0 ? "+" : ""}${r.yoyPct.toFixed(0)}%` : ""}</span>
+              {r.yoyPct != null ? `, ${r.yoyPct > 0 ? "+" : ""}${dec(r.yoyPct, 0, lang)}%` : ""}</span>
           </div>
         ))}
       </div>

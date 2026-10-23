@@ -26,6 +26,9 @@ function verifySignature(raw, header, secret) {
     if (i > 0) parts[kv.slice(0, i).trim()] = kv.slice(i + 1).trim();
   });
   if (!parts.ts || !parts.h1) return false;
+  // a captured, correctly signed notification cannot be played back later: the signed time must be recent
+  const age = Math.abs(Date.now() / 1000 - Number(parts.ts));
+  if (!Number.isFinite(age) || age > 300) return false;
   const expected = crypto.createHmac("sha256", secret).update(`${parts.ts}:${raw}`).digest("hex");
   try {
     return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(parts.h1));
@@ -55,7 +58,8 @@ export async function POST(req) {
   const byPrice = priceIds.some((id) => id && (id === E.NEXT_PUBLIC_PADDLE_PRICE_TEAM || id === E.NEXT_PUBLIC_PADDLE_PRICE_TEAM_YEARLY)) ? "team"
     : priceIds.some((id) => id && (id === E.NEXT_PUBLIC_PADDLE_PRICE_PRO || id === E.NEXT_PUBLIC_PADDLE_PRICE_PRO_YEARLY)) ? "pro"
     : priceIds.some((id) => id && id === E.NEXT_PUBLIC_PADDLE_PRICE_ENTERPRISE) ? "enterprise" : null;
-  const plan = byPrice || (["pro", "team", "enterprise"].includes(custom.plan) ? custom.plan : "pro");
+  // custom_data is typed by whoever opens the checkout, so it never names the dearest plan
+  const plan = byPrice || (["pro", "team"].includes(custom.plan) ? custom.plan : "pro");
   if (!companyId) return NextResponse.json({ received: true, note: "no company_id" });
 
   const db = supabaseAdmin();
@@ -64,7 +68,14 @@ export async function POST(req) {
   // transaction id is unique, so a retried notification adds nothing)
   if (type === "transaction.completed" && custom.kind === "pack") {
     const { data: portfolio } = await db.from("portfolios").select("id, company_id, assets").eq("id", custom.portfolio_id || "").maybeSingle();
-    const { row, error } = unlockFromTransaction({ data, portfolio, plantsKey: PLANTS_KEY });
+    // the company's earlier packs for this portfolio: the renewal price only counts for a plant that had one
+    let unlocks = null;
+    if (portfolio) {
+      const { data: had, error: uErr } = await db.from("pack_unlocks").select("portfolio_id, plant_id, expires_at").eq("company_id", portfolio.company_id).eq("portfolio_id", portfolio.id);
+      if (uErr) { console.error("[paddle] pack unlocks lookup failed:", uErr.message); return NextResponse.json({ error: "unlock_failed" }, { status: 500 }); }
+      unlocks = had || [];
+    }
+    const { row, error } = unlockFromTransaction({ data, portfolio, plantsKey: PLANTS_KEY, unlocks });
     if (error) {
       console.error("[paddle] pack not unlocked:", error, data.id);
       return NextResponse.json({ received: true, note: error });
@@ -98,24 +109,41 @@ export async function POST(req) {
     return NextResponse.json({ received: true, credited: row.delta });
   }
 
-  const setPlan = (p, subId, custId) =>
+  // custom_data.company_id is set in the browser at checkout, so it cannot be believed about a company
+  // that already has a subscription: anyone could buy a plan naming someone else's workspace and then
+  // cancel it to downgrade theirs. Changes to a subscription are matched by the subscription's own id;
+  // a new subscription may only attach to a workspace that has none.
+  const setPlan = (id, p, subId, custId) =>
     db.from("companies").update({
       plan: p,
       paddle_subscription_id: subId || null,
       paddle_customer_id: custId || null,
-    }).eq("id", companyId);
+    }).eq("id", id);
 
   switch (type) {
     case "subscription.created":
-    case "subscription.activated":
-    case "subscription.updated": {
+    case "subscription.activated": {
+      const { data: co } = await db.from("companies").select("id, paddle_subscription_id").eq("id", companyId).maybeSingle();
+      if (!co) return NextResponse.json({ received: true, note: "unknown_company" });
+      if (co.paddle_subscription_id && co.paddle_subscription_id !== data.id) {
+        console.error("[paddle] a second subscription named a company that has one:", data.id);
+        return NextResponse.json({ received: true, note: "company_has_subscription" });
+      }
       const active = data.status === "active" || data.status === "trialing";
-      await setPlan(active ? plan : "free", data.id, data.customer_id);
+      await setPlan(co.id, active ? plan : "free", data.id, data.customer_id);
       break;
     }
+    case "subscription.updated":
     case "subscription.canceled":
     case "subscription.paused": {
-      await setPlan("free", null, data.customer_id);
+      const { data: co } = await db.from("companies").select("id").eq("paddle_subscription_id", String(data.id || "")).maybeSingle();
+      if (!co) return NextResponse.json({ received: true, note: "unknown_subscription" });
+      if (type === "subscription.updated") {
+        const active = data.status === "active" || data.status === "trialing";
+        await setPlan(co.id, active ? plan : "free", data.id, data.customer_id);
+      } else {
+        await setPlan(co.id, "free", null, data.customer_id);
+      }
       break;
     }
     default:
