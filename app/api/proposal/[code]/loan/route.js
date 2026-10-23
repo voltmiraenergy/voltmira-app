@@ -21,6 +21,7 @@ import { logActivity } from "../../../../../lib/activity.js";
 import { escapeHtml } from "../../../../../lib/safe.js";
 import { sendCrmWebhook } from "../../../../../lib/crmWebhook.js";
 import { lt } from "../../../../../lib/loanText.js";
+import { offerFinancingOn } from "../../../../../lib/offerSwitches.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +29,8 @@ export const dynamic = "force-dynamic";
 const money = (minor) => new Intl.NumberFormat("ro-RO", { maximumFractionDigits: 0 }).format(Math.round(minor / 100)) + " lei";
 
 export async function POST(req, props) {
+  // the loan section is not on the offer unless it is switched on (lib/offerSwitches.js)
+  if (!offerFinancingOn()) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const { code } = await props.params;
   if (await isRateLimited(`loan:${clientIp(req)}`, 5, 60 * 60 * 1000)) return NextResponse.json({ error: "rate" }, { status: 429 });
   let body;
