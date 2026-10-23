@@ -68,7 +68,14 @@ export async function POST(req) {
   // transaction id is unique, so a retried notification adds nothing)
   if (type === "transaction.completed" && custom.kind === "pack") {
     const { data: portfolio } = await db.from("portfolios").select("id, company_id, assets").eq("id", custom.portfolio_id || "").maybeSingle();
-    const { row, error } = unlockFromTransaction({ data, portfolio, plantsKey: PLANTS_KEY });
+    // the company's earlier packs for this portfolio: the renewal price only counts for a plant that had one
+    let unlocks = null;
+    if (portfolio) {
+      const { data: had, error: uErr } = await db.from("pack_unlocks").select("portfolio_id, plant_id, expires_at").eq("company_id", portfolio.company_id).eq("portfolio_id", portfolio.id);
+      if (uErr) { console.error("[paddle] pack unlocks lookup failed:", uErr.message); return NextResponse.json({ error: "unlock_failed" }, { status: 500 }); }
+      unlocks = had || [];
+    }
+    const { row, error } = unlockFromTransaction({ data, portfolio, plantsKey: PLANTS_KEY, unlocks });
     if (error) {
       console.error("[paddle] pack not unlocked:", error, data.id);
       return NextResponse.json({ received: true, note: error });

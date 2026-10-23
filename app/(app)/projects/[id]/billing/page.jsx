@@ -12,6 +12,7 @@ import { xt } from "../../../../../lib/integrationText.js";
 import { projectInvoice } from "../../../../../lib/invoiceServer.js";
 import { buildEfacturaInvoice, validateEfactura, efacturaAdapterFor } from "../../../../../lib/efactura.js";
 import { paymentSummary } from "../../../../../lib/billing.js";
+import { dayKeyOf, mdDayKey } from "../../../../../lib/tz.js";
 import BackLink from "../../../../../components/BackLink.jsx";
 import BillingPanel from "./BillingPanel.jsx";
 import "../../../dx.css";
@@ -44,7 +45,7 @@ export default async function BillingPage(props) {
   const buyerIdno = p.client_profile?.buyerIdno || "";
   const draft = buildEfacturaInvoice({
     company: co, buyer: { name: p.client_name || p.title || "", kind: inv.kind, idno: buyerIdno },
-    amounts: inv.amounts, currency: inv.cur, invoiceNo: p.invoice_no || "", date: String(p.invoiced_at || new Date().toISOString()).slice(0, 10), description: inv.description,
+    amounts: inv.amounts, currency: inv.cur, invoiceNo: p.invoice_no || "", date: dayKeyOf(p.invoiced_at) || mdDayKey(new Date()), description: inv.description,
   });
   const problems = validateEfactura(draft);
 

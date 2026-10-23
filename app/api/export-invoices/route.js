@@ -31,6 +31,7 @@ import { effectiveOfferCurrency } from "../../../lib/offerCurrency.js";
 import { getRate } from "../../../lib/fx.js";
 import { csvEsc } from "../../../lib/csv.js";
 import { projectVisibility } from "../../../lib/projectAccess.js";
+import { dayKeyOf } from "../../../lib/tz.js";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +67,7 @@ export async function GET() {
     const q = quote(rowToQuoteInput(p, E), E).e;
     const cur = effectiveOfferCurrency(p.offer_currency, co.currency, p.market);
     const { gross, net, vat, rate } = invoiceAmounts({ grossEur: Math.max(0, q.cost || 0), fx: await rateFor(cur), vatRatePct: co.vat_rate });
-    const date = p.invoiced_at ? new Date(p.invoiced_at).toISOString().slice(0, 10) : "";
+    const date = dayKeyOf(p.invoiced_at);
     lines.push([
       p.invoice_no || "", date, p.client_name || "", p.address || "",
       net, rate, vat, gross, cur,

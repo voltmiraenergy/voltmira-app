@@ -12,6 +12,7 @@ import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
 import { projectInvoice } from "../../../lib/invoiceServer.js";
 import { cleanMapping, toCsv, toXml, buildExportRows, rangeOk } from "../../../lib/export1c.js";
 import { zip } from "../../../lib/zip.js";
+import { dayKeyOf } from "../../../lib/tz.js";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -43,7 +44,7 @@ export async function GET(req) {
   const payIds = new Set((pm.data || []).map((m) => m.project_id));
   const amounts = new Map();
   for (const p of list) {
-    const day = String(p.invoiced_at || "").slice(0, 10);
+    const day = dayKeyOf(p.invoiced_at);
     if ((day && day >= from && day <= to) || payIds.has(p.id)) {
       const inv = await projectInvoice(p, co);
       amounts.set(p.id, { ...inv.amounts, cur: inv.cur });

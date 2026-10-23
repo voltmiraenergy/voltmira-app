@@ -13,6 +13,7 @@ import { NextResponse } from "next/server";
 import { renderHtmlPdf } from "../../../../lib/renderProposalPdf.js";
 import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
 import { supabaseServer } from "../../../../lib/supabase.js";
+import { JOBS_KEY } from "../../../../lib/studioLink.js";
 import { docDecision, creditsPaywallOn, DOC_KINDS } from "../../../../lib/credits.js";
 import { creditBalance, paidBefore, spendCredits } from "../../../../lib/creditAccess.js";
 
@@ -46,9 +47,17 @@ export async function POST(req) {
   const ref = String(b.ref || "").slice(0, 80) || null;
   let spend = 0, companyId = null;
   if (kind && creditsPaywallOn()) {
-    const { data: co } = await (await supabaseServer()).from("companies").select("id, plan").maybeSingle();
+    const sb = await supabaseServer();
+    const { data: co } = await sb.from("companies").select("id, plan").maybeSingle();
     companyId = co?.id || null;
     if (companyId) {
+      // The job named is one of this workspace's own (the Studio jobs, row security scoped to it): one credit
+      // pays for one job's document, and a reference borrowed from another job, or made up, would make every
+      // later document free. Where the jobs are not kept on the server (Studio cloud not set up), the name stands.
+      const { data: js, error: jErr } = await sb.from("studio_state").select("value").eq("key", JOBS_KEY).maybeSingle();
+      if (!jErr && Array.isArray(js?.value) && !(ref && js.value.some((j) => j && String(j.id) === ref))) {
+        return NextResponse.json({ error: "bad_ref", kind }, { status: 400 });
+      }
       const d = docDecision({ plan: co.plan || "free", kind, balance: await creditBalance(companyId), paidBefore: ref ? await paidBefore(companyId, kind, ref) : false });
       if (!d.allowed) return NextResponse.json({ error: "credits", kind }, { status: 402 });
       spend = d.spend;

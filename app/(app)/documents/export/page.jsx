@@ -5,6 +5,7 @@ import { supabaseServer } from "../../../../lib/supabase.js";
 import { currentCompany } from "../../../../lib/session.js";
 import { t, normLang } from "../../../../lib/i18n.js";
 import { xt } from "../../../../lib/integrationText.js";
+import { mdDayKey } from "../../../../lib/tz.js";
 import { cleanMapping, FIELDS, DEFAULT_MAPPING } from "../../../../lib/export1c.js";
 import BackLink from "../../../../components/BackLink.jsx";
 import ExportForm from "./ExportForm.jsx";
@@ -20,9 +21,10 @@ export default async function ExportPage() {
   const sb = await supabaseServer();
   const { data, error } = await sb.from("export_mappings").select("mapping").maybeSingle();
   const needsDb = !!error && (error.code === "42P01" || error.code === "PGRST205" || /does not exist|schema cache/i.test(error.message || ""));
-  const now = new Date();
-  const first = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)).toISOString().slice(0, 10);
-  const last = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0)).toISOString().slice(0, 10);
+  // last month by the Chișinău calendar, not the server's
+  const [ty, tm] = mdDayKey(new Date()).split("-").map(Number);
+  const first = new Date(Date.UTC(ty, tm - 2, 1)).toISOString().slice(0, 10);
+  const last = new Date(Date.UTC(ty, tm - 1, 0)).toISOString().slice(0, 10);
 
   return (
     <div className="dx bl">
