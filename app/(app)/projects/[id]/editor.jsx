@@ -987,7 +987,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               </button>
               {/* the installer's own roof photo, the offer's picture */}
               <RoofPhoto projectId={initial.id} url={p.siteDesign?.photoUrl || null} lang={lang}
-                onChange={(url) => { const sd = { ...(p.siteDesign || {}) }; if (url) sd.photoUrl = url; else delete sd.photoUrl; update({ siteDesign: sd }); }} />
+                onChange={(url) => { const sd = { ...(p.siteDesign || {}) }; delete sd.photoPlace; if (url) sd.photoUrl = url; else delete sd.photoUrl; update({ siteDesign: sd }); }} />
             </div>
             {p.yieldOverride && (
               <div className="pvgis-data">
@@ -1486,8 +1486,14 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
 
       {/* site designer: draw the roof on satellite imagery, full screen */}
       {siteDesignerOpen && p.lat != null && p.lon != null && (
-        <SiteDesigner lang={lang} lat={p.lat} lon={p.lon} address={p.address} siteDesign={p.siteDesign}
-          onChange={(sd) => update({ siteDesign: { ...(p.siteDesign?.photoUrl ? { photoUrl: p.siteDesign.photoUrl } : {}), ...sd } })}
+        <SiteDesigner lang={lang} lat={p.lat} lon={p.lon} address={p.address} siteDesign={p.siteDesign} projectId={initial.id}
+          onChange={(sd) => {
+            // the designer sends the photo and its place with the roof; no photo, no place
+            const next = { ...sd };
+            if (!next.photoUrl) { delete next.photoUrl; delete next.photoPlace; }
+            else if (!next.photoPlace) delete next.photoPlace;
+            update({ siteDesign: next });
+          }}
           onApply={applySiteDesignLayout} applying={siteDesignApplying}
           projectInputs={p} onComputeQuote={computeSiteDesignQuote} money={fmt}
           onClose={() => setSiteDesignerOpen(false)} />

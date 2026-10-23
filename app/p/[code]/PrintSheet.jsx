@@ -28,6 +28,7 @@ import { ppt, yearsN } from "./text.js";
 import { Moon, Scale, Snowflake, ThermometerSun, TriangleAlert } from "lucide-react";
 import UaSection from "./UaSection.jsx";
 import RoofSatellite from "../../../components/RoofSatellite.jsx";
+import RoofPhotoPlan from "../../../components/RoofPhotoPlan.jsx";
 import RoofSides from "./RoofSides.jsx";
 
 // Per-market export data (same table as the demo's MARKETS).
@@ -233,7 +234,7 @@ const CSS = `
   }
 `;
 
-export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, roofSides = null, roofStatus = null, acceptUrl = "", fx = null, support = null, tariff = null, signed = null }) {
+export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, roofPhotoPlace = null, roofSides = null, roofStatus = null, acceptUrl = "", fx = null, support = null, tariff = null, signed = null }) {
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
   // Minus ahead of the currency symbol: "€-31" reads as a broken string.
   // Lei for a Moldovan installer at the rate frozen with the proposal, with
@@ -423,7 +424,12 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
           </tbody></table>
           {/* the real roof from above when the offer carries its position;
               offers sent before that keep the plain drawing */}
-          {roofPhoto ? (
+          {roofPhoto && roofPhotoPlace && roofSat ? (
+            <div className="p-roof">
+              <RoofPhotoPlan photo={roofPhoto} place={roofPhotoPlace} roof={roofSat} />
+              <small>{tr("pdf_roof_photo_plan_note", { n: roofSat.quoted || roofSat.planes.reduce((s, pl) => s + pl.panels.length, 0) })}</small>
+            </div>
+          ) : roofPhoto ? (
             <div className="p-roof">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={roofPhoto} alt="" style={{ display: "block", width: "100%", maxWidth: 680, borderRadius: 10 }} />

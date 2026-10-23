@@ -26,7 +26,7 @@ import "leaflet/dist/leaflet.css";
 import "./SiteDesigner.css";
 import {
   X, Undo2, Redo2, Pentagon, Box, TreeDeciduous, Ruler, Plug, Move, LocateFixed, Trash2, Check,
-  House, ChevronDown, ChevronRight, Info, Eye, Signpost,
+  House, ChevronDown, ChevronRight, Info, Eye, Signpost, ImagePlus,
 } from "lucide-react";
 import { labelLayer, LABEL_TILES, namesPref, setNamesPref } from "../lib/mapLabels.js";
 import { loadGoogleSatelliteLayer } from "../lib/googleSatellite.js";
@@ -36,6 +36,9 @@ const SAT_ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Ima
 import { compassLabel, project, polygonAreaM2, slopeAreaM2, facingFromShape, limitPanels, fitSidesFor, presetRing, OBSTACLE_PRESETS, OBSTACLE_HEIGHT_DEFAULT, shadeElevationDeg, RACK_ROOFS } from "../lib/roofLayout.js";
 import { measurePhoneTilt } from "../lib/phoneTilt.js";
 import { blendYields, sideSummaries, sideKey, fetchSideYield } from "../lib/sideYield.js";
+import { uploadRoofPhoto } from "../lib/photoShrink.js";
+import { cleanPlace, startPlace, metersPerPixel, handleLatLon, placeFromHandle, placeAt, photoCorners } from "../lib/photoPlace.js";
+import { makePhotoLayer } from "./photoLayer.js";
 import { drawReadout, drawLang } from "./drawReadout.js";
 import NumInput from "./NumInput.jsx";
 import { PANELS, findPanel, recommendPanel } from "../lib/supplierCatalog.js";
@@ -76,6 +79,23 @@ const TX = {
   plane: { en: "Side {n}", ro: "Partea {n}", ru: "Скат {n}", uk: "Схил {n}" },
   planeSum: { en: "{a} m², {tilt}° pitch, faces {dir}", ro: "{a} m², înclinare {tilt}°, spre {dir}", ru: "{a} м², наклон {tilt}°, на {dir}", uk: "{a} м², нахил {tilt}°, на {dir}" },
   del: { en: "Delete {name}", ro: "Șterge {name}", ru: "Удалить: {name}", uk: "Видалити: {name}" },
+  photoH: { en: "Photo over the map", ro: "Fotografie peste hartă", ru: "Фото поверх карты", uk: "Фото поверх мапи" },
+  photoP: { en: "Lay a drone or phone photo over the satellite picture (one taken straight down fits best). Vents, pipes and chimneys the satellite cannot show become visible, and you can draw on top of it.", ro: "Așază o fotografie de dronă sau de telefon peste imaginea din satelit (cea făcută drept de sus se potrivește cel mai bine). Ventilațiile, țevile și coșurile pe care satelitul nu le arată devin vizibile, iar tu poți desena peste ea.", ru: "Наложите фото с дрона или телефона на спутниковый снимок (лучше всего подходит снятое строго сверху). Вентиляция, трубы и дымоходы, которых не видно со спутника, станут видны, и вы сможете рисовать поверх.", uk: "Накладіть фото з дрона чи телефона на супутниковий знімок (найкраще підходить знімок строго зверху). Вентиляція, труби й димарі, яких не видно з супутника, стануть видимими, і ви зможете малювати поверху." },
+  photoOnly: { en: "This photo is shown on the offer only. Lay it over the map to draw on it.", ro: "Fotografia apare doar în ofertă. Așaz-o peste hartă ca să desenezi pe ea.", ru: "Это фото показывается только в предложении. Наложите его на карту, чтобы рисовать по нему.", uk: "Це фото показується лише в пропозиції. Накладіть його на мапу, щоб малювати по ньому." },
+  photoAlign: { en: "Drag the middle dot to move the photo. Drag the square on its right edge to size and turn it. Line up a roof edge or a corner of the yard with the satellite picture below.", ro: "Trage punctul din mijloc ca să muți fotografia. Trage pătratul de pe marginea dreaptă ca s-o mărești și s-o rotești. Aliniază o margine de acoperiș sau un colț de curte cu imaginea din satelit de dedesubt.", ru: "Перетащите среднюю точку, чтобы сдвинуть фото. Перетащите квадрат на правом краю, чтобы изменить размер и повернуть. Совместите край крыши или угол двора со спутниковым снимком под фото.", uk: "Перетягніть середню точку, щоб зсунути фото. Перетягніть квадрат на правому краї, щоб змінити розмір і повернути. Сумістіть край даху чи кут двору із супутниковим знімком під фото." },
+  photoAdd: { en: "Add a photo", ro: "Adaugă o fotografie", ru: "Добавить фото", uk: "Додати фото" },
+  photoChange: { en: "Change photo", ro: "Schimbă fotografia", ru: "Заменить фото", uk: "Замінити фото" },
+  photoBusy: { en: "Sending the photo...", ro: "Se trimite fotografia...", ru: "Отправляем фото...", uk: "Надсилаємо фото..." },
+  photoFail: { en: "The photo could not be sent. Try a smaller one, or check the connection.", ro: "Fotografia nu s-a putut trimite. Încearcă una mai mică sau verifică conexiunea.", ru: "Не удалось отправить фото. Попробуйте меньшее или проверьте соединение.", uk: "Не вдалося надіслати фото. Спробуйте менше або перевірте з’єднання." },
+  photoLay: { en: "Lay it over the map", ro: "Așaz-o peste hartă", ru: "Наложить на карту", uk: "Накласти на мапу" },
+  photoAdjust: { en: "Move and size it on the map", ro: "Mut-o și măr-o pe hartă", ru: "Двигать и менять размер на карте", uk: "Рухати й змінювати розмір на мапі" },
+  photoAdjustDone: { en: "Done placing", ro: "Gata poziționarea", ru: "Положение готово", uk: "Позицію задано" },
+  photoRemove: { en: "Remove photo", ro: "Șterge fotografia", ru: "Убрать фото", uk: "Прибрати фото" },
+  photoOpacity: { en: "See-through", ro: "Transparență", ru: "Прозрачность", uk: "Прозорість" },
+  photoTurn: { en: "Turn", ro: "Rotire", ru: "Поворот", uk: "Поворот" },
+  photoWidth: { en: "Width on the ground", ro: "Lățime pe teren", ru: "Ширина на земле", uk: "Ширина на землі" },
+  photoMove: { en: "Move the photo", ro: "Mută fotografia", ru: "Сдвинуть фото", uk: "Зсунути фото" },
+  photoSize: { en: "Size and turn the photo", ro: "Mărește și rotește fotografia", ru: "Размер и поворот фото", uk: "Розмір і поворот фото" },
   presetsH: { en: "One click for the small things", ro: "Un clic pentru lucrurile mici", ru: "Один щелчок для мелочей", uk: "Один клік для дрібниць" },
   presetsP: { en: "Pick one, then click the roof where it stands. It is set down at its real size; drag its corners if it is not exact.", ro: "Alege unul, apoi apasă pe acoperiș unde se află. Se așază la mărimea reală; trage de colțuri dacă nu e exact.", ru: "Выберите и щёлкните по крыше там, где он стоит. Он ставится в реальный размер; потяните за углы, если не точно.", uk: "Виберіть і клацніть по даху там, де він стоїть. Він ставиться в реальний розмір; потягніть за кути, якщо не точно." },
   h_place: { en: "Click the roof where it stands.", ro: "Apasă pe acoperiș unde se află.", ru: "Щёлкните по крыше там, где он стоит.", uk: "Клацніть по даху там, де він стоїть." },
@@ -334,9 +354,12 @@ function edgeAngleDeg(a, b) {
 const clampNum = (v, lo, hi) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo; };
 const savedNum = (v, d) => (v === "" || v == null || !Number.isFinite(Number(v)) ? d : Number(v));
 
+// the photo and where it lies, as they are kept with the roof (null when there is none)
+const photoFields = (ph) => ({ photoUrl: ph?.url || null, photoPlace: ph?.place || null });
+
 /* ============================================================ component === */
 export default function SiteDesigner({
-  lang, lat, lon, address = "", siteDesign, onChange, onApply, applying = false,
+  lang, lat, lon, address = "", siteDesign, onChange, onApply, applying = false, projectId = null,
   projectInputs = {}, onComputeQuote, onClose, money,
 }) {
   const tr = useMemo(() => makeT(lang), [lang]);
@@ -398,6 +421,21 @@ export default function SiteDesigner({
   const sidesRef = useRef(Array.isArray(siteDesign?.sides) ? siteDesign.sides : []);
   const aliveRef = useRef(true);
   useEffect(() => { aliveRef.current = true; return () => { aliveRef.current = false; }; }, []);
+  // a photo (drone or phone) laid over the map: its address, and where it lies on the ground (null: the offer's picture only)
+  const [photo, setPhoto] = useState(() => {
+    const url = /^https:\/\/[^\s"']+$/.test(String(siteDesign?.photoUrl || "")) ? siteDesign.photoUrl : "";
+    return url ? { url, place: cleanPlace(siteDesign?.photoPlace) } : null;
+  });
+  const photoRef = useRef(photo);
+  useEffect(() => { photoRef.current = photo; });
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoFail, setPhotoFail] = useState(false);
+  // the handles show while it is being placed; a photo already placed on an earlier visit starts settled
+  const [photoAdjust, setPhotoAdjust] = useState(() => !cleanPlace(siteDesign?.photoPlace));
+  const photoFile = useRef(null);
+  const photoLayerRef = useRef(null);
+  const photoClassRef = useRef(null);
+  const photoHandlesRef = useRef(null);
   const [step, setStep] = useState(1);
   markerTypeRef.current = markerType;
 
@@ -587,7 +625,7 @@ export default function SiteDesigner({
       history.restoring = true;
       history.index = i;
       loadSnapshot(history.list[i]);
-      onChangeRef.current?.({ ...history.list[i], layout: settingsRef.current, sides: sidesRef.current, ...statusRef.current });
+      onChangeRef.current?.({ ...history.list[i], layout: settingsRef.current, sides: sidesRef.current, ...statusRef.current, ...photoFields(photoRef.current) });
       history.restoring = false;
       setCanUndo(history.index > 0);
       setCanRedo(history.index < history.list.length - 1);
@@ -602,7 +640,7 @@ export default function SiteDesigner({
     function commit({ geometry }) {
       const snap = snapshotShapes();
       mirror();
-      onChangeRef.current?.({ ...snap, layout: settingsRef.current, sides: sidesRef.current, ...statusRef.current });
+      onChangeRef.current?.({ ...snap, layout: settingsRef.current, sides: sidesRef.current, ...statusRef.current, ...photoFields(photoRef.current) });
       renderDimensionLabels();
       pushHistory(snap);
       if (geometry) panelGroupRef.current?.clearLayers();
@@ -921,7 +959,7 @@ export default function SiteDesigner({
   useEffect(() => {
     if (!ready || settingsJson === lastSettings.current) return;
     lastSettings.current = settingsJson;
-    onChangeRef.current?.({ ...api.current.snapshotShapes(), layout: settingsRef.current, sides: sidesRef.current, ...statusRef.current });
+    onChangeRef.current?.({ ...api.current.snapshotShapes(), layout: settingsRef.current, sides: sidesRef.current, ...statusRef.current, ...photoFields(photoRef.current) });
     api.current.scheduleLayout?.(200);
   }, [ready, settingsJson]);
 
@@ -996,7 +1034,7 @@ export default function SiteDesigner({
     if (!ready || !layout || sidesJson === lastSides.current) return;
     lastSides.current = sidesJson;
     sidesRef.current = sidesNow;
-    onChangeRef.current?.({ ...api.current.snapshotShapes(), layout: settingsRef.current, sides: sidesNow, ...statusRef.current });
+    onChangeRef.current?.({ ...api.current.snapshotShapes(), layout: settingsRef.current, sides: sidesNow, ...statusRef.current, ...photoFields(photoRef.current) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, sidesJson]);
   // the design status is saved with the roof as soon as it changes
@@ -1004,8 +1042,89 @@ export default function SiteDesigner({
     const next = { status: designStatus, verifiedAt: designStatus === "verified" ? verifiedAt : "" };
     if (JSON.stringify(next) === JSON.stringify(statusRef.current)) return;
     statusRef.current = next;
-    if (ready) onChangeRef.current?.({ ...api.current.snapshotShapes(), layout: settingsRef.current, sides: sidesRef.current, ...next });
+    if (ready) onChangeRef.current?.({ ...api.current.snapshotShapes(), layout: settingsRef.current, sides: sidesRef.current, ...next, ...photoFields(photoRef.current) });
   }, [ready, designStatus, verifiedAt]);
+
+  /* ------------------------------------------------ the photo over the map --- */
+  // The photo laid over the imagery and, while it is being placed, its handles: the middle one moves it, the
+  // square on its right edge sizes and turns it. The map is updated at once while a handle is dragged; the
+  // state (and the save) only when it is let go.
+  const setPhotoPlace = (patch) => setPhoto((p) => (p?.place ? { ...p, place: cleanPlace({ ...p.place, ...patch }) } : p));
+  useEffect(() => {
+    const map = mapRef.current, L = Lref.current;
+    if (!ready || !map || !L) return;
+    const url = photo?.url, place = photo?.place;
+    let layer = photoLayerRef.current;
+    if (layer && (!place || layer._url !== url)) { map.removeLayer(layer); layer = photoLayerRef.current = null; }
+    if (place && url) {
+      if (!layer) {
+        if (!photoClassRef.current) photoClassRef.current = makePhotoLayer(L);
+        // the picture's own shape, once it has loaded, so the map and the offer draw it undistorted
+        layer = new photoClassRef.current(url, place, (aspect) => setPhoto((p) => (p?.place && Math.abs(p.place.aspect - aspect) > 0.001 ? { ...p, place: cleanPlace({ ...p.place, aspect }) } : p)));
+        layer.addTo(map);
+        photoLayerRef.current = layer;
+      } else layer.setPlace(place);
+    }
+    let h = photoHandlesRef.current;
+    const showHandles = !!place && photoAdjust && !tool;
+    if (h && !showHandles) { h.group.remove(); photoHandlesRef.current = h = null; }
+    if (!showHandles) return;
+    if (h) {
+      h.frame.setLatLngs(photoCorners(place));
+      h.link.setLatLngs([[place.lat, place.lon], handleLatLon(place)]);
+      h.move.setLatLng([place.lat, place.lon]);
+      h.size.setLatLng(handleLatLon(place));
+      return;
+    }
+    const icon = (cls) => L.divIcon({ className: "sd-photo-h " + cls, iconSize: [28, 28], iconAnchor: [14, 14] });
+    const mk = (ll, cls, title) => L.marker(ll, { draggable: true, pmIgnore: true, keyboard: false, title, icon: icon(cls), zIndexOffset: 800 });
+    const frame = L.polygon(photoCorners(place), { color: "#fff", weight: 2, dashArray: "7 5", fill: false, interactive: false, pmIgnore: true });
+    const link = L.polyline([[place.lat, place.lon], handleLatLon(place)], { color: "#E89B2D", weight: 2, dashArray: "3 5", interactive: false, pmIgnore: true });
+    const move = mk([place.lat, place.lon], "move", tr("photoMove"));
+    const size = mk(handleLatLon(place), "size", tr("photoSize"));
+    const group = L.layerGroup([frame, link, move, size]).addTo(map);
+    const live = { place, moved: false };
+    const sync = (pl) => { live.place = pl; live.moved = true; photoLayerRef.current?.setPlace(pl); frame.setLatLngs(photoCorners(pl)); link.setLatLngs([[pl.lat, pl.lon], handleLatLon(pl)]); };
+    move.on("drag", (e) => { const base = photoRef.current?.place; if (!base) return; const pl = placeAt(base, e.latlng.lat, e.latlng.lng); sync(pl); size.setLatLng(handleLatLon(pl)); });
+    size.on("drag", (e) => { const base = photoRef.current?.place; if (!base) return; sync(placeFromHandle(base, e.latlng.lat, e.latlng.lng)); });
+    const end = () => { if (!live.moved) return; live.moved = false; setPhoto((p) => (p?.place ? { ...p, place: live.place } : p)); };
+    move.on("dragend", end);
+    size.on("dragend", end);
+    photoHandlesRef.current = { group, frame, link, move, size };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, photo, photoAdjust, tool]);
+  // the photo and where it lies are saved with the roof as soon as they change
+  const photoJson = JSON.stringify(photoFields(photo));
+  const lastPhoto = useRef(photoJson);
+  useEffect(() => {
+    if (!ready || photoJson === lastPhoto.current) return;
+    lastPhoto.current = photoJson;
+    onChangeRef.current?.({ ...api.current.snapshotShapes(), layout: settingsRef.current, sides: sidesRef.current, ...statusRef.current, ...photoFields(photoRef.current) });
+  }, [ready, photoJson]);
+  // a first place for a photo: the middle of what the map shows now
+  function viewPlace() {
+    const map = mapRef.current;
+    if (!map) return null;
+    const c = map.getCenter();
+    return startPlace({ lat: c.lat, lon: c.lng }, map.getSize().x * metersPerPixel(c.lat, map.getZoom()));
+  }
+  async function addPhoto(file) {
+    if (!file || !projectId) return;
+    setPhotoBusy(true); setPhotoFail(false);
+    try {
+      const url = await uploadRoofPhoto(projectId, file);
+      setPhoto({ url, place: viewPlace() });
+      setPhotoAdjust(true);
+    } catch {
+      setPhotoFail(true);
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+  const layPhoto = () => {
+    const place = viewPlace();
+    if (place) { setPhoto((p) => (p ? { ...p, place } : p)); setPhotoAdjust(true); }
+  };
   const quoteResult = useMemo(
     () => (layout && layout.totalCount > 0 && typeof onComputeQuote === "function"
       // the sun each side really gets, so a changed pitch or facing moves the payback too
@@ -1332,6 +1451,73 @@ export default function SiteDesigner({
                         </ol>
                       </div>
                       <p className="sd-keys">{tr("keys")}</p>
+                    </div>
+                  )}
+                  {projectId && (
+                    <div className="sd-sub sd-photo">
+                      <div className="sd-sub-h"><h4>{tr("photoH")}</h4></div>
+                      <input ref={photoFile} type="file" accept="image/*" hidden
+                        onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; addPhoto(f); }} />
+                      <p className="sd-help">{!photo ? tr("photoP") : photo.place ? tr("photoAlign") : tr("photoOnly")}</p>
+                      {photoFail && <p className="sd-warn" role="alert">{tr("photoFail")}</p>}
+                      {photo?.place && (
+                        <>
+                          <div className="sd-field">
+                            <span className="sd-lbl-row">
+                              <span className="sd-lbl" id="sd-ph-op">{tr("photoOpacity")}</span>
+                              <span className="sd-numwrap">
+                                <NumInput className="sd-num" min="20" max="100" step="5" value={Math.round(photo.place.opacity * 100)} aria-labelledby="sd-ph-op"
+                                  onValue={(v) => setPhotoPlace({ opacity: v / 100 })} />
+                                <span className="sd-unit">%</span>
+                              </span>
+                            </span>
+                            <input type="range" className="sd-slider" min="20" max="100" step="5" value={Math.round(photo.place.opacity * 100)} aria-labelledby="sd-ph-op"
+                              style={{ "--fill": ((Math.round(photo.place.opacity * 100) - 20) / 80) * 100 + "%" }} onChange={(e) => setPhotoPlace({ opacity: +e.target.value / 100 })} />
+                          </div>
+                          <div className="sd-grid2">
+                            <div className="sd-field">
+                              <span className="sd-lbl-row">
+                                <span className="sd-lbl" id="sd-ph-turn">{tr("photoTurn")}</span>
+                                <span className="sd-numwrap">
+                                  <NumInput className="sd-num" min="-180" max="180" step="1" value={Math.round(photo.place.rotDeg)} aria-labelledby="sd-ph-turn"
+                                    onValue={(v) => setPhotoPlace({ rotDeg: v })} />
+                                  <span className="sd-unit">°</span>
+                                </span>
+                              </span>
+                            </div>
+                            <div className="sd-field">
+                              <span className="sd-lbl-row">
+                                <span className="sd-lbl" id="sd-ph-w">{tr("photoWidth")}</span>
+                                <span className="sd-numwrap">
+                                  <NumInput className="sd-num" min="5" max="600" step="1" value={Math.round(photo.place.widthM)} aria-labelledby="sd-ph-w"
+                                    onValue={(v) => setPhotoPlace({ widthM: v })} />
+                                  <span className="sd-unit">m</span>
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                      {photo && !photo.place && (
+                        <button type="button" className="sd-btn big key" disabled={!ready} onClick={layPhoto}>
+                          <ImagePlus size={19} aria-hidden="true" />{tr("photoLay")}
+                        </button>
+                      )}
+                      {photo?.place && (
+                        <button type="button" className={"sd-btn big" + (photoAdjust ? " on" : "")} aria-pressed={photoAdjust} onClick={() => setPhotoAdjust((v) => !v)}>
+                          <Move size={19} aria-hidden="true" />{photoAdjust ? tr("photoAdjustDone") : tr("photoAdjust")}
+                        </button>
+                      )}
+                      <div className={photo ? "sd-pair" : undefined}>
+                        <button type="button" className={"sd-btn big" + (!photo ? " key" : "")} disabled={!ready || photoBusy} aria-busy={photoBusy} onClick={() => photoFile.current?.click()}>
+                          <ImagePlus size={19} aria-hidden="true" />{photoBusy ? tr("photoBusy") : photo ? tr("photoChange") : tr("photoAdd")}
+                        </button>
+                        {photo && (
+                          <button type="button" className="sd-btn big" disabled={photoBusy} onClick={() => setPhoto(null)}>
+                            <Trash2 size={19} aria-hidden="true" />{tr("photoRemove")}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                   {hasPlanes && <div className="sd-cards">{shapes.planes.map(planeCard)}</div>}
