@@ -15,6 +15,7 @@ import { parseUpdate, secretMatches, sendText, tgCall, webhookServerSecret } fro
 import { answerHomeowner } from "../../../../../lib/leadAgentRun.js";
 import { agentConfigured } from "../../../../../lib/claudeClient.js";
 import { MAX_TURNS } from "../../../../../lib/leadAgent.js";
+import { aiWorkspaceLimited } from "../../../../../lib/aiLimits.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,6 +50,8 @@ export async function POST(req, props) {
     return OK();
   }
   const { data: co } = await db.from("companies").select("id, name, short_name, lang, default_market").eq("id", ch.company_id).maybeSingle();
+  // the workspace's AI calls across every AI feature (lib/aiLimits.js): over them, the message waits unanswered
+  if (co && (await aiWorkspaceLimited(co.id))) return OK();
   if (!co) return OK();
   const lang = normLang(co.lang);
   const say = async (text) => { try { await sendText(token, msg.chatId, text); } catch (e) { console.error("telegram send failed", e?.code, e?.message); } };

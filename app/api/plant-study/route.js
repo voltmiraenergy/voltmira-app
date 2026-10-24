@@ -16,6 +16,7 @@ import { supabaseServer } from "../../../lib/supabase.js";
 import { isRateLimited } from "../../../lib/ratelimit.js";
 import { readStudy } from "../../../lib/studyReader.js";
 import { MAX_PAGES, MAX_PAGE_CHARS } from "../../../lib/studyPages.js";
+import { aiWorkspaceLimited } from "../../../lib/aiLimits.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +31,9 @@ export async function POST(req) {
   if (!user) return bad("unauthorized", 401);
   if (!process.env.ANTHROPIC_API_KEY) return bad("not_configured", 503);
   if (await isRateLimited(`study:${user.id}`, 20, 60 * 60 * 1000)) return bad("rate", 429);
+  // the workspace's AI calls for the minute and the day (lib/aiLimits.js)
+  const { data: me } = await sb.from("profiles").select("company_id").eq("id", user.id).maybeSingle();
+  if (await aiWorkspaceLimited(me?.company_id, { email: user.email })) return bad("ai_limit", 429);
 
   let b;
   try { b = await req.json(); } catch { return bad("bad_request"); }

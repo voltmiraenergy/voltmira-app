@@ -753,22 +753,17 @@ export default async function ProposalPage(props) {
           <p>{signedDay ? ppt("signed_on", lang, { d: signedDay }) : expired ? ppt("expired_full", lang, { d: validUntil }) : ppt("valid_full", lang, { d: validUntil })}</p>
           {/* the reading time per section, said plainly, with the way out (OFFER_TRACKING) */}
           {tracking && !accepted && <SectionTracker code={params.code} lang={lang} company={coName} />}
-          {/* Growth loop: every free-plan proposal a homeowner opens carries a
-              tasteful VoltMira credit. Pro/Team white-labels it away. The mark
-              is drawn exactly as the brand's, never recoloured. */}
-          {company.plan === "free" ? (
-            <a className="pp-credit" href="https://voltmira.com" target="_blank" rel="noopener noreferrer">
-              <span>
-                <LogoMark size={22} />
-                {t("powered_by", lang)}
-              </span>
-              <small>{t("powered_by_sub", lang)}</small>
-            </a>
-          ) : null /* Pro/Team: white-label, no VoltMira footer */}
-          {/* This page tracks real opens/time-viewed on a real homeowner (see
-              Privacy Policy's "Proposal analytics"): that disclosure has to stay
-              reachable even when Pro/Team hides the branding above; transparency
-              isn't a white-label option. Deliberately NOT hidden by company.plan. */}
+          {/* Every offer a homeowner opens carries a tasteful VoltMira credit (VoltMira is free; its one charge is a
+              fee per won project). The mark is drawn exactly as the brand's, never recoloured. */}
+          <a className="pp-credit" href="https://voltmira.com" target="_blank" rel="noopener noreferrer">
+            <span>
+              <LogoMark size={22} />
+              {t("powered_by", lang)}
+            </span>
+            <small>{t("powered_by_sub", lang)}</small>
+          </a>
+          {/* This page tracks real opens/time-viewed on a real homeowner (see Privacy Policy's "Proposal analytics"):
+              the disclosure is always reachable. */}
           <a className="pp-privacy" href="https://voltmira.com/privacy" target="_blank" rel="noopener noreferrer">
             {ppt("privacy", lang)}
           </a>

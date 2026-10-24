@@ -46,7 +46,7 @@ export async function GET(req, props) {
       const db = supabaseAdmin();
       const { data: pr } = await db.from("proposals").select("company_id").eq("code", code).maybeSingle();
       const { data: co } = pr ? await db.from("companies").select("name, plan").eq("id", pr.company_id).maybeSingle() : { data: null };
-      if (co) fileName = proposalFileName({ companyName: co.name, plan: co.plan, code });
+      if (co) fileName = proposalFileName({ companyName: co.name, code });
     } catch { /* the default name */ }
     return new NextResponse(pdf, {
       headers: {

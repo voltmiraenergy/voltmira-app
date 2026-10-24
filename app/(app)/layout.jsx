@@ -3,7 +3,7 @@
 // via <AppTheme/>. Responsive (collapses to a bottom bar on mobile).
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Sprout, Zap, Users, Building2, ChevronRight, Coins } from "lucide-react";
+import { ChevronRight, Receipt } from "lucide-react";
 import SignOut from "./signout.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import SideNav from "./SideNav.jsx";
@@ -19,13 +19,7 @@ import { et } from "../../lib/energyText.js";
 import { currentUser, currentCompany } from "../../lib/session.js";
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { isDemoEmail } from "../../lib/demo.js";
-import { cr } from "../../lib/creditsText.js";
-import { creditsPaywallOn, FREE_OFFERS_PER_MONTH } from "../../lib/credits.js";
-import { creditBalance, offersThisMonth } from "../../lib/creditAccess.js";
-import { creditsPreview } from "../../lib/creditsPreview.js";
 
-// One icon per plan, for the plan row under the profile card.
-const PLAN_ICON = { free: Sprout, pro: Zap, team: Users, enterprise: Building2 };
 
 // Initials for the profile avatar — first letters of the first two words, or the
 // first two characters of an email local-part. Matches the demo's initialsOf().
@@ -51,13 +45,6 @@ export default async function AppLayout({ children }) {
   // Personal avatar wins; then the company logo; then initials.
   const avatar = prof?.avatar_url || co?.logo_url || "";
 
-  // credits, for the sidebar row: only for a free workspace once credits are
-  // charged (or when previewing the free plan locally, lib/creditsPreview.js)
-  const preview = creditsPreview();
-  const isFree = !co?.plan || co.plan === "free";
-  const credits = co?.id && ((isFree && creditsPaywallOn()) || preview)
-    ? { sent: Math.min(await offersThisMonth(co.id), FREE_OFFERS_PER_MONTH), balance: await creditBalance(co.id) }
-    : null;
 
   const items = [
     { href: "/dashboard", label: t("nav_dashboard", lang) },
@@ -104,37 +91,15 @@ export default async function AppLayout({ children }) {
                 : <div className="avatar">{initialsOf(who)}</div>}
               <div className="who"><b>{who}</b><span>{co?.name}</span></div>
             </Link>
-            {/* The plan, as a row of its own: "Plan Team", "План Team" (the plan's brand
-                name inside a phrase in the workspace language), and where it leads:
-                Settings > Plan, to compare on the free plan, to manage on a paid one. */}
-            {/* free plan, once credits are charged: the free offers used this
-                month and the credits left, with the way to buy more. A paid
-                plan has no limit, so it shows nothing here. */}
-            {credits && (
-              <Link className="side-credits" href="/settings?tab=plan" aria-label={`${cr("side_offers", lang, { n: credits.sent, max: FREE_OFFERS_PER_MONTH })}, ${credits.balance === 1 ? cr("side_credits_one", lang) : cr("side_credits", lang, { n: credits.balance })}`}>
-                <i className="sp-ico"><Coins size={15} strokeWidth={2} aria-hidden="true" /></i>
-                <span className="sp-tx">
-                  <b>{cr("side_offers", lang, { n: credits.sent, max: FREE_OFFERS_PER_MONTH })}</b>
-                  <span className={"sc-bar" + (credits.sent >= FREE_OFFERS_PER_MONTH ? " is-full" : "")} aria-hidden="true"><i style={{ width: `${Math.min(100, (credits.sent / FREE_OFFERS_PER_MONTH) * 100)}%` }} /></span>
-                  <small>{credits.balance === 1 ? cr("side_credits_one", lang) : cr("side_credits", lang, { n: credits.balance })}</small>
-                </span>
-                <ChevronRight className="sp-go" size={15} strokeWidth={2} aria-hidden="true" />
-              </Link>
-            )}
-            {(() => {
-              const free = !co?.plan || co.plan === "free";
-              const PlanIcon = PLAN_ICON[free ? "free" : co.plan] || Zap;
-              return (
-                <Link className={"side-plan" + (free ? " is-free" : "")} href="/settings?tab=plan">
-                  <i className="sp-ico"><PlanIcon size={15} strokeWidth={2} aria-hidden="true" /></i>
-                  <span className="sp-tx">
-                    <b>{free ? t("side_plan_free", lang) : t("side_plan", lang, { plan: co.plan.charAt(0).toUpperCase() + co.plan.slice(1) })}</b>
-                    <small>{t(free ? "side_plan_compare" : "side_plan_manage", lang)}</small>
-                  </span>
-                  <ChevronRight className="sp-go" size={15} strokeWidth={2} aria-hidden="true" />
-                </Link>
-              );
-            })()}
+            {/* VoltMira is free; the one charge is a fee per won project (lib/jobFees.js), explained in Settings */}
+            <Link className="side-plan" href="/settings?tab=fees">
+              <i className="sp-ico"><Receipt size={15} strokeWidth={2} aria-hidden="true" /></i>
+              <span className="sp-tx">
+                <b>{t("side_fees", lang)}</b>
+                <small>{t("side_fees_sub", lang)}</small>
+              </span>
+              <ChevronRight className="sp-go" size={15} strokeWidth={2} aria-hidden="true" />
+            </Link>
           </div>
           {/* theme and sign-out on one line, so a short screen still shows both */}
           <div className="side-acts">

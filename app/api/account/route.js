@@ -50,10 +50,6 @@ export async function DELETE(req) {
     return NextResponse.json({ error: "confirm_mismatch" }, { status: 400 });
   }
 
-  if (co.plan && co.plan !== "free") {
-    return NextResponse.json({ error: "active_subscription" }, { status: 409 });
-  }
-
   const { error: delErr } = await admin.from("companies").delete().eq("id", co.id);
   if (delErr) return NextResponse.json({ error: "delete_failed" }, { status: 502 });
 

@@ -32,6 +32,7 @@ import { normalizePolicy, evaluateDiscount, evaluateOption, OFFER_VALID_DAYS } f
 import { loadOffers, offerFigures, describeRecorded, recordDiscount, recordOption, recordEscalation } from "../../../../../lib/proposalOffers.js";
 import { runProposalAgent, systemBlocks, buildMessages } from "../../../../../lib/proposalAgent.js";
 import { agentCall, agentConfigured, DEFAULT_MODEL } from "../../../../../lib/claudeClient.js";
+import { aiWorkspaceLimited } from "../../../../../lib/aiLimits.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -87,6 +88,8 @@ export async function POST(req, props) {
   const db = supabaseAdmin();
   const { data: prop } = await db.from("proposals").select("*").eq("code", code).single();
   if (!prop) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  // the installer's AI calls for the minute and the day, across every AI feature (lib/aiLimits.js)
+  if (await aiWorkspaceLimited(prop.company_id)) return NextResponse.json({ error: "rate" }, { status: 429 });
 
   // negotiation needs add-proposal-agent.sql; read without it if absent.
   let { data: co, error: coErr } = await db.from("companies")

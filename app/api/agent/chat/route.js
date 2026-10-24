@@ -12,6 +12,7 @@ import { t, normLang, LANGS } from "../../../../lib/i18n.js";
 import { signLeadRef, verifyLeadRef, MAX_TEXT } from "../../../../lib/leadAgent.js";
 import { answerHomeowner } from "../../../../lib/leadAgentRun.js";
 import { agentConfigured } from "../../../../lib/claudeClient.js";
+import { aiWorkspaceLimited } from "../../../../lib/aiLimits.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,6 +33,8 @@ export async function POST(req) {
   // so a leaked embed can't run up a bill from rotating addresses.
   if (await isRateLimited(`agent:ip:${ip}`, 20, 600_000)) return NextResponse.json({ error: "rate" }, { status: 429 });
   if (await isRateLimited(`agent:co:${companyId}`, 400, 86_400_000)) return NextResponse.json({ error: "rate" }, { status: 429 });
+  // and the workspace's AI calls across every AI feature (lib/aiLimits.js)
+  if (await aiWorkspaceLimited(companyId)) return NextResponse.json({ error: "rate" }, { status: 429 });
 
   const db = supabaseAdmin();
   const { data: co } = await db.from("companies").select("id, name, short_name, lang, default_market").eq("id", companyId).maybeSingle();

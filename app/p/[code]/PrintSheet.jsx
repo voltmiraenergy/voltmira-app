@@ -606,7 +606,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
 
       <div className="p-foot">
         <span>{preparedBy?.name ? `${tr("pp_prepared_by")} ${preparedBy.name}${preparedBy.phone ? ", " + preparedBy.phone : ""}` : company.name}</span>
-        <span>{company.name}{company.plan === "free" ? `, ${tr("pdf_foot")}, voltmira.com` : ""}</span>
+        <span>{company.name}, {tr("pdf_foot")}, voltmira.com</span>
       </div>
     </div>
   );
