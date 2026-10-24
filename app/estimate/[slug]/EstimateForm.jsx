@@ -1,23 +1,26 @@
 "use client";
-// app/estimate/[slug]/EstimateForm.jsx — the visitor's side of an installer's estimate page: the address and the
-// bill (or the monthly kWh), a real estimate from /api/estimate (the same engine as the installer's quotes), then a
-// request for the full proposal sent to /api/estimate-lead. Inline styles, no app stylesheet: the page also lives in
-// an <iframe> on the installer's own site. The installer's colour (`color`, with `onColor` for text on it) marks the
-// key actions.
+// app/estimate/[slug]/EstimateForm.jsx — the visitor's side of an installer's estimate page, styled like the client
+// offer (estimate.css): the cover with the address and the bill (or the monthly kWh) beside it; a real estimate from
+// /api/estimate (the same engine as the installer's quotes) in its place; then the production month by month, the
+// house from above, what systems nearby really produce, and the request for the full proposal (/api/estimate-lead).
+// The page also lives in an <iframe> on the installer's own site, so it carries no app stylesheet and imports only
+// small text files.
 import { useEffect, useRef, useState } from "react";
+import { Calculator, HeartHandshake, MapPin, Sun } from "lucide-react";
 import { et, PHONE_EXAMPLE } from "../../../lib/estimateText.js";
 import { moneyFormatter, numFor } from "../../../lib/money.js";
 import { yearsN, kwhUnit, kwUnit } from "../../p/[code]/text.js";
+import RoofSatellite from "../../../components/RoofSatellite.jsx";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 const CURRENCY = { MD: "MDL", RO: "RON", UA: "UAH" };
 const ERR = { no_address: "err_address", not_found: "err_not_found", rate: "err_rate", upstream: "err_upstream" };
-const INK = "#142A21", MUTED = "#5D6B62", LINE = "#E3E1D6", RED = "#B4432F";
 
-export default function EstimateForm({ slug, lang, market = "MD", company, color, onColor, embed = false }) {
+export default function EstimateForm({ slug, lang, langs = [], market = "MD", company, embed = false }) {
   const cur = CURRENCY[market] || "EUR";
   const num = numFor(lang);
   const money = (eur, currency) => moneyFormatter({ currency: currency || cur, lang })(eur);
+  const co = company.name;
 
   const [address, setAddress] = useState("");
   const [by, setBy] = useState("bill");
@@ -31,6 +34,7 @@ export default function EstimateForm({ slug, lang, market = "MD", company, color
   const [sendErr, setSendErr] = useState("");
   const [sent, setSent] = useState(false);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
+  const nameRef = useRef(null);
 
   // ---- Turnstile, once the request form shows
   const tsRef = useRef(null), tsWidget = useRef(null), tsToken = useRef("");
@@ -71,6 +75,11 @@ export default function EstimateForm({ slug, lang, market = "MD", company, color
     }
   }
 
+  function toRequest() {
+    document.getElementById("ep-request")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => nameRef.current?.focus({ preventScroll: true }), 400);
+  }
+
   async function send(e) {
     e.preventDefault();
     setSendErr("");
@@ -101,135 +110,284 @@ export default function EstimateForm({ slug, lang, market = "MD", company, color
     }
   }
 
-  const S = {
-    wrap: { maxWidth: 520, margin: "0 auto" },
-    card: { background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16, padding: "20px 18px", marginBottom: 14 },
-    label: { display: "block", fontSize: 13, fontWeight: 600, color: INK, margin: "0 0 6px" },
-    input: { width: "100%", boxSizing: "border-box", padding: "11px 12px", borderRadius: 10, border: `1px solid ${LINE}`, fontSize: 15, fontFamily: "inherit", color: INK, background: "#fff", marginBottom: 12 },
-    key: { width: "100%", padding: 13, borderRadius: 10, border: "none", background: color, color: onColor, fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" },
-    ghost: { background: "none", border: "none", color: MUTED, fontSize: 13, cursor: "pointer", padding: 0, textDecoration: "underline", fontFamily: "inherit" },
-    err: { color: RED, fontSize: 13.5, margin: "0 0 10px" },
-    seg: (on) => ({ flex: 1, padding: "9px 6px", borderRadius: 8, border: "none", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-      background: on ? "#fff" : "transparent", color: on ? INK : MUTED, boxShadow: on ? "0 1px 3px rgba(20,42,33,.15)" : "none" }),
-  };
+  const pb = res?.payback || {};
+  const yrs = (v) => yearsN(Math.round(v * 10) / 10, lang);
+  const range = pb.opti != null && pb.pess != null && pb.pess > pb.opti ? et("res_payback_range", lang, { a: yrs(pb.opti), b: yrs(pb.pess) }) : null;
+  const showSat = res && res.precision && res.precision !== "area" && Number.isFinite(res.lat) && Number.isFinite(res.lon);
+  const consMonth = res?.annualConsKwh > 0 ? res.annualConsKwh / 12 : 0;
 
   return (
-    <div style={S.wrap}>
-      {!embed && (
-        <header style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-          {company.logo
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={company.logo} alt="" style={{ height: 40, maxWidth: 140, objectFit: "contain" }} />
-            : <span aria-hidden="true" style={{ width: 40, height: 40, borderRadius: 10, background: color, color: onColor, display: "grid", placeItems: "center", fontWeight: 800 }}>{company.name.trim().charAt(0).toUpperCase()}</span>}
-          <b style={{ fontSize: 17 }}>{company.name}</b>
-        </header>
-      )}
+    <div className="ep-wrap">
+      <header className="ep-hero">
+        <div className="ep-hero-copy">
+          <div className="ep-brand">
+            <div className="ep-brand-id">
+              {company.logo
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <span className="ep-logo"><img src={company.logo} alt={co} /></span>
+                : <span className="ep-mono" aria-hidden="true">{co.trim().charAt(0).toUpperCase()}</span>}
+              {!company.logo && <span className="ep-co">{co}</span>}
+            </div>
+            {!embed && langs.length > 1 && (
+              <nav className="ep-langs" aria-label={et("lang_label", lang)}>
+                {langs.map(({ l, href }) => (
+                  <a key={l} href={href} hrefLang={l} lang={l} aria-current={l === lang ? "true" : undefined}>{l}</a>
+                ))}
+              </nav>
+            )}
+          </div>
+          <h1 className="ep-h1">{et("title", lang)}</h1>
+          <p className="ep-sub">{et("sub", lang)}</p>
+          {!embed && (
+            <ul className="ep-facts">
+              <li><Sun className="ep-ic" aria-hidden="true" />{et("fact_sun", lang)}</li>
+              <li><Calculator className="ep-ic" aria-hidden="true" />{et("fact_same", lang, { co })}</li>
+              <li><HeartHandshake className="ep-ic" aria-hidden="true" />{et("fact_free", lang)}</li>
+            </ul>
+          )}
+        </div>
 
-      {sent ? (
-        <section style={{ ...S.card, textAlign: "center", padding: "34px 18px" }} role="status">
-          <h1 style={{ fontSize: 22, margin: "0 0 8px" }}>{et("thanks_h", lang)}</h1>
-          <p style={{ color: MUTED, margin: 0, lineHeight: 1.5 }}>{et("thanks", lang, { co: company.name })}</p>
-        </section>
-      ) : (
-        <>
-          <section style={S.card}>
-            <h1 style={{ fontSize: 22, letterSpacing: "-0.02em", lineHeight: 1.2, margin: "0 0 6px" }}>{et("title", lang)}</h1>
-            <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.5, margin: "0 0 16px" }}>{et("sub", lang)}</p>
-            {!res ? (
-              <form onSubmit={calculate} noValidate>
-                <label style={S.label} htmlFor="est-addr">{et("addr", lang)}</label>
-                <input id="est-addr" style={S.input} value={address} onChange={(e) => setAddress(e.target.value)}
+        <section className="ep-panel" aria-live="polite" aria-labelledby="ep-panel-h">
+          {!res ? (
+            <form onSubmit={calculate} noValidate>
+              <h2 className="ep-panel-h" id="ep-panel-h">{et("form_h", lang)}</h2>
+              <div className="ep-field">
+                <label className="ep-label" htmlFor="est-addr">{et("addr", lang)}</label>
+                <input id="est-addr" className="ep-input" value={address} onChange={(e) => setAddress(e.target.value)}
                   placeholder={et("addr_ph", lang)} autoComplete="street-address" required />
-                <div role="radiogroup" aria-label={et("by", lang)} style={{ display: "flex", gap: 4, padding: 4, borderRadius: 10, background: "#F1EFE8", marginBottom: 10 }}>
-                  {["bill", "kwh"].map((k) => (
-                    <button key={k} type="button" role="radio" aria-checked={by === k} style={S.seg(by === k)} onClick={() => setBy(k)}>
-                      {et("by", lang)} {et(k === "bill" ? "by_bill" : "by_kwh", lang)}
-                    </button>
-                  ))}
-                </div>
-                <label style={S.label} htmlFor="est-amount">
+              </div>
+              <div className="ep-seg" role="radiogroup" aria-label={et("by", lang)}>
+                {["bill", "kwh"].map((k) => (
+                  <button key={k} type="button" role="radio" aria-checked={by === k} onClick={() => setBy(k)}>
+                    {et("by", lang)} {et(k === "bill" ? "by_bill" : "by_kwh", lang)}
+                  </button>
+                ))}
+              </div>
+              <div className="ep-field">
+                <label className="ep-label" htmlFor="est-amount">
                   {by === "bill" ? et("bill_label", lang, { cur }) : et("kwh_label", lang, { unit: kwhUnit(lang) })}
                 </label>
-                <input id="est-amount" style={S.input} type="number" inputMode="decimal" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
-                {err && <p style={S.err} role="alert">{err}</p>}
-                <button type="submit" style={{ ...S.key, opacity: busy ? 0.7 : 1 }} disabled={busy} aria-busy={busy}>
-                  {busy ? et("calculating", lang) : et("calc", lang)}
-                </button>
-              </form>
-            ) : (
-              <div>
-                {res.location && <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 10px" }}>{et("res_for", lang, { place: res.location })}</p>}
-                <dl style={{ margin: "0 0 12px" }}>
-                  <Row k={et("res_kw", lang)} v={`${num(res.recommendedKw, 1)} ${kwUnit(lang)}`} />
-                  <Row k={et("res_prod", lang)} v={`${num(res.prodKwh, 0)} ${kwhUnit(lang)}`} />
-                  <Row k={et("res_price", lang)} v={money(res.cost.eur, res.currency)} />
-                  {res.savingsMonthly && <Row k={et("res_save", lang)} v={money(res.savingsMonthly.eur, res.currency)} strong />}
-                  {res.monthly && <Row k={et("res_monthly", lang)} v={money(res.monthly.eur, res.currency)}
-                    note={et("res_monthly_note", lang, { y: res.monthly.years, r: num(res.monthly.ratePct, 1) })} />}
-                  <Row k={et("res_payback", lang)} v={res.payback.expc == null ? yearsN(25, lang) : yearsN(Math.round(res.payback.expc * 10) / 10, lang)} />
-                </dl>
-                <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.5, margin: "0 0 10px" }}>{et("res_note", lang, { co: company.name })}</p>
-                <button type="button" style={S.ghost} onClick={() => setRes(null)}>{et("recalc", lang)}</button>
+                <input id="est-amount" className="ep-input ep-num" type="number" inputMode="decimal" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
               </div>
-            )}
-          </section>
+              {err && <p className="ep-err" role="alert">{err}</p>}
+              <button type="submit" className="ep-btn ep-btn-key ep-btn-block" disabled={busy} aria-busy={busy}>
+                {busy ? et("calculating", lang) : et("calc", lang)}
+              </button>
+            </form>
+          ) : (
+            <div>
+              <h2 className="ep-panel-h" id="ep-panel-h">{et("form_h", lang)}</h2>
+              {res.location && <p className="ep-for"><MapPin className="ep-ic" aria-hidden="true" />{et("res_for", lang, { place: res.location })}</p>}
+              {res.savingsMonthly && (
+                <>
+                  <span className="ep-big-k">{et("res_save", lang)}</span>
+                  <b className="ep-big ep-num">{money(res.savingsMonthly.eur, res.currency)}</b>
+                  {res.annualSavings && <span className="ep-big-note ep-num">{et("res_year", lang)}: {money(res.annualSavings.eur, res.currency)}</span>}
+                </>
+              )}
+              <dl className="ep-rows">
+                <Row k={et("res_kw", lang)} v={`${num(res.recommendedKw, 1)} ${kwUnit(lang)}`} />
+                <Row k={et("res_prod", lang)} v={`${num(res.prodKwh, 0)} ${kwhUnit(lang)}`} />
+                <Row k={et("res_price", lang)} v={money(res.cost.eur, res.currency)} />
+                {res.monthly && <Row k={et("res_monthly", lang)} v={money(res.monthly.eur, res.currency)}
+                  note={et("res_monthly_note", lang, { y: res.monthly.years, r: num(res.monthly.ratePct, 1) })} />}
+                <Row k={et("res_payback", lang)} v={pb.expc == null ? yearsN(25, lang) : yrs(pb.expc)}
+                  note={range ? `${range}, ${et("res_payback_note", lang)}` : null} />
+              </dl>
+              <div className="ep-actions">
+                {!sent && <button type="button" className="ep-btn ep-btn-key ep-btn-block" onClick={toRequest}>{et("cta_go", lang)}</button>}
+                <button type="button" className="ep-btn ep-btn-text" onClick={() => setRes(null)}>{et("recalc", lang)}</button>
+              </div>
+              <p className="ep-note">{et("res_note", lang, { co })}</p>
+            </div>
+          )}
+        </section>
+      </header>
 
-          {res && (
-            <section style={S.card} aria-labelledby="est-cta-h">
-              <h2 id="est-cta-h" style={{ fontSize: 18, margin: "0 0 14px" }}>{et("cta_h", lang, { co: company.name })}</h2>
-              <form onSubmit={send} noValidate>
-                <label style={S.label} htmlFor="est-name">{et("name", lang)}</label>
-                <input id="est-name" style={S.input} value={f.name} onChange={set("name")} autoComplete="name" required />
-                <label style={S.label} htmlFor="est-phone">{et("phone", lang)}</label>
-                <input id="est-phone" style={S.input} type="tel" value={f.phone} onChange={set("phone")} autoComplete="tel"
-                  placeholder={PHONE_EXAMPLE[market] || PHONE_EXAMPLE.MD} required />
-                <label style={S.label} htmlFor="est-email">{et("email", lang)}</label>
-                <input id="est-email" style={S.input} type="email" value={f.email} onChange={set("email")} autoComplete="email" />
-                <fieldset style={{ border: "none", padding: 0, margin: "0 0 12px" }}>
-                  <legend style={S.label}>{et("when_q", lang)}</legend>
-                  {["now", "soon", "later"].map((w) => (
-                    <label key={w} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, padding: "5px 0", cursor: "pointer" }}>
-                      <input type="radio" name="est-when" value={w} checked={f.timeline === w} onChange={set("timeline")} style={{ accentColor: color, width: 18, height: 18 }} />
-                      {et("when_" + w, lang)}
-                    </label>
-                  ))}
+      {res && (
+        <section className="ep-sec" aria-labelledby="ep-months-h">
+          <h2 className="ep-h2" id="ep-months-h">{et("months_h", lang)}</h2>
+          <p className="ep-lead">{et("months_p", lang)}</p>
+          <div className={showSat ? "ep-two" : undefined}>
+            <figure className="ep-card ep-chart">
+              <div className="ep-keys">
+                <span className="ep-key"><i className="ep-sw" style={{ background: "#1F7A55" }} aria-hidden="true" />{et("months_prod", lang)}</span>
+                {consMonth > 0 && <span className="ep-key"><i className="ep-sw is-line" aria-hidden="true" />{et("months_cons", lang)}</span>}
+              </div>
+              <div className="ep-cw"><MonthBars prod={res.monthlyKwh || []} cons={consMonth} lang={lang} title={et("months_title", lang, { u: kwhUnit(lang) })} /></div>
+              <div className="ep-cn"><MonthBars prod={res.monthlyKwh || []} cons={consMonth} lang={lang} narrow title={et("months_title", lang, { u: kwhUnit(lang) })} /></div>
+            </figure>
+            {showSat && (
+              <figure className="ep-card ep-sat">
+                <RoofSatellite roof={{ planes: [], center: { lat: res.lat, lon: res.lon, approx: res.precision !== "house" }, tileZoom: 18 }} width={640} height={420} />
+                <figcaption>
+                  <b>{et(res.precision === "house" ? "sat_house" : "sat_street", lang)}</b>
+                  {et("sat_note", lang, { co })}
+                </figcaption>
+              </figure>
+            )}
+          </div>
+          {res.nearby && (
+            <div className="ep-card ep-near">
+              <h3 className="ep-h3">{et("near_h", lang)}</h3>
+              <p>{et("near_body", lang, { d: res.nearby.name?.[lang] || res.nearby.name?.ro || res.nearby.district, n: res.nearby.systems, y: num(res.nearby.kwhPerKwp, 0), u: kwhUnit(lang) })}</p>
+              {res.yieldPerKwp > 0 && <p>{et("near_own", lang, { y: num(res.yieldPerKwp, 0), u: kwhUnit(lang) })}</p>}
+              <small>{et("near_src", lang)}</small>
+            </div>
+          )}
+        </section>
+      )}
+
+      {res && (
+        <section className="ep-sec" id="ep-request" aria-labelledby="ep-req-h">
+          {sent ? (
+            <div className="ep-card ep-done" role="status">
+              <h2 className="ep-h2" id="ep-req-h">{et("thanks_h", lang)}</h2>
+              <p>{et("thanks", lang, { co })}</p>
+            </div>
+          ) : (
+            <div className="ep-req">
+              <div>
+                <h2 className="ep-h2" id="ep-req-h">{et("cta_h", lang, { co })}</h2>
+                <p className="ep-lead">{et("cta_p", lang, { co })}</p>
+              </div>
+              <form className="ep-card ep-req-form" onSubmit={send} noValidate>
+                <div className="ep-req-grid">
+                  <div className="ep-field">
+                    <label className="ep-label" htmlFor="est-name">{et("name", lang)}</label>
+                    <input id="est-name" ref={nameRef} className="ep-input" value={f.name} onChange={set("name")} autoComplete="name" required />
+                  </div>
+                  <div className="ep-field">
+                    <label className="ep-label" htmlFor="est-phone">{et("phone", lang)}</label>
+                    <input id="est-phone" className="ep-input" type="tel" value={f.phone} onChange={set("phone")} autoComplete="tel"
+                      placeholder={PHONE_EXAMPLE[market] || PHONE_EXAMPLE.MD} required />
+                  </div>
+                </div>
+                <div className="ep-field">
+                  <label className="ep-label" htmlFor="est-email">{et("email", lang)}</label>
+                  <input id="est-email" className="ep-input" type="email" value={f.email} onChange={set("email")} autoComplete="email" />
+                </div>
+                <fieldset className="ep-choices">
+                  <legend className="ep-label">{et("when_q", lang)}</legend>
+                  <div className="ep-chips">
+                    {["now", "soon", "later"].map((w) => (
+                      <label key={w} className="ep-chip">
+                        <input type="radio" name="est-when" value={w} checked={f.timeline === w} onChange={set("timeline")} />
+                        <span>{et("when_" + w, lang)}</span>
+                      </label>
+                    ))}
+                  </div>
                 </fieldset>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, margin: "0 0 12px", cursor: "pointer" }}>
-                  <input type="checkbox" checked={f.wantsFinancing} onChange={set("wantsFinancing")} style={{ accentColor: color, width: 18, height: 18 }} />
-                  {et("fin", lang)}
+                <label className="ep-check">
+                  <input type="checkbox" checked={f.wantsFinancing} onChange={set("wantsFinancing")} />
+                  <span>{et("fin", lang)}</span>
                 </label>
-                <label style={S.label} htmlFor="est-msg">{et("msg", lang)}</label>
-                <textarea id="est-msg" style={{ ...S.input, minHeight: 64, resize: "vertical" }} value={f.message} onChange={set("message")} maxLength={500} />
+                <div className="ep-field">
+                  <label className="ep-label" htmlFor="est-msg">{et("msg", lang)}</label>
+                  <textarea id="est-msg" className="ep-input" value={f.message} onChange={set("message")} maxLength={500} />
+                </div>
                 {/* the honeypot: people never see it, bots fill it */}
-                <input aria-hidden="true" tabIndex={-1} autoComplete="off" value={f.website} onChange={set("website")}
-                  style={{ position: "absolute", left: -9999, width: 1, height: 1, opacity: 0 }} />
-                <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, lineHeight: 1.5, color: INK, margin: "0 0 12px", cursor: "pointer" }}>
-                  <input type="checkbox" checked={f.consent} onChange={set("consent")} required style={{ accentColor: color, width: 18, height: 18, marginTop: 1, flex: "none" }} />
+                <input className="ep-hp" aria-hidden="true" tabIndex={-1} autoComplete="off" value={f.website} onChange={set("website")} />
+                <label className="ep-check is-small">
+                  <input type="checkbox" checked={f.consent} onChange={set("consent")} required />
                   <span>
-                    {et("consent", lang, { co: company.name })}{" "}
-                    <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: INK }}>{et("privacy", lang)}</a>
+                    {et("consent", lang, { co })}{" "}
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer">{et("privacy", lang)}</a>
                   </span>
                 </label>
-                {TURNSTILE_SITE_KEY && <div ref={tsRef} style={{ margin: "0 0 12px" }} />}
-                {sendErr && <p style={S.err} role="alert">{sendErr}</p>}
-                <button type="submit" style={{ ...S.key, opacity: sending ? 0.7 : 1 }} disabled={sending} aria-busy={sending}>
+                {TURNSTILE_SITE_KEY && <div ref={tsRef} style={{ margin: "0 0 14px" }} />}
+                {sendErr && <p className="ep-err" role="alert">{sendErr}</p>}
+                <button type="submit" className="ep-btn ep-btn-key ep-btn-block" disabled={sending} aria-busy={sending}>
                   {sending ? et("sending", lang) : et("send", lang)}
                 </button>
               </form>
-            </section>
+            </div>
           )}
-        </>
+        </section>
       )}
-      <p style={{ textAlign: "center", color: MUTED, fontSize: 11.5, margin: "6px 0 0" }}>{et("powered", lang)}</p>
+
+      {!embed && (
+        <section className="ep-sec" aria-labelledby="ep-steps-h">
+          <h2 className="ep-h2" id="ep-steps-h">{et("steps_h", lang)}</h2>
+          <ol className="ep-steps">
+            {[1, 2, 3, 4].map((n) => (
+              <li key={n} className="ep-card ep-step">
+                <h3 className="ep-h3">{et(`step${n}_h`, lang)}</h3>
+                <p>{et(`step${n}`, lang, { co })}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      <footer className="ep-foot">
+        <span>{et("powered", lang)}</span>
+        <a href="/privacy" target="_blank" rel="noopener noreferrer">{et("privacy", lang)}</a>
+      </footer>
     </div>
   );
 }
 
-function Row({ k, v, note, strong = false }) {
+function Row({ k, v, note }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, padding: "8px 0", borderBottom: `1px solid ${LINE}` }}>
-      <dt style={{ fontSize: 13.5, color: MUTED }}>{k}{note && <small style={{ display: "block", fontSize: 11.5 }}>{note}</small>}</dt>
-      <dd style={{ margin: 0, fontWeight: 700, fontSize: strong ? 17 : 15, color: INK, textAlign: "right" }}>{v}</dd>
+    <div className="ep-row">
+      <dt>{k}{note && <small>{note}</small>}</dt>
+      <dd className="ep-num">{v}</dd>
     </div>
+  );
+}
+
+// Short month names in the reader's language, without the trailing dot (as the offer's charts write them).
+const LOCS = { en: "en-US", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
+function monthNames(lang) {
+  const f = new Intl.DateTimeFormat(LOCS[lang] || "en-US", { month: "short", timeZone: "UTC" });
+  return Array.from({ length: 12 }, (_, i) => f.format(new Date(Date.UTC(2026, i, 15))).replace(/\.$/, ""));
+}
+// A 1 / 2 / 5 x 10^n step, so the axis lands on figures people read.
+function niceStep(raw) {
+  if (!(raw > 0)) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const r = raw / mag;
+  return (r <= 1 ? 1 : r <= 2 ? 2 : r <= 5 ? 5 : 10) * mag;
+}
+
+/** Production per month as bars, the monthly use as one dashed line. Colours as the offer's chart (charts.jsx). */
+function MonthBars({ prod, cons, lang, narrow = false, title = "" }) {
+  if (prod.length !== 12) return null;
+  const [W, H, L, R, T, B] = narrow ? [360, 220, 40, 6, 12, 24] : [560, 250, 46, 8, 14, 28];
+  const FS = narrow ? 10.5 : 12.5;
+  const maxV = Math.max(...prod, cons || 0, 1);
+  const step = niceStep(maxV / 3);
+  const hi = Math.ceil(maxV / step) * step;
+  const slot = (W - L - R) / 12;
+  const bar = Math.min(narrow ? 16 : 30, slot * 0.62);
+  const Y = (v) => T + (1 - v / hi) * (H - T - B);
+  const ticks = [];
+  for (let v = 0; v <= hi + 1e-9; v += step) ticks.push(v);
+  const months = monthNames(lang);
+  const loc = LOCS[lang] || "en-US";
+  const n0 = (v) => Math.round(v).toLocaleString(loc);
+  const unit = kwhUnit(lang);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label={title || undefined}>
+      {ticks.map((v) => (
+        <g key={v}>
+          <line x1={L} y1={Y(v)} x2={W - R} y2={Y(v)} stroke="#E3E1D6" strokeWidth="1" />
+          <text x={L - 6} y={Y(v) + 4} textAnchor="end" fontSize={FS} fill="#5D6B62" style={{ fontVariantNumeric: "tabular-nums" }}>{n0(v)}</text>
+        </g>
+      ))}
+      {prod.map((p, i) => {
+        const x = L + slot * i + (slot - bar) / 2;
+        return (
+          <g key={i}>
+            <rect x={x} y={Y(p)} width={bar} height={Math.max(0, Y(0) - Y(p))} rx="3" fill="#1F7A55">
+              <title>{`${months[i]}: ${n0(p)} ${unit}`}</title>
+            </rect>
+            <text x={x + bar / 2} y={H - 7} textAnchor="middle" fontSize={FS} fill="#5D6B62">{narrow ? months[i].slice(0, 1).toUpperCase() : months[i]}</text>
+          </g>
+        );
+      })}
+      {cons > 0 && <line x1={L} y1={Y(cons)} x2={W - R} y2={Y(cons)} stroke="#B88746" strokeWidth="2" strokeDasharray="6 4" />}
+    </svg>
   );
 }

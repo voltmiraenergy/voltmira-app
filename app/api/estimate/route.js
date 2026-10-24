@@ -13,7 +13,9 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabase.js";
 import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
 import { estimateSavings, EstimateError } from "../../../lib/estimateCore.js";
-import { offerFinancingOn } from "../../../lib/offerSwitches.js";
+import { offerFinancingOn, offerNearbyOn } from "../../../lib/offerSwitches.js";
+import { nearbyFor } from "../../../lib/nearbyServer.js";
+import { RAION } from "../../../lib/mdRaions.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -33,14 +35,22 @@ export async function GET(req) {
 
   const url = new URL(req.url);
   try {
-    return J(await estimateSavings({
+    const admin = supabaseAdmin();
+    const est = await estimateSavings({
       address: url.searchParams.get("address") || "",
       bill: url.searchParams.get("bill") || "",
       kwh: url.searchParams.get("kwh") || "",
       monthlyPayment: offerFinancingOn(),
       country: url.searchParams.get("country") || "RO",
-      admin: supabaseAdmin(),
-    }));
+      admin,
+    });
+    // what monitored systems in the same district really produced (OFFER_NEARBY, lib/nearbyProof.js); the district
+    // is all the address has to be right about
+    if (offerNearbyOn()) {
+      const proof = await nearbyFor(admin, { lat: est.lat, lon: est.lon });
+      if (proof) est.nearby = { ...proof, name: RAION[proof.district]?.name || null };
+    }
+    return J(est);
   } catch (e) {
     if (e instanceof EstimateError) return J({ error: e.code, message: e.message, ...(e.detail ? { detail: e.detail } : {}) }, e.status);
     return J({ error: "upstream", message: "The sun-data service is busy, try again in a moment." }, 502);

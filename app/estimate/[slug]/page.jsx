@@ -3,6 +3,7 @@
 // Off unless ESTIMATE_PAGE=on (lib/offerSwitches.js), and only for a workspace that chose an address in Settings.
 // ?embed=1 drops the page header for an <iframe>; ?lang= picks the language, else the browser's, else the
 // installer's (lib/publicPage.js). Kept out of search results: the installer's own site is the page to find.
+// Styled like the client offer (estimate.css, after app/p/[code]/proposal.css).
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
@@ -14,8 +15,11 @@ import { et } from "../../../lib/estimateText.js";
 import { companyForPage } from "../../../lib/estimateCompany.js";
 import HtmlLang from "../../../lib/HtmlLang.jsx";
 import EstimateForm from "./EstimateForm.jsx";
+import "./estimate.css";
 
 export const dynamic = "force-dynamic";
+
+const LANGS = ["ro", "ru", "en", "uk"];
 
 // the page's own address, or the workspace id (which also works before add-quote-fast.sql has run)
 const companyBySlug = cache((slug) => companyForPage(supabaseAdmin(), slug));
@@ -31,7 +35,11 @@ export async function generateMetadata(props) {
   const co = estimatePageOn() ? await companyBySlug(slug) : null;
   if (!co) return { robots: { index: false, follow: false } };
   const lang = await langFor(props, co);
-  return { title: `${et("title", lang)} | ${co.short_name || co.name}`, robots: { index: false, follow: false } };
+  return {
+    title: `${et("title", lang)} | ${co.short_name || co.name}`,
+    description: et("sub", lang),
+    robots: { index: false, follow: false },
+  };
 }
 
 export default async function EstimatePage(props) {
@@ -44,15 +52,15 @@ export default async function EstimatePage(props) {
   const color = cleanColor(co.brand_color) || "#1e6b4e";
   const logo = /^(https:|data:image\/)/.test(String(co.logo_url || "")) ? co.logo_url : "";
   const embed = sp?.embed === "1";
+  const key = String(slug).toLowerCase();
+  // the same page in each language, keeping the embed mode
+  const langs = LANGS.map((l) => ({ l, href: `/estimate/${encodeURIComponent(key)}?lang=${l}${embed ? "&embed=1" : ""}` }));
 
   return (
-    // light on purpose: the page sits in an <iframe> on an installer's own site, or opens from a Facebook post
-    <main lang={lang} style={{ minHeight: "100vh", background: embed ? "#fff" : "#F6F5F0", colorScheme: "light",
-      fontFamily: "Inter, system-ui, sans-serif", color: "#142A21", padding: embed ? "14px 16px" : "28px 16px 40px" }}>
-      <style>{"html,body{background:" + (embed ? "#fff" : "#F6F5F0") + " !important}"}</style>
+    <main lang={lang} className={"ep" + (embed ? " is-embed" : "")} style={{ "--brand": color, "--on-brand": textOn(color) }}>
       <HtmlLang lang={lang} />
-      <EstimateForm slug={String(slug).toLowerCase()} lang={lang} market={co.default_market || "MD"}
-        company={{ name: co.short_name || co.name, logo }} color={color} onColor={textOn(color)} embed={embed} />
+      <EstimateForm slug={key} lang={lang} langs={langs} market={co.default_market || "MD"}
+        company={{ name: co.short_name || co.name, logo }} embed={embed} />
     </main>
   );
 }
