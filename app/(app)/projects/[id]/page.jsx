@@ -172,7 +172,7 @@ export default async function ProjectPage(props) {
   const sp = await props.searchParams;
   const feeOpen = ["locked", "idno", "paid"].includes(sp?.fee) ? sp.fee : null;
 
-  return <Editor initial={p} engineSettings={E} jobFee={jobFee} feeOpen={feeOpen} team={team || []} catalog={catalog || []}
+  return <Editor initial={p} engineSettings={E} jobFee={jobFee} feeOpen={feeOpen} meName={me?.name || user?.email || ""} team={team || []} catalog={catalog || []}
     canEditTechnical={canEditTech}
     prosumerLimitKw={Number(co?.prosumer_limit_kw ?? 10.8)} lang={normLang(co?.lang)} currency={co?.currency || "EUR"}
     proposalSentAt={prop?.created_at || null} companyName={co?.name || "VoltMira"} companyLogo={co?.logo_url || ""}

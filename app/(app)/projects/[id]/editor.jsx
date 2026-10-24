@@ -42,6 +42,13 @@ import SignedContract from "./SignedContract.jsx";
 import ShareCard from "./ShareCard.jsx";
 import LegalDocsModal from "./LegalDocsModal.jsx";
 import FeeCard from "../../../../components/FeeCard.jsx";
+import SiteRecord from "./SiteRecord.jsx";
+
+// how many panels, inverters and batteries the quote sells, beside the serial numbers typed on site
+const quoteCounts = (bom) => {
+  const n = (k) => (Array.isArray(bom) ? bom : []).filter((l) => l?.kind === k).reduce((s, l) => s + (Number(l.qty) || 0), 0);
+  return { panel: n("panel"), inverter: n("inverter"), battery: n("battery") };
+};
 import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
 import { financials, bomTotal } from "../../../../lib/quoteAnalysis.js";
 import { startYearOf, mdFeedFor } from "../../../../lib/quoteInput.js";
@@ -201,7 +208,7 @@ function LocalMoneyInput({ eur, fmt, onEur, dec = 2, allowZero = false, classNam
 
 // `currency` is the WORKSPACE's (companies.currency); the offer may name its
 // own (p.offerCurrency, null = follow the workspace), see lib/offerCurrency.js.
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, signedOffer = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null, jobFee = null, feeOpen = null }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, signedOffer = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null, jobFee = null, feeOpen = null, meName = "" }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
@@ -1405,6 +1412,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           {p.status === "won" && (
             <InstallChecklist key={railProg ? JSON.stringify(railProg) : "init"} projectId={initial.id}
               initial={railProg || initial.install_progress} lang={lang} />
+          )}
+
+          {/* on site: checklist, serial numbers, photos and the client's signature, with no signal too (Phase 3) */}
+          {p.status === "won" && (
+            <SiteRecord projectId={initial.id} companyId={initial.company_id} lang={lang} me={meName}
+              clientName={p.client || ""} clientLang={initial.client_lang || null} quoteCounts={quoteCounts(p.bom)} />
           )}
 
           {/* The grid-connection file, Moldova's or Ukraine's: from the moment

@@ -1,0 +1,58 @@
+/* app/(app)/jobs/jobs.css — the jobs board and the crews' week (/jobs). Built on dx.css and the app's theme tokens,
+   so it reads the same in light and dark. The crew colour is a small square swatch, never a status dot. */
+
+.app .jbx .dx-head-tools .btn{display:inline-flex;align-items:center;gap:7px}
+.app .jbx .dx-tabs button{display:inline-flex;align-items:center;gap:6px}
+.app .jb-warn{margin:0;padding:10px 14px;border-radius:12px;background:var(--app-warn-tint);color:var(--app-warn-ink);font-size:13.5px;font-weight:600}
+.app .jb-err{margin:8px 0 0;color:var(--app-bad);font-size:13.5px;font-weight:600}
+.app .jb-hint{margin:0;font-size:12.5px;color:var(--app-muted)}
+
+/* the board: one column per install step, side by side, scrolling sideways on a phone */
+.app .jb-board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(220px,1fr);gap:12px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity}
+.app .jb-col{display:flex;flex-direction:column;gap:8px;min-height:180px;padding:10px;border-radius:14px;background:var(--app-surface);border:1px solid var(--app-line);scroll-snap-align:start;transition:border-color .15s,background .15s}
+.app .jb-col.is-target{border-style:dashed;border-color:var(--app-ok)}
+.app .jb-col h2{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 2px 4px;font-family:"Inter Tight",Inter,system-ui,sans-serif;font-size:14px;font-weight:700;color:var(--app-text)}
+.app .jb-none{margin:4px 2px;font-size:12.5px;color:var(--app-muted)}
+.app .jb-card{display:flex;flex-direction:column;gap:3px;padding:10px 11px;border-radius:11px;background:var(--app-bg);border:1px solid var(--app-line);cursor:grab}
+.app .jb-card:active{cursor:grabbing}
+.app .jb-card small{font-size:12px;color:var(--app-muted);line-height:1.4;display:flex;align-items:center;gap:5px}
+.app .jb-name{font-weight:650;font-size:13.5px;color:var(--app-text);text-decoration:none}
+.app .jb-name:hover{text-decoration:underline}
+.app .jb-next{color:var(--app-ok)!important;font-weight:600}
+.app .jb-site{color:var(--app-text)!important}
+.app .jb-move select{margin-top:6px;width:100%;min-height:30px;padding:3px 8px;border-radius:8px;border:1px solid var(--app-line);background:var(--app-surface);color:var(--app-text);font:inherit;font-size:12.5px}
+
+/* the week */
+.app .jb-week{display:grid;gap:14px}
+.app .jb-week-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.app .jb-week-head h2{margin:0;font-family:"Inter Tight",Inter,system-ui,sans-serif;font-size:16px;font-weight:700}
+.app .jb-week-nav{display:flex;gap:6px}
+.app .jb-grid-wrap{overflow-x:auto}
+.app .jb-grid{width:100%;min-width:820px;border-collapse:separate;border-spacing:0;font-size:13px;table-layout:fixed}
+.app .jb-grid th,.app .jb-grid td{border-bottom:1px solid var(--app-line);padding:8px 6px;vertical-align:top;text-align:left}
+.app .jb-grid thead th{font-size:12px;font-weight:650;color:var(--app-muted);white-space:nowrap}
+.app .jb-grid th[scope=row]{width:150px;font-weight:650;color:var(--app-text)}
+.app .jb-grid th[scope=row] small{display:block;font-weight:500;font-size:11.5px;color:var(--app-muted);margin:2px 0 0 14px}
+.app .jb-grid .is-today{background:color-mix(in srgb,var(--app-ok-tint) 55%,transparent)}
+.app .jb-dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:1px}
+.app .jb-visit{display:grid;gap:1px;width:100%;margin-bottom:6px;padding:6px 7px;border-radius:9px;border:1px solid var(--app-line);border-left-width:4px;background:var(--app-surface);color:var(--app-text);text-align:left;cursor:pointer;font:inherit}
+.app .jb-visit:hover{background:var(--app-bg)}
+.app .jb-visit b{font-size:12px;font-variant-numeric:tabular-nums}
+.app .jb-visit span{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app .jb-visit small{display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--app-muted)}
+.app .jb-crews h3{display:flex;align-items:center;gap:7px;margin:0 0 8px;font-size:14px}
+.app .jb-crews ul{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:6px}
+.app .jb-crews li{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:8px;font-size:13.5px}
+.app .jb-crews li span:not(.jb-dot){color:var(--app-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app .jb-crews li.is-off{opacity:.55}
+
+/* the dialogs */
+.app .jb-dialog{max-width:520px;width:min(520px,100%)}
+.app .jb-form{display:grid;gap:10px;margin-top:10px}
+.app .jb-form .field{display:grid;gap:4px;margin:0}
+.app .jb-form .field>span{font-size:12.5px;font-weight:600;color:var(--app-muted)}
+.app .jb-when{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px}
+.app .jb-color input{width:56px;height:36px;border:1px solid var(--app-line);border-radius:9px;padding:2px;background:var(--app-surface)}
+.app .jb-acts{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.app .jb-sp{flex:1}
+@media (max-width:560px){.app .jb-when{grid-template-columns:1fr 1fr}.app .jb-when .field:first-child{grid-column:1 / -1}}
