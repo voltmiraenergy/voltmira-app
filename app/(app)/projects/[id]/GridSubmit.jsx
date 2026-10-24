@@ -81,7 +81,7 @@ export default function GridSubmit({ projectId, operator, details, client, lang,
       const res = await fetch(`/api/projects/${projectId}/grid-submission`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const j = await res.json().catch(() => ({}));
       // a won job whose fee is overdue (lib/jobFees.js): the fee card's payment opens
-      if (j.error === "job_fee_due" || j.error === "needs_idno") { window.dispatchEvent(new Event("vm-fee-locked")); setMsg(ft(j.error === "needs_idno" ? "needs_idno" : "locked_p", lang)); return j; }
+      if (j.error === "job_fee_due" || j.error === "needs_idno") { window.dispatchEvent(new Event("vm-fee-locked")); setMsg(ft(j.error === "needs_idno" ? "needs_idno" : "locked_short", lang)); return j; }
       if (!j.ok) {
         const k = "gs_e_" + j.error;
         setMsg(G(k) !== k ? G(k) : T(k) !== k ? T(k) : j.error === "needs_db" ? T("bl_needs_db") : T("gs_e_other"));

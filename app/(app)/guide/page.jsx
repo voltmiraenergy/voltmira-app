@@ -162,14 +162,14 @@ const HTML = {
 
 <section>
   <div class="g-h"><span class="g-n">6</span><h2>What it costs</h2></div>
-  <p class="g-lede">VoltMira is free for every installer, with every feature and no limit on offers or people. You pay only when a client signs: a fixed fee per won project, by the system's size. Your first 3 won projects are free, and each fee has 14 days to be paid, by card or by bank transfer with an invoice.</p>
+  <p class="g-lede">VoltMira is free for every installer, with every feature and no limit on offers or people. You pay only when a client signs: 200 lei for each kW of the signed system, at most 8,000 lei a job. Your first 2 signed jobs are free, a job the client gives up costs nothing, and the month's fees come on one statement at the start of the next, paid by bank transfer by the 15th.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Up to 10 kW: 390 lei</div><div class="pd">per won project</div></div>
-    <div class="plan"><div class="pn">10 to 30 kW: 790 lei</div><div class="pd">per won project</div></div>
-    <div class="plan"><div class="pn">30 to 100 kW: 1,590 lei</div><div class="pd">per won project</div></div>
-    <div class="plan"><div class="pn">Above 100 kW: 2,990 lei</div><div class="pd">per won project</div></div>
+    <div class="plan hot"><div class="pn">200 lei</div><div class="pd">per kW of each signed job</div></div>
+    <div class="plan"><div class="pn">8,000 lei</div><div class="pd">the most a job costs</div></div>
+    <div class="plan"><div class="pn">2 jobs</div><div class="pd">your first signed jobs, free</div></div>
+    <div class="plan"><div class="pn">0 lei</div><div class="pd">when the client gives up</div></div>
   </div>
-  <p class="g-lede" style="margin-top:12px">Settings, Pay per job, shows your fees, VoltMira's invoices and your company IDNO.</p>
+  <p class="g-lede" style="margin-top:12px">Settings, Pay per job, shows this month's signed jobs, VoltMira's statements and your company IDNO.</p>
 </section>
 
 <section>
@@ -273,14 +273,14 @@ const HTML = {
 
 <section>
   <div class="g-h"><span class="g-n">6</span><h2>Cât costă</h2></div>
-  <p class="g-lede">VoltMira este gratuit pentru orice instalator, cu toate funcțiile și fără limită de oferte sau oameni. Plătești doar când un client semnează: o taxă fixă pe proiect câștigat, după mărimea sistemului. Primele tale 3 proiecte câștigate sunt gratuite, iar fiecare taxă are 14 zile de plată, cu cardul sau prin transfer, cu factură.</p>
+  <p class="g-lede">VoltMira este gratuit pentru orice instalator, cu toate funcțiile și fără limită de oferte sau oameni. Plătești doar când un client semnează: 200 lei pentru fiecare kW al sistemului semnat, maximum 8.000 lei pe lucrare. Primele 2 lucrări semnate sunt gratuite, o lucrare la care clientul renunță nu costă nimic, iar taxele lunii vin pe un singur extras la începutul lunii următoare, plătit prin transfer până pe 15.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Până la 10 kW: 390 lei</div><div class="pd">pe proiect câștigat</div></div>
-    <div class="plan"><div class="pn">10 până la 30 kW: 790 lei</div><div class="pd">pe proiect câștigat</div></div>
-    <div class="plan"><div class="pn">30 până la 100 kW: 1.590 lei</div><div class="pd">pe proiect câștigat</div></div>
-    <div class="plan"><div class="pn">Peste 100 kW: 2.990 lei</div><div class="pd">pe proiect câștigat</div></div>
+    <div class="plan hot"><div class="pn">200 lei</div><div class="pd">pe kW din fiecare lucrare semnată</div></div>
+    <div class="plan"><div class="pn">8.000 lei</div><div class="pd">maximum pe o lucrare</div></div>
+    <div class="plan"><div class="pn">2 lucrări</div><div class="pd">primele semnate, gratuite</div></div>
+    <div class="plan"><div class="pn">0 lei</div><div class="pd">când clientul renunță</div></div>
   </div>
-  <p class="g-lede" style="margin-top:12px">În Setări, Plată per lucrare, vezi taxele, facturile VoltMira și IDNO-ul companiei.</p>
+  <p class="g-lede" style="margin-top:12px">În Setări, Plată per lucrare, vezi lucrările semnate luna aceasta, extrasele VoltMira și IDNO-ul companiei.</p>
 </section>
 
 <section>
@@ -385,14 +385,14 @@ const HTML = {
 
 <section>
   <div class="g-h"><span class="g-n">6</span><h2>Сколько стоит</h2></div>
-  <p class="g-lede">VoltMira бесплатна для любого монтажника, со всеми функциями и без ограничений на предложения или людей. Вы платите, только когда клиент подписывает: фиксированная плата за выигранный проект по размеру системы. Первые 3 выигранных проекта бесплатны, на каждую плату есть 14 дней, картой или переводом по счёту.</p>
+  <p class="g-lede">VoltMira бесплатна для любого монтажника, со всеми функциями и без ограничений на предложения или людей. Вы платите, только когда клиент подписывает: 200 лей за каждый кВт подписанной системы, не больше 8 000 лей за объект. Первые 2 подписанных объекта бесплатны, объект, от которого клиент отказался, ничего не стоит, а плата за месяц приходит одной выпиской в начале следующего, оплата переводом до 15-го.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">До 10 кВт: 390 лей</div><div class="pd">за выигранный проект</div></div>
-    <div class="plan"><div class="pn">От 10 до 30 кВт: 790 лей</div><div class="pd">за выигранный проект</div></div>
-    <div class="plan"><div class="pn">От 30 до 100 кВт: 1 590 лей</div><div class="pd">за выигранный проект</div></div>
-    <div class="plan"><div class="pn">Свыше 100 кВт: 2 990 лей</div><div class="pd">за выигранный проект</div></div>
+    <div class="plan hot"><div class="pn">200 лей</div><div class="pd">за кВт каждого подписанного объекта</div></div>
+    <div class="plan"><div class="pn">8 000 лей</div><div class="pd">максимум за объект</div></div>
+    <div class="plan"><div class="pn">2 объекта</div><div class="pd">первые подписанные, бесплатно</div></div>
+    <div class="plan"><div class="pn">0 лей</div><div class="pd">если клиент отказался</div></div>
   </div>
-  <p class="g-lede" style="margin-top:12px">В Настройках, Оплата за объект, видны ваши платы, счета VoltMira и IDNO компании.</p>
+  <p class="g-lede" style="margin-top:12px">В Настройках, Оплата за объект, видны подписанные в этом месяце объекты, выписки VoltMira и IDNO компании.</p>
 </section>
 
 <section>
@@ -496,14 +496,14 @@ const HTML = {
 
 <section>
   <div class="g-h"><span class="g-n">6</span><h2>Скільки коштує</h2></div>
-  <p class="g-lede">VoltMira безкоштовна для будь-якого монтажника, з усіма функціями й без обмежень на пропозиції чи людей. Ви платите, лише коли клієнт підписує: фіксована плата за виграний проєкт за розміром системи. Перші 3 виграні проєкти безкоштовні, на кожну плату є 14 днів, карткою або переказом за рахунком.</p>
+  <p class="g-lede">VoltMira безкоштовна для будь-якого монтажника, з усіма функціями й без обмежень на пропозиції чи людей. Ви платите, лише коли клієнт підписує: 200 лей за кожен кВт підписаної системи, не більше 8 000 лей за об’єкт. Перші 2 підписані об’єкти безкоштовні, об’єкт, від якого клієнт відмовився, нічого не коштує, а плата за місяць надходить однією випискою на початку наступного, оплата переказом до 15-го.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">До 10 кВт: 390 лей</div><div class="pd">за виграний проєкт</div></div>
-    <div class="plan"><div class="pn">Від 10 до 30 кВт: 790 лей</div><div class="pd">за виграний проєкт</div></div>
-    <div class="plan"><div class="pn">Від 30 до 100 кВт: 1 590 лей</div><div class="pd">за виграний проєкт</div></div>
-    <div class="plan"><div class="pn">Понад 100 кВт: 2 990 лей</div><div class="pd">за виграний проєкт</div></div>
+    <div class="plan hot"><div class="pn">200 лей</div><div class="pd">за кВт кожного підписаного об’єкта</div></div>
+    <div class="plan"><div class="pn">8 000 лей</div><div class="pd">максимум за об’єкт</div></div>
+    <div class="plan"><div class="pn">2 об’єкти</div><div class="pd">перші підписані, безкоштовно</div></div>
+    <div class="plan"><div class="pn">0 лей</div><div class="pd">якщо клієнт відмовився</div></div>
   </div>
-  <p class="g-lede" style="margin-top:12px">У Налаштуваннях, Оплата за об’єкт, видно ваші плати, рахунки VoltMira та IDNO компанії.</p>
+  <p class="g-lede" style="margin-top:12px">У Налаштуваннях, Оплата за об’єкт, видно підписані цього місяця об’єкти, виписки VoltMira та IDNO компанії.</p>
 </section>
 
 <section>

@@ -10,7 +10,6 @@ import { sendOpenDigests } from "../../../../lib/openDigest.js";
 import { sendFeeReminders } from "../../../../lib/feeReminders.js";
 import { monthlyStatements, sellerDetails, feeVatRate } from "../../../../lib/jobFeePay.js";
 import { feePaywallOn } from "../../../../lib/jobFees.js";
-import { mdDayKey } from "../../../../lib/tz.js";
 import { sendEmail, emailConfigured, ownerAlertEmail } from "../../../../lib/email.js";
 import { logActivity } from "../../../../lib/activity.js";
 
@@ -32,10 +31,10 @@ export async function GET(req) {
   if (purgeErr && !/kind|check|constraint/i.test(purgeErr.message || "")) console.error("[cron nudges] reading purge failed:", purgeErr.message);
   // the morning "offers opened" email, for companies that chose it or keep quiet hours
   const digests = await sendOpenDigests(db, { budgetMs: 15_000 });
-  // the fee per won project: its reminders (lib/feeReminders.js), nothing while JOB_FEES is off
-  // on the 1st, one invoice for the workspaces that chose a monthly statement (before the reminders, so a fee
-  // the statement gave more days to is reminded on its new date)
-  const statements = feePaywallOn() && mdDayKey(started).endsWith("-01") ? await monthlyStatements(db, { seller: sellerDetails(), vatRate: feeVatRate() }) : null;
+  // VoltMira's fee for signed jobs: last month's statements (lib/jobFeePay.js), first issued on the 1st and asked for
+  // again each day, so a missed run still issues them (one per workspace and month), then their reminders
+  // (lib/feeReminders.js). Nothing while JOB_FEES is off.
+  const statements = feePaywallOn() ? await monthlyStatements(db, { seller: sellerDetails(), vatRate: feeVatRate() }) : null;
   const fees = await sendFeeReminders(db, { io: { sendEmail, emailConfigured, ownerAlertEmail, logActivity }, budgetMs: 10_000 });
   const due = await dueNudges(db);
   const tally = { due: due.length, sent: 0, skipped: 0, failed: 0 };

@@ -145,11 +145,11 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
       <div className="modal ld-modal" onClick={(e) => e.stopPropagation()}>
         <h4>{t("ld_title", lang)}</h4>
 
-        {/* a won job whose fee is overdue: the documents wait on it (lib/jobFees.js); the fee card pays it */}
+        {/* a signed job whose statement is overdue: the documents wait on it (lib/jobFees.js); the fee card shows the statement */}
         {feeLocked && (
           <div className="ld-warn ld-locked" role="status">
-            <b>{ft("gate_h", lang)}</b> {ft("locked_p", lang)}{" "}
-            <button type="button" className="btn amber sm" onClick={() => { onClose(); window.dispatchEvent(new Event("vm-fee-locked")); }}>{ft("st_due", lang)}</button>
+            <b>{ft("gate_h", lang)}</b> {ft("locked_short", lang)}{" "}
+            <button type="button" className="btn amber sm" onClick={() => { onClose(); window.dispatchEvent(new Event("vm-fee-locked")); }}>{ft("statement_open", lang)}</button>
           </div>
         )}
 

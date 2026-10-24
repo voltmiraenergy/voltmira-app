@@ -1,7 +1,8 @@
 // app/api/admin/job-fees/route.js — the platform admin's fees (lib/feeAdmin.js). Platform admins only
 // (PLATFORM_ADMIN_EMAILS); anyone else gets a 404.
-//   GET ?format=csv              every fee of the real workspaces, for the accountant (lib/feeRevenue.js feesCsv)
-//   POST { feeId, action, reason, ref }   action "paid" (a transfer arrived) or "waive"; audited
+//   GET ?format=csv                                    every fee of the real workspaces, for the accountant
+//   POST { action: "statement_paid", invoiceId, ref }  a statement's transfer arrived; audited
+//   POST { action: "waive", feeId, reason }            no fee owed for one job after all; audited
 import { NextResponse } from "next/server";
 import { currentUser } from "../../../../lib/session.js";
 import { isPlatformAdmin } from "../../../../lib/platformAdmin.js";
@@ -28,6 +29,9 @@ export async function POST(req) {
   if (!isPlatformAdmin(user?.email)) return NextResponse.json({ error: "not_found" }, { status: 404 });
   let b = {};
   try { b = await req.json(); } catch { /* refused below */ }
-  const r = await adminSetFee(supabaseAdmin(), { feeId: String(b.feeId || ""), action: b.action, reason: b.reason, ref: b.ref, actor: { id: user.id, email: user.email } });
+  const r = await adminSetFee(supabaseAdmin(), {
+    action: b.action, invoiceId: String(b.invoiceId || ""), feeId: String(b.feeId || ""), reason: b.reason, ref: b.ref,
+    actor: { id: user.id, email: user.email },
+  });
   return NextResponse.json(r, { status: r.ok ? 200 : r.error === "not_found" ? 404 : 400 });
 }

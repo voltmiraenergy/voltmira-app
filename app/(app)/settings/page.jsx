@@ -22,7 +22,6 @@ import { xt } from "../../../lib/integrationText.js";
 import { dlt } from "../../../lib/deadlineText.js";
 import { CONTRACT_TOKENS, COMMISSIONING_TOKENS } from "../../../lib/legalDocs.js";
 import LeadAssistant from "./LeadAssistant.jsx";
-import MonitoringBill from "./MonitoringBill.jsx";
 import FeesPanel from "./FeesPanel.jsx";
 import { clearOfflineData } from "../../../lib/offline.js";
 import { aiOn } from "../../../lib/featureFlags.js";
@@ -676,11 +675,8 @@ export default function Settings() {
 
     fees: (
       <>
-        {/* VoltMira's one charge: a fee per won project (lib/jobFees.js) */}
+        {/* VoltMira's one charge: a fee for each signed job (lib/jobFees.js) */}
         <FeesPanel lang={lang} />
-        <Card title={t("mb_title", lang)} desc={t("mb_desc", lang)}>
-          <MonitoringBill lang={lang} />
-        </Card>
         {isOwner && (
           <>
             <Card title={t("dd_title", lang)} desc={t("dd_desc", lang)}>

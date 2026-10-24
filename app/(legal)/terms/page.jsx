@@ -131,21 +131,22 @@ export default function Terms() {
       <h2>11. Fees and payment</h2>
       <p>
         Using VoltMira is free: there is no subscription and no limit on offers, people or features.
-        We charge one thing, a fixed fee for each project you win, that is, when your client accepts an
-        offer online or you mark a quote as won. The fee depends on the size of the system, as shown in
-        Settings and on our website: up to 10 kW, 390 lei; 10 to 30 kW, 790 lei; 30 to 100 kW, 1,590
-        lei; above 100 kW, 2,990 lei. Any VAT due is added on our invoice. Your company&rsquo;s first 3
-        won projects, counted by its IDNO across its workspaces, are free.
+        We charge one thing, a fee for each job your client signs, that is, when your client accepts an
+        offer online or you mark a quote as signed. The fee is 200 lei for each kW of the signed system,
+        rounded to the lei, and at most 8,000 lei a job, as shown in Settings and on our website. Any VAT
+        due is added on our invoice. Your company&rsquo;s first 2 signed jobs, counted by its IDNO across
+        its workspaces, are free. If the client gives up the job, you owe nothing for it.
       </p>
       <p>
-        You have 14 days from the win to pay a fee, by card or by bank transfer against our invoice.
-        After that, the won project&rsquo;s paperwork (contract, invoice, grid connection file,
-        commissioning and handover documents) stays locked until the fee is paid; your quotes, clients
-        and everything else stay available, and your client is never asked to pay us anything. A fee
-        may rise if the won system grows into a larger size band before it is paid; it never falls. If
-        a project you paid for is later cancelled, the fee becomes a credit on your next won project.
-        We give at least 30 days&rsquo; notice of a change to the fees, which applies to projects won
-        after it takes effect.
+        The fees for the jobs signed in a month come on one statement, our invoice to your company,
+        issued at the start of the next month and paid by bank transfer by the 15th of that month, with
+        the reference printed on it. If a statement is still unpaid after that, the paperwork of its jobs
+        (contract, invoice, grid connection file, commissioning and handover documents) stays locked
+        until the transfer arrives; your quotes, clients and everything else stay available, and your
+        client is never asked to pay us anything. A fee may rise if the signed system grows before the
+        fee is paid; it never falls. If a job whose fee you already paid is later cancelled, the amount
+        becomes a credit on your next signed job. We give at least 30 days&rsquo; notice of a change to
+        the fees, which applies to jobs signed after it takes effect.
       </p>
       <p>
         Developers&rsquo; bank packs, where offered, are billed through Paddle, our merchant of record,

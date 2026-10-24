@@ -42,6 +42,9 @@ import SignedContract from "./SignedContract.jsx";
 import ShareCard from "./ShareCard.jsx";
 import LegalDocsModal from "./LegalDocsModal.jsx";
 import FeeCard from "../../../../components/FeeCard.jsx";
+import { ft as feeT } from "../../../../lib/feeText.js";
+import { feeLei, FREE_JOBS } from "../../../../lib/jobFees.js";
+import { useRouter } from "next/navigation";
 import SiteRecord from "./SiteRecord.jsx";
 
 // how many panels, inverters and batteries the quote sells, beside the serial numbers typed on site
@@ -210,6 +213,7 @@ function LocalMoneyInput({ eur, fmt, onEur, dec = 2, allowZero = false, classNam
 // own (p.offerCurrency, null = follow the workspace), see lib/offerCurrency.js.
 export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, signedOffer = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null, jobFee = null, feeOpen = null, meName = "" }) {
   const tr = (k, v) => t(k, lang, v);
+  const router = useRouter();
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
     // Coordinates of the resolved address pick. Null until someone picks a
@@ -263,6 +267,9 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // of a proforma (asking for money up front) was reachable only by hand-editing
   // the URL. 0 = invoice the full amount.
   const [invOpen, setInvOpen] = useState(false);
+  // an invoice is for a signed job: on a quote not signed yet, "mark signed first" (lib/feeText.js sign_*)
+  const [signAsk, setSignAsk] = useState(false);
+  const [signBusy, setSignBusy] = useState(false);
   // what the workflow rail last saved (a ticked step, a grid-file stage), so the
   // checklist and grid-file cards below show it without a reload
   const [railProg, setRailProg] = useState(null);
@@ -710,6 +717,24 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     fetch("/api/proposal/warm", { method: "POST", keepalive: true }).catch(() => { });
   }, [propUrl, invOpen]);
 
+  // Signed (from the rail, or before an invoice): record it (activity, CRM hook, the fee), then save the status
+  // through this editor's own autosave, so a pending edit still waiting on its timer cannot write the old status back.
+  async function markSigned() {
+    clearTimeout(timer.current);
+    await markProjectWon(initial.id);
+    const next = { ...pRef.current, status: "won" };
+    pRef.current = next;
+    statusRef.current = "won";
+    setP(next);
+    await persist(next);
+    router.refresh();
+  }
+  // an invoice is issued for a signed job; a quote still out asks to mark it signed first
+  function openInvoice() {
+    if (pRef.current.status === "won") setInvOpen(true);
+    else setSignAsk(true);
+  }
+
   // The PDF is of an issued invoice: Download issues it first (the one click that draws the number), then opens it.
   async function downloadProforma() {
     const w = window.open("", "_blank");
@@ -857,7 +882,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               <button className="btn ghost" onClick={openTemplate}><Qi d={tplSaved ? "check" : "bookmark"} />{tplSaved ? tr("tpl_saved") : tr("tpl_save")}</button>
             )}
             <button className="btn ghost" onClick={downloadPdf}><Qi d="pdf" />{tr("dl_pdf")}</button>
-            <button className="btn ghost" onClick={() => setInvOpen(true)}><Qi d="receipt" />{tr("inv_button")}</button>
+            <button className="btn ghost" onClick={openInvoice}><Qi d="receipt" />{tr("inv_button")}</button>
             <button className="btn ghost" onClick={() => { setLegalTab("contract"); setLegalDocsOpen(true); }}><Qi d="scale" />{tr("ld_open")}</button>
             {/* the three ways to send, kept together when the row wraps */}
             <span className="qb-sendgrp">
@@ -893,20 +918,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       <WorkflowRail projectId={initial.id} lang={lang} status={p.status}
         onAction={async (a) => {
           if (a.type === "send" || a.type === "copy_link") { makeProposal(); return true; }
-          if (a.type === "invoice") { setInvOpen(true); return true; }
-          if (a.type === "won") {
-            // Signed from the rail: record it (activity, CRM hook), then save the
-            // status through this editor's own autosave, so a pending edit still
-            // waiting on its timer cannot write the old status back.
-            clearTimeout(timer.current);
-            await markProjectWon(initial.id);
-            const next = { ...pRef.current, status: "won" };
-            pRef.current = next;
-            statusRef.current = "won";
-            setP(next);
-            await persist(next);
-            return true;
-          }
+          if (a.type === "invoice") { openInvoice(); return true; }
+          if (a.type === "won") { await markSigned(); return true; }
           return false;
         }}
         onChange={({ installProgress, gridFile }) => {
@@ -1406,8 +1419,9 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
 
           {signed && <SignedContract signed={signed} lang={lang} />}
 
-          {/* the fee per won project: free, paid, or due with the days left to pay (lib/jobFees.js) */}
-          {p.status === "won" && jobFee && <FeeCard projectId={initial.id} lang={lang} state={jobFee} open={feeOpen} />}
+          {/* VoltMira's fee for this job: what it will cost, free, on a statement, paid, or nothing when the client gave up (lib/jobFees.js) */}
+          {jobFee && <FeeCard projectId={initial.id} lang={lang} status={p.status} state={jobFee} open={feeOpen}
+            onGaveUp={() => { const next = { ...pRef.current, status: "lost" }; pRef.current = next; statusRef.current = "lost"; setP(next); }} />}
 
           {p.status === "won" && (
             <InstallChecklist key={railProg ? JSON.stringify(railProg) : "init"} projectId={initial.id}
@@ -1454,6 +1468,26 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       )}
 
       {/* proforma modal: pick a deposit, then open the document */}
+      {signAsk && (
+        <div className="overlay" onClick={() => setSignAsk(false)}>
+          <div className="modal fee-sign" role="dialog" aria-modal="true" aria-labelledby="fee-sign-h" onClick={(e) => e.stopPropagation()}>
+            <h3 id="fee-sign-h">{feeT("sign_h", lang)}</h3>
+            <p>{feeT("sign_p", lang)}</p>
+            {jobFee?.preview && (
+              <p className="fee-sign-fee">{jobFee.preview.free ? feeT("before_free", lang, { t: FREE_JOBS }) : feeT("sign_fee", lang, { v: feeLei(jobFee.preview.minorMdl, lang) })}</p>
+            )}
+            <div className="modal-acts">
+              <button type="button" className="btn ghost" onClick={() => setSignAsk(false)}>{feeT("not_now", lang)}</button>
+              <button type="button" className="btn amber" disabled={signBusy} aria-busy={signBusy}
+                onClick={async () => { setSignBusy(true); try { await markSigned(); setSignAsk(false); setInvOpen(true); } finally { setSignBusy(false); } }}>
+                {feeT("sign_yes", lang)}
+              </button>
+            </div>
+            <style>{`.app .fee-sign{max-width:440px;display:grid;gap:10px}.app .fee-sign h3{margin:0;font-size:19px}.app .fee-sign p{margin:0;line-height:1.5}.app .fee-sign-fee{padding:10px 12px;border-radius:11px;background:var(--paper);border:1px solid var(--line);font-weight:650;font-variant-numeric:tabular-nums}`}</style>
+          </div>
+        </div>
+      )}
+
       {invOpen && (
         <div className="overlay" onClick={() => setInvOpen(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>

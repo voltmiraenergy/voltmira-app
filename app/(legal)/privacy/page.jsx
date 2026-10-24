@@ -18,7 +18,6 @@ const PROVIDERS = [
   ["Vercel", "Hosting, application servers and cookieless website statistics"],
   ["Anthropic", "The AI features described in section 4"],
   ["Paddle", "Payments, invoicing and sales tax for developers' bank packs, as our merchant of record"],
-  ["Victoria Bank", "Card payments of the fee per won project, on the bank's secure payment page"],
   ["Resend", "Service emails: proposal alerts, invitations, password resets"],
   ["Cloudflare Turnstile", "Telling people from bots on the sign-in page"],
   ["Upstash", "Rate limiting, to stop abuse of public forms and the demo"],
@@ -65,9 +64,9 @@ export default function Privacy() {
         <li>
           <b>Installer accounts</b>: name, email, company details, logo and profile photo, team roles,
           and either your password (stored only as a hash by our sign-in provider) or the name and
-          email of your Google account if you sign in with Google. Card details for the fee per won
-          project are entered on Victoria Bank&rsquo;s payment page, and for a bank pack on Paddle&rsquo;s;
-          we never see full card numbers. Your company&rsquo;s tax id (IDNO) is kept for our invoices.
+          email of your Google account if you sign in with Google. The fee for signed jobs is paid by bank
+          transfer; card details for a bank pack are entered on Paddle&rsquo;s page and we never see full
+          card numbers. Your company&rsquo;s tax id (IDNO) is kept for our statements.
         </li>
         <li>
           <b>Installers&rsquo; clients</b>: names, phone numbers, email addresses, property addresses

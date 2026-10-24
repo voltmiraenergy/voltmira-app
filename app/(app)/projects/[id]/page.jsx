@@ -6,9 +6,8 @@ import { t, normLang } from "../../../../lib/i18n.js";
 import { currentUser } from "../../../../lib/session.js";
 import { canViewAllProjects, canEditTechnical, canOverrideGrid } from "../../../../lib/rbac.js";
 import { allGridRules } from "../../../../lib/gridRulesStore.js";
-import { jobGate, loadJobFee } from "../../../../lib/jobFeeServer.js";
+import { jobGate, loadJobFee, feePreview } from "../../../../lib/jobFeeServer.js";
 import { feePaywallOn } from "../../../../lib/jobFees.js";
-import { gatewayFor } from "../../../../lib/paymentGateway.js";
 import { isDemoEmail } from "../../../../lib/demo.js";
 import { mdDayKey } from "../../../../lib/tz.js";
 
@@ -153,24 +152,38 @@ export default async function ProjectPage(props) {
     }
   }
 
-  // the fee per won project (lib/jobFees.js): shown on a won job, and whether its paperwork is locked. The tax id
-  // is read on its own, so a database without add-job-fees.sql still opens the quote.
+  // VoltMira's fee for signed jobs (lib/jobFees.js): on a signed job its fee, the statement it is on and whether its
+  // paperwork is locked; on a job the client gave up, that nothing is owed; before signing, what it will cost. The
+  // tax id is read on its own, so a database without add-job-fees.sql still opens the quote.
   let jobFee = null;
-  if (p.status === "won") {
+  {
     const { data: idRow } = await sb.from("companies").select("idno").single();
     const admin = supabaseAdmin();
-    const gate = await jobGate(admin, { project: p, co: { ...co, idno: idRow?.idno || null }, user });
-    const fee = gate.fee || (await loadJobFee(admin, p.id)).fee;
-    if (fee || gate.error) {
-      jobFee = {
-        fee: fee ? { id: fee.id, status: fee.status, tier: fee.tier, amount_minor: fee.amount_minor, grace_ends_at: fee.grace_ends_at, paid_at: fee.paid_at, payment_method: fee.payment_method } : null,
-        locked: gate.locked, error: gate.error || null, access: gate.access, on: feePaywallOn(),
-        sample: p.is_sample === true || isDemoEmail(user?.email), test: gatewayFor().test === true,
-      };
+    const coFee = { ...co, idno: idRow?.idno || null };
+    const sample = p.is_sample === true || isDemoEmail(user?.email);
+    if (p.status === "won") {
+      const gate = await jobGate(admin, { project: p, co: coFee, user });
+      const fee = gate.fee || (await loadJobFee(admin, p.id)).fee;
+      let statement = null;
+      if (fee?.invoice_id) {
+        const { data: inv } = await admin.from("job_fee_invoices").select("id, number, month, due_at, paid_at").eq("id", fee.invoice_id).maybeSingle();
+        statement = inv || null;
+      }
+      if (fee || gate.error) {
+        jobFee = {
+          fee: fee ? { id: fee.id, status: fee.status, tier: fee.tier, kw: Number(fee.kw) || 0, amount_minor: fee.amount_minor, won_at: fee.won_at, trigger: fee.trigger, free_slot: fee.free_slot, paid_at: fee.paid_at, payment_method: fee.payment_method } : null,
+          statement, locked: gate.locked, error: gate.error || null, on: feePaywallOn(), sample,
+        };
+      }
+    } else if (p.status === "lost") {
+      const { fee } = await loadJobFee(admin, p.id);
+      if (fee) jobFee = { fee: { id: fee.id, status: fee.status }, on: feePaywallOn(), sample };
+    } else {
+      jobFee = { preview: await feePreview(admin, p, coFee), on: feePaywallOn(), sample };
     }
   }
   const sp = await props.searchParams;
-  const feeOpen = ["locked", "idno", "paid"].includes(sp?.fee) ? sp.fee : null;
+  const feeOpen = ["locked", "idno"].includes(sp?.fee) ? sp.fee : null;
 
   return <Editor initial={p} engineSettings={E} jobFee={jobFee} feeOpen={feeOpen} meName={me?.name || user?.email || ""} team={team || []} catalog={catalog || []}
     canEditTechnical={canEditTech}

@@ -4,7 +4,7 @@ import LegalShell from "../LegalShell.jsx";
 export const metadata = {
   title: "Refund Policy | VoltMira",
   description:
-    "Refunds for VoltMira's fee per won project: credit for a cancelled project, duplicate charges, and how to ask.",
+    "Refunds for VoltMira's fee for signed jobs: nothing owed when a client gives up, credit for a job already paid, duplicate payments, and how to ask.",
   alternates: { canonical: "/refunds" },
 };
 
@@ -12,31 +12,32 @@ export default function Refunds() {
   return (
     <LegalShell title="Refund Policy" updated="24 October 2026">
       <p className="note">
-        VoltMira is free to use. Its one charge is a fixed fee for each project you win, paid by card
-        through our bank&apos;s payment page or by bank transfer against our invoice. Developers&apos; bank
+        VoltMira is free to use. Its one charge is a fee for each job your client signs, 200 lei a kW
+        and at most 8,000 lei a job, billed on one statement a month and paid by bank transfer. Developers&apos; bank
         packs, where offered, are paid through <b>Paddle</b>, our merchant of record, so their receipts
         and refunds go through Paddle.
       </p>
 
-      <h2>Nothing is charged until you win</h2>
+      <h2>Nothing is charged until a client signs</h2>
       <p>
-        Quotes, offers, clients and every feature cost nothing. A fee is due only for a project your
-        client signed online or that you marked as won, and your company&apos;s first 3 won projects are
-        free.
+        Quotes, offers, clients and every feature cost nothing. A fee is due only for a job your client
+        signed online or that you marked as signed, and your company&apos;s first 2 signed jobs are free.
+        If the client gives up the job before you paid, you owe nothing for it, also when it is already
+        on a statement: the statement then asks only for the rest.
       </p>
 
-      <h2>A project cancelled after you paid</h2>
+      <h2>A job cancelled after you paid</h2>
       <p>
-        If a project you paid the fee for is later cancelled (you mark it lost), the fee becomes a
-        credit of the same amount, used on your next won project. A refund in money instead is at our
+        If a job you already paid the fee for is later cancelled (the client gives up), the fee becomes
+        a credit of the same amount, used on your next signed job. A refund in money instead is at our
         discretion, on request, for example if you stop using VoltMira. This is in addition to any right
         you have under the law of your country, which this policy never limits.
       </p>
 
       <h2>Other refunds</h2>
       <ul>
-        <li><b>Duplicate or mistaken charges</b>: refunded in full, at any time.</li>
-        <li><b>A fee charged for a project that was never won</b> (for example, marked won by mistake
+        <li><b>Duplicate or mistaken payments</b>: refunded in full, at any time.</li>
+        <li><b>A fee charged for a job that was never signed</b> (for example, marked signed by mistake
           and corrected at once): write to us and we refund it or turn it into credit.</li>
         <li><b>Bank packs</b>: refunded through Paddle under the terms shown at checkout.</li>
       </ul>
@@ -45,11 +46,11 @@ export default function Refunds() {
       <ul>
         <li>
           Email <a href="mailto:voltmiraenergy@gmail.com">voltmiraenergy@gmail.com</a> from the
-          address on your account, with the invoice number (VMF-...) or the payment reference.
+          address on your account, with the statement number (VMF-...) or the transfer reference.
         </li>
         <li>
-          We reply within <b>2 business days</b>. Approved refunds usually reach your card or account
-          within 5 to 10 business days, depending on your bank.
+          We reply within <b>2 business days</b>. Approved refunds are sent by bank transfer to your
+          company&apos;s account and usually arrive within 5 to 10 business days, depending on your bank.
         </li>
       </ul>
 
