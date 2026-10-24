@@ -32,6 +32,7 @@ import UaPanel from "../../../../components/UaPanel.jsx";
 import InstallChecklist from "./InstallChecklist.jsx";
 import GridFile from "./GridFile.jsx";
 import RoofPhoto from "./RoofPhoto.jsx";
+import OfferInsights from "./OfferInsights.jsx";
 import FoldColumn from "../../../../components/FoldColumn.jsx";
 import StudioJobLine from "./StudioJobLine.jsx";
 import WorkflowRail from "../../../../components/WorkflowRail.jsx";
@@ -1526,6 +1527,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 setCopied(true); setTimeout(() => setCopied(false), 1800);
               }}>{copied ? tr("t_copied") : tr("copy")}</button>
             </div>
+            {/* this offer's reminders, and what the client read (lib/offerInsights.js) */}
+            <OfferInsights projectId={initial.id} lang={lang} />
             {/* a quote with no address shows the client no picture of their house from above */}
             {!String(p.address || "").trim() && p.lat == null && <p className="sub" role="note">{tr("offer_site_hint")}</p>}
             {/* The link stays the same; this refreshes what it SHOWS from the

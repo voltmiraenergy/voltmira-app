@@ -29,24 +29,25 @@ export async function GET(req) {
   // same as "nobody's opted in yet," so the endpoint degrades to an empty
   // list instead of a 500 either way. Confirmed via direct testing, not
   // an accident to "fix" later.
-  const { data: companies } = await db.from("companies")
-    .select("id, name, lang, engine, subsidy_amount_ron").eq("nudge_enabled", true);
+  let { data: companies } = await db.from("companies")
+    .select("id, name, lang, engine, subsidy_amount_ron, nudge_days").eq("nudge_enabled", true);
+  // the follow-up days column is newer (add-quote-fast.sql): without it, the standard days
+  if (!companies) ({ data: companies } = await db.from("companies").select("id, name, lang, engine, subsidy_amount_ron").eq("nudge_enabled", true));
   if (!companies?.length) return NextResponse.json({ ok: true, proposals: [] });
   const companyById = new Map(companies.map((c) => [c.id, c]));
 
-  const { data: proposals } = await db.from("proposals")
-    .select("code, project_id, company_id, snapshot, accepted_at, created_at, nudge_count, opens, seconds")
-    .in("company_id", companies.map((c) => c.id))
-    .is("accepted_at", null);
+  const pick = (cols) => db.from("proposals").select(cols).in("company_id", companies.map((c) => c.id)).is("accepted_at", null);
+  let { data: proposals, error: pErr } = await pick("code, project_id, company_id, snapshot, accepted_at, created_at, nudge_count, opens, seconds, nudges_off");
+  if (pErr) ({ data: proposals } = await pick("code, project_id, company_id, snapshot, accepted_at, created_at, nudge_count, opens, seconds"));
   if (!proposals?.length) return NextResponse.json({ ok: true, proposals: [] });
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.voltmira.com";
   const out = [];
   for (const prop of proposals) {
-    const tier = nextNudgeTier(prop);
-    if (tier == null) continue;
     const co = companyById.get(prop.company_id);
     if (!co) continue;
+    const tier = nextNudgeTier(prop, co.nudge_days);
+    if (tier == null) continue;
 
     let proj = null;
     if (prop.project_id) {

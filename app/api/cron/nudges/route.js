@@ -19,6 +19,11 @@ export async function GET(req) {
   }
   const db = supabaseAdmin();
   const started = Date.now();
+  // reading time per section and the options looked at are kept 12 months (the notice on the offer says what is
+  // recorded; docs/features/phase1.md the retention), then removed
+  const { error: purgeErr } = await db.from("proposal_events").delete().in("kind", ["section", "option"])
+    .lt("created_at", new Date(started - 365 * 86_400_000).toISOString());
+  if (purgeErr && !/kind|check|constraint/i.test(purgeErr.message || "")) console.error("[cron nudges] reading purge failed:", purgeErr.message);
   // the morning "offers opened" email, for companies that chose it or keep quiet hours
   const digests = await sendOpenDigests(db, { budgetMs: 15_000 });
   const due = await dueNudges(db);
