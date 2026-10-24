@@ -4,8 +4,8 @@
 // disconnect+breaker → DC bus → DC disconnect → inverter → (battery branch,
 // if any) → AC disconnect → AC breaker → RCD → AC SPD → bidirectional meter
 // → main panel/earth → grid. Every number comes from the SAME real
-// computation the editor's own "Verificări de proiectare" card and
-// BosEstimate.jsx already show (lib/designCheck.js's designCheck()/
+// computation the editor's own "Verificări de proiectare" card
+// already shows (lib/designCheck.js's designCheck()/
 // stringInputs(), lib/bosEstimate.js's breaker/cable sizing) — never a
 // second, separately-guessed set of numbers for this one view. With no real
 // inverter in the BOM yet, designCheck() itself falls back to a

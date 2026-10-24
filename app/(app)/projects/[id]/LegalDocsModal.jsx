@@ -17,7 +17,7 @@
 //   "diagram"        — a real single-line electrical diagram
 //                      (components/SingleLineDiagram.jsx), drawn from the
 //                      SAME designCheck()/stringInputs() numbers the editor's
-//                      own design-check card and BosEstimate already show.
+//                      own design-check card already shows.
 //
 // Export: contract/commissioning/diagram all used window.print() until a
 // client asked why a downloaded contract carried a browser-stamped header

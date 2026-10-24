@@ -23,8 +23,6 @@ import { productionPower } from "../../../../lib/gridPower.js";
 import BomCard from "../../../../components/BomCard.jsx";
 import DesignChecks from "../../../../components/DesignChecks.jsx";
 import StructuralLoads from "../../../../components/StructuralLoads.jsx";
-import BosEstimate from "../../../../components/BosEstimate.jsx";
-import PeakShaving from "../../../../components/PeakShaving.jsx";
 import DesignSuggestions from "../../../../components/DesignSuggestions.jsx";
 import BatterySizingPanel from "../../../../components/BatterySizingPanel.jsx";
 import SurplusPanel, { useBuyback } from "../../../../components/SurplusPanel.jsx";
@@ -52,8 +50,6 @@ import { kwUnit } from "../../../p/[code]/text.js";
 import { xt } from "../../../../lib/integrationText.js";
 import { autoBom, recommendMount, findPanel } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
-import { designCheck } from "../../../../lib/designCheck.js";
-import { fitSidesFor, limitPanels } from "../../../../lib/roofLayout.js";
 import { blendYields, fetchSideYield } from "../../../../lib/sideYield.js";
 import { moneyFormatter, numFor } from "../../../../lib/money.js";
 import { effectiveOfferCurrency, currencyOnMarketChange, betterCurrencyFor, normCurrency } from "../../../../lib/offerCurrency.js";
@@ -554,12 +550,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     quote({ ...p, kw, costOverride: 0, ...(extra || {}), ...(feedOverride ? { feedOverride } : {}) }, E),
     [p, E, feedOverride]);
 
-  // Rail/clamp quantities for BosEstimate: the SAME real drawn roof planes
-  // and fitPanels() math applySiteDesignLayout/lib/actions.js's PDF snapshot
-  // already use, not a separate guess — recomputed live here (not persisted
-  // with the project) since a plane's geometry, or the BOM's real panel,
-  // can change without reopening Site Designer.
-  // the roof side that holds most of the panels: the one the structural loads and the evening peak read (they read
+  // the roof side that holds most of the panels: the one the structural loads read (they read
   // the first side drawn, which on a roof with a small dormer drawn first was the wrong one)
   const mainPlane = useMemo(() => {
     const planes = Array.isArray(p.siteDesign?.planes) ? p.siteDesign.planes : [];
@@ -567,14 +558,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     const best = [...sides].sort((a, b) => (b.count || 0) - (a.count || 0))[0];
     return (best && planes.find((pl) => pl.id === best.id)) || planes[0] || null;
   }, [p.siteDesign]);
-  const siteRows = useMemo(() => {
-    const planes = Array.isArray(p.siteDesign?.planes) ? p.siteDesign.planes : [];
-    if (!planes.some((pl) => Array.isArray(pl.polygon) && pl.polygon.length >= 3)) return [];
-    const dc = designCheck({ bom: p.bom, kw: p.kw });
-    const { w, h } = dc.panel.dimensionsMm || { w: 1909, h: 1134 };
-    // rails for the panels the quote sells, not for every place on the roof
-    return limitPanels(fitSidesFor(p.siteDesign, { w, h }), Math.max(0, Number(dc.modules) || 0)).flatMap((f) => f.rows);
-  }, [p.siteDesign, p.bom, p.kw]);
 
   async function applySiteDesignLayout(layout) {
     if (!layout || !layout.totalCount) return;
@@ -1323,14 +1306,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           />
 
           <StructuralLoads lang={lang} roofPitchDeg={mainPlane?.tiltDeg} />
-
-          <BosEstimate lang={lang} bom={p.bom} kw={p.kw}
-            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} consKwh={consEff} phases={undefined} market={p.market}
-            rows={siteRows} />
-
-          <PeakShaving lang={lang} lat={p.lat} lon={p.lon} kw={p.kw} cons={consEff}
-            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} market={p.market}
-            roofPitchDeg={mainPlane?.tiltDeg} roofAzimuthDeg={mainPlane?.azimuthDeg} />
 
           {/* Compare every inverter that could serve this array, not just the
               one in the BOM — applying a row swaps the BOM's inverter line. */}
