@@ -862,3 +862,13 @@
 .qm-hash { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-weight: 500; font-size: 12.5px; }
 .qm-btns { display: flex; gap: 10px; flex-wrap: wrap; }
 .qm-btns .pp-btn { flex: 1 1 160px; }
+
+/* ---- Phase 1: the offer in plain words, nearby systems, the reading notice */
+.pp-plain-list { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.pp-plain-list li { position: relative; padding: 12px 14px 12px 40px; border-radius: 12px; background: var(--paper-2, #fff); border: 1px solid var(--line); font-size: 16px; line-height: 1.5; }
+.pp-plain-list li::before { content: ""; position: absolute; left: 16px; top: 19px; width: 10px; height: 10px; border-radius: 3px; background: var(--green, #1e6b4e); }
+.pp-near { margin-top: 16px; padding: 16px 18px; }
+.pp-near p { margin: 6px 0 0; line-height: 1.55; }
+.pp-near small { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.pp-track { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.pp-link-btn { background: none; border: none; padding: 0; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }

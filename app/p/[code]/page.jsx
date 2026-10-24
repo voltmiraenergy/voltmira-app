@@ -51,6 +51,7 @@ import { SOLAR_SEASON, FX, effectiveConsumption, amortizedMonthlyPayment } from 
 import { ppt, yearsN, kwhUnit, kwUnit } from "./text.js";
 import { ArrowUpRight, BatteryCharging, CalendarClock, ChevronDown, Info, Moon, Package, Phone, Plug, Scale, Snowflake, SolarPanel, ThermometerSun, TrendingUp, TriangleAlert, Wrench, Zap, Award, MapPin } from "lucide-react";
 import { LogoMark } from "../../../lib/Logo.jsx";
+import SectionTracker from "./SectionTracker.jsx";
 
 // Read straight from the server (lib/proposalPublic.js), not through an HTTP call to our own API: that call
 // reached the limiter with the server's address, so a few visits to made-up links could lock every client
@@ -111,7 +112,8 @@ export default async function ProposalPage(props) {
   }
   const { after = null, company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
     offer = null, chosenOption = null, cned = null, support = null, tariff = null, referral = null, financing = null, signature = null, qsign = null,
-    roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofSite = null, roofPhoto = null, roofPhotoPlace = null, roofSides = null, roofStatus = null } = data;
+    roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofSite = null, roofPhoto = null, roofPhotoPlace = null, roofSides = null, roofStatus = null,
+    nearby = null, tracking = false } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
   const signedDate = signedAt
@@ -345,6 +347,19 @@ export default async function ProposalPage(props) {
               </section>
             )}
 
+            {/* the offer in plain words, before any table or chart */}
+            {!accepted && (
+              <section className="pp-sec pp-plain" aria-labelledby="pp-plain-h">
+                <h2 className="pp-h2" id="pp-plain-h">{ppt("plain_h", lang)}</h2>
+                <ul className="pp-plain-list">
+                  <li>{ppt("plain_save", lang, { v: fmt(mSave) })}</li>
+                  {hasFinance && monthlyPayment > 0 && <li>{ppt("plain_pay", lang, { p: fmt(monthlyPayment), v: fmt(mSave) })}</li>}
+                  {bands.expc.payback != null && <li>{ppt("plain_payback", lang, { y: yearsN(Math.round(bands.expc.payback * 10) / 10, lang) })}</li>}
+                  {lifeNet > 0 && <li>{ppt("plain_net", lang, { y: yearsN(hz, lang), v: fmt(lifeNet) })}</li>}
+                </ul>
+              </section>
+            )}
+
             {options.length > 0 && (
               <section className="pp-sec" aria-labelledby="pp-opt-h">
                 <h2 className="pp-h2" id="pp-opt-h">{ppt("opt_h", lang)}</h2>
@@ -353,7 +368,7 @@ export default async function ProposalPage(props) {
                     { key: "rec", rec: true, label: ppt("opt_rec", lang), kw, batt: battKwh, cost: q.cost, payback: bands.expc.payback, year1: q.year1 },
                     ...options.map((o, i) => ({ key: i, label: o.label || ppt("opt_n", lang, { n: i + 2 }), kw: o.kw, batt: o.battKwh, cost: o.cost, payback: o.payback, year1: o.year1 })),
                   ].map((o) => (
-                    <article key={o.key} className={"pp-opt pp-card" + (o.rec ? " is-rec" : "")}>
+                    <article key={o.key} className={"pp-opt pp-card" + (o.rec ? " is-rec" : "")} data-opt={String(o.label).slice(0, 40)}>
                       <span className="pp-tag">{o.label}</span>
                       <h3 className="pp-opt-sys">{nf(o.kw, 1)} {kwU}{o.batt > 0 ? ppt("with_batt", lang, { b: n1(o.batt) }) : ""}</h3>
                       <dl className="pp-mini">
@@ -525,6 +540,15 @@ export default async function ProposalPage(props) {
                   // already in lei when the offer is: say it once
                   v: fmt.currency === "MDL" ? fmt(surplus.eur) : `${Math.round(surplus.mdl).toLocaleString(loc)} ${lang === "ru" || lang === "uk" ? "лей" : "lei"} (${fmt(surplus.eur)})`,
                 })}</p>
+              )}
+              {/* what monitored systems in this district really produced (lib/nearbyProof.js) */}
+              {nearby && (
+                <div className="pp-near pp-card">
+                  <h3 className="pp-h3">{ppt("near_h", lang)}</h3>
+                  <p>{ppt("near_body", lang, { d: nearby.name?.[lang] || nearby.name?.ro || nearby.district, n: nearby.systems, y: nf(nearby.kwhPerKwp, 0) })}</p>
+                  {nearby.ownYield > 0 && <p>{ppt("near_own", lang, { y: nf(nearby.ownYield, 0) })}</p>}
+                  <small>{ppt("near_src", lang)}</small>
+                </div>
               )}
             </section>
 
@@ -727,6 +751,8 @@ export default async function ProposalPage(props) {
 
         <footer className="pp-foot">
           <p>{signedDay ? ppt("signed_on", lang, { d: signedDay }) : expired ? ppt("expired_full", lang, { d: validUntil }) : ppt("valid_full", lang, { d: validUntil })}</p>
+          {/* the reading time per section, said plainly, with the way out (OFFER_TRACKING) */}
+          {tracking && !accepted && <SectionTracker code={params.code} lang={lang} company={coName} />}
           {/* Growth loop: every free-plan proposal a homeowner opens carries a
               tasteful VoltMira credit. Pro/Team white-labels it away. The mark
               is drawn exactly as the brand's, never recoloured. */}

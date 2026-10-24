@@ -19,6 +19,7 @@ import { openNow } from "../../../../lib/openDigest.js";
 import { acceptProposal } from "../../../../lib/acceptProposal.js";
 import { acceptIo } from "../../../../lib/acceptIo.js";
 import { publicProposalResponse } from "../../../../lib/proposalPublic.js";
+import { offerTrackingOn } from "../../../../lib/offerSwitches.js";
 
 /**
  * Email the company owner that a client asked for a call. Never breaks the
@@ -128,7 +129,7 @@ export async function POST(req, props) {
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }
   const kind = String(body.kind || "");
-  const allowed = ["open", "heartbeat", "toggle_batt", "accept", "request", "referral"];
+  const allowed = ["open", "heartbeat", "toggle_batt", "accept", "request", "referral", "section", "option"];
   if (!allowed.includes(kind)) return NextResponse.json({ error: "bad_kind" }, { status: 400 });
 
   const db = supabaseAdmin();
@@ -146,16 +147,27 @@ export async function POST(req, props) {
     return NextResponse.json({ ok: true });
   }
 
+  // reading time per section and the option looked at: only while switched on, and with a name of its own shape
+  const reading = kind === "section" || kind === "option";
+  if (reading) {
+    if (!offerTrackingOn() || prop.accepted_at) return NextResponse.json({ ok: true, skipped: true });
+    if (await isRateLimited(`track:${clientIp(req)}:${prop.code}`, 240, 60 * 60 * 1000)) return NextResponse.json({ ok: true, skipped: true });
+  }
+  const what = kind === "section" ? String(body.section || "") : kind === "option" ? String(body.option || "").slice(0, 40) : "";
+  if (kind === "section" && !/^[a-z]{2,12}$/.test(what)) return NextResponse.json({ error: "bad_section" }, { status: 400 });
+  if (kind === "option" && !what.trim()) return NextResponse.json({ error: "bad_option" }, { status: 400 });
+
   // the installer previewing their own offer is not the client reading it
-  if (["open", "heartbeat", "toggle_batt"].includes(kind) && await isOwnView(db, prop.company_id)) {
+  if (["open", "heartbeat", "toggle_batt", "section", "option"].includes(kind) && await isOwnView(db, prop.company_id)) {
     return NextResponse.json({ ok: true, own: true });
   }
 
-  const seconds = Math.max(0, Math.min(3600, parseInt(body.seconds || 0, 10) || 0));
-  await db.from("proposal_events").insert({
-    code: prop.code, company_id: prop.company_id, kind, seconds,
-    meta: { ua: (req.headers.get("user-agent") || "").slice(0, 200) },
-  });
+  const seconds = Math.max(0, Math.min(reading ? 600 : 3600, parseInt(body.seconds || 0, 10) || 0));
+  // reading events carry only the section or the option; the others the browser, as before
+  const meta = reading ? (kind === "section" ? { s: what } : { o: what }) : { ua: (req.headers.get("user-agent") || "").slice(0, 200) };
+  const { error: evErr } = await db.from("proposal_events").insert({ code: prop.code, company_id: prop.company_id, kind, seconds, meta });
+  // before add-quote-fast.sql the log refuses the two new kinds: nothing is lost but that line
+  if (reading) return NextResponse.json({ ok: !evErr });
 
   if (kind === "open") {
     await db.rpc("bump_proposal_stat", { p_code: prop.code, p_field: "opens", p_by: 1 });
