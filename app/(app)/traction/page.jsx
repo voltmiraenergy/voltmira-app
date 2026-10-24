@@ -14,6 +14,11 @@ import { openPackRequests } from "../../../lib/packAdmin.js";
 import { paywallOn } from "../../../lib/packPricing.js";
 import PackRequests from "./PackRequests.jsx";
 import { monitoringBilled, FREE_SYSTEMS, EUR_PER_SYSTEM } from "../../../lib/monitoringPricing.js";
+import FeeAdmin from "./FeeAdmin.jsx";
+import { loadFeeAdmin } from "../../../lib/feeAdmin.js";
+import { feeRevenue } from "../../../lib/feeRevenue.js";
+import { jobAccess, feePaywallOn } from "../../../lib/jobFees.js";
+import { feeRef } from "../../../lib/jobFeePay.js";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Traction | VoltMira", robots: { index: false } };
@@ -82,6 +87,22 @@ export default async function TractionPage() {
   const user = await currentUser();
   if (!isPlatformAdmin(user?.email)) notFound();
   const [r, packs] = await Promise.all([loadTraction({ weeks: 12 }), openPackRequests().catch(() => [])]);
+  // the fee per won project (lib/jobFees.js), for the real workspaces only
+  const fa = await loadFeeAdmin(r.workspaces.map((w) => w.id));
+  const rev = feeRevenue({ fees: fa.fees, months: 6 });
+  const LEI = (minor) => `${Math.round((Number(minor) || 0) / 100).toLocaleString("en-GB")} lei`;
+  const owed = fa.fees.filter((f) => f.status === "due" || f.status === "void").map((f) => ({
+    id: f.id, workspace: fa.companies.get(f.company_id) || "", job: fa.projects.get(f.project_id) || "", amount_minor: f.amount_minor,
+    status: f.status, locked: jobAccess({ fee: f, on: true }).locked, ref: feeRef(f.id),
+    payBy: f.grace_ends_at ? fmtDate(f.grace_ends_at, "en-GB", { day: "numeric", month: "short" }) : "",
+  }));
+  const feesBy = new Map();
+  for (const f of fa.fees) {
+    const x = feesBy.get(f.company_id) || { paid: 0, due: 0 };
+    if (f.status === "paid" && f.payment_method !== "credit") x.paid += Number(f.amount_minor) || 0;
+    if (f.status === "due") x.due += Number(f.amount_minor) || 0;
+    feesBy.set(f.company_id, x);
+  }
   const T = r.totals;
   const thisWeek = r.series.at(-1), lastWeek = r.series.at(-2);
   // monitoring, invoiced by hand each month (lib/monitoringPricing.js)
@@ -93,7 +114,7 @@ export default async function TractionPage() {
         <div className="dx-hello">
           <h1>Traction</h1>
           <p className="dx-summary">
-            {INT(T.workspaces)} real workspaces, {INT(T.paying)} with a billing subscription.
+            {INT(T.workspaces)} real workspaces; {LEI(rev.totals.paidMinor)} paid in fees for won projects, {LEI(rev.totals.dueMinor)} still due.
             {" "}{INT(T.excluded)} left out: demo, empty, and your team&rsquo;s own workspaces. Sample pipelines don&rsquo;t count either.
           </p>
         </div>
@@ -130,6 +151,33 @@ export default async function TractionPage() {
           <dd className="tr-sub">{INT(T.won)} won of {INT(T.won + T.lost)} decided</dd>
         </div>
       </dl>
+
+      <section className="dx-card" aria-labelledby="tr-fees-h">
+        <header className="dx-card-head">
+          <div>
+            <h2 id="tr-fees-h">Fees per won project<span className="dx-count">{fa.fees.length}</span></h2>
+            <p className="dx-muted-note">
+              {fa.needsDb ? "add-job-fees.sql has not run yet: no fee is recorded." : feePaywallOn() ? "JOB_FEES is on: a due fee locks the job's paperwork after its 14 days." : "JOB_FEES is off: fees are recorded, nothing is locked and no reminder goes out."}
+              {" "}Income per paid job: {rev.perJobMinor == null ? "none yet" : LEI(rev.perJobMinor)}; per kW won and paid: {rev.perKwMinor == null ? "none yet" : LEI(rev.perKwMinor)}.
+              {" "}{INT(rev.totals.freeN)} free, {INT(rev.totals.lockedN)} locked, {INT(rev.totals.waivedN)} waived, {INT(rev.totals.creditN)} paid from credit.
+            </p>
+          </div>
+          <a className="dx-btn" href="/api/admin/job-fees?format=csv">Download fees CSV</a>
+        </header>
+        <div className="tr-tbl-wrap">
+          <table className="tr-tbl">
+            <thead><tr><th>Month</th><th className="n">Paid</th><th className="n">Lei paid</th><th className="n">Due</th><th className="n">Lei due</th><th className="n">Free</th><th className="n">Lost</th><th className="n">Waived</th></tr></thead>
+            <tbody>
+              {rev.months.map((m) => (
+                <tr key={m.month}><td>{m.month}</td><td className="n">{INT(m.paid.n)}</td><td className="n">{LEI(m.paid.minor)}</td><td className="n">{INT(m.due.n)}</td><td className="n">{LEI(m.due.minor)}</td><td className="n">{INT(m.free)}</td><td className="n">{INT(m.void)}</td><td className="n">{INT(m.waived)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <h3 className="tr-h3">Owed: mark a transfer paid, or waive</h3>
+        <FeeAdmin rows={owed} />
+        <p className="dx-muted-note">To compare against the fee once measurable: what AI and monitoring cost per won job.</p>
+      </section>
 
       <section className="dx-card" aria-labelledby="tr-packs-h">
         <header className="dx-card-head">
@@ -190,7 +238,7 @@ export default async function TractionPage() {
             <table className="tr-tbl">
               <thead>
                 <tr>
-                  <th>Workspace</th><th>Plan</th><th>Joined</th><th>Last active</th>
+                  <th>Workspace</th><th>Fees paid, due</th><th>Joined</th><th>Last active</th>
                   <th className="n">People</th><th className="n">Quotes</th><th className="n">Sent</th><th className="n">Won</th>
                   <th className="n">kWp quoted</th><th className="n">€ quoted</th><th className="n">Leads</th>
                   <th className="n" title="Systems whose portal delivered one of the last two finished months">Monitored</th><th className="n">Monitoring €/mo</th>
@@ -200,7 +248,7 @@ export default async function TractionPage() {
                 {r.workspaces.slice(0, 200).map((w) => (
                   <tr key={w.id}>
                     <td className="tr-name" title={`Workspace id: ${w.id}`}>{w.name || "Unnamed"}</td>
-                    <td><span className={"tr-plan " + (w.subscribed ? "paid" : "")} title={w.subscribed ? "Billing subscription" : "No billing subscription"}>{w.plan}{w.subscribed ? ", billed" : ""}</span></td>
+                    <td><span className={"tr-plan " + (feesBy.get(w.id)?.paid ? "paid" : "")}>{LEI(feesBy.get(w.id)?.paid || 0)}{feesBy.get(w.id)?.due ? `, ${LEI(feesBy.get(w.id).due)} due` : ""}</span></td>
                     <td>{fmtDate(w.createdAt, "en-GB", { day: "numeric", month: "short", year: "numeric" })}</td>
                     <td>{w.lastActive ? relTime(w.lastActive, "en-GB") : "—"}</td>
                     <td className="n">{w.members}</td><td className="n">{w.quotes}</td><td className="n">{w.sent}</td><td className="n">{w.won}</td>
