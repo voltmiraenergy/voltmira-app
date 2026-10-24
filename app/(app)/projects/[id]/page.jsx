@@ -4,7 +4,12 @@ import { supabaseServer, supabaseAdmin } from "../../../../lib/supabase.js";
 import { companyEngine } from "../../../../lib/engineSettings.js";
 import { t, normLang } from "../../../../lib/i18n.js";
 import { currentUser } from "../../../../lib/session.js";
-import { canViewAllProjects, canEditTechnical } from "../../../../lib/rbac.js";
+import { canViewAllProjects, canEditTechnical, canOverrideGrid } from "../../../../lib/rbac.js";
+import { allGridRules } from "../../../../lib/gridRulesStore.js";
+import { mdDayKey } from "../../../../lib/tz.js";
+
+// today on the Chișinău clock, read once per request (the grid card counts days in a step from it)
+const todayKey = () => mdDayKey(Date.now());
 import Editor from "./editor.jsx";
 import { cnedEnabled } from "../../../../lib/cnedData.js";
 import { appTitle } from "../../../../lib/pageTitle.js";
@@ -127,9 +132,16 @@ export default async function ProjectPage(props) {
   // the grid file sent to the operator (docs/INTEGRATIONS.md): the latest
   // submission with its history, and where each operator's package goes
   // (an address set in the environment, else the test mode that only records)
-  let gridSub = { latest: null, events: [], needsDb: false, installedKw: productionPower(p).kw, ceilingKw: Number(co?.prosumer_limit_kw) > 0 ? Number(co.prosumer_limit_kw) : null, channels: { premier: process.env.GRID_EMAIL_PREMIER || "", rednord: process.env.GRID_EMAIL_REDNORD || "" } };
+  // with what each operator asks for (lib/gridRules.js), who may send past the checklist with a reason, and the
+  // language the client's messages go out in
+  let gridSub = { latest: null, events: [], needsDb: false, installedKw: productionPower(p).kw, ceilingKw: Number(co?.prosumer_limit_kw) > 0 ? Number(co.prosumer_limit_kw) : null, channels: { premier: process.env.GRID_EMAIL_PREMIER || "", rednord: process.env.GRID_EMAIL_REDNORD || "" },
+    rules: null, canOverride: canOverrideGrid(me), clientLang: p.client_lang ?? undefined, companyName: co?.short_name || co?.name || "", today: todayKey() };
   if (p.market === "MD" || !p.market) {
-    const { data: gs, error: gsErr } = await sb.from("grid_submissions").select("id, operator, channel, reference, status, checklist, note, created_at, updated_at").eq("project_id", params.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    gridSub.rules = await allGridRules();
+    const cols = "id, operator, channel, reference, status, checklist, note, created_at, updated_at";
+    let { data: gs, error: gsErr } = await sb.from("grid_submissions").select(cols + ", overrides, doc_dates").eq("project_id", params.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    // before add-grid-connection.sql: the same row without the newer columns
+    if (gsErr && /overrides|doc_dates|column/i.test(gsErr.message || "")) ({ data: gs, error: gsErr } = await sb.from("grid_submissions").select(cols).eq("project_id", params.id).order("created_at", { ascending: false }).limit(1).maybeSingle());
     if (gsErr && /grid_submissions|does not exist|schema cache/i.test(gsErr.message || "")) gridSub.needsDb = true;
     if (gs) {
       const { data: ev } = await sb.from("grid_submission_events").select("id, from_status, to_status, source, note, created_at").eq("submission_id", gs.id).order("created_at", { ascending: true }).limit(50);

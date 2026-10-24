@@ -114,3 +114,18 @@
 .app .gs-send:disabled, .app .gs-acts button:disabled { opacity: .55; cursor: not-allowed; }
 .app .gs-hist summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--muted); }
 .app .gs-hist ol { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; font-size: 12.5px; color: var(--ink); }
+
+/* Phase 2: a document's issue date, the exception, the client's language and text message */
+.app .gs-st.s-meter_installed { background: var(--green-tint); border-color: transparent; color: var(--green); }
+.app .gs-doc-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+.app .gs-doc-row .gs-doc { flex: 1 1 220px; }
+.app .gs-date { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--muted); margin-left: 24px; }
+.app .gs-date .input { min-height: 34px; padding: 4px 8px; width: auto; }
+.app .gs-ov, .app .gs-sms { border-top: 1px solid var(--line); padding-top: 8px; }
+.app .gs-ov summary, .app .gs-sms summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.app .gs-ov[open], .app .gs-sms[open] { display: grid; gap: 8px; }
+.app .gs-ov textarea { resize: vertical; min-height: 56px; font: inherit; font-weight: 500; color: var(--ink); }
+.app .gs-lang { border-top: 1px solid var(--line); padding-top: 10px; }
+.app .gs-lang select { min-height: 36px; }
+.app .gs-sms-box { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: var(--paper-2); border: 1px solid var(--line); }
+.app .gs-sms-box p { margin: 0; flex: 1; font-size: 13px; line-height: 1.5; color: var(--ink); }

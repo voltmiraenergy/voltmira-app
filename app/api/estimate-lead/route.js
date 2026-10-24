@@ -65,7 +65,8 @@ export async function POST(req) {
     bill: monthlyBill ?? "", message: lead.message || (lead.kwh ? `~${lead.kwh} kWh/mo` : ""),
     estimate: { kw: estimate?.kw, costLocal: estimate?.costLocal, paybackYears: estimate?.paybackYears },
     via: "estimate", channel: "estimate",
-    extra: { timeline: lead.timeline, wantsFinancing: lead.wantsFinancing, district, estimate, lat: est?.lat, lon: est?.lon },
+    // the page's language: the client's messages later go out in it
+    extra: { timeline: lead.timeline, wantsFinancing: lead.wantsFinancing, district, estimate, lat: est?.lat, lon: est?.lon, lang: ["en", "ro", "ru", "uk"].includes(b?.lang) ? b.lang : null },
   });
   if (!saved.ok) return J({ error: "save_failed" }, 500);
 

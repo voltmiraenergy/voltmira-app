@@ -89,7 +89,7 @@ export default function EstimateForm({ slug, lang, langs = [], market = "MD", co
       const r = await fetch("/api/estimate-lead", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          slug, ...f, timeline: f.timeline || null, address,
+          slug, ...f, timeline: f.timeline || null, address, lang,
           ...(by === "kwh" ? { kwh: amount } : { bill: amount }), token: tsToken.current,
         }),
       });
