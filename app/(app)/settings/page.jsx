@@ -23,6 +23,8 @@ import { dlt } from "../../../lib/deadlineText.js";
 import { CONTRACT_TOKENS, COMMISSIONING_TOKENS } from "../../../lib/legalDocs.js";
 import LeadAssistant from "./LeadAssistant.jsx";
 import FeesPanel from "./FeesPanel.jsx";
+import { DefaultPayPlan } from "../../../components/PayPlan.jsx";
+import { pt } from "../../../lib/payText.js";
 import { clearOfflineData } from "../../../lib/offline.js";
 import { aiOn } from "../../../lib/featureFlags.js";
 import EstimateSettings from "./EstimateSettings.jsx";
@@ -454,6 +456,10 @@ export default function Settings() {
 
     documents: (
       <>
+        {/* the client's payments in stages: the default plan for every job signed (lib/milestones.js) */}
+        <Card title={pt("sch_def_h", lang)} desc={pt("sch_def_p", lang)}>
+          <DefaultPayPlan lang={lang} />
+        </Card>
         <Card title={t("s_invoicing", lang)} desc={t("s_invoicing_sub", lang)}
           extra={<><a className="dx-btn" href="/api/export-invoices"><Download size={14} aria-hidden="true" />CSV</a> <a className="dx-btn" href="/documents/export"><Download size={14} aria-hidden="true" />{xt("ex_link", lang)}</a></>}>
           <div className="set-grid">

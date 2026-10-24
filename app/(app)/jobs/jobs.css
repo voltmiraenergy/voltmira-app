@@ -56,3 +56,45 @@
 .app .jb-acts{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
 .app .jb-sp{flex:1}
 @media (max-width:560px){.app .jb-when{grid-template-columns:1fr 1fr}.app .jb-when .field:first-child{grid-column:1 / -1}}
+
+/* "Încasări": the four tiles (received this month in green), the invoices, the months */
+.app .cs{display:grid;gap:12px}
+.app .cs-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0}
+.app .cs-tiles>div{padding:14px 15px;border-radius:14px;background:var(--app-surface);border:1px solid var(--app-line);min-width:0}
+.app .cs-tiles dt{font-size:12.5px;font-weight:650;color:var(--app-muted)}
+.app .cs-tiles dd{margin:2px 0 0;font-size:12.5px;color:var(--app-muted)}
+.app .cs-tiles dd.cs-big{margin:4px 0 2px;font-family:"Inter Tight",Inter,system-ui,sans-serif;font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--app-text);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.app .cs-tiles .is-late dd.cs-big{color:var(--app-bad)}
+.app .cs-tiles .cs-in{background:var(--app-ok);border-color:transparent}
+.app .cs-tiles .cs-in dt,.app .cs-tiles .cs-in dd{color:color-mix(in srgb,#fff 82%,var(--app-ok))}
+.app .cs-tiles .cs-in dd.cs-big{color:#fff}
+.app .cs-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.app .cs-pills{display:flex;gap:6px}
+.app .cs-pills button{padding:5px 13px;border-radius:99px;font:inherit;font-size:12.5px;font-weight:650;background:var(--app-surface);border:1px solid var(--app-line);color:var(--app-text);cursor:pointer}
+.app .cs-pills button.on{background:var(--app-ok);border-color:var(--app-ok);color:#fff}
+.app .cs-note{font-size:12.5px;font-weight:650;color:var(--app-ok)}
+.app .cs-card{padding:6px 10px}
+.app .cs-h{margin:10px 6px 4px;font-size:15px}
+.app .cs-scroll{overflow-x:auto}
+.app .cs-table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+.app .cs-table th{text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--app-muted);padding:9px 10px;border-bottom:1.5px solid var(--app-line);white-space:nowrap}
+.app .cs-table td{padding:11px 10px;border-bottom:1px solid var(--app-line);vertical-align:top;color:var(--app-text)}
+.app .cs-table tr:last-child td{border-bottom:0}
+.app .cs-table td small{display:block;font-size:11.5px;color:var(--app-muted);margin-top:2px}
+.app .cs-table .r{text-align:right}
+.app .cs-nowrap{white-space:nowrap}
+.app .cs-cap::first-letter{text-transform:uppercase}
+.app .cs-muted{color:var(--app-muted)}
+.app .cs-no,.app .cs-job{font-weight:650;color:var(--app-text);text-decoration:none}
+.app .cs-no:hover,.app .cs-job:hover{text-decoration:underline}
+.app .cs-chip{display:inline-flex;margin:0 4px 2px 0;padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:700;white-space:nowrap;background:var(--app-surface);border:1px solid var(--app-line);color:var(--app-muted)}
+.app .cs-chip.s-paid,.app .cs-chip.s-proof{background:color-mix(in srgb,var(--app-ok) 14%,transparent);border-color:transparent;color:var(--app-ok)}
+.app .cs-chip.s-soon,.app .cs-chip.s-open{background:var(--app-warn-tint);border-color:transparent;color:var(--app-warn-ink)}
+.app .cs-chip.s-late{background:color-mix(in srgb,var(--app-bad) 14%,transparent);border-color:transparent;color:var(--app-bad)}
+.app .cs-acts{white-space:nowrap;text-align:right}
+.app .cs-acts .btn{display:inline-flex;align-items:center;gap:5px;vertical-align:middle}
+.app .cs-icon{display:inline-grid;place-items:center;width:30px;height:30px;margin-left:4px;border-radius:8px;border:1px solid var(--app-line);background:var(--app-bg);color:var(--app-text);cursor:pointer;vertical-align:middle}
+.app .cs-icon:hover{border-color:var(--app-ok)}
+.app .cs-modal{max-width:420px;display:grid;gap:12px}
+.app .cs-modal h3{margin:0;font-size:18px}
+@media (max-width:900px){.app .cs-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}

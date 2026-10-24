@@ -6,19 +6,21 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, KanbanSquare, Plus, ChevronLeft, ChevronRight, Users, Mail, PenLine } from "lucide-react";
+import { CalendarDays, KanbanSquare, Wallet, Plus, ChevronLeft, ChevronRight, Users, Mail, PenLine } from "lucide-react";
 import { BOARD_COLUMNS, boardOf } from "../../../lib/jobBoard.js";
 import { VISIT_KINDS, visitsByDay, mondayOf } from "../../../lib/crewVisits.js";
 import { jt } from "../../../lib/jobText.js";
 import { dayKeyOf, fmtDate, fmtTime } from "../../../lib/tz.js";
 import { moveJob, saveVisit, deleteVisit, saveCrew } from "../../../lib/jobActions.js";
+import { pt } from "../../../lib/payText.js";
+import CashView from "./CashView.jsx";
 
 const LOCS = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
 const DAY = 864e5;
 const shift = (key, days) => new Date(Date.parse(key + "T00:00:00Z") + days * DAY).toISOString().slice(0, 10);
 const daysBetween = (a, b) => (a && b ? Math.max(0, Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(String(a).slice(0, 10) + "T00:00:00Z")) / DAY)) : null);
 
-export default function JobsView({ data, tab: tab0 }) {
+export default function JobsView({ data, cash = null, tab: tab0 }) {
   const router = useRouter();
   const lang = data?.lang || "ro";
   const J = (k, v) => jt(k, lang, v);
@@ -44,7 +46,7 @@ export default function JobsView({ data, tab: tab0 }) {
     else setProjects((ps) => ps.map((p) => (p.id === id ? { ...p, install_progress: r.install_progress } : p)));
   }
   const goWeek = (monday) => { router.push(`/jobs?view=week&week=${monday}`); };
-  const pick = (t) => { setTab(t); window.history.replaceState(null, "", t === "week" ? `/jobs?view=week&week=${data.monday}` : "/jobs"); };
+  const pick = (t) => { setTab(t); window.history.replaceState(null, "", t === "week" ? `/jobs?view=week&week=${data.monday}` : t === "cash" ? "/jobs?view=cash" : "/jobs"); };
 
   const byDay = visitsByDay(data?.weekVisits || [], data?.monday);
   const crewRows = [...(data?.crews || []).filter((c) => c.active), ...((data?.weekVisits || []).some((v) => !v.crew_id) ? [{ id: null, name: J("no_crew"), color: "#8E998F" }] : [])];
@@ -61,15 +63,16 @@ export default function JobsView({ data, tab: tab0 }) {
           <nav className="dx-tabs" aria-label={J("title")}>
             <button type="button" className={tab === "board" ? "on" : ""} aria-pressed={tab === "board"} onClick={() => pick("board")}><KanbanSquare size={14} aria-hidden="true" />{J("tab_board")}</button>
             <button type="button" className={tab === "week" ? "on" : ""} aria-pressed={tab === "week"} onClick={() => pick("week")}><CalendarDays size={14} aria-hidden="true" />{J("tab_week")}</button>
+            <button type="button" className={tab === "cash" ? "on" : ""} aria-pressed={tab === "cash"} onClick={() => pick("cash")}><Wallet size={14} aria-hidden="true" />{pt("tab_cash", lang)}</button>
           </nav>
-          {!data?.needsDb && <button type="button" className="btn amber" onClick={() => setVisit(blankVisit(data))}><Plus size={15} aria-hidden="true" />{J("add_visit")}</button>}
+          {!data?.needsDb && tab !== "cash" && <button type="button" className="btn amber" onClick={() => setVisit(blankVisit(data))}><Plus size={15} aria-hidden="true" />{J("add_visit")}</button>}
         </div>
       </header>
 
       {data?.needsDb && <p className="jb-warn" role="status">{J("needs_db")}</p>}
       {msg && <p className="jb-warn" role="alert">{msg}</p>}
 
-      {tab === "board" ? (
+      {tab === "cash" ? <CashView cash={cash} lang={lang} /> : tab === "board" ? (
         projects.length === 0 ? <p className="dx-muted-note">{J("board_empty")}</p> : (
           <>
             <p className="jb-hint">{J("move_hint")}</p>

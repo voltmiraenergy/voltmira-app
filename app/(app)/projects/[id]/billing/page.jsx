@@ -15,6 +15,9 @@ import { paymentSummary } from "../../../../../lib/billing.js";
 import { dayKeyOf, mdDayKey } from "../../../../../lib/tz.js";
 import BackLink from "../../../../../components/BackLink.jsx";
 import BillingPanel from "./BillingPanel.jsx";
+import PayPlan from "../../../../../components/PayPlan.jsx";
+import { loadJobPlan } from "../../../../../lib/cashActions.js";
+import { pt } from "../../../../../lib/payText.js";
 import "../../../dx.css";
 import "./billing.css";
 
@@ -48,6 +51,8 @@ export default async function BillingPage(props) {
     amounts: inv.amounts, currency: inv.cur, invoiceNo: p.invoice_no || "", date: dayKeyOf(p.invoiced_at) || mdDayKey(new Date()), description: inv.description,
   });
   const problems = validateEfactura(draft);
+  // the client's payments in stages: this job's plan and the stages already invoiced (lib/milestones.js)
+  const plan = await loadJobPlan(id);
 
   return (
     <div className="dx bl">
@@ -63,6 +68,12 @@ export default async function BillingPage(props) {
         summary={paymentSummary(payments, inv.grossMinor, inv.cur)}
         mock={efacturaAdapterFor().id === "sfs_mock"} needsDb={needsDb}
       />
+      {plan?.plan && (
+        <section className="dx-card bl-plan" aria-labelledby="bl-plan-h">
+          <h2 id="bl-plan-h">{pt("sch_h", lang)}</h2>
+          <PayPlan lang={lang} mode="job" plan={plan.plan} rows={plan.rows} projectId={id} needsDb={plan.needsDb} />
+        </section>
+      )}
     </div>
   );
 }
