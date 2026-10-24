@@ -28,6 +28,8 @@ import { activityHtml } from "../../../lib/activity.js";
 import { mdDayKey, fmtDate, fmtTime, APP_TZ } from "../../../lib/tz.js";
 import { dec } from "../../../lib/decimals.js";
 import { kwUnit } from "../../p/[code]/text.js";
+import { leadToQuote } from "../../../lib/leadToQuote.js";
+import { qft } from "../../../lib/quoteFastText.js";
 import { leadChannel, CHANNEL_DOT } from "../../../lib/leadChannels.js";
 import { systemRatio } from "../../../lib/yieldCalibration.js";
 import { relTime } from "../../../lib/relTime.js";
@@ -307,6 +309,16 @@ export default async function Dashboard() {
   // ---------- open rate (the stage counts now come from the planned line) ----------
   const { openRate } = flowStages({ projects: list, stats, leads: leadList, gross });
 
+  // ---------- lead to quote: the median wait from a lead arriving to its offer link, last 90 days ----------
+  const l2q = leadToQuote(linkedLeads, [...stats].map(([project_id, s]) => ({ project_id, created_at: s.sentAt })));
+  const l2qVital = {
+    label: qft("l2q_h", lang),
+    sub: l2q.count ? qft("l2q_sub", lang, { n: l2q.count }) : qft("l2q_none", lang),
+    value: l2q.medianHours == null ? NONE
+      : l2q.medianHours < 48 ? qft("hours", lang, { n: dec(l2q.medianHours, l2q.medianHours < 10 ? 1 : 0, lang) })
+      : qft("days", lang, { n: dec(l2q.medianHours / 24, 1, lang) }),
+  };
+
   // ---------- the four numbers on top ----------
   const activeJobs = list.filter((r) => r.status === "won" && !isLive(r));
   const activeValue = activeJobs.reduce((sum, r) => sum + (gross.get(r.id) || 0), 0);
@@ -324,6 +336,8 @@ export default async function Dashboard() {
     { label: t("kpi_avgclose", lang), sub: t("dx_v_close", lang), value: avgClose === null ? NONE : avgClose + " " + t("days", lang) },
     { label: t("kpi_payback", lang), sub: t("dx_v_pb", lang), value: avgPb },
     { label: t("kpi_avgdeal", lang), sub: t("dx_v_deals", lang), value: avgDeal === null ? NONE : fmt(avgDeal) },
+    // how long a lead waits for its offer: what "quote in 10 minutes" is measured by (lib/leadToQuote.js)
+    l2qVital,
   ];
 
   // ---------- header ----------
