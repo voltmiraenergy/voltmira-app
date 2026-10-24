@@ -14,8 +14,11 @@ import { renderHtmlPdf } from "../../../../lib/renderProposalPdf.js";
 import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
 import { supabaseServer } from "../../../../lib/supabase.js";
 import { JOBS_KEY } from "../../../../lib/studioKeys.js";
-import { docDecision, creditsPaywallOn, DOC_KINDS } from "../../../../lib/credits.js";
-import { creditBalance, paidBefore, spendCredits } from "../../../../lib/creditAccess.js";
+import { jobGate } from "../../../../lib/jobFeeServer.js";
+import { supabaseAdmin } from "../../../../lib/supabase.js";
+
+// the documents of a won job (lib/jobFees.js LOCKED_DOCS) that this route renders
+const PAPERWORK = ["annex", "protocol", "handover", "performance", "contract", "commissioning", "diagram"];
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,29 +41,26 @@ export async function POST(req) {
   }
 
   let b; try { b = await req.json(); } catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }
-  // The free plan pays one credit per job for the technical annex, the handover
-  // certificate and the performance report (lib/credits.js); a paid plan has
-  // them, and nothing is charged until CREDITS_PAYWALL is on. The browser names
-  // the document (kind) and the job (ref); the credit is taken only once the
-  // PDF has rendered. Out of credits answers 402 and the page goes to Settings, Plan.
-  const kind = DOC_KINDS.includes(b.kind) ? b.kind : null;
+  // A won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js). The browser names the
+  // document (kind) and either the quote (project, from the quote's documents) or the Studio job (ref), which
+  // knows its quote (job.projectId). A Studio job with no quote is not a won job: nothing to wait on.
+  const kind = PAPERWORK.includes(b.kind) ? b.kind : null;
   const ref = String(b.ref || "").slice(0, 80) || null;
-  let spend = 0, companyId = null;
-  if (kind && creditsPaywallOn()) {
+  if (kind) {
     const sb = await supabaseServer();
-    const { data: co } = await sb.from("companies").select("id, plan").maybeSingle();
-    companyId = co?.id || null;
-    if (companyId) {
-      // The job named is one of this workspace's own (the Studio jobs, row security scoped to it): one credit
-      // pays for one job's document, and a reference borrowed from another job, or made up, would make every
-      // later document free. Where the jobs are not kept on the server (Studio cloud not set up), the name stands.
-      const { data: js, error: jErr } = await sb.from("studio_state").select("value").eq("key", JOBS_KEY).maybeSingle();
-      if (!jErr && Array.isArray(js?.value) && !(ref && js.value.some((j) => j && String(j.id) === ref))) {
-        return NextResponse.json({ error: "bad_ref", kind }, { status: 400 });
+    let projectId = /^[0-9a-f-]{36}$/i.test(String(b.project || "")) ? String(b.project) : null;
+    if (!projectId && ref) {
+      const { data: js } = await sb.from("studio_state").select("value").eq("key", JOBS_KEY).maybeSingle();
+      const job = Array.isArray(js?.value) ? js.value.find((j) => j && String(j.id) === ref) : null;
+      if (job?.projectId) projectId = String(job.projectId);
+    }
+    if (projectId) {
+      const { data: project } = await sb.from("projects").select("*").eq("id", projectId).maybeSingle();
+      const { data: co } = project ? await sb.from("companies").select("id, idno").eq("id", project.company_id).maybeSingle() : { data: null };
+      if (project) {
+        const gate = await jobGate(supabaseAdmin(), { project, co, user });
+        if (gate.locked) return NextResponse.json({ error: gate.error, project: project.id }, { status: 402 });
       }
-      const d = docDecision({ plan: co.plan || "free", kind, balance: await creditBalance(companyId), paidBefore: ref ? await paidBefore(companyId, kind, ref) : false });
-      if (!d.allowed) return NextResponse.json({ error: "credits", kind }, { status: 402 });
-      spend = d.spend;
     }
   }
 
@@ -116,7 +116,6 @@ export async function POST(req) {
 
   try {
     const pdf = await renderHtmlPdf(full);
-    if (spend && !(await spendCredits(companyId, spend, kind, ref))) return NextResponse.json({ error: "credits", kind }, { status: 402 });
     return new NextResponse(pdf, {
       headers: {
         "content-type": "application/pdf",

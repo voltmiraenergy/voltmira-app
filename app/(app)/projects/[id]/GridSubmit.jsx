@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { Send } from "lucide-react";
 import { xt } from "../../../../lib/integrationText.js";
 import { gt, gridSmsText } from "../../../../lib/gridText.js";
+import { ft } from "../../../../lib/feeText.js";
 import { checklistFor, docName as nameOf, checkPackage, gridNext } from "../../../../lib/gridSubmission.js";
 import { overdueOf } from "../../../../lib/gridRules.js";
 import { PROSUMER_FORM_MAX_KW } from "../../../../lib/gridPower.js";
@@ -79,6 +80,8 @@ export default function GridSubmit({ projectId, operator, details, client, lang,
     try {
       const res = await fetch(`/api/projects/${projectId}/grid-submission`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const j = await res.json().catch(() => ({}));
+      // a won job whose fee is overdue (lib/jobFees.js): the fee card's payment opens
+      if (j.error === "job_fee_due" || j.error === "needs_idno") { window.dispatchEvent(new Event("vm-fee-locked")); setMsg(ft(j.error === "needs_idno" ? "needs_idno" : "locked_p", lang)); return j; }
       if (!j.ok) {
         const k = "gs_e_" + j.error;
         setMsg(G(k) !== k ? G(k) : T(k) !== k ? T(k) : j.error === "needs_db" ? T("bl_needs_db") : T("gs_e_other"));

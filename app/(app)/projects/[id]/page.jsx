@@ -6,6 +6,10 @@ import { t, normLang } from "../../../../lib/i18n.js";
 import { currentUser } from "../../../../lib/session.js";
 import { canViewAllProjects, canEditTechnical, canOverrideGrid } from "../../../../lib/rbac.js";
 import { allGridRules } from "../../../../lib/gridRulesStore.js";
+import { jobGate, loadJobFee } from "../../../../lib/jobFeeServer.js";
+import { feePaywallOn } from "../../../../lib/jobFees.js";
+import { gatewayFor } from "../../../../lib/paymentGateway.js";
+import { isDemoEmail } from "../../../../lib/demo.js";
 import { mdDayKey } from "../../../../lib/tz.js";
 
 // today on the Chișinău clock, read once per request (the grid card counts days in a step from it)
@@ -149,7 +153,26 @@ export default async function ProjectPage(props) {
     }
   }
 
-  return <Editor initial={p} engineSettings={E} team={team || []} catalog={catalog || []}
+  // the fee per won project (lib/jobFees.js): shown on a won job, and whether its paperwork is locked. The tax id
+  // is read on its own, so a database without add-job-fees.sql still opens the quote.
+  let jobFee = null;
+  if (p.status === "won") {
+    const { data: idRow } = await sb.from("companies").select("idno").single();
+    const admin = supabaseAdmin();
+    const gate = await jobGate(admin, { project: p, co: { ...co, idno: idRow?.idno || null }, user });
+    const fee = gate.fee || (await loadJobFee(admin, p.id)).fee;
+    if (fee || gate.error) {
+      jobFee = {
+        fee: fee ? { id: fee.id, status: fee.status, tier: fee.tier, amount_minor: fee.amount_minor, grace_ends_at: fee.grace_ends_at, paid_at: fee.paid_at, payment_method: fee.payment_method } : null,
+        locked: gate.locked, error: gate.error || null, access: gate.access, on: feePaywallOn(),
+        sample: p.is_sample === true || isDemoEmail(user?.email), test: gatewayFor().test === true,
+      };
+    }
+  }
+  const sp = await props.searchParams;
+  const feeOpen = ["locked", "idno", "paid"].includes(sp?.fee) ? sp.fee : null;
+
+  return <Editor initial={p} engineSettings={E} jobFee={jobFee} feeOpen={feeOpen} team={team || []} catalog={catalog || []}
     canEditTechnical={canEditTech}
     prosumerLimitKw={Number(co?.prosumer_limit_kw ?? 10.8)} lang={normLang(co?.lang)} currency={co?.currency || "EUR"}
     proposalSentAt={prop?.created_at || null} companyName={co?.name || "VoltMira"} companyLogo={co?.logo_url || ""}

@@ -8,8 +8,9 @@
 // Honesty note printed on it: this is a PROFORMA, not a fiscal invoice — in
 // Romania a fiscal invoice must be issued through ANAF e-Factura. It's the right
 // document to request a deposit / bank transfer against.
-import { notFound } from "next/navigation";
-import { supabaseServer } from "../../../../../lib/supabase.js";
+import { notFound, redirect } from "next/navigation";
+import { supabaseServer, supabaseAdmin } from "../../../../../lib/supabase.js";
+import { jobGate } from "../../../../../lib/jobFeeServer.js";
 import { currentCompany, currentUser } from "../../../../../lib/session.js";
 import { projectVisibility } from "../../../../../lib/projectAccess.js";
 import { projectInvoice } from "../../../../../lib/invoiceServer.js";
@@ -33,7 +34,11 @@ export default async function InvoicePage(props) {
   const { data: p } = await sb.from("projects").select("*").eq("id", params.id).maybeSingle();
   if (!p || !co) notFound();
   // access control: a Sales member does not open a colleague's proforma by its address
-  { const u = await currentUser(); if (!u || !(await projectVisibility(u, co))(p)) notFound(); }
+  const u = await currentUser();
+  if (!u || !(await projectVisibility(u, co))(p)) notFound();
+  // a won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js)
+  const gate = await jobGate(supabaseAdmin(), { project: p, co, user: u });
+  if (gate.locked) redirect(`/projects/${p.id}?fee=${gate.error === "needs_idno" ? "idno" : "locked"}`);
 
   const lang = normLang(co.lang);
   const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB";

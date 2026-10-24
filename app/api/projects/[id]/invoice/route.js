@@ -26,6 +26,7 @@ import { projectVisibility } from "../../../../../lib/projectAccess.js";
 import { projectInvoice } from "../../../../../lib/invoiceServer.js";
 import { issueInvoiceFor } from "../../../../../lib/invoiceIssue.js";
 import { sendCrmWebhook } from "../../../../../lib/crmWebhook.js";
+import { jobGate } from "../../../../../lib/jobFeeServer.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,7 +51,7 @@ async function authorize(req, id) {
   if (!co) return NextResponse.json({ error: "no_company" }, { status: 403 });
   // RLS-scoped read: a project outside the caller's company simply isn't there.
   const { data: project } = await (await supabaseServer())
-    .from("projects").select("id, title, client_name, company_id, owner_id, invoice_no").eq("id", id).maybeSingle();
+    .from("projects").select("id, title, client_name, company_id, owner_id, invoice_no, status, kw").eq("id", id).maybeSingle();
   if (!project) return NextResponse.json({ error: "not_found" }, { status: 404 });
   // a Sales member does not take a colleague's proforma by its address
   if (!(await projectVisibility(user, co))(project)) return NextResponse.json({ error: "not_found" }, { status: 404 });
@@ -78,6 +79,9 @@ export async function GET(req, props) {
   const auth = await authorize(req, params.id);
   if (auth instanceof NextResponse) return auth;
 
+  // a won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js)
+  const gate = await jobGate(supabaseAdmin(), { project: auth.project, co: auth.co, user: auth.user });
+  if (gate.locked) return NextResponse.redirect(new URL(`/projects/${params.id}?fee=${gate.error === "needs_idno" ? "idno" : "locked"}`, req.url), 303);
   // Downloading never draws a number: the invoice is issued first (the invoice page, or the editor's Download).
   if (!auth.project.invoice_no) return NextResponse.json({ error: "not_issued" }, { status: 409 });
   const dep = depositOf(new URL(req.url).searchParams.get("deposit"));
@@ -107,6 +111,9 @@ export async function POST(req, props) {
   }
   const auth = await authorize(req, params.id);
   if (auth instanceof NextResponse) return auth;
+  // a won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js)
+  const gate = await jobGate(supabaseAdmin(), { project: auth.project, co: auth.co, user: auth.user });
+  if (gate.locked) return NextResponse.json({ error: gate.error }, { status: 402 });
 
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }

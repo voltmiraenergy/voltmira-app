@@ -41,6 +41,7 @@ import { batteryEur } from "../../../../lib/greenSupport.js";
 import SignedContract from "./SignedContract.jsx";
 import ShareCard from "./ShareCard.jsx";
 import LegalDocsModal from "./LegalDocsModal.jsx";
+import FeeCard from "../../../../components/FeeCard.jsx";
 import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
 import { financials, bomTotal } from "../../../../lib/quoteAnalysis.js";
 import { startYearOf, mdFeedFor } from "../../../../lib/quoteInput.js";
@@ -200,7 +201,7 @@ function LocalMoneyInput({ eur, fmt, onEur, dec = 2, allowZero = false, classNam
 
 // `currency` is the WORKSPACE's (companies.currency); the offer may name its
 // own (p.offerCurrency, null = follow the workspace), see lib/offerCurrency.js.
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, signedOffer = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, signedOffer = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null, jobFee = null, feeOpen = null }) {
   const tr = (k, v) => t(k, lang, v);
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
@@ -1398,6 +1399,9 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
 
           {signed && <SignedContract signed={signed} lang={lang} />}
 
+          {/* the fee per won project: free, paid, or due with the days left to pay (lib/jobFees.js) */}
+          {p.status === "won" && jobFee && <FeeCard projectId={initial.id} lang={lang} state={jobFee} open={feeOpen} />}
+
           {p.status === "won" && (
             <InstallChecklist key={railProg ? JSON.stringify(railProg) : "init"} projectId={initial.id}
               initial={railProg || initial.install_progress} lang={lang} />
@@ -1485,6 +1489,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           amount the client read on the proposal (it used to say EUR always). */}
       {legalDocsOpen && (
         <LegalDocsModal lang={lang} onClose={() => setLegalDocsOpen(false)} initialTab={legalTab}
+          feeLocked={!!jobFee?.locked}
           company={{ name: companyName, ...companyLegal }}
           project={{ id: initial.id, clientName: signedOffer?.clientName ?? p.client, address: signedOffer?.address ?? p.address, kw: signedOffer?.kw ?? p.kw, price: signedOffer?.price ?? fmt.toLocal(q.e.cost), currency: signedOffer?.currency ?? fmt.currency, batt: signedOffer ? signedOffer.batt : p.batt, battKwh: signedOffer?.battKwh ?? p.battKwh, market: p.market, bom: signedOffer?.bom ?? p.bom, gridOperator: initial.install_progress?.gridFile?.operator, title: p.title }} />
       )}

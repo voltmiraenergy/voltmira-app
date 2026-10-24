@@ -7,13 +7,12 @@
 // Auth-scoped like the invoice route: RLS confines the read to the caller's
 // own company, so a project outside it simply isn't found.
 import { NextResponse } from "next/server";
-import { supabaseServer } from "../../../../../lib/supabase.js";
+import { supabaseServer, supabaseAdmin } from "../../../../../lib/supabase.js";
 import { currentUser, currentCompany } from "../../../../../lib/session.js";
 import { projectVisibility } from "../../../../../lib/projectAccess.js";
 import { fillApplication, applicationFileName } from "../../../../../lib/racordareFill.js";
 import { suggestOperator, OPERATORS } from "../../../../../lib/mdGrid.js";
-import { gridFileDecision, creditsPaywallOn } from "../../../../../lib/credits.js";
-import { creditBalance, paidBefore, spendCredits } from "../../../../../lib/creditAccess.js";
+import { jobGate } from "../../../../../lib/jobFeeServer.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,15 +35,10 @@ export async function GET(req, props) {
   if (project.market !== "MD")
     return NextResponse.json({ error: "md_only" }, { status: 400 });
 
-  // The free plan pays one credit per quote for the filled application (a paid
-  // plan includes it; nothing is charged until CREDITS_PAYWALL is on). Out of
-  // credits, the person is sent to the plan page, not shown a bare error.
-  let spend = 0;
-  if (creditsPaywallOn()) {
-    const d = gridFileDecision({ plan: co.plan || "free", balance: await creditBalance(project.company_id), paidBefore: await paidBefore(project.company_id, "grid_file", project.id) });
-    if (!d.allowed) return NextResponse.redirect(new URL("/settings?tab=plan&need=grid", req.url));
-    spend = d.spend;
-  }
+  // A won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js); the link opens in a
+  // new tab, so a locked one goes to the quote with the payment open rather than to a bare error.
+  const gate = await jobGate(supabaseAdmin(), { project, co, user });
+  if (gate.locked) return NextResponse.redirect(new URL(`/projects/${project.id}?fee=${gate.error === "needs_idno" ? "idno" : "locked"}`, req.url));
 
   const want = new URL(req.url).searchParams.get("op");
   const saved = project.install_progress?.gridFile?.operator;
@@ -53,9 +47,6 @@ export async function GET(req, props) {
 
   try {
     const bytes = await fillApplication(project, op);
-    // taken only once the file exists, so a failed fill costs nothing
-    if (spend && !(await spendCredits(project.company_id, spend, "grid_file", project.id)))
-      return NextResponse.redirect(new URL("/settings?tab=plan&need=grid", req.url));
     const file = applicationFileName(op);
     return new NextResponse(bytes, {
       headers: {

@@ -17,8 +17,7 @@ import { submitGrid, updateGridStatus, resendGrid } from "../../../../../lib/gri
 import { buildGridPackage, gridNotifier } from "../../../../../lib/gridServer.js";
 import { sendEmail, emailConfigured } from "../../../../../lib/email.js";
 import { mdDayKey } from "../../../../../lib/tz.js";
-import { gridFileDecision, creditsPaywallOn } from "../../../../../lib/credits.js";
-import { creditBalance, paidBefore, spendCredits } from "../../../../../lib/creditAccess.js";
+import { jobGate } from "../../../../../lib/jobFeeServer.js";
 import { gridRulesFor } from "../../../../../lib/gridRulesStore.js";
 import { canOverrideGrid } from "../../../../../lib/rbac.js";
 
@@ -61,6 +60,12 @@ export async function POST(req, props) {
     }));
   }
 
+  // sending the file is a won job's paperwork: it waits on the fee once the 14 days to pay are over
+  if (body.action === "resend" || body.action === "submit") {
+    const gate = await jobGate(db, { project, co, user });
+    if (gate.locked) return NextResponse.json({ ok: false, error: gate.error, fee: gate.fee ? { status: gate.fee.status, amount_minor: gate.fee.amount_minor } : null }, { status: 402 });
+  }
+
   const savedOp = project.install_progress?.gridFile?.operator;
   if (body.action === "resend") {
     const { data: sub } = await db.from("grid_submissions").select("operator, checklist").eq("id", String(body.submissionId || "")).eq("company_id", co.id).maybeSingle();
@@ -94,18 +99,10 @@ export async function POST(req, props) {
   const { data: me } = await db.from("profiles").select("role, title").eq("id", user.id).maybeSingle();
   const pkgCheck = { ...check, rules, docDates, today };
 
-  // the filled application costs a credit on the free plan, as its download does
-  let spend = 0;
-  if (creditsPaywallOn()) {
-    const d = gridFileDecision({ plan: co.plan || "free", balance: await creditBalance(co.id), paidBefore: await paidBefore(co.id, "grid_file", project.id) });
-    if (!d.allowed) return answer({ ok: false, error: "needs_credit" });
-    spend = d.spend;
-  }
   const adapter = gridAdapterFor(operator, { sendEmail, emailConfigured });
   const r = await submitGrid(db, {
     project, operator, ...check, rules, docDates, override, canOverride: canOverrideGrid(me), missingDetails, attached, representative, note: body.note, adapter, actor, today, io: notifier,
     buildPackage: (reference) => buildGridPackage({ project, co, operator, reference, checklist: checkPackage({ operator, ...pkgCheck, missingDetails, attached, representative }).checklist, note: body.note, replyTo: user.email }),
   });
-  if (r.ok && spend) await spendCredits(co.id, spend, "grid_file", project.id);
   return answer(r);
 }

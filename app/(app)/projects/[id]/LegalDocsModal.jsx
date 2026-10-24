@@ -33,6 +33,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { buildServiceContract, buildCommissioningAct, docLocale } from "../../../../lib/legalDocs.js";
 import { t } from "../../../../lib/i18n.js";
+import { ft } from "../../../../lib/feeText.js";
 import { dec } from "../../../../lib/decimals.js";
 import { kwUnit, kwhUnit } from "../../../p/[code]/text.js";
 import SingleLineDiagram from "../../../../components/SingleLineDiagram.jsx";
@@ -56,7 +57,7 @@ function PrintPortal({ children }) {
 // result — no browser print dialog involved, so no browser-stamped header/
 // footer. Falls back to window.print() only if the server render fails, so
 // the button always produces something.
-async function downloadCleanPdf(nodeRef, filename, title) {
+async function downloadCleanPdf(nodeRef, filename, title, { kind = null, project = null } = {}) {
   const node = nodeRef.current;
   if (!node) { window.print(); return false; }
   // .ld-print-doc styles the contract/commissioning <pre>; .sld- is
@@ -72,8 +73,10 @@ async function downloadCleanPdf(nodeRef, filename, title) {
   try {
     const res = await fetch("/api/studio/pdf", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ html: node.outerHTML, css, title, filename }),
+      body: JSON.stringify({ html: node.outerHTML, css, title, filename, kind, project }),
     });
+    // a won job whose fee is overdue (lib/jobFees.js): the payment, not the print dialog
+    if (res.status === 402) { window.dispatchEvent(new Event("vm-fee-locked")); return false; }
     if (!res.ok) throw new Error("pdf_" + res.status);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -88,7 +91,7 @@ async function downloadCleanPdf(nodeRef, filename, title) {
   }
 }
 
-export default function LegalDocsModal({ lang, onClose, company, project, initialTab = "contract" }) {
+export default function LegalDocsModal({ lang, onClose, company, project, initialTab = "contract", feeLocked = false }) {
   const isMd = project.market === "MD";
   // the body is written in the language of the market's law (lib/legalDocs.js)
   const locale = docLocale(project.market);
@@ -126,7 +129,7 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
   async function handleExport(filename, title) {
     if (exporting) return;
     setExporting(true);
-    try { await downloadCleanPdf(printRef, filename, title); }
+    try { await downloadCleanPdf(printRef, filename, title, { kind: docType, project: project.id }); }
     finally { setExporting(false); }
   }
 
@@ -142,14 +145,22 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
       <div className="modal ld-modal" onClick={(e) => e.stopPropagation()}>
         <h4>{t("ld_title", lang)}</h4>
 
-        <div className="ld-tabs">
+        {/* a won job whose fee is overdue: the documents wait on it (lib/jobFees.js); the fee card pays it */}
+        {feeLocked && (
+          <div className="ld-warn ld-locked" role="status">
+            <b>{ft("gate_h", lang)}</b> {ft("locked_p", lang)}{" "}
+            <button type="button" className="btn amber sm" onClick={() => { onClose(); window.dispatchEvent(new Event("vm-fee-locked")); }}>{ft("st_due", lang)}</button>
+          </div>
+        )}
+
+        {!feeLocked && <div className="ld-tabs">
           {TABS.filter((tb) => tb.show).map((tb) => (
             <button key={tb.id} type="button" className={"ld-tab" + (docType === tb.id ? " on" : "")}
               onClick={() => setDocType(tb.id)}>{tb.label}</button>
           ))}
-        </div>
+        </div>}
 
-        {docType === "contract" && (
+        {!feeLocked && docType === "contract" && (
           <>
             <div className="ld-warn"><b>{t("ld_warn_title", lang)}</b> {t("ld_warn_body", lang)}</div>
             <label className="ld-label" htmlFor="ld-text">{t("ld_preview_label", lang)}</label>
@@ -164,7 +175,7 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
           </>
         )}
 
-        {docType === "racordare" && (
+        {!feeLocked && docType === "racordare" && (
           <>
             <div className="ld-op" role="radiogroup" aria-label={t("gf_operator", lang)}>
               {Object.values(OPERATORS).map((o) => (
@@ -192,7 +203,7 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
           </>
         )}
 
-        {docType === "commissioning" && (
+        {!feeLocked && docType === "commissioning" && (
           <>
             <div className="ld-warn"><b>{t("ld_warn_title", lang)}</b> {t("ld_commissioning_note", lang)}</div>
             <label className="ld-label" htmlFor="ld-text">{t("ld_preview_label", lang)}</label>
@@ -207,7 +218,7 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
           </>
         )}
 
-        {docType === "diagram" && (
+        {!feeLocked && docType === "diagram" && (
           <>
             <div className="ld-warn"><b>{t("ld_warn_title", lang)}</b> {t("ld_diagram_note", lang)}</div>
             <SingleLineDiagram lang={lang} bom={project.bom} kw={project.kw} battKwh={project.battKwh}
