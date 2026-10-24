@@ -30,7 +30,8 @@ async function policyFor(path) {
   // route handlers (API, the demo door) render no Next page: no nonce to hand out
   const page = !path.startsWith("/api/") && path !== "/demo";
   const nonce = page ? makeNonce() : null;
-  const frameAncestors = path === "/widget" || path.startsWith("/widget/") ? "*" : "'none'";
+  // the lead widget and an installer's estimate page are made to sit in an <iframe> on the installer's own site
+  const frameAncestors = path === "/widget" || path.startsWith("/widget/") || path.startsWith("/estimate/") ? "*" : "'none'";
   return { csp: buildCsp({ nonce, hashes: await hashesOnce(), dev: DEV, frameAncestors }), nonce };
 }
 

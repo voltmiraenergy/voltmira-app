@@ -13,6 +13,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabase.js";
 import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
 import { estimateSavings, EstimateError } from "../../../lib/estimateCore.js";
+import { offerFinancingOn } from "../../../lib/offerSwitches.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -35,6 +36,8 @@ export async function GET(req) {
     return J(await estimateSavings({
       address: url.searchParams.get("address") || "",
       bill: url.searchParams.get("bill") || "",
+      kwh: url.searchParams.get("kwh") || "",
+      monthlyPayment: offerFinancingOn(),
       country: url.searchParams.get("country") || "RO",
       admin: supabaseAdmin(),
     }));

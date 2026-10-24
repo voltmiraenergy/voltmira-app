@@ -11,25 +11,9 @@ import { NextResponse, after } from "next/server";
 import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
 import { sendEmail, resetPasswordEmail, supportFrom, emailConfigured } from "../../../lib/email.js";
 import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
+import { turnstileOk } from "../../../lib/turnstile.js";
 
 const siteUrl = () => process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com";
-
-/** Verify a Turnstile token. Returns true when the secret isn't configured
- *  (local/dev) so the flow still works before Turnstile is wired up. */
-async function turnstileOk(token) {
-  const secret = process.env.TURNSTILE_SECRET_KEY || process.env.TURNSTILE_SECRET;
-  if (!secret) return true;          // not configured — don't block
-  if (!token) return false;
-  try {
-    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ secret, response: token }),
-    });
-    const j = await res.json().catch(() => ({}));
-    return !!j.success;
-  } catch { return false; }
-}
 
 export async function POST(req) {
   let b; try { b = await req.json(); } catch { return NextResponse.json({ ok: true }); }

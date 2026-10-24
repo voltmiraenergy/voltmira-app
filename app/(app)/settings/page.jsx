@@ -12,7 +12,7 @@ import "../dx.css";
 import "./settings.css";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Receipt, Calculator, Bot, Bell, CreditCard, Upload, Trash2, RotateCcw, Download, Lock, PencilLine } from "lucide-react";
+import { Building2, Receipt, Calculator, Bot, Bell, CreditCard, Upload, Trash2, RotateCcw, Download, Lock, PencilLine, Globe } from "lucide-react";
 import { supabaseBrowser } from "../../../lib/supabase-browser.js";
 import { openCheckout, yearlyReady } from "../../../lib/paddle.js";
 import { cr } from "../../../lib/creditsText.js";
@@ -31,6 +31,7 @@ import MonitoringBill from "./MonitoringBill.jsx";
 import CreditsPanel from "./CreditsPanel.jsx";
 import { clearOfflineData } from "../../../lib/offline.js";
 import { aiOn } from "../../../lib/featureFlags.js";
+import EstimateSettings from "./EstimateSettings.jsx";
 
 // the assistants and the website widget are hidden until AI is switched on (lib/featureFlags.js)
 const TABS = [
@@ -38,6 +39,7 @@ const TABS = [
   { id: "documents", Icon: Receipt, label: "st_tab_docs", hint: "st_tab_docs_h" },
   { id: "calculations", Icon: Calculator, label: "st_tab_calc", hint: "st_tab_calc_h" },
   ...(aiOn() ? [{ id: "assistants", Icon: Bot, label: "st_tab_ai", hint: "st_tab_ai_h" }] : []),
+  { id: "estimate", Icon: Globe, label: "st_tab_estimate", hint: "st_tab_estimate_h" },
   { id: "notifications", Icon: Bell, label: "st_tab_alerts", hint: "st_tab_alerts_h" },
   { id: "plan", Icon: CreditCard, label: "st_tab_plan", hint: "st_tab_plan_h" },
 ];
@@ -406,6 +408,8 @@ export default function Settings() {
 
   // ---------------------------------------------------------------- sections
   const panels = {
+    // the public estimate page, the lead score and the follow-up days, saved on their own (lib/leadSettings.js)
+    estimate: <EstimateSettings lang={lang} />,
     company: (
       <>
         <Card title={t("st_profile_h", lang)} desc={t("st_company_desc", lang)}>
