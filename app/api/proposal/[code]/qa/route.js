@@ -43,7 +43,7 @@ const MAX_TURN_LEN = 500;
 const MAX_TURNS = 6;
 const MAX_ANSWER_LEN = 1500;
 
-// Same default as the bill reader (extract-bill), overridable per deployment.
+// The default model, overridable per deployment.
 const MODEL = process.env.PROPOSAL_QA_MODEL || DEFAULT_MODEL;
 // A chat answer rarely needs deep deliberation; raise it if answers fall short.
 const EFFORT = process.env.PROPOSAL_QA_EFFORT || "low";

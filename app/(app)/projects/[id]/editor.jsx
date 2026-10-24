@@ -246,10 +246,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const [curNote, setCurNote] = useState(null);
   const [saved, setSaved] = useState("saved");     // saved | saving | error
   const [pvgisBusy, setPvgisBusy] = useState(false);
-  const [billBusy, setBillBusy] = useState(false);   // AI bill extractor
-  const [billRes, setBillRes] = useState(null);      // extracted values awaiting review
-  const [billErr, setBillErr] = useState("");
-  const billInput = useRef(null);
   const [propUrl, setPropUrl] = useState(null);
   const [sendingVia, setSendingVia] = useState(null);   // "viber" | "wa" while the header's one-tap send works
   const [refreshing, setRefreshing] = useState(false);
@@ -477,32 +473,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     clearTimeout(timer.current);
     timer.current = setTimeout(() => persist(next), 600);
   }
-  // AI energy-bill extractor: upload a photo/PDF → /api/extract-bill reads it →
-  // installer reviews the values → applyBill() fills them in. Never auto-applies.
-  async function handleBill(e) {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = "";                       // allow re-picking the same file
-    if (!file) return;
-    setBillErr(""); setBillRes(null); setBillBusy(true);
-    try {
-      const fd = new FormData(); fd.append("file", file);
-      const r = await fetch("/api/extract-bill", { method: "POST", body: fd });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok || !d.ok) setBillErr(d.message || tr("bill_err"));
-      else setBillRes(d);
-    } catch { setBillErr(tr("bill_err")); }
-    finally { setBillBusy(false); }
-  }
-  function applyBill() {
-    if (billRes && billRes.annualKwh > 0) {
-      const kwh = Math.round(billRes.annualKwh);
-      update(p.useMonthly
-        ? { cons: kwh, consMonthly: Array(12).fill(Math.round(kwh / 12)) }
-        : { cons: kwh });
-    }
-    setBillRes(null);
-  }
-
   // side-by-side comparison options (max 2 alternatives beyond the base quote)
   const setOption = (i, patch) => update({ options: p.options.map((o, j) => j === i ? { ...o, ...patch } : o) });
   const addOption = () => { if (p.options.length < 2) update({ options: [...p.options, { label: "", kw: p.kw, battKwh: 0 }] }); };
@@ -1148,32 +1118,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 </div>
                 <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8, textAlign: "right" }}>
                   {tr("mo_total_yr", { v: num((p.consMonthly || []).reduce((a, b) => a + (+b || 0), 0)) })}
-                </div>
-              </div>
-            )}
-            {/* AI energy-bill extractor — snap the client's bill, review, apply.
-                Hidden until AI is switched on (lib/featureFlags.js). */}
-            {aiOn() && <>
-              <input ref={billInput} type="file" accept="image/*,application/pdf" hidden onChange={handleBill} />
-              <button type="button" className="qb-tool" style={{ marginTop: 10 }}
-                onClick={() => billInput.current && billInput.current.click()} disabled={billBusy} aria-busy={billBusy}>
-                <span className="qb-tool-ic"><Qi d="upload" size={17} /></span>
-                <span className="qb-tool-tx"><b>{billBusy ? tr("bill_reading") : tr("bill_upload")}</b><small>{tr("qb_tool_bill_sub")}</small></span>
-                <Qi d="chev" size={15} />
-              </button>
-            </>}
-            {billErr && <div style={{ fontSize: 12.5, color: "var(--red)", marginTop: 6 }}>{billErr}</div>}
-            {billRes && (
-              <div className="pvgis-data" style={{ marginTop: 8 }}>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>{tr("bill_found")}</div>
-                <div>{tr("annual_cons")}: <span className="pvg-k">{billRes.annualKwh ? num(billRes.annualKwh) : "—"}</span> kWh</div>
-                {billRes.meterNumber && <div>{tr("bill_meter")}: {billRes.meterNumber}</div>}
-                {billRes.supplier && <div>{tr("bill_supplier")}: {billRes.supplier}</div>}
-                {billRes.subsidy && <div>{tr("bill_subsidy")}: {billRes.subsidy}</div>}
-                {billRes.notes && <div style={{ color: "var(--muted)", marginTop: 2 }}>{billRes.notes}</div>}
-                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                  <button type="button" className="btn sm primary" onClick={applyBill} disabled={!billRes.annualKwh}>{tr("bill_apply")}</button>
-                  <button type="button" className="btn sm ghost" onClick={() => setBillRes(null)}>{tr("bill_cancel")}</button>
                 </div>
               </div>
             )}

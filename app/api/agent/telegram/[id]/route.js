@@ -7,13 +7,11 @@
 // Always answers 200 once the update is genuine: a non-200 makes Telegram
 // retry the same update, and a homeowner would get the same reply twice.
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "../../../../../lib/supabase.js";
 import { isRateLimited } from "../../../../../lib/ratelimit.js";
 import { t, normLang } from "../../../../../lib/i18n.js";
 import { keyFromEnv, open } from "../../../../../lib/secretBox.js";
-import { parseUpdate, secretMatches, sendText, tgCall, getFileBytes, webhookServerSecret } from "../../../../../lib/telegram.js";
-import { readBill, billFacts } from "../../../../../lib/billReader.js";
+import { parseUpdate, secretMatches, sendText, tgCall, webhookServerSecret } from "../../../../../lib/telegram.js";
 import { answerHomeowner } from "../../../../../lib/leadAgentRun.js";
 import { agentConfigured } from "../../../../../lib/claudeClient.js";
 import { MAX_TURNS } from "../../../../../lib/leadAgent.js";
@@ -67,25 +65,9 @@ export async function POST(req, props) {
   const state = { leadId: conv?.lead_id || null, surveyRequested: !!conv?.survey_requested };
   try { await tgCall(token, "sendChatAction", { chat_id: msg.chatId, action: "typing" }); } catch { /* cosmetic */ }
 
-  // A photo or PDF is their electricity bill: read it (never stored) and hand
-  // the assistant what was found, plus anything they wrote with it.
-  let userText = msg.text;
-  if (msg.file) {
-    if (await isRateLimited(`tg:bill:${channelId}:${msg.chatId}`, 5, 600_000)) { await say(t("agent_slow_down", lang)); return OK(); }
-    await say(t("agent_bill_reading", lang));
-    let facts = null, tooBig = false;
-    try {
-      const bytes = await getFileBytes(token, msg.file.id);
-      const r = await readBill(new Anthropic(), { bytes, mime: msg.file.mime });
-      facts = r.ok ? billFacts(r.bill) : null;
-      tooBig = r.code === "too_large";
-    } catch (e) {
-      tooBig = e?.code === "too_large";
-      console.error("telegram bill read failed", e?.code, e?.message);
-    }
-    if (!facts) { await say(t(tooBig ? "agent_bill_big" : "agent_bill_failed", lang)); return OK(); }
-    userText = msg.text ? `${facts}\nThey also wrote: ${msg.text}` : facts;
-  }
+  // Photos and files are not read: the homeowner is asked to type the bill instead.
+  if (msg.file && !msg.text) { await say(t("agent_no_photos", lang)); return OK(); }
+  const userText = msg.text;
 
   let answer = null;
   try {
