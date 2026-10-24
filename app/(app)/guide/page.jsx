@@ -161,13 +161,15 @@ const HTML = {
 </section>
 
 <section>
-  <div class="g-h"><span class="g-n">6</span><h2>Plans</h2></div>
-  <p class="g-lede">Free during beta, no card required. Founder pricing is locked for the first 50 installers.</p>
+  <div class="g-h"><span class="g-n">6</span><h2>What it costs</h2></div>
+  <p class="g-lede">VoltMira is free for every installer, with every feature and no limit on offers or people. You pay only when a client signs: a fixed fee per won project, by the system's size. Your first 3 won projects are free, and each fee has 14 days to be paid, by card or by bank transfer with an invoice.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Pro: €49/mo</div><div class="pd">Your logo on every proposal &amp; PDF, tracked links + open alerts, grid forms filled from the quote, full pipeline.</div></div>
-    <div class="plan"><div class="pn">Team: €119/mo</div><div class="pd">Everything in Pro, up to 5 people on one pipeline, win-rate analytics, priority support.</div></div>
-    <div class="plan"><div class="pn">Enterprise: custom pricing</div><div class="pd">Unlimited seats for multi-branch installers, full audit log, a dedicated manager.</div></div>
+    <div class="plan hot"><div class="pn">Up to 10 kW: 390 lei</div><div class="pd">per won project</div></div>
+    <div class="plan"><div class="pn">10 to 30 kW: 790 lei</div><div class="pd">per won project</div></div>
+    <div class="plan"><div class="pn">30 to 100 kW: 1,590 lei</div><div class="pd">per won project</div></div>
+    <div class="plan"><div class="pn">Above 100 kW: 2,990 lei</div><div class="pd">per won project</div></div>
   </div>
+  <p class="g-lede" style="margin-top:12px">Settings, Pay per job, shows your fees, VoltMira's invoices and your company IDNO.</p>
 </section>
 
 <section>
@@ -270,13 +272,15 @@ const HTML = {
 </section>
 
 <section>
-  <div class="g-h"><span class="g-n">6</span><h2>Planuri</h2></div>
-  <p class="g-lede">Gratuit în beta: fără card. Prețul de fondator e blocat pentru primii 50 de instalatori.</p>
+  <div class="g-h"><span class="g-n">6</span><h2>Cât costă</h2></div>
+  <p class="g-lede">VoltMira este gratuit pentru orice instalator, cu toate funcțiile și fără limită de oferte sau oameni. Plătești doar când un client semnează: o taxă fixă pe proiect câștigat, după mărimea sistemului. Primele tale 3 proiecte câștigate sunt gratuite, iar fiecare taxă are 14 zile de plată, cu cardul sau prin transfer, cu factură.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Pro: €49/lună</div><div class="pd">Logo-ul tău pe fiecare propunere și PDF, linkuri urmărite + alerte de deschidere, cererile de racordare completate din ofertă, pipeline complet.</div></div>
-    <div class="plan"><div class="pn">Team: €119/lună</div><div class="pd">Tot ce e în Pro, până la 5 persoane pe un pipeline, analiză a ratei de câștig, suport prioritar.</div></div>
-    <div class="plan"><div class="pn">Enterprise: preț personalizat</div><div class="pd">Locuri nelimitate pentru instalatori cu mai multe filiale, jurnal complet de audit, manager dedicat.</div></div>
+    <div class="plan hot"><div class="pn">Până la 10 kW: 390 lei</div><div class="pd">pe proiect câștigat</div></div>
+    <div class="plan"><div class="pn">10 până la 30 kW: 790 lei</div><div class="pd">pe proiect câștigat</div></div>
+    <div class="plan"><div class="pn">30 până la 100 kW: 1.590 lei</div><div class="pd">pe proiect câștigat</div></div>
+    <div class="plan"><div class="pn">Peste 100 kW: 2.990 lei</div><div class="pd">pe proiect câștigat</div></div>
   </div>
+  <p class="g-lede" style="margin-top:12px">În Setări, Plată per lucrare, vezi taxele, facturile VoltMira și IDNO-ul companiei.</p>
 </section>
 
 <section>
@@ -380,13 +384,15 @@ const HTML = {
 </section>
 
 <section>
-  <div class="g-h"><span class="g-n">6</span><h2>Тарифы</h2></div>
-  <p class="g-lede">Бесплатно на бета-этапе: без карты. Цена основателя зафиксирована для первых 50 монтажников.</p>
+  <div class="g-h"><span class="g-n">6</span><h2>Сколько стоит</h2></div>
+  <p class="g-lede">VoltMira бесплатна для любого монтажника, со всеми функциями и без ограничений на предложения или людей. Вы платите, только когда клиент подписывает: фиксированная плата за выигранный проект по размеру системы. Первые 3 выигранных проекта бесплатны, на каждую плату есть 14 дней, картой или переводом по счёту.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Pro: €49/мес</div><div class="pd">Ваш логотип на каждом предложении и PDF, отслеживаемые ссылки + уведомления об открытии, виджет заявок на сайте, полный пайплайн.</div></div>
-    <div class="plan"><div class="pn">Team: €119/мес</div><div class="pd">Всё из Pro, до 5 человек в одном пайплайне, аналитика конверсии, приоритетная поддержка.</div></div>
-    <div class="plan"><div class="pn">Enterprise: индивидуальная цена</div><div class="pd">Неограниченные места для монтажников с филиалами, полный журнал аудита, персональный менеджер.</div></div>
+    <div class="plan hot"><div class="pn">До 10 кВт: 390 лей</div><div class="pd">за выигранный проект</div></div>
+    <div class="plan"><div class="pn">От 10 до 30 кВт: 790 лей</div><div class="pd">за выигранный проект</div></div>
+    <div class="plan"><div class="pn">От 30 до 100 кВт: 1 590 лей</div><div class="pd">за выигранный проект</div></div>
+    <div class="plan"><div class="pn">Свыше 100 кВт: 2 990 лей</div><div class="pd">за выигранный проект</div></div>
   </div>
+  <p class="g-lede" style="margin-top:12px">В Настройках, Оплата за объект, видны ваши платы, счета VoltMira и IDNO компании.</p>
 </section>
 
 <section>
@@ -489,13 +495,15 @@ const HTML = {
 </section>
 
 <section>
-  <div class="g-h"><span class="g-n">6</span><h2>Тарифи</h2></div>
-  <p class="g-lede">Безкоштовно на етапі бета, без картки. Ціна засновника зафіксована для перших 50 монтажників.</p>
+  <div class="g-h"><span class="g-n">6</span><h2>Скільки коштує</h2></div>
+  <p class="g-lede">VoltMira безкоштовна для будь-якого монтажника, з усіма функціями й без обмежень на пропозиції чи людей. Ви платите, лише коли клієнт підписує: фіксована плата за виграний проєкт за розміром системи. Перші 3 виграні проєкти безкоштовні, на кожну плату є 14 днів, карткою або переказом за рахунком.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Pro: €49/міс.</div><div class="pd">Ваш логотип на кожній пропозиції та PDF, відстежувані посилання + сповіщення про відкриття, віджет заявок на сайті, повна воронка.</div></div>
-    <div class="plan"><div class="pn">Team: €119/міс.</div><div class="pd">Усе з Pro, до 5 людей в одній воронці, аналітика конверсії, пріоритетна підтримка.</div></div>
-    <div class="plan"><div class="pn">Enterprise: індивідуальна ціна</div><div class="pd">Необмежені місця для монтажників із філіями, повний журнал аудиту, персональний менеджер.</div></div>
+    <div class="plan hot"><div class="pn">До 10 кВт: 390 лей</div><div class="pd">за виграний проєкт</div></div>
+    <div class="plan"><div class="pn">Від 10 до 30 кВт: 790 лей</div><div class="pd">за виграний проєкт</div></div>
+    <div class="plan"><div class="pn">Від 30 до 100 кВт: 1 590 лей</div><div class="pd">за виграний проєкт</div></div>
+    <div class="plan"><div class="pn">Понад 100 кВт: 2 990 лей</div><div class="pd">за виграний проєкт</div></div>
   </div>
+  <p class="g-lede" style="margin-top:12px">У Налаштуваннях, Оплата за об’єкт, видно ваші плати, рахунки VoltMira та IDNO компанії.</p>
 </section>
 
 <section>

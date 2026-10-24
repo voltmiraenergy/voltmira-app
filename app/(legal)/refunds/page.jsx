@@ -4,59 +4,48 @@ import LegalShell from "../LegalShell.jsx";
 export const metadata = {
   title: "Refund Policy | VoltMira",
   description:
-    "Refunds for VoltMira subscriptions: the 14-day window, duplicate charges, outages and cancellations, handled with Paddle, our merchant of record.",
+    "Refunds for VoltMira's fee per won project: credit for a cancelled project, duplicate charges, and how to ask.",
   alternates: { canonical: "/refunds" },
 };
 
 export default function Refunds() {
   return (
-    <LegalShell title="Refund Policy" updated="26 September 2026">
+    <LegalShell title="Refund Policy" updated="24 October 2026">
       <p className="note">
-        Payments for VoltMira are processed by <b>Paddle</b>, our merchant of record, so your receipt
-        comes from Paddle and refunds are paid back through Paddle to the card or account you paid
-        with.
+        VoltMira is free to use. Its one charge is a fixed fee for each project you win, paid by card
+        through our bank&apos;s payment page or by bank transfer against our invoice. Developers&apos; bank
+        packs, where offered, are paid through <b>Paddle</b>, our merchant of record, so their receipts
+        and refunds go through Paddle.
       </p>
 
-      <h2>Free plans and trials</h2>
+      <h2>Nothing is charged until you win</h2>
       <p>
-        Nothing is charged on a free plan or during beta access. Where a free trial is offered at
-        checkout, you are not charged if you cancel before the trial ends, and the date of the first
-        charge is shown before you confirm.
+        Quotes, offers, clients and every feature cost nothing. A fee is due only for a project your
+        client signed online or that you marked as won, and your company&apos;s first 3 won projects are
+        free.
       </p>
 
-      <h2>14-day refund on your first payment</h2>
+      <h2>A project cancelled after you paid</h2>
       <p>
-        If you ask within <b>14 days</b> of your first payment for a plan, we refund it in full,
-        provided the workspace has not yet been used for paid-plan features during that period (such
-        as tracked proposal links, branded PDF exports or extra team seats). If you have used them, we
-        refund the unused part of the period. This is in addition to any right of withdrawal you have
-        as a consumer under the law of your country, which this policy never limits.
+        If a project you paid the fee for is later cancelled (you mark it lost), the fee becomes a
+        credit of the same amount, used on your next won project. A refund in money instead is at our
+        discretion, on request, for example if you stop using VoltMira. This is in addition to any right
+        you have under the law of your country, which this policy never limits.
       </p>
 
       <h2>Other refunds</h2>
       <ul>
         <li><b>Duplicate or mistaken charges</b>: refunded in full, at any time.</li>
-        <li><b>An outage caused by us</b>: a pro-rated credit or refund for the affected period, on
-          request, once the outage is confirmed.</li>
-        <li><b>Cancelling</b>: you can cancel at any time and keep access until the end of the period
-          you paid for. Outside the 14-day window, payments for the current period are not refunded
-          unless the law requires it.</li>
-      </ul>
-
-      <h2>What is not refunded</h2>
-      <ul>
-        <li>Billing periods that ended before you asked.</li>
-        <li>Requests more than 14 days after the first payment, except in the cases above.</li>
+        <li><b>A fee charged for a project that was never won</b> (for example, marked won by mistake
+          and corrected at once): write to us and we refund it or turn it into credit.</li>
+        <li><b>Bank packs</b>: refunded through Paddle under the terms shown at checkout.</li>
       </ul>
 
       <h2>How to ask for a refund</h2>
       <ul>
         <li>
           Email <a href="mailto:voltmiraenergy@gmail.com">voltmiraenergy@gmail.com</a> from the
-          address on your account, with your Paddle receipt or transaction ID.
-        </li>
-        <li>
-          Or use the link at the bottom of any Paddle receipt email to contact Paddle directly.
+          address on your account, with the invoice number (VMF-...) or the payment reference.
         </li>
         <li>
           We reply within <b>2 business days</b>. Approved refunds usually reach your card or account

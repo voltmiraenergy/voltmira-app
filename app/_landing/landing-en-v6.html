@@ -22,7 +22,7 @@
 <meta property="og:site_name" content="VoltMira">
 <meta property="og:url" content="https://voltmira.com/">
 <meta property="og:title" content="VoltMira: Solar quotes your clients can fact-check">
-<meta property="og:description" content="Three honest payback scenarios from real PVGIS data, tracked proposal links with open alerts, WhatsApp sharing and one-tap client acceptance. Free trial for solar installers in Romania and Moldova.">
+<meta property="og:description" content="Three honest payback scenarios from real PVGIS data, tracked proposal links with open alerts, WhatsApp sharing and one-tap client acceptance. Free for solar installers: a fee only when a client signs.">
 <meta property="og:image" content="https://voltmira.com/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -32,12 +32,12 @@
 <meta property="og:locale:alternate" content="ru_RU">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="VoltMira: Solar quotes your clients can fact-check">
-<meta name="twitter:description" content="Three honest payback scenarios from real PVGIS data, tracked proposals with open alerts, WhatsApp sharing and one-tap acceptance. Free trial for solar installers.">
+<meta name="twitter:description" content="Three honest payback scenarios from real PVGIS data, tracked proposals with open alerts, WhatsApp sharing and one-tap acceptance. Free for solar installers: a fee only when a client signs.">
 <meta name="twitter:image" content="https://voltmira.com/og.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"VoltMira","applicationCategory":"BusinessApplication","operatingSystem":"Web","url":"https://voltmira.com/","description":"Solar quoting software for installers: three honest payback scenarios from real PVGIS satellite data, tracked proposal links with open alerts, WhatsApp sharing, one-tap client acceptance and a full sales pipeline. Romania and Moldova.","inLanguage":["en","ro","ru","uk"],"creator":{"@id":"https://voltmira.com/#bogdan-toctarov"},"publisher":{"@id":"https://voltmira.com/#organization"},"featureList":["Three-band honest payback (pessimistic, expected, optimistic)","Real PVGIS satellite solar data per roof","Public roof check running the real engine","Tracked proposal links with open and view-time alerts","WhatsApp proposal sharing","One-tap digital client acceptance","Premier Energy Distribution prosumer connection form, filled from the project","Bill of materials from your own catalog","Proforma invoices with CSV export","English, Romanian, Russian and Ukrainian; EUR, RON, MDL"],"offers":[{"@type":"Offer","name":"Pro","price":"49","priceCurrency":"EUR"},{"@type":"Offer","name":"Team","price":"119","priceCurrency":"EUR"}]}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"VoltMira","applicationCategory":"BusinessApplication","operatingSystem":"Web","url":"https://voltmira.com/","description":"Solar quoting software for installers: three honest payback scenarios from real PVGIS satellite data, tracked proposal links with open alerts, WhatsApp sharing, one-tap client acceptance and a full sales pipeline. Romania and Moldova.","inLanguage":["en","ro","ru","uk"],"creator":{"@id":"https://voltmira.com/#bogdan-toctarov"},"publisher":{"@id":"https://voltmira.com/#organization"},"featureList":["Three-band honest payback (pessimistic, expected, optimistic)","Real PVGIS satellite solar data per roof","Public roof check running the real engine","Tracked proposal links with open and view-time alerts","WhatsApp proposal sharing","One-tap digital client acceptance","Premier Energy Distribution prosumer connection form, filled from the project","Bill of materials from your own catalog","Proforma invoices with CSV export","English, Romanian, Russian and Ukrainian; EUR, RON, MDL"],"offers":[{"@type":"Offer","name":"VoltMira","price":"0","priceCurrency":"MDL","description":"Free for installers. A fixed fee only per won project, from 390 lei; the first 3 won projects are free."}]}
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
@@ -45,7 +45,7 @@
 {"@type":"Question","name":"Why show a pessimistic number? Won't it scare clients?","acceptedAnswer":{"@type":"Answer","text":"The opposite, in practice. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself."}},
 {"@type":"Question","name":"Does it work for Moldova's net billing?","acceptedAnswer":{"@type":"Answer","text":"Yes, that's home turf. Moldova's low export price makes self-consumption the whole game, so the engine models it month by month and values battery storage correctly."}},
 {"@type":"Question","name":"What does a tracked proposal mean for my client's privacy?","acceptedAnswer":{"@type":"Answer","text":"The link records opens, time on page and interactions with the quote itself. Nothing else. No ad trackers, no profiling, EU-hosted."}},
-{"@type":"Question","name":"How do I start?","acceptedAnswer":{"@type":"Answer","text":"Sign up and you're in. No waitlist, no card. Full access to build quotes and send tracked proposals straight away, free through the beta."}}
+{"@type":"Question","name":"How do I start?","acceptedAnswer":{"@type":"Answer","text":"Sign up and you're in. No waitlist, no card, no subscription: every feature is free. You pay a fixed fee only when a client signs, and your first 3 won projects are free."}}
 ]}
 </script>
 <script type="application/ld+json">
@@ -550,29 +550,24 @@ fieldset.field{border:0}
 
 /* ================= PRICING ================= */
 .pricing{background:var(--paper-2);border-top:1px solid var(--line)}
-.plans{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
-@media(min-width:860px){.plans{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(min-width:1180px){.plans{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.plan .pk-note{font-size:14px;color:var(--muted);margin:-14px 0 24px}
-.plan{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:24px;padding:clamp(26px,3vw,38px);display:flex;flex-direction:column;
-  transition:transform .35s var(--ease-out),box-shadow .35s var(--ease-out),border-color .3s}
-.plan:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
-.plan.lead-plan{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber) inset}
-.plan.lead-plan:hover{box-shadow:0 0 0 1px var(--amber) inset,var(--shadow-md)}
-.flag{position:absolute;top:24px;right:24px;font-family:var(--f-m);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;border-radius:8px;background:var(--amber-tint);color:var(--expc-ink)}
-.plan h3{font-family:var(--f-d);font-weight:800;font-size:30px;line-height:1;margin-bottom:18px}
-.amt{display:flex;align-items:baseline;gap:6px;margin-bottom:6px}
-.amt b{font-family:var(--f-d);font-weight:800;font-size:clamp(56px,6vw,72px);line-height:.9;font-variant-numeric:tabular-nums}
-.amt small{font-size:15px;color:var(--muted);font-weight:600}
-.plan .for{font-size:15.5px;color:var(--muted);margin-bottom:24px}
-.plan ul{list-style:none;display:grid;gap:12px;margin-bottom:30px;flex:1}
-.plan li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;font-size:16px;color:var(--ink-2)}
-.plan li svg{width:18px;height:18px;color:var(--green);margin-top:3px}
-.plan .btn{width:100%}
-.ent{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr);gap:18px;align-items:center;padding:26px clamp(26px,3vw,38px);border:1px solid var(--line);border-radius:24px;background:var(--paper)}
-@media(min-width:860px){.ent{grid-template-columns:auto minmax(0,1fr) auto;gap:36px}}
-.ent h3{font-family:var(--f-d);font-weight:800;font-size:30px;line-height:1}
-.ent p{font-size:16px;color:var(--ink-2);max-width:70ch}
+.fee-lede{font-size:clamp(17px,1.4vw,19px);color:var(--ink-2);max-width:60ch;margin-top:18px}
+.fee-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(min-width:960px){.fee-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}}
+.fee-tier{display:flex;flex-direction:column;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:24px;padding:clamp(20px,2.4vw,30px);
+  transition:transform .35s var(--ease-out),box-shadow .35s var(--ease-out)}
+.fee-tier:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.fee-tier:first-child{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber) inset}
+.fee-t{font-size:15px;font-weight:600;color:var(--muted)}
+.fee-v{font-family:var(--f-d);font-weight:800;font-size:clamp(26px,6.6vw,40px);line-height:1;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
+.fee-tier small{font-size:14px;color:var(--muted)}
+@media(min-width:960px){.fee-v{font-size:clamp(34px,3.6vw,52px)}}
+.fee-facts{list-style:none;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin:clamp(26px,3vw,40px) 0 0;padding:0}
+@media(min-width:760px){.fee-facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1180px){.fee-facts{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.fee-facts li{display:flex;flex-direction:column;gap:6px;padding:18px 20px;border-top:2px solid var(--green)}
+.fee-facts b{font-size:17px;font-weight:700;color:var(--ink)}
+.fee-facts span{font-size:15.5px;color:var(--ink-2)}
+.fee-cta{margin-top:clamp(26px,3vw,40px)}
 
 /* ================= FAQ ================= */
 .faq{background:var(--paper)}
@@ -698,7 +693,7 @@ footer > .wrap::before{content:"";position:absolute;top:-65px;left:clamp(16px,4v
       <h1 class="d1" data-i18n="v6_hero_h1">Solar quotes<br>your clients can<br><span class="hl">fact check.</span></h1>
       <p class="lead" data-i18n="v6_hero_lead">Most quoting tools show one flattering number. VoltMira shows <b>three honest scenarios</b>, computed from real sun data for the client's roof. You'll know the moment they open it.</p>
       <div class="cta-row">
-        <a class="btn btn-amber btn-lg" href="/login" data-i18n="v6_hero_cta1">Start free trial</a>
+        <a class="btn btn-amber btn-lg" href="/login" data-i18n="v6_hero_cta1">Start free</a>
         <a class="btn btn-glass btn-lg" href="#check" data-i18n="v6_hero_cta2">Fact-check a roof</a>
       </div>
     </div>
@@ -973,54 +968,38 @@ footer > .wrap::before{content:"";position:absolute;top:-65px;left:clamp(16px,4v
 <section class="sec pricing" id="pricing">
   <div class="wrap">
     <div class="sec-head">
-      <h2 class="d2 rv" data-i18n="v6_p_h">Costs less than the coffee at one lost deal.</h2>
+      <h2 class="d2 rv" data-i18n="v6_p_h">Free for every installer. You pay only when a client signs.</h2>
+      <p class="fee-lede rv" data-i18n="v6_p_lede">No subscription and no limits on offers, people or features. When a client signs, a fixed fee by the system's size.</p>
     </div>
-    <div class="plans">
-      <article class="plan lead-plan rv">
-        <span class="flag" data-i18n="v6_p_flag">Start here</span>
-        <h3>Pro</h3>
-        <div class="amt" data-i18n="v6_p_pro_amt"><b>€49</b><small>/ month</small></div>
-        <p class="for" data-i18n="v6_p_pro_for">For the installer who sells</p>
-        <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_pro_1">Your logo on every proposal and PDF</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_pro_2">Tracked proposal links and open alerts</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_pro_3">Grid-connection forms filled from the quote</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_pro_4">Saved clients and a full pipeline</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_pro_5">Inverter monitoring: the first 10 systems free, then €1.50 per system a month</span></li>
-        </ul>
-        <a href="/login" class="btn btn-amber btn-lg" data-i18n="v6_p_cta">Start free trial</a>
+    <div class="fee-grid">
+      <article class="fee-tier rv">
+        <span class="fee-t" data-i18n="v6_p_t0">Up to 10 kW</span>
+        <b class="fee-v" data-i18n="v6_p_v0">390 lei</b>
+        <small data-i18n="v6_p_per">per won project</small>
       </article>
-      <article class="plan rv d1s">
-        <h3 data-i18n="v6_p_team">Team</h3>
-        <div class="amt" data-i18n="v6_p_team_amt"><b>€119</b><small>/ month</small></div>
-        <p class="for" data-i18n="v6_p_team_for">Up to 5 people, one pipeline</p>
-        <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_team_1">Everything in Pro</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_team_2">5 seats with project owners</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_team_3">Shared clients and win-rate analytics</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_team_4">Priority support in Romanian, Russian and English</span></li>
-        </ul>
-        <a href="/login" class="btn btn-ink btn-lg" data-i18n="v6_p_cta">Start free trial</a>
+      <article class="fee-tier rv d1s">
+        <span class="fee-t" data-i18n="v6_p_t1">10 to 30 kW</span>
+        <b class="fee-v" data-i18n="v6_p_v1">790 lei</b>
+        <small data-i18n="v6_p_per">per won project</small>
       </article>
-      <article class="plan rv d2s">
-        <h3 data-i18n="v6_p_pk">Project pack</h3>
-        <div class="amt" data-i18n="v6_p_pk_amt"><b>€600</b><small>/ project</small></div>
-        <p class="for" data-i18n="v6_p_pk_for">For developers and EPCs taking a plant to a bank</p>
-        <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_pk_1">Credit summary in Romanian and English, written for a credit officer</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_pk_2">Excel model with live formulas, P90 and stress tests</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_pk_3">Site plan, grid connection study and permit checklist</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="v6_p_pk_4">A read-only deal room link for each bank</span></li>
-        </ul>
-        <p class="pk-note" data-i18n="v6_p_pk_note">Up to 2 MW. Above 2 MW: €2,900. A portfolio's data room: €9,000. Paid once, re-runs included for 90 days. The price never depends on the loan.</p>
-        <a href="/login?for=developer" class="btn btn-ink btn-lg" data-i18n="v6_p_pk_cta">Build a pack free, pay to download</a>
+      <article class="fee-tier rv d2s">
+        <span class="fee-t" data-i18n="v6_p_t2">30 to 100 kW</span>
+        <b class="fee-v" data-i18n="v6_p_v2">1,590 lei</b>
+        <small data-i18n="v6_p_per">per won project</small>
       </article>
-      <article class="ent rv">
-        <h3>Enterprise</h3>
-        <p data-i18n="v6_p_ent">For banks, funds and multi-branch installers: a deal room for credit officers, screening of green-loan files, unlimited seats, a full audit log and a dedicated manager with an SLA.</p>
-        <a href="mailto:voltmiraenergy@gmail.com?subject=VoltMira%20Enterprise" class="btn btn-line" data-i18n="v6_p_ent_cta">Talk to us</a>
+      <article class="fee-tier rv d2s">
+        <span class="fee-t" data-i18n="v6_p_t3">Above 100 kW</span>
+        <b class="fee-v" data-i18n="v6_p_v3">2,990 lei</b>
+        <small data-i18n="v6_p_per">per won project</small>
       </article>
     </div>
+    <ul class="fee-facts rv">
+      <li><b data-i18n="v6_p_f1h">First 3 won projects free</b><span data-i18n="v6_p_f1">Prove it on real clients before you pay anything.</span></li>
+      <li><b data-i18n="v6_p_f2h">14 days to pay</b><span data-i18n="v6_p_f2">The contract, the invoice and the grid file stay open while you pay.</span></li>
+      <li><b data-i18n="v6_p_f3h">Card or bank transfer</b><span data-i18n="v6_p_f3">Every fee comes with an invoice to your company.</span></li>
+      <li><b data-i18n="v6_p_f4h">Lost quotes cost nothing</b><span data-i18n="v6_p_f4">Send as many offers as you like. Only a signed client counts.</span></li>
+    </ul>
+    <div class="fee-cta rv"><a href="/login" class="btn btn-amber btn-lg" data-i18n="v6_p_cta">Start free</a></div>
   </div>
 </section>
 
@@ -1036,7 +1015,7 @@ footer > .wrap::before{content:"";position:absolute;top:-65px;left:clamp(16px,4v
       <div class="qa rv"><h3 data-i18n="v6_f_q2">Why show a pessimistic number? Won't it scare clients?</h3><p data-i18n="v6_f_a2">The opposite, in practice. A range with visible assumptions reads as engineering; a single rosy number reads as sales. When your worst case still beats their electricity bill, the deal defends itself.</p></div>
       <div class="qa rv"><h3 data-i18n="v6_f_q3">Does it work for Moldova's net billing?</h3><p data-i18n="v6_f_a3">Yes, that's home turf. Moldova's low export price makes self-consumption the whole game, so the engine models it month by month and values battery storage correctly.</p></div>
       <div class="qa rv"><h3 data-i18n="v6_f_q4">What does a tracked proposal mean for my client's privacy?</h3><p data-i18n="v6_f_a4">The link records opens, time on page and interactions with the quote itself. Nothing else. No ad trackers, no profiling, EU-hosted.</p></div>
-      <div class="qa rv"><h3 data-i18n="v6_f_q5">How do I start?</h3><p data-i18n="v6_f_a5">Sign up and you're in. No waitlist, no card. Full access to build quotes and send tracked proposals straight away, free through the beta.</p></div>
+      <div class="qa rv"><h3 data-i18n="v6_f_q5">How do I start?</h3><p data-i18n="v6_f_a5">Sign up and you're in. No waitlist, no card, no subscription: every feature is free. You pay a fixed fee only when a client signs, and your first 3 won projects are free.</p></div>
     </div>
   </div>
 </section>
@@ -1096,7 +1075,7 @@ footer > .wrap::before{content:"";position:absolute;top:-65px;left:clamp(16px,4v
         <h4 data-i18n="v6_ft_comp">Company</h4>
         <ul>
           <li><a href="/login" data-i18n="v6_nav_signin">Sign in</a></li>
-          <li><a href="/login" data-i18n="v6_p_cta">Start free trial</a></li>
+          <li><a href="/login" data-i18n="v6_p_cta">Start free</a></li>
           <li><a href="/demo" rel="nofollow" data-i18n="v6_nav_demo">Live demo</a></li>
         </ul>
       </div>

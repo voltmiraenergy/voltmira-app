@@ -10,7 +10,7 @@ export const metadata = {
 
 export default function Terms() {
   return (
-    <LegalShell title="Terms of Service" updated="26 September 2026">
+    <LegalShell title="Terms of Service" updated="24 October 2026">
       <p className="note">
         In short: use VoltMira for lawful quoting and sales work, you own the data you put in, payback
         figures are estimates rather than guarantees, the AI assistants act only within the limits you
@@ -128,17 +128,28 @@ export default function Terms() {
           our written agreement.</li>
       </ul>
 
-      <h2>11. Plans and payment</h2>
+      <h2>11. Fees and payment</h2>
       <p>
-        Free plans and beta access may have limits, which we can change with 30 days&rsquo; notice.
-        Paid plans are billed in advance through Paddle, our merchant of record, on the cycle and at
-        the price shown at checkout, including any VAT. Where a free trial is offered at checkout, its
-        length and the date of the first charge are shown before you confirm, and you are not charged
-        if you cancel before it ends. We give at least 30 days&rsquo; notice of a price change, which
-        applies from your next billing period. Founder or pilot pricing, where offered, lasts as long
-        as your subscription stays active without interruption. You can cancel at any time and keep
-        access until the end of the paid period. Refunds follow our{" "}
-        <a href="/refunds">Refund Policy</a>.
+        Using VoltMira is free: there is no subscription and no limit on offers, people or features.
+        We charge one thing, a fixed fee for each project you win, that is, when your client accepts an
+        offer online or you mark a quote as won. The fee depends on the size of the system, as shown in
+        Settings and on our website: up to 10 kW, 390 lei; 10 to 30 kW, 790 lei; 30 to 100 kW, 1,590
+        lei; above 100 kW, 2,990 lei. Any VAT due is added on our invoice. Your company&rsquo;s first 3
+        won projects, counted by its IDNO across its workspaces, are free.
+      </p>
+      <p>
+        You have 14 days from the win to pay a fee, by card or by bank transfer against our invoice.
+        After that, the won project&rsquo;s paperwork (contract, invoice, grid connection file,
+        commissioning and handover documents) stays locked until the fee is paid; your quotes, clients
+        and everything else stay available, and your client is never asked to pay us anything. A fee
+        may rise if the won system grows into a larger size band before it is paid; it never falls. If
+        a project you paid for is later cancelled, the fee becomes a credit on your next won project.
+        We give at least 30 days&rsquo; notice of a change to the fees, which applies to projects won
+        after it takes effect.
+      </p>
+      <p>
+        Developers&rsquo; bank packs, where offered, are billed through Paddle, our merchant of record,
+        at the price shown at checkout. Refunds follow our <a href="/refunds">Refund Policy</a>.
       </p>
 
       <h2>12. Intellectual property</h2>

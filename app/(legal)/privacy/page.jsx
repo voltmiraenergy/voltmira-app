@@ -17,7 +17,8 @@ const PROVIDERS = [
   ["Supabase", "Database, sign-in and file storage for all app data"],
   ["Vercel", "Hosting, application servers and cookieless website statistics"],
   ["Anthropic", "The AI features described in section 4"],
-  ["Paddle", "Payments, invoicing and sales tax, as our merchant of record"],
+  ["Paddle", "Payments, invoicing and sales tax for developers' bank packs, as our merchant of record"],
+  ["Victoria Bank", "Card payments of the fee per won project, on the bank's secure payment page"],
   ["Resend", "Service emails: proposal alerts, invitations, password resets"],
   ["Cloudflare Turnstile", "Telling people from bots on the sign-in page"],
   ["Upstash", "Rate limiting, to stop abuse of public forms and the demo"],
@@ -38,7 +39,7 @@ const OPTIONAL = [
 
 export default function Privacy() {
   return (
-    <LegalShell title="Privacy Policy" updated="4 October 2026">
+    <LegalShell title="Privacy Policy" updated="24 October 2026">
       <p className="note">
         This policy explains what personal data VoltMira processes, why, who helps us process it and
         what you can do about it. Our database and application servers are in the EU, we use no
@@ -64,8 +65,9 @@ export default function Privacy() {
         <li>
           <b>Installer accounts</b>: name, email, company details, logo and profile photo, team roles,
           and either your password (stored only as a hash by our sign-in provider) or the name and
-          email of your Google account if you sign in with Google. Billing details are collected and
-          held by Paddle; we never see full card numbers.
+          email of your Google account if you sign in with Google. Card details for the fee per won
+          project are entered on Victoria Bank&rsquo;s payment page, and for a bank pack on Paddle&rsquo;s;
+          we never see full card numbers. Your company&rsquo;s tax id (IDNO) is kept for our invoices.
         </li>
         <li>
           <b>Installers&rsquo; clients</b>: names, phone numbers, email addresses, property addresses
@@ -202,10 +204,10 @@ export default function Privacy() {
         <li>Proposal activity: up to 24 months, then deleted.</li>
         <li>Leads from the chat assistant, with the summary it prepared: in the installer&rsquo;s
           workspace until the installer deletes them or closes the account.</li>
-        <li>Bill files sent for reading: not stored by VoltMira.</li>
         <li>Live demo workspaces: sample data only, deleted automatically after a short period.</li>
         <li>Rate-limit counters: expire automatically within a day at most.</li>
-        <li>Billing records: as long as tax law requires; Paddle keeps them as merchant of record.</li>
+        <li>Billing records (the fees, our invoices and payment references): as long as tax law requires;
+          Paddle keeps bank pack records as merchant of record.</li>
         <li>Backups: a rolling 30-day window.</li>
       </ul>
 
