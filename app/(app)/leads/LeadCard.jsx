@@ -28,6 +28,8 @@ import Avatar from "../../../lib/Avatar.jsx";
 import { fmtDate, fmtTime } from "../../../lib/tz.js";
 import { visitIcs } from "../../../lib/ics.js";
 import LeadActions from "./LeadActions.jsx";
+import { qft } from "../../../lib/quoteFastText.js";
+import { scoreBand } from "../../../lib/leadScore.js";
 
 // The technical origin, with a small glyph. Anything unexpected falls back to
 // "manual", which is also what a hand-typed lead is.
@@ -76,7 +78,7 @@ function toLocalInput(iso) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-export default function LeadCard({ lead, lang, company = "" }) {
+export default function LeadCard({ lead, lang, company = "", score = null, market = "MD" }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(lead.name || "");
   const [phone, setPhone] = useState(lead.phone || "");
@@ -156,6 +158,7 @@ export default function LeadCard({ lead, lang, company = "" }) {
           <div className="ld-name-row">
             <h3 className="ld-name">{lead.name || "—"}</h3>
             {lead.hot && <span className="dx-hot ld-hot" title={t("lead_hot", lang)}><Svg size={11}>{I.flame}</Svg>{t("hot", lang)}</span>}
+            {score != null && <span className={"ld-score " + scoreBand(score)} title={qft("badge_title", lang, { n: score })}>{qft("badge", lang, { n: score })}</span>}
             <span className={"ld-status s-" + status}>{t("lead_" + status, lang)}</span>
             <time className="ld-time" dateTime={lead.created_at} suppressHydrationWarning>{mounted ? relTime(lead.created_at, locale) : ""}</time>
           </div>
@@ -194,6 +197,17 @@ export default function LeadCard({ lead, lang, company = "" }) {
             what decides if "Generate offer" sizes a real system or just
             opens a blank quote — worth seeing without opening Edit. */}
         {lead.address ? <div className="ld-address"><Svg size={13}>{I.pin}</Svg>{lead.address}</div> : null}
+        {/* what the estimate page showed and learned (add-quote-fast.sql) */}
+        {(lead.estimate?.kw || lead.timeline || lead.wants_financing) ? (
+          <div className="ld-est">
+            {lead.estimate?.kw ? <span>{qft("est_line", lang, {
+              kw: Number(lead.estimate.kw).toLocaleString(locale, { maximumFractionDigits: 1 }),
+              price: new Intl.NumberFormat(locale, { style: "currency", currency: lead.estimate.currency || ({ MD: "MDL", RO: "RON", UA: "UAH" }[market] || "EUR"), maximumFractionDigits: 0 }).format(Number(lead.estimate.costLocal) || 0),
+            })}</span> : null}
+            {lead.timeline ? <span className="ld-chip">{qft("when_" + lead.timeline, lang)}</span> : null}
+            {lead.wants_financing ? <span className="ld-chip">{qft("fin_yes", lang)}</span> : null}
+          </div>
+        ) : null}
         {lead.visit_at ? (
           <div className="ld-visit">
             <span className="ld-visit-when"><Svg size={14}>{I.cal}</Svg><b>{t("lead_visit", lang)}:</b>&nbsp;{visitWhen}</span>
@@ -208,7 +222,7 @@ export default function LeadCard({ lead, lang, company = "" }) {
       </div>
 
       <div className="ld-foot">
-        <LeadActions id={lead.id} status={status} projectId={lead.project_id} lang={lang}
+        <LeadActions id={lead.id} status={status} projectId={lead.project_id} lang={lang} fromEstimate={!!lead.estimate?.kw}
           onEdit={editing ? cancel : open} editing={editing}
           onVisit={!lead.visit_at && status !== "converted" && status !== "archived" && !editing ? bookVisit : null} />
       </div>

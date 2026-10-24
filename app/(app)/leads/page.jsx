@@ -16,6 +16,9 @@ import LeadCard from "./LeadCard.jsx";
 import LeadAttribution from "./LeadAttribution.jsx";
 import AddLead from "./AddLead.jsx";
 import { appTitle } from "../../../lib/pageTitle.js";
+import { leadScore } from "../../../lib/leadScore.js";
+import { qft } from "../../../lib/quoteFastText.js";
+import { FX } from "@voltmira/engine";
 
 export const dynamic = "force-dynamic";
 export const generateMetadata = appTitle("nav_leads");
@@ -32,7 +35,11 @@ export default async function LeadsPage(props) {
   const q = (searchParams?.q || "").trim().slice(0, 80);
 
   const { data: allLeads } = await sb.from("leads").select("*").order("created_at", { ascending: false });
-  const leads = (allLeads || []).map(l => ({ ...l, status: l.status || "new" }));
+  // the score each lead earns with this workspace's weights (lib/leadScore.js), worked out now, never stored
+  const scoreOpts = { fx: FX[{ MD: "MDL", RO: "RON", UA: "UAH" }[co?.default_market || "MD"]] || 1, serviceDistricts: co?.service_districts || [] };
+  const leads = (allLeads || []).map(l => ({ ...l, status: l.status || "new", score: leadScore(l, scoreOpts, co?.lead_score_weights).score }));
+  const sort = searchParams?.sort === "score" ? "score" : "new";
+  const min = searchParams?.min === "70" ? 70 : 0;
 
   const counts = leads.reduce((m, l) => (m[l.status] = (m[l.status] || 0) + 1, m), {});
   let shown = filter === "all" ? leads.filter(l => l.status !== "archived") : leads.filter(l => l.status === filter);
@@ -40,6 +47,8 @@ export default async function LeadsPage(props) {
     const qq = q.toLowerCase();
     shown = shown.filter((l) => [l.name, l.phone, l.email, l.note, l.address].some((v) => String(v || "").toLowerCase().includes(qq)));
   }
+  if (min) shown = shown.filter((l) => l.score >= min);
+  if (sort === "score") shown = [...shown].sort((a, b) => b.score - a.score || new Date(b.created_at) - new Date(a.created_at));
 
   // How long the oldest new lead has gone without a reply.
   const newLeads = leads.filter((l) => l.status === "new");
@@ -52,10 +61,12 @@ export default async function LeadsPage(props) {
   }
 
   const href = (o = {}) => {
-    const s = { status: filter, q, ...o };
+    const s = { status: filter, q, sort, min, ...o };
     const parts = [];
     if (s.status && s.status !== "all") parts.push("status=" + s.status);
     if (s.q) parts.push("q=" + encodeURIComponent(s.q));
+    if (s.sort === "score") parts.push("sort=score");
+    if (s.min) parts.push("min=" + s.min);
     return "/leads" + (parts.length ? "?" + parts.join("&") : "");
   };
   const tabs = [["all", t("lead_all", lang), leads.length - (counts.archived || 0)], ...STATUSES.map((s) => [s, t("lead_" + s, lang), counts[s] || 0])];
@@ -95,6 +106,15 @@ export default async function LeadsPage(props) {
               </Link>
             ))}
           </nav>
+          {/* order by score, and keep only the strongest */}
+          <div className="ld-tools" role="group" aria-label={qft("sort", lang)}>
+            <Link href={href({ sort: sort === "score" ? "new" : "score" })} className={"dx-btn" + (sort === "score" ? " on" : "")} aria-pressed={sort === "score"}>
+              {qft(sort === "score" ? "sort_score" : "sort_new", lang)}
+            </Link>
+            <Link href={href({ min: min ? 0 : 70 })} className={"dx-btn" + (min ? " on" : "")} aria-pressed={!!min}>
+              {qft(min ? "min_70" : "all_scores", lang)}
+            </Link>
+          </div>
 
           {shown.length === 0 ? (
             <section className="dx-card">
@@ -114,7 +134,7 @@ export default async function LeadsPage(props) {
                   <h2 className={"ld-group-h t-" + g.s}>{t("lead_" + g.s, lang)}<span>{g.items.length}</span></h2>
                 )}
                 <div className="ld-list">
-                  {g.items.map(l => <LeadCard key={l.id} lead={l} lang={lang} company={co?.name || ""} />)}
+                  {g.items.map(l => <LeadCard key={l.id} lead={l} lang={lang} company={co?.name || ""} score={l.score} market={co?.default_market || "MD"} />)}
                 </div>
               </section>
             ))
