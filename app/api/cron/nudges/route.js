@@ -7,6 +7,9 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../lib/supabase.js";
 import { dueNudges, sendNudge } from "../../../../lib/nudgeRun.js";
 import { sendOpenDigests } from "../../../../lib/openDigest.js";
+import { sendFeeReminders } from "../../../../lib/feeReminders.js";
+import { sendEmail, emailConfigured, ownerAlertEmail } from "../../../../lib/email.js";
+import { logActivity } from "../../../../lib/activity.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +29,8 @@ export async function GET(req) {
   if (purgeErr && !/kind|check|constraint/i.test(purgeErr.message || "")) console.error("[cron nudges] reading purge failed:", purgeErr.message);
   // the morning "offers opened" email, for companies that chose it or keep quiet hours
   const digests = await sendOpenDigests(db, { budgetMs: 15_000 });
+  // the fee per won project: its reminders (lib/feeReminders.js), nothing while JOB_FEES is off
+  const fees = await sendFeeReminders(db, { io: { sendEmail, emailConfigured, ownerAlertEmail, logActivity }, budgetMs: 10_000 });
   const due = await dueNudges(db);
   const tally = { due: due.length, sent: 0, skipped: 0, failed: 0 };
   for (const n of due) {
@@ -35,5 +40,5 @@ export async function GET(req) {
     else if (r.skipped) tally.skipped++;
     else tally.failed++;
   }
-  return NextResponse.json({ ok: true, ...tally, digests });
+  return NextResponse.json({ ok: true, ...tally, digests, fees });
 }
