@@ -124,17 +124,27 @@ const CSS = `
   .p-offer .p-o-net b{color:#1E6B4E}
 
   /* sections */
-  .print-sheet section{margin-top:15px}
+  .print-sheet section{margin-top:13px}
   .print-sheet h2{display:flex;align-items:center;gap:9px;font-family:${D};font-weight:700;font-size:15px;
     margin:0 0 8px;color:#142A21;break-after:avoid;page-break-after:avoid}
   .p-n{flex:none;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#1E6B4E;
     color:#fff;font-family:${D};font-size:10.5px;font-weight:700}
   .p-lead{margin:0 0 7px;font-size:12px;color:#3B5046;max-width:92ch}
   .p-note{margin:6px 0 0;font-size:11px;color:#66756C;line-height:1.45}
+  /* the year's energy in four figures */
+  .p-etiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:9px}
+  .p-etiles > div{border:1px solid #E3E1D6;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:1px}
+  .p-etiles b{font-family:${D};font-size:15px;font-weight:800;color:#142A21;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .p-etiles span{font-size:10.5px;color:#3B5046}
+  .p-etiles em{font-style:normal;font-size:9.5px;color:#8A948E}
+  .p-etiles .t-prod b{color:#1E6B4E}
 
   /* what you are buying */
   .p-buy{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:start}
   .p-buy.has-roof{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
+  /* a photo or the view from above sits beside the equipment, not under it: full width it took half of page 1 and
+     pushed the energy chart onto a page of its own */
+  .p-buy.has-pic{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .p-gear-t{width:100%;border-collapse:collapse;font-size:11.5px}
   .p-gear-t th{text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#66756C;
     padding:0 8px 6px 0;border-bottom:1.5px solid #142A21}
@@ -214,11 +224,14 @@ const CSS = `
   .p-assump{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px 14px;margin:0;font-size:9.5px;color:#66756C}
   .p-assump div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted #E3E1D6;padding:2px 0}
   .p-assump dt{margin:0}.p-assump dd{margin:0;color:#3B5046;text-align:right}
-  .p-foot{margin-top:6px;font-size:9.5px;color:#8A948E;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .p-foot{margin:5px 0 0;font-size:9px;color:#8A948E;line-height:1.4}
+  /* the assumptions, the signature line and the footer stay together: a footer alone on a last page reads as an error */
+  .p-end{break-inside:avoid;page-break-inside:avoid}
 
-  /* pagination: page 2 starts at the money; keep units whole */
-  .p-money{break-before:page;page-break-before:always}
-  .p-offer,.p-scen,.p-chart,.p-duo,.p-fit,.p-steps,.p-cta,.p-gear-t,.p-backup,.p-annex,.p-ua{break-inside:avoid;page-break-inside:avoid}
+  /* pagination: the sections follow one another (a forced page before the money left page 2 with only the
+     monthly chart when the roof photo filled page 1); a unit is never split across two pages */
+  .p-money{break-inside:avoid;page-break-inside:avoid}
+  .p-offer,.p-scen,.p-chart,.p-duo,.p-fit,.p-steps,.p-cta,.p-gear-t,.p-backup,.p-annex,.p-ua,.p-etiles,.p-energy{break-inside:avoid;page-break-inside:avoid}
   @page{ size:A4; margin:14mm; }
   @media print{ .print-sheet{width:auto;padding:0;margin:0} }
   @media screen{ .p-money{margin-top:28px;padding-top:18px;border-top:1px dashed #E3E1D6} }
@@ -229,8 +242,8 @@ const CSS = `
     .p-offer{grid-template-columns:1fr 1fr}
     .p-offer > div:nth-child(3){border-left:0}
     .p-offer > div:nth-child(n+3){border-top:1px solid #E3E1D6}
-    .p-scen,.p-buy.has-roof,.p-duo,.p-fit,.p-assump{grid-template-columns:minmax(0,1fr)}
-    .p-steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .p-scen,.p-buy.has-roof,.p-buy.has-pic,.p-duo,.p-fit,.p-assump{grid-template-columns:minmax(0,1fr)}
+    .p-steps,.p-etiles{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
 `;
 
@@ -322,6 +335,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   const selfKwh = (q.self || 0) * q.prod0;
   const fromSolar = Math.min(selfKwh, consEff);
   const coverPct = consEff > 0 ? Math.round((fromSolar / consEff) * 100) : 0;
+  const kwh = (v) => `${Math.round(v).toLocaleString(loc)} ${kwhUnit(lang)}`;
 
   // Valid for the company's validity window from when the quote was sent,
   // in the app's timezone.
@@ -397,7 +411,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
           b: battKwh > 0 ? ppt("with_batt", lang, { b: battKwh }) : "",
           p: Math.round(q.prod0).toLocaleString(loc),
         })}</p>
-        <div className={"p-buy" + (hasRoof ? " has-roof" : "")}>
+        <div className={"p-buy" + (hasRoof && !roofPhoto && !roofSat ? " has-roof" : roofPhoto || roofSat || roofSite ? " has-pic" : "")}>
           <table className="p-gear-t"><tbody>
             <tr>
               <th>{tr("pdf_component")}</th><th>{tr("pdf_gear")}</th>
@@ -470,10 +484,33 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         )}
       </section>
 
-      <section>
+      <section className="p-energy">
         <h2><span className="p-n">{num()}</span>{ppt("energy_h", lang)}</h2>
         <MonthlySVG prod={prodMonthly} cons={consMonthly} lang={lang} loc={loc} compact />
         {consEff > 0 && <p className="p-note">{ppt("e_line", lang, { s: selfPct, c: coverPct })}</p>}
+        {/* the year in four figures: what it makes, where it goes, what is still bought */}
+        <div className="p-etiles">
+          <div className="t-prod">
+            <b>{kwh(q.prod0)}</b><span>{ppt("e_prod", lang)}</span>
+            <em>{ppt("e_s_prod", lang, { v: kwh(Math.max(...prodMonthly)) })}</em>
+          </div>
+          {consEff > 0 && (
+            <div>
+              <b>{kwh(selfKwh)}</b><span>{ppt("e_t_home", lang)}</span>
+              <em>{ppt("e_s_share", lang, { p: selfPct })}</em>
+            </div>
+          )}
+          <div>
+            <b>{kwh(Math.max(0, q.prod0 - selfKwh))}</b><span>{ppt("e_t_out", lang)}</span>
+            <em>{surplus && surplus.totalKwh > 0 ? ppt("e_s_paid", lang, { v: fmt(surplus.eur) }) : ppt("e_s_share", lang, { p: 100 - selfPct })}</em>
+          </div>
+          {consEff > 0 && (
+            <div>
+              <b>{kwh(Math.max(0, consEff - fromSolar))}</b><span>{ppt("e_t_in", lang)}</span>
+              <em>{ppt("e_s_cons", lang, { p: 100 - coverPct })}</em>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Page 2: the money, as one argument. */}
@@ -584,6 +621,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         {fit.length === 0 && <p className="p-eco">{co2(tr("pdf2_eco", { kg: Math.round(co2Year).toLocaleString(loc), t: trees }))}</p>}
       </section>
 
+      <div className="p-end">
       <div className="p-annex">
         <div className="p-annex-h">{tr("pdf_assump_h")}: <span>{tr("pdf2_assump_s")}</span></div>
         <dl className="p-assump">
@@ -604,9 +642,11 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         <p className="p-lead"><b>{ppt("sig_print", lang, { name: signed.name, date: signed.date || "", level: ppt(signed.level === "qualified" ? (signed.simulated ? "lvl_simulated" : "lvl_qualified") : "lvl_simple", lang) })}</b></p>
       )}
 
-      <div className="p-foot">
-        <span>{preparedBy?.name ? `${tr("pp_prepared_by")} ${preparedBy.name}${preparedBy.phone ? ", " + preparedBy.phone : ""}` : company.name}</span>
-        <span>{company.name}, {tr("pdf_foot")}, voltmira.com</span>
+      {/* one line: who prepared it, and the company's note */}
+      <p className="p-foot">
+        {preparedBy?.name ? `${tr("pp_prepared_by")} ${preparedBy.name}${preparedBy.phone ? ", " + preparedBy.phone : ""}. ` : ""}
+        {company.name}, {tr("pdf_foot")}, voltmira.com
+      </p>
       </div>
     </div>
   );
