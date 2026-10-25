@@ -80,9 +80,16 @@ drop trigger if exists profiles_lock_identity on profiles;
 create trigger profiles_lock_identity before update on profiles
   for each row execute function lock_columns('id', 'company_id', 'role', 'email', 'title');
 
--- 4. the counters are for the server only
-revoke all on function bump_proposal_stat(text, text, integer) from public, anon, authenticated;
-grant execute on function bump_proposal_stat(text, text, integer) to service_role;
+-- 4. the counters are for the server only (skipped if the function has another shape; nothing else depends on it)
+do $$
+begin
+  if to_regprocedure('public.bump_proposal_stat(text, text, integer)') is not null then
+    revoke all on function public.bump_proposal_stat(text, text, integer) from public, anon, authenticated;
+    grant execute on function public.bump_proposal_stat(text, text, integer) to service_role;
+  else
+    raise notice 'bump_proposal_stat(text, text, integer) not found: its access was left as it is';
+  end if;
+end $$;
 
 -- Check it worked (optional):
 --   select count(*) filter (where referral_token is null) as without_token from proposals;   -- 0
