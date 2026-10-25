@@ -286,7 +286,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const pickView = (v) => {
     setView(v);
     try { sessionStorage.setItem(viewKey, v); } catch { /* not remembered, still switches */ }
-    const bar = document.querySelector(".q-views");
+    // switched from far down the page: back to the tabs, the top of the new tab
+    const bar = document.querySelector("#workflow .wfr-tabs");
     if (bar && bar.getBoundingClientRect().top < 0) bar.scrollIntoView({ block: "start" });
   };
   useEffect(() => {
@@ -902,6 +903,16 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     <StudioJobLine key="studio" projectId={initial.id} kw={p.kw} lang={lang} />,
   ].filter(Boolean);
   // the left column ends after the grid file: papers and fee there, the work on site and the rest on the right
+  // A signed job (or one whose grid file is under way) has two pages: the quote, and the job itself, each in two
+  // columns of about the same height. The tabs are the progress card's bottom edge (components/WorkflowRail.jsx).
+  const viewTabs = jobTab ? (
+    <div role="tablist" aria-label={tr("q_views_label")}>
+      {[["offer", tr("q_view_offer")], ["job", tr("q_view_job")]].map(([id, label]) => (
+        <button key={id} type="button" role="tab" id={"q-tab-" + id} aria-selected={view === id} aria-controls={"q-" + id}
+          onClick={() => pickView(id)}>{label}</button>
+      ))}
+    </div>
+  ) : null;
   const siteAt = jobCards.findIndex((c) => c.key === "site");
   const jobSplit = siteAt > 0 ? siteAt : 1;
 
@@ -990,7 +1001,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
 
       {/* Where this job is in the workflow, and the one next thing to do
           (lib/workflow.js). The dashboard and the quotes list link here (#workflow). */}
-      <WorkflowRail projectId={initial.id} lang={lang} status={p.status}
+      <WorkflowRail projectId={initial.id} lang={lang} status={p.status} tabs={viewTabs}
         onAction={async (a) => {
           if (a.type === "send" || a.type === "copy_link") { makeProposal(); return true; }
           if (a.type === "invoice") { openInvoice(); return true; }
@@ -1006,17 +1017,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         }} />
 
       <LinkLabels root=".editor" />
-      {/* A signed job (or one whose grid file is under way) has two pages: the quote, and the job itself. One
-          tall column of both ran to many screens of scrolling with the left side long done; now each tab is
-          two columns of about the same height. */}
-      {jobTab && (
-        <div className="dx-tabs q-views" role="tablist" aria-label={tr("q_views_label")}>
-          {[["offer", tr("q_view_offer")], ["job", tr("q_view_job")]].map(([id, label]) => (
-            <button key={id} type="button" role="tab" id={"q-tab-" + id} aria-selected={view === id} aria-controls={"q-" + id}
-              className={view === id ? "on" : ""} onClick={() => pickView(id)}>{label}</button>
-          ))}
-        </div>
-      )}
       <div className="editor q-pane" id="q-offer" hidden={jobTab && view !== "offer"} role={jobTab ? "tabpanel" : undefined} aria-labelledby={jobTab ? "q-tab-offer" : undefined}>
         {/* left: inputs, and whether the design is buildable */}
         <FoldColumn className="stack" lang={lang}>

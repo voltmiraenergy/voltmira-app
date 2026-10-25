@@ -34,6 +34,8 @@
 //                 { type: "step", projectId, step, done? }      install checklist key (done: false = untick)
 //                 { type: "grid", projectId, stage, operator?, clear? }  grid-file stage (clear = remove its date)
 //                 { type: "link", href } and { type: "tel", phone } are plain links
+//   tabs        node, optional; the page's own tabs (the quote's Oferta / Lucrarea), drawn as the card's
+//               bottom edge so the card and the tabs read as one header
 //   onChange    ({ installProgress?, gridFile?, proposalCode? }) => void
 //               optional; called after the rail itself changed the quote, with
 //               what the server returned, so the editor can refresh its own
@@ -52,6 +54,7 @@ import { isNetworkError } from "../lib/offline.js";
 import { setInstallStep, setGridFile, markProjectWon } from "../lib/actions.js";
 import { sendOffer } from "../lib/sendOffer.js";
 import { wt, describe, stageName, actLabel } from "../lib/workflowText.js";
+import { phaseGroups } from "../lib/workflow.js";
 import { t } from "../lib/i18n.js";
 import { mdDayKey, fmtDate } from "../lib/tz.js";
 import { LOCALE } from "../lib/relTime.js";
@@ -62,7 +65,7 @@ const today = () => mdDayKey(Date.now());
 /** Two actions that do the same thing are shown once. */
 const sig = (a) => (a ? [a.type, a.step || a.stage || a.phone || a.href || "", a.done === false || a.clear ? "undo" : ""].join(":") : "");
 
-export default function WorkflowRail({ projectId, lang = "en", status, refreshKey, onAction, onChange }) {
+export default function WorkflowRail({ projectId, lang = "en", status, refreshKey, onAction, onChange, tabs = null }) {
   const router = useRouter();
   const [data, setData] = useState(null);
   const [failed, setFailed] = useState(false);
@@ -74,6 +77,8 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
   const [readKwh, setReadKwh] = useState("");
   // the step whose panel is open; null = the step that is next
   const [sel, setSel] = useState(null);
+  // the phase whose steps are shown under the four phases; null = none, the card stays short
+  const [phaseOpen, setPhaseOpen] = useState(null);
 
   // Re-read where the quote stands; state is only set once the answer is in.
   const load = useCallback(() => getProjectWorkflow(projectId).then(
@@ -163,10 +168,10 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
 
   if (!w) {
     return (
-      <section id="workflow" className="card wfr" aria-busy={!failed}>
+      <section id="workflow" className={"card wfr" + (tabs ? " has-tabs" : "")} aria-busy={!failed}>
         <div className="wfr-head"><h3>{wt("rl_title", lang)}</h3></div>
-        <ol className="wfr-track" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }} aria-hidden="true">
-          {Array.from({ length: 12 }, (_, i) => <li key={i}><span className="wfr-step"><span className="wfr-seg" /></span></li>)}
+        <ol className="wfr-phases" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => <li key={i}><span className="wfr-phase wfr-phase-skel" /></li>)}
         </ol>
         {failed ? (
           <p className="wfr-msg bad" role="alert">
@@ -176,13 +181,13 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
         ) : (
           <div className="wfr-skel"><span className="sr">{wt("rl_loading", lang)}</span></div>
         )}
+        {tabs && <div className="wfr-tabs">{tabs}</div>}
       </section>
     );
   }
 
   const d = describe(w, lang);
   const loc = LOCALE[lang] || "en-GB";
-  const cols = { gridTemplateColumns: `repeat(${w.stages.length}, minmax(0, 1fr))` };
   const dateOf = (at) => fmtDate(String(at).length === 10 ? at + "T12:00:00Z" : at, loc, { day: "numeric", month: "long" });
   const tip = (s) => {
     const name = stageName(s.id, lang, w.market, true);
@@ -191,7 +196,7 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
       : s.optional ? ` (${wt("rl_optional", lang)})` : "";
     return name + extra;
   };
-  const position = Math.max(1, w.stages.findIndex((s) => s.id === w.stage) + 1);
+  const groups = phaseGroups(w.stages, { target: w.target || null });
   const targetId = w.target || null;
   const openId = sel && w.stages.some((s) => s.id === sel) ? sel : targetId;
   const open = w.stages.find((s) => s.id === openId) || null;
@@ -236,10 +241,9 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
   }
 
   return (
-    <section id="workflow" className="card wfr" aria-labelledby="wfr-h" aria-busy={busy}>
+    <section id="workflow" className={"card wfr" + (tabs ? " has-tabs" : "")} aria-labelledby="wfr-h" aria-busy={busy}>
       <div className="wfr-head">
         <h3 id="wfr-h">{wt("rl_title", lang)}</h3>
-        {!w.lost && <span className="wfr-count">{wt("rl_step", lang, { i: position, n: w.stages.length })}</span>}
         <span className="wfr-badges">
           {w.financingReady && <span className="wfr-badge ready" title={wt("rl_ready_h", lang)}>{wt("rl_ready", lang)}</span>}
           {(data.portfolios || []).map((pf) => (
@@ -248,46 +252,61 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
         </span>
       </div>
 
-      <ol className="wfr-track" style={cols} aria-label={wt("rl_title", lang)}>
-        {w.stages.map((s) => (
-          <li key={s.id}>
-            <button type="button" className={`wfr-step ${s.state}${s.optional ? " opt" : ""}${s.id === openId ? " on" : ""}`}
-              title={tip(s)} aria-pressed={s.id === openId} aria-controls="wfr-panel"
-              onClick={() => { setSel(s.id === targetId ? null : s.id); setMsg(null); setInvOpen(false); }}>
-              <span className="wfr-seg" aria-hidden="true" />
-              <span className="wfr-lbl">{stageName(s.id, lang, w.market)}</span>
-              <span className="sr">{tip(s)}</span>
+      {/* four phases, each with one small segment per step; a phase opens its steps under the row */}
+      <ol className="wfr-phases" aria-label={wt("rl_title", lang)}>
+        {groups.map((g) => (
+          <li key={g.phase}>
+            <button type="button" className={`wfr-phase ${w.lost ? "todo" : g.state}${phaseOpen === g.phase ? " on" : ""}`}
+              aria-expanded={phaseOpen === g.phase} aria-controls="wfr-chips"
+              onClick={() => { setPhaseOpen(phaseOpen === g.phase ? null : g.phase); setSel(null); setMsg(null); setInvOpen(false); }}>
+              <span className="wfr-ph-top">
+                <b>{wt("ph_" + g.phase, lang)}</b>
+                {!w.lost && <span className="wfr-ph-n">{g.done}/{g.total}</span>}
+              </span>
+              <span className="wfr-ph-segs" aria-hidden="true">
+                {g.steps.map((st) => <i key={st.id} className={`wfr-seg ${st.state}${st.optional ? " opt" : ""}${st.id === openId ? " on" : ""}`} />)}
+              </span>
             </button>
           </li>
         ))}
       </ol>
 
-      <div id="wfr-panel" className={"wfr-now" + (onTarget && w.stuck ? " stuck" : "") + (open && open.state === "gap" ? " gap" : "")} aria-live="polite">
-        <div className="wfr-now-tx">
+      {phaseOpen && (
+        <div id="wfr-chips" className="wfr-chips">
+          {(groups.find((g) => g.phase === phaseOpen)?.steps || []).map((st) => (
+            <button key={st.id} type="button" className={`wfr-chip ${st.state}${st.optional ? " opt" : ""}${st.id === openId ? " on" : ""}`}
+              title={tip(st)} aria-pressed={st.id === openId} aria-controls="wfr-panel"
+              onClick={() => { setSel(st.id === targetId ? null : st.id); setMsg(null); setInvOpen(false); }}>
+              <i className={`wfr-seg ${st.state}${st.optional ? " opt" : ""}`} aria-hidden="true" />{stageName(st.id, lang, w.market)}
+              <span className="sr">{tip(st)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* the step that is next (or the one picked), on one line, with what does it */}
+      <div id="wfr-panel" className={"wfr-next" + (onTarget && w.stuck ? " stuck" : "") + (open && open.state === "gap" ? " gap" : "")} aria-live="polite">
+        <div className="wfr-next-tx">
           {onTarget ? (
             <>
-              <span className="wfr-stage">{open ? stageName(open.id, lang, w.market, true) : d.stageLong}</span>
-              {d.why && <p className="wfr-why">{d.why}</p>}
-              {(d.wait || d.days) && (
-                <div className="wfr-meta">
-                  {d.wait && <span className={"w-" + w.waitingOn}>{d.wait}</span>}
-                  {d.days && <span>{d.days}</span>}
-                </div>
-              )}
-              {d.stuck && <p className="wfr-stuck">{d.stuck}</p>}
+              <b className="wfr-stage">{open ? stageName(open.id, lang, w.market, true) : d.stageLong}</b>
+              {d.why && <span className="wfr-why" title={d.why}>{d.why}</span>}
+              {d.wait && <span className={"wfr-pill w-" + w.waitingOn}>{d.wait}</span>}
+              {d.days && <span className="wfr-pill">{d.days}</span>}
+              {d.stuck && <span className="wfr-pill stuck" title={d.stuck}>{d.stuck}</span>}
             </>
           ) : (
             <>
-              <span className="wfr-stage">{stageName(open.id, lang, w.market, true)}</span>
-              <p className="wfr-why">{stateLine}</p>
-              {open.undo && <p className="wfr-undo-h">{wt("rs_undo_h", lang)}</p>}
+              <b className="wfr-stage">{stageName(open.id, lang, w.market, true)}</b>
+              <span className="wfr-why" title={stateLine}>{stateLine}</span>
+              {open.undo && <span className="wfr-undo-h">{wt("rs_undo_h", lang)}</span>}
             </>
           )}
         </div>
         <div className="wfr-acts">
           {buttons.map((b, i) => actionEl(b.a, b.label, i === 0))}
           {!onTarget && open?.undo && actionEl(open.undo, wt("do_undo", lang), false)}
-          {onTarget && !w.next && !w.lost && !buttons.length && <p className="wfr-done">{wt("rl_done_all", lang)}</p>}
+          {onTarget && !w.next && !w.lost && !buttons.length && <span className="wfr-done">{wt("rl_done_all", lang)}</span>}
           {!onTarget && targetId && (
             <button type="button" className="btn sm link wfr-back" onClick={() => { setSel(null); setMsg(null); }}>{wt("rl_back", lang)}</button>
           )}
@@ -331,8 +350,8 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
           ))}
         </div>
       )}
-      {msg ? <p className={"wfr-msg " + (msg.ok ? "ok" : "bad")} role="status">{msg.text}</p>
-        : <p className="wfr-hint">{wt("rl_tap", lang)}</p>}
+      {msg && <p className={"wfr-msg " + (msg.ok ? "ok" : "bad")} role="status">{msg.text}</p>}
+      {tabs && <div className="wfr-tabs">{tabs}</div>}
     </section>
   );
 }
