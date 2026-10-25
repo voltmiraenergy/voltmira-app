@@ -181,3 +181,11 @@ html[data-theme="dark"] .app .qb-actions .qb-send-wa { color: #5FD592; border-co
 .app .qb-tool:not(.done):not(:disabled) { border: 1.5px solid var(--amber); background: var(--amber-tint); }
 .app .qb-tool:not(.done):not(:disabled) .qb-tool-ic { background: var(--amber); color: var(--on-amber); }
 .app .qb-tool:not(.done):not(:disabled):hover { border-color: var(--amber-ink); }
+
+/* ---------------------------------------------------------------- quote and job tabs */
+/* a signed job's two pages (editor.jsx q-views): the quote, and the job in two even columns */
+.app .qb .q-views { width: fit-content; max-width: 100%; margin: 0 0 14px; }
+.app .qb .q-views button { padding: 8px 18px; font-size: 13.5px; }
+.app .qb .q-pane[hidden] { display: none; }
+.app .qb .q-job { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 980px) { .app .qb .q-job { grid-template-columns: minmax(0, 1fr); } }

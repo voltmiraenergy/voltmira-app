@@ -279,6 +279,46 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // what the workflow rail last saved (a ticked step, a grid-file stage), so the
   // checklist and grid-file cards below show it without a reload
   const [railProg, setRailProg] = useState(null);
+  // Which tab of a signed job is open: the job itself by default (that is what a signed job is opened for), the
+  // quote otherwise; a fee link opens the job. Remembered per quote for this browser tab.
+  const [view, setView] = useState(feeOpen || initial.status === "won" ? "job" : "offer");
+  const viewKey = "vm_qview_" + initial.id;
+  const pickView = (v) => {
+    setView(v);
+    try { sessionStorage.setItem(viewKey, v); } catch { /* not remembered, still switches */ }
+    const bar = document.querySelector(".q-views");
+    if (bar && bar.getBoundingClientRect().top < 0) bar.scrollIntoView({ block: "start" });
+  };
+  useEffect(() => {
+    // after the first paint: the tab this browser had open on this quote, then a link's card
+    const restore = () => {
+      try {
+        const saved = sessionStorage.getItem(viewKey);
+        if (!feeOpen && (saved === "offer" || saved === "job")) setView(saved);
+      } catch { /* storage blocked: the default tab */ }
+      toHash();
+    };
+    // a link to a card (#portfolio), the fee asked for, or another part of the page asking: that card's tab
+    const toHash = () => {
+      try {
+        const el = location.hash && document.querySelector(location.hash);
+        if (el?.closest("#q-job")) setView("job");
+        else if (el?.closest("#q-offer")) setView("offer");
+      } catch { /* not a selector */ }
+    };
+    const toJob = () => setView("job");
+    const ask = (e) => { if (e.detail === "job" || e.detail === "offer") setView(e.detail); };
+    const first = setTimeout(restore, 0);
+    window.addEventListener("hashchange", toHash);
+    window.addEventListener("vm-fee-locked", toJob);
+    window.addEventListener("vm-quote-view", ask);
+    return () => {
+      clearTimeout(first);
+      window.removeEventListener("hashchange", toHash);
+      window.removeEventListener("vm-fee-locked", toJob);
+      window.removeEventListener("vm-quote-view", ask);
+    };
+  }, [viewKey, feeOpen]);
   // after the grid card sends or records a step the page is refreshed: what the server now holds replaces what the
   // rail last saved here, or the grid-file and checklist cards kept showing the stages from before
   useEffect(() => { setRailProg(null); }, [initial.install_progress]);
@@ -836,6 +876,35 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const margin = q.e.grossCost - materials;
   const clientLine = [p.client, String(p.address || "").split(",").slice(0, 2).join(",").trim()].filter(Boolean).join(", ");
 
+  // The job's own cards (lib/jobFees.js fee, the install steps, on site, the grid file, the portfolio). In their
+  // own tab once the job is signed or its grid file is under way; under the results before that.
+  const gridShown = (isMD || isUA) && (p.status !== "draft" || !!initial.install_progress?.gridFile);
+  const jobTab = p.status === "won" || gridShown;
+  const jobCards = [
+    signed && <SignedContract key="signed" signed={signed} lang={lang} />,
+    /* VoltMira's fee for this job: what it will cost, free, on a statement, paid, or nothing when the client gave up (lib/jobFees.js) */
+    jobFee && <FeeCard key="fee" projectId={initial.id} lang={lang} status={p.status} state={jobFee} open={feeOpen}
+      onGaveUp={() => { const next = { ...pRef.current, status: "lost" }; pRef.current = next; statusRef.current = "lost"; setP(next); }} />,
+    p.status === "won" && <InstallChecklist key={"steps" + (railProg ? JSON.stringify(railProg) : "init")} projectId={initial.id}
+      initial={railProg || initial.install_progress} lang={lang} />,
+    /* The grid-connection file, Moldova's or Ukraine's: from the moment the offer is out (some installers apply
+       for the approval before the client signs). */
+    gridShown && <GridFile key={"grid" + p.market + (railProg?.gridFile ? JSON.stringify(railProg.gridFile) : "")} projectId={initial.id}
+      market={p.market} address={[p.address, p.title].filter(Boolean).join(", ")}
+      initial={(railProg || initial.install_progress)?.gridFile} lang={lang}
+      client={{ client_name: p.client || "", client_email: p.clientEmail || "", address: p.address || "", client_kind: initial.client_kind || null }} submission={{ ...gridSub, installedKw: productionPower({ kw: p.kw, bom: p.bom, batt: p.batt, batt_kwh: p.battKwh }).kw }} />,
+    /* on site: checklist, serial numbers, photos and the client's signature, with no signal too (Phase 3) */
+    p.status === "won" && <SiteRecord key="site" projectId={initial.id} companyId={initial.company_id} lang={lang} me={meName}
+      clientName={p.client || ""} clientLang={initial.client_lang || null} quoteCounts={quoteCounts(p.bom)} />,
+    /* A signed job in Moldova or Ukraine goes into a portfolio for a lender (renders nothing otherwise). */
+    <AddToPortfolio key="portfolio" projectId={initial.id} lang={lang} status={p.status} market={p.market} />,
+    /* the Studio job this quote belongs to, when one is linked */
+    <StudioJobLine key="studio" projectId={initial.id} kw={p.kw} lang={lang} />,
+  ].filter(Boolean);
+  // the left column ends after the grid file: papers and fee there, the work on site and the rest on the right
+  const siteAt = jobCards.findIndex((c) => c.key === "site");
+  const jobSplit = siteAt > 0 ? siteAt : 1;
+
   return (
     <div className="qb">
       <header className="qb-head">
@@ -937,8 +1006,19 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         }} />
 
       <LinkLabels root=".editor" />
-      <div className="editor">
-        {/* left: inputs */}
+      {/* A signed job (or one whose grid file is under way) has two pages: the quote, and the job itself. One
+          tall column of both ran to many screens of scrolling with the left side long done; now each tab is
+          two columns of about the same height. */}
+      {jobTab && (
+        <div className="dx-tabs q-views" role="tablist" aria-label={tr("q_views_label")}>
+          {[["offer", tr("q_view_offer")], ["job", tr("q_view_job")]].map(([id, label]) => (
+            <button key={id} type="button" role="tab" id={"q-tab-" + id} aria-selected={view === id} aria-controls={"q-" + id}
+              className={view === id ? "on" : ""} onClick={() => pickView(id)}>{label}</button>
+          ))}
+        </div>
+      )}
+      <div className="editor q-pane" id="q-offer" hidden={jobTab && view !== "offer"} role={jobTab ? "tabpanel" : undefined} aria-labelledby={jobTab ? "q-tab-offer" : undefined}>
+        {/* left: inputs, and whether the design is buildable */}
         <FoldColumn className="stack" lang={lang}>
           <section className="card">
             <h3>{tr("client_site")}</h3>
@@ -1215,6 +1295,19 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             </div>
           )}
 
+          {/* Whether the thing is buildable, before whether it's profitable —
+              run against the equipment actually picked in the bill of materials. */}
+          <DesignChecks
+            lang={lang}
+            bom={p.bom}
+            kw={p.kw}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            consKwh={consEff}
+            market={p.market}
+          />
+
+          <StructuralLoads lang={lang} roofPitchDeg={mainPlane?.tiltDeg} />
+
         </FoldColumn>
 
         {/* right: results */}
@@ -1321,19 +1414,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             </label>
           </section>
 
-          {/* Whether the thing is buildable, before whether it's profitable —
-              run against the equipment actually picked in the bill of materials. */}
-          <DesignChecks
-            lang={lang}
-            bom={p.bom}
-            kw={p.kw}
-            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
-            consKwh={consEff}
-            market={p.market}
-          />
-
-          <StructuralLoads lang={lang} roofPitchDeg={mainPlane?.tiltDeg} />
-
           {/* Compare every inverter that could serve this array, not just the
               one in the BOM — applying a row swaps the BOM's inverter line. */}
           <DesignSuggestions
@@ -1423,40 +1503,18 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <RaionCard projectId={initial.id} lang={lang} lat={p.lat} lon={p.lon} initialShow={!!initial.show_raion} />
           )}
 
-          {signed && <SignedContract signed={signed} lang={lang} />}
-
-          {/* VoltMira's fee for this job: what it will cost, free, on a statement, paid, or nothing when the client gave up (lib/jobFees.js) */}
-          {jobFee && <FeeCard projectId={initial.id} lang={lang} status={p.status} state={jobFee} open={feeOpen}
-            onGaveUp={() => { const next = { ...pRef.current, status: "lost" }; pRef.current = next; statusRef.current = "lost"; setP(next); }} />}
-
-          {p.status === "won" && (
-            <InstallChecklist key={railProg ? JSON.stringify(railProg) : "init"} projectId={initial.id}
-              initial={railProg || initial.install_progress} lang={lang} />
-          )}
-
-          {/* on site: checklist, serial numbers, photos and the client's signature, with no signal too (Phase 3) */}
-          {p.status === "won" && (
-            <SiteRecord projectId={initial.id} companyId={initial.company_id} lang={lang} me={meName}
-              clientName={p.client || ""} clientLang={initial.client_lang || null} quoteCounts={quoteCounts(p.bom)} />
-          )}
-
-          {/* The grid-connection file, Moldova's or Ukraine's: from the moment
-              the offer is out (some installers apply for the approval before
-              the client signs). */}
-          {(isMD || isUA) && (p.status !== "draft" || initial.install_progress?.gridFile) && (
-            <GridFile key={p.market + (railProg?.gridFile ? JSON.stringify(railProg.gridFile) : "")} projectId={initial.id}
-              market={p.market} address={[p.address, p.title].filter(Boolean).join(", ")}
-              initial={(railProg || initial.install_progress)?.gridFile} lang={lang}
-              client={{ client_name: p.client || "", client_email: p.clientEmail || "", address: p.address || "", client_kind: initial.client_kind || null }} submission={{ ...gridSub, installedKw: productionPower({ kw: p.kw, bom: p.bom, batt: p.batt, batt_kwh: p.battKwh }).kw }} />
-          )}
-
-          {/* A signed job in Moldova or Ukraine goes into a portfolio for a
-              lender (renders nothing otherwise). */}
-          <AddToPortfolio projectId={initial.id} lang={lang} status={p.status} market={p.market} />
-          {/* the Studio job this quote belongs to, when one is linked */}
-          <StudioJobLine projectId={initial.id} kw={p.kw} lang={lang} />
+          {/* a quote with no job yet: what it will cost to sign stays under the results */}
+          {!jobTab && jobCards}
         </FoldColumn>
       </div>
+
+      {/* the job: the papers and the fee on the left, the work on site on the right */}
+      {jobTab && (
+        <div className="editor q-pane q-job" id="q-job" hidden={view !== "job"} role="tabpanel" aria-labelledby="q-tab-job">
+          <FoldColumn className="stack" lang={lang}>{jobCards.slice(0, jobSplit)}</FoldColumn>
+          <FoldColumn className="stack" lang={lang}>{jobCards.slice(jobSplit)}</FoldColumn>
+        </div>
+      )}
 
       {/* site designer: draw the roof on satellite imagery, full screen */}
       {siteDesignerOpen && p.lat != null && p.lon != null && (

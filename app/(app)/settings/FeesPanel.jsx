@@ -9,6 +9,7 @@ import { loadFeeOverview, setCompanyIdno } from "../../../lib/feeActions.js";
 import { feeFor, feeLei, FEE_PER_KW_MINOR, FEE_CAP_MINOR, FREE_JOBS } from "../../../lib/jobFees.js";
 import { ft, monthName, feeDay } from "../../../lib/feeText.js";
 import { rangeFill } from "../../../lib/rangeFill.js";
+import FeeSimulator from "../../../components/FeeSimulator.jsx";
 
 const LOCS = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
 
@@ -78,6 +79,9 @@ export default function FeesPanel({ lang }) {
         </div>
         {!d.on && <p className="set-note st-note-tight">{F("off_p")}</p>}
       </section>
+
+      {/* one example job walked through day by day, with the real rules: nothing saved or sent */}
+      <FeeSimulator lang={lang} month={d.month} />
 
       <section className="fp-month" aria-labelledby="fp-month-h">
         <h3 id="fp-month-h">{F("month_h", { m: mName(d.month) })}</h3>
@@ -193,7 +197,7 @@ export default function FeesPanel({ lang }) {
         .app .fp-idno .input{flex:1 1 200px;font-variant-numeric:tabular-nums;letter-spacing:.04em}
         .app .fp-ok{color:var(--green);font-weight:600}
         .app .fp-bad{color:var(--red);font-weight:600}
-        .app .fp-scroll{overflow-x:auto}
+        .app .fp-scroll{overflow-x:auto;position:relative}
         .app .fp-table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
         .app .fp-table th{text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:8px 10px;border-bottom:1.5px solid var(--line);white-space:nowrap}
         .app .fp-table td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink)}

@@ -37,7 +37,7 @@ export default function FeeCard({ projectId, lang, status, state, open = null, o
 
   const fee = state?.fee || null;
   const kwTxt = (k) => Number(k || 0).toLocaleString({ en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "ro-RO", { maximumFractionDigits: 1 });
-  const howLink = <a className="fee-how" href="/settings?tab=fees">{F("how_link")}</a>;
+  const howLink = <a className="fee-how" href="/settings?tab=fees#fee-sim">{F("how_link")}</a>;
 
   // ---- not signed yet: what it will cost when the client signs
   if (status !== "won" && status !== "lost") {

@@ -116,9 +116,13 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
     if (a.type === "invoice") { setInvOpen((v) => !v); return; }
     if (a.type === "reading") { setReadOpen((v) => !v); return; }
     if (a.type === "portfolio") {
-      const el = document.getElementById("portfolio");
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-      else router.push("/portfolios");
+      // the portfolio card lives in the quote's "job" tab: opened first, then scrolled to
+      window.dispatchEvent(new CustomEvent("vm-quote-view", { detail: "job" }));
+      setTimeout(() => {
+        const el = document.getElementById("portfolio");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        else router.push("/portfolios");
+      }, 60);
       return;
     }
     const undo = a.done === false || a.clear;
