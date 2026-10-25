@@ -25,10 +25,11 @@ export default async function FeeInvoicePage(props) {
   const sb = isPlatformAdmin(user?.email) ? supabaseAdmin() : await supabaseServer();
   const { data: inv } = await sb.from("job_fee_invoices").select("*").eq("id", id).maybeSingle();
   if (!inv) notFound();
-  const { data: fees } = await sb.from("job_fees").select("id, kw, tier, amount_minor, status, won_at, project_id").in("id", inv.fee_ids || []);
-  const ids = (fees || []).map((f) => f.project_id);
+  const { data: fees } = await sb.from("job_fees").select("*").in("id", inv.fee_ids || []);
+  const ids = (fees || []).map((f) => f.project_id).filter(Boolean);
   const { data: projects } = ids.length ? await sb.from("projects").select("id, title, client_name").in("id", ids) : { data: [] };
-  const name = new Map((projects || []).map((p) => [p.id, p.title || p.client_name || ""]));
+  // a job deleted since reads by the name kept on its fee (add-fee-lockdown.sql)
+  const name = new Map([...(fees || []).map((f) => [f.project_id, f.project_title || f.client_name || ""]), ...(projects || []).map((p) => [p.id, p.title || p.client_name || ""])]);
   const kwTxt = (k) => Number(k || 0).toLocaleString("ro-RO", { maximumFractionDigits: 1 });
   const s = inv.seller || {}, b = inv.buyer || {};
   const rows = (fees || []).sort((x, y) => Date.parse(x.won_at) - Date.parse(y.won_at));

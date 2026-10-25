@@ -30,6 +30,7 @@ import { cache } from "react";
 import { headers } from "next/headers";
 import { isRateLimited } from "../../../lib/ratelimit.js";
 import { publicProposalResponse } from "../../../lib/proposalPublic.js";
+import { ft as feeT } from "../../../lib/feeText.js";
 import OfferBanner from "./OfferBanner.jsx";
 import UaSection from "./UaSection.jsx";
 import LivePrice from "./LivePrice.jsx";
@@ -113,7 +114,7 @@ export default async function ProposalPage(props) {
   const { after = null, company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
     offer = null, chosenOption = null, cned = null, support = null, tariff = null, referral = null, financing = null, signature = null, qsign = null,
     roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofSite = null, roofPhoto = null, roofPhotoPlace = null, roofSides = null, roofStatus = null,
-    nearby = null, tracking = false } = data;
+    nearby = null, tracking = false, demo = false } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
   const signedDate = signedAt
@@ -275,6 +276,10 @@ export default async function ProposalPage(props) {
 
         {/* The cover: the installer's brand first, then what this is, what it
             costs, what it saves, when it has paid for itself, and the button. */}
+        {/* an offer made in /demo is an example: said at the top, and it cannot be signed (lib/demoServer.js) */}
+        {demo && (
+          <div className="pp-demo" role="note"><b>{feeT("demo_offer_h", lang)}</b> {feeT("demo_offer_p", lang)}</div>
+        )}
         <header id="pp-hero" className="pp-hero">
           <div className="pp-hero-copy">
             <div className="pp-brand">
@@ -695,7 +700,7 @@ export default async function ProposalPage(props) {
                 </div>
                 <OfferBanner lang={lang} accepted={accepted} offer={offer} chosenOption={chosenOption} currency={fmt.currency} rate={fmt.rate}
                   optionLabels={Object.fromEntries(options.map((o, i) => [i + 2, o.label || ppt("opt_n", lang, { n: i + 2 })]))} />
-                <Tracker code={params.code} accepted={accepted} lang={lang} signedName={signedName} signedDate={signedDate}
+                <Tracker code={params.code} accepted={accepted} lang={lang} demo={demo} signedName={signedName} signedDate={signedDate}
                   signature={signature} qsign={qsign} qsignOutcome={["declined", "invalid", "pending"].includes(searchParams?.qsign) ? searchParams.qsign : null} />
               </div>
               <div className="pp-accept-foot">

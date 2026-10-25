@@ -12,7 +12,7 @@ import "./builder.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
 import { regenerateProposal, saveQuoteTemplate, markProjectWon, offerPhone, issueInvoice } from "../../../../lib/actions.js";
-import { sendOffer } from "../../../../lib/sendOffer.js";
+import { sendOffer, feeHoldAnswer } from "../../../../lib/sendOffer.js";
 import { isStandalone, openPdfInApp } from "../../../../lib/openPdf.js";
 import { aiOn } from "../../../../lib/featureFlags.js";
 import AddressField from "../../../../components/AddressField.jsx";
@@ -268,7 +268,13 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // the URL. 0 = invoice the full amount.
   const [invOpen, setInvOpen] = useState(false);
   // an invoice is for a signed job: on a quote not signed yet, "mark signed first" (lib/feeText.js sign_*)
-  const [signAsk, setSignAsk] = useState(false);
+  const [signAsk, setSignAsk] = useState(feeOpen === "sign");
+  // a document refused for a job not signed (the documents window, the grid file) asks to mark it signed
+  useEffect(() => {
+    const ask = () => setSignAsk(true);
+    window.addEventListener("vm-sign-needed", ask);
+    return () => window.removeEventListener("vm-sign-needed", ask);
+  }, []);
   const [signBusy, setSignBusy] = useState(false);
   // what the workflow rail last saved (a ticked step, a grid-file stage), so the
   // checklist and grid-file cards below show it without a reload
@@ -668,10 +674,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   async function refreshProposal() {
     setRefreshing(true); setRefreshMsg(null);
     try {
-      await regenerateProposal(initial.id);
+      feeHoldAnswer(await regenerateProposal(initial.id));
       setRefreshMsg({ ok: true, text: tr("prop_refreshed") });
     } catch (e) {
-      setRefreshMsg({ ok: false, text: e.message === "already_accepted" ? tr("prop_refresh_accepted") : tr("prop_refresh_err") });
+      setRefreshMsg({ ok: false, text: e.message === "already_accepted" ? tr("prop_refresh_accepted") : /^fee_hold/.test(e.message) ? feeT("e_hold_offers", lang) : tr("prop_refresh_err") });
     } finally {
       setRefreshing(false);
     }
@@ -760,7 +766,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       });
       const d = await r.json().catch(() => ({}));
       if (r.ok) setInvMsg({ ok: true, text: tr("email_sent_to", { to: invTo.trim() }) });
-      else setInvMsg({ ok: false, text: d.error === "email_not_configured" ? tr("email_off") : tr("email_failed") });
+      else setInvMsg({ ok: false, text: d.error === "email_not_configured" ? tr("email_off") : d.error === "demo_only" ? feeT("demo_only", lang) : tr("email_failed") });
     } catch {
       setInvMsg({ ok: false, text: tr("email_failed") });
     } finally { setInvBusy(false); }
@@ -777,7 +783,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       });
       const d = await r.json().catch(() => ({}));
       if (r.ok) setEmailMsg({ ok: true, text: tr("email_sent_to", { to: emailTo.trim() }) });
-      else setEmailMsg({ ok: false, text: d.error === "email_not_configured" ? tr("email_off") : tr("email_failed") });
+      else setEmailMsg({ ok: false, text: d.error === "email_not_configured" ? tr("email_off") : d.error === "fee_hold_offers" ? feeT("e_hold_offers", lang) : d.error === "demo_only" ? feeT("demo_only", lang) : tr("email_failed") });
     } catch {
       setEmailMsg({ ok: false, text: tr("email_failed") });
     } finally { setEmailBusy(false); }
@@ -1537,6 +1543,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       {legalDocsOpen && (
         <LegalDocsModal lang={lang} onClose={() => setLegalDocsOpen(false)} initialTab={legalTab}
           feeLocked={!!jobFee?.locked}
+          signNeeded={!!jobFee?.on && !jobFee?.sample && p.status !== "won"}
+          docsNote={!!jobFee?.on && !jobFee?.sample && jobFee?.fee?.status === "due" && !jobFee?.fee?.docs_at}
           company={{ name: companyName, ...companyLegal }}
           project={{ id: initial.id, clientName: signedOffer?.clientName ?? p.client, address: signedOffer?.address ?? p.address, kw: signedOffer?.kw ?? p.kw, price: signedOffer?.price ?? fmt.toLocal(q.e.cost), currency: signedOffer?.currency ?? fmt.currency, batt: signedOffer ? signedOffer.batt : p.batt, battKwh: signedOffer?.battKwh ?? p.battKwh, market: p.market, bom: signedOffer?.bom ?? p.bom, gridOperator: initial.install_progress?.gridFile?.operator, title: p.title }} />
       )}

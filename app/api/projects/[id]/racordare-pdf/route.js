@@ -12,7 +12,9 @@ import { currentUser, currentCompany } from "../../../../../lib/session.js";
 import { projectVisibility } from "../../../../../lib/projectAccess.js";
 import { fillApplication, applicationFileName } from "../../../../../lib/racordareFill.js";
 import { suggestOperator, OPERATORS } from "../../../../../lib/mdGrid.js";
-import { jobGate } from "../../../../../lib/jobFeeServer.js";
+import { jobGate, feeParam } from "../../../../../lib/jobFeeServer.js";
+import { isDemoEmail } from "../../../../../lib/demo.js";
+import { stampPdf } from "../../../../../lib/pdfStamp.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,8 +39,8 @@ export async function GET(req, props) {
 
   // A won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js); the link opens in a
   // new tab, so a locked one goes to the quote with the payment open rather than to a bare error.
-  const gate = await jobGate(supabaseAdmin(), { project, co, user });
-  if (gate.locked) return NextResponse.redirect(new URL(`/projects/${project.id}?fee=${gate.error === "needs_idno" ? "idno" : "locked"}`, req.url));
+  const gate = await jobGate(supabaseAdmin(), { project, co, user, produce: "grid_file" });
+  if (gate.locked) return NextResponse.redirect(new URL(`/projects/${project.id}?fee=${feeParam(gate.error)}`, req.url));
 
   const want = new URL(req.url).searchParams.get("op");
   const saved = project.install_progress?.gridFile?.operator;
@@ -46,7 +48,9 @@ export async function GET(req, props) {
   const op = OPERATORS[want] ? want : OPERATORS[saved] ? saved : suggestOperator([project.address, project.title].filter(Boolean).join(", "));
 
   try {
-    const bytes = await fillApplication(project, op);
+    const filled = await fillApplication(project, op);
+    // made in /demo: DEMO on every page (lib/demoServer.js)
+    const bytes = isDemoEmail(user.email) ? await stampPdf(filled) : filled;
     const file = applicationFileName(op);
     return new NextResponse(bytes, {
       headers: {

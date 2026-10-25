@@ -103,7 +103,7 @@ export default function FeesPanel({ lang }) {
                   {d.current.map((f) => (
                     <tr key={f.id}>
                       <td className="fp-nowrap">{feeDay(f.won_at, lang)}<small>{F(f.trigger === "signed" ? "how_signed" : "how_manual")}</small></td>
-                      <td><Link href={`/projects/${f.projectId}`} className="fp-job">{f.title || f.client || "?"}</Link>{f.client && f.title && <small>{f.client}</small>}</td>
+                      <td>{f.projectId ? <Link href={`/projects/${f.projectId}`} className="fp-job">{f.title || f.client || "?"}</Link> : <span className="fp-job">{f.title || f.client || "?"}</span>}{f.client && f.title && <small>{f.client}</small>}</td>
                       <td className="r">{kwTxt(f.kw)}</td>
                       <td className="r fp-fee">
                         {f.status === "free" ? <><b className="fp-free">{F("st_free")}</b><small>{F("sub_free", { n: f.free_slot, t: FREE_JOBS })}</small></>

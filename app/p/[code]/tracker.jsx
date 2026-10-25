@@ -13,8 +13,9 @@ import { PenLine } from "lucide-react";
 import { t } from "../../../lib/i18n.js";
 import { ppt } from "./text.js";
 import SignaturePad from "./SignaturePad.jsx";
+import { ft as feeT } from "../../../lib/feeText.js";
 
-export default function Tracker({ code, accepted: initialAccepted, lang = "en", signedName = null, signedDate = null, signature = null, qsign = null, qsignOutcome = null }) {
+export default function Tracker({ code, accepted: initialAccepted, lang = "en", signedName = null, signedDate = null, signature = null, qsign = null, qsignOutcome = null, demo = false }) {
   const [accepted, setAccepted] = useState(initialAccepted);
   const [requested, setRequested] = useState(false);
   const [asking, setAsking] = useState(false);       // the call request's small form is open
@@ -131,6 +132,8 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
           <PenLine className="pp-ic" aria-hidden="true" />
           <span>{signedLine}<span className={"pp-lvl" + (level === "lvl_simulated" ? " is-sim" : "")}>{ppt(level, lang)}</span>{who ? <span style={{ display: "block", fontWeight: 500 }}>{ppt("sig_done", lang)}</span> : null}</span>
         </div>
+      ) : demo ? (
+        <p className="pp-demo-sign" role="note">{feeT("demo_offer_p", lang)}</p>
       ) : !signing ? (
         <>
           <button type="button" className="pp-btn pp-btn-accept pp-btn-block"

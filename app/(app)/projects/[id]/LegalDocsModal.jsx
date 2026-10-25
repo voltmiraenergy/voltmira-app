@@ -34,6 +34,7 @@ import { createPortal } from "react-dom";
 import { buildServiceContract, buildCommissioningAct, docLocale } from "../../../../lib/legalDocs.js";
 import { t } from "../../../../lib/i18n.js";
 import { ft } from "../../../../lib/feeText.js";
+import { openPaperwork } from "../../../../lib/feeActions.js";
 import { dec } from "../../../../lib/decimals.js";
 import { kwUnit, kwhUnit } from "../../../p/[code]/text.js";
 import SingleLineDiagram from "../../../../components/SingleLineDiagram.jsx";
@@ -76,7 +77,11 @@ async function downloadCleanPdf(nodeRef, filename, title, { kind = null, project
       body: JSON.stringify({ html: node.outerHTML, css, title, filename, kind, project }),
     });
     // a won job whose fee is overdue (lib/jobFees.js): the payment, not the print dialog
-    if (res.status === 402) { window.dispatchEvent(new Event("vm-fee-locked")); return false; }
+    if (res.status === 402) {
+      const j = await res.json().catch(() => ({}));
+      window.dispatchEvent(new Event(j.error === "not_signed" ? "vm-sign-needed" : "vm-fee-locked"));
+      return false;
+    }
     if (!res.ok) throw new Error("pdf_" + res.status);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -91,7 +96,12 @@ async function downloadCleanPdf(nodeRef, filename, title, { kind = null, project
   }
 }
 
-export default function LegalDocsModal({ lang, onClose, company, project, initialTab = "contract", feeLocked = false }) {
+export default function LegalDocsModal({ lang, onClose, company, project, initialTab = "contract", feeLocked: lockedAtOpen = false, signNeeded: signAtOpen = false, docsNote = false }) {
+  // what the server says when a document is opened (lib/feeActions.js openPaperwork): it can lock what the page
+  // thought was open (a statement gone overdue meanwhile, the job no longer signed)
+  const [serverLock, setServerLock] = useState(null);
+  const signNeeded = signAtOpen || serverLock === "not_signed";
+  const feeLocked = lockedAtOpen || signNeeded || serverLock === "job_fee_due" || serverLock === "needs_idno";
   const isMd = project.market === "MD";
   // the body is written in the language of the market's law (lib/legalDocs.js)
   const locale = docLocale(project.market);
@@ -133,6 +143,15 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
     finally { setExporting(false); }
   }
 
+  // each document opened is recorded on the job's fee: the first one decides that the client giving up no longer
+  // cancels it (lib/jobFees.js feeOnLost)
+  useEffect(() => {
+    if (lockedAtOpen || signAtOpen || !project.id || !["contract", "commissioning", "diagram"].includes(docType)) return;
+    let live = true;
+    openPaperwork(project.id, docType).then((r) => { if (live && r && !r.ok && ["not_signed", "job_fee_due", "needs_idno"].includes(r.error)) setServerLock(r.error); }).catch(() => {});
+    return () => { live = false; };
+  }, [docType, project.id, lockedAtOpen, signAtOpen]);
+
   const TABS = [
     { id: "contract", label: t("ld_tab_contract", lang), show: true },
     { id: "racordare", label: t("ld_tab_racordare", lang), show: isMd },
@@ -145,8 +164,17 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
       <div className="modal ld-modal" onClick={(e) => e.stopPropagation()}>
         <h4>{t("ld_title", lang)}</h4>
 
+        {/* the documents are for a signed job (lib/jobFees.js jobAccess): mark it signed first */}
+        {signNeeded && (
+          <div className="ld-warn ld-locked" role="status">
+            <b>{ft("sign_docs_h", lang)}</b> {ft("sign_docs_p", lang)}{" "}
+            <button type="button" className="btn amber sm" onClick={() => { onClose(); window.dispatchEvent(new Event("vm-sign-needed")); }}>{ft("sign_go", lang)}</button>
+          </div>
+        )}
+        {!signNeeded && docsNote && !feeLocked && <p className="ld-warn" role="note">{ft("docs_note", lang)}</p>}
+
         {/* a signed job whose statement is overdue: the documents wait on it (lib/jobFees.js); the fee card shows the statement */}
-        {feeLocked && (
+        {feeLocked && !signNeeded && (
           <div className="ld-warn ld-locked" role="status">
             <b>{ft("gate_h", lang)}</b> {ft("locked_short", lang)}{" "}
             <button type="button" className="btn amber sm" onClick={() => { onClose(); window.dispatchEvent(new Event("vm-fee-locked")); }}>{ft("statement_open", lang)}</button>

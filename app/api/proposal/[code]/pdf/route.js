@@ -18,6 +18,7 @@ import { NextResponse } from "next/server";
 import { renderProposalPdf } from "../../../../../lib/renderProposalPdf.js";
 import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
 import { supabaseAdmin } from "../../../../../lib/supabase.js";
+import { isDemoCompany } from "../../../../../lib/demoServer.js";
 import { proposalFileName } from "../../../../../lib/proposalFileName.js";
 
 // Chromium needs a real filesystem and ~1GB of RAM: Node runtime, never Edge.
@@ -39,7 +40,10 @@ export async function GET(req, props) {
 
   try {
     const base = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
-    const { pdf, timings } = await renderProposalPdf(code, base);
+    // an offer made in /demo says DEMO on every page (lib/demoServer.js)
+    const { data: owner } = await supabaseAdmin().from("proposals").select("company_id").eq("code", code).maybeSingle();
+    const demo = owner ? await isDemoCompany(supabaseAdmin(), owner.company_id) : false;
+    const { pdf, timings } = await renderProposalPdf(code, base, { watermark: demo ? "DEMO" : null });
     // a paid plan is white-labelled: the file carries the installer's name, not VoltMira's
     let fileName = proposalFileName({ code });
     try {

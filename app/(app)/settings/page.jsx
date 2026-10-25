@@ -28,6 +28,7 @@ import { pt } from "../../../lib/payText.js";
 import { clearOfflineData } from "../../../lib/offline.js";
 import { aiOn } from "../../../lib/featureFlags.js";
 import EstimateSettings from "./EstimateSettings.jsx";
+import { ft as feeT } from "../../../lib/feeText.js";
 
 // the assistants and the website widget are hidden until AI is switched on (lib/featureFlags.js)
 const TABS = [
@@ -270,6 +271,7 @@ export default function Settings() {
         active_subscription: t("s_delete_err_sub", lang),
         confirm_mismatch: t("s_delete_err_mismatch", lang),
         owner_only: t("s_delete_err_owner", lang),
+        fees_owed: feeT("e_delete_fees", lang),
       };
       setDeleteErr(ERR[j.error] || t("s_delete_err_generic", lang));
     } catch {

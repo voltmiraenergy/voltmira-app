@@ -19,6 +19,9 @@ import { et } from "../../lib/energyText.js";
 import { currentUser, currentCompany } from "../../lib/session.js";
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { isDemoEmail } from "../../lib/demo.js";
+import { holdFor } from "../../lib/feeHold.js";
+import { monthName } from "../../lib/feeText.js";
+import FeeHoldBanner from "../../components/FeeHoldBanner.jsx";
 
 
 // Initials for the profile avatar — first letters of the first two words, or the
@@ -44,6 +47,8 @@ export default async function AppLayout({ children }) {
   const who = prof?.name || user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
   // Personal avatar wins; then the company logo; then initials.
   const avatar = prof?.avatar_url || co?.logo_url || "";
+  // a VoltMira statement unpaid past its date: what is held, on every page (lib/feeHold.js)
+  const hold = await holdFor(supabaseAdmin(), co?.id).catch(() => ({ level: 0 }));
 
 
   const items = [
@@ -128,6 +133,8 @@ export default async function AppLayout({ children }) {
             <Link className="demo-cta" href="/login">{t("demo_cta", lang)}</Link>
           </div>
         )}
+        <FeeHoldBanner lang={lang} level={hold.level} daysLate={hold.daysLate || 0} month={monthName(hold.month, lang)}
+          href={hold.invoiceId ? `/fees/invoice/${hold.invoiceId}` : "/settings?tab=fees"} />
         {children}
       </main>
     </div>

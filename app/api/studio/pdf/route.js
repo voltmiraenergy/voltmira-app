@@ -16,6 +16,7 @@ import { supabaseServer } from "../../../../lib/supabase.js";
 import { JOBS_KEY } from "../../../../lib/studioKeys.js";
 import { jobGate } from "../../../../lib/jobFeeServer.js";
 import { supabaseAdmin } from "../../../../lib/supabase.js";
+import { isDemoEmail } from "../../../../lib/demo.js";
 
 // the documents of a won job (lib/jobFees.js LOCKED_DOCS) that this route renders
 const PAPERWORK = ["annex", "protocol", "handover", "performance", "contract", "commissioning", "diagram"];
@@ -54,11 +55,16 @@ export async function POST(req) {
       const job = Array.isArray(js?.value) ? js.value.find((j) => j && String(j.id) === ref) : null;
       if (job?.projectId) projectId = String(job.projectId);
     }
+    // the quote's own documents (contract, commissioning act, diagram) always name their job: without it they are
+    // not rendered, so the lock below cannot be stepped round by leaving the job out
+    const QUOTE_DOCS = ["contract", "commissioning", "diagram"];
+    if (!projectId && QUOTE_DOCS.includes(kind)) return NextResponse.json({ error: "project_required" }, { status: 400 });
     if (projectId) {
       const { data: project } = await sb.from("projects").select("*").eq("id", projectId).maybeSingle();
+      if (!project && QUOTE_DOCS.includes(kind)) return NextResponse.json({ error: "not_found" }, { status: 404 });
       const { data: co } = project ? await sb.from("companies").select("id, idno").eq("id", project.company_id).maybeSingle() : { data: null };
       if (project) {
-        const gate = await jobGate(supabaseAdmin(), { project, co, user });
+        const gate = await jobGate(supabaseAdmin(), { project, co, user, produce: kind });
         if (gate.locked) return NextResponse.json({ error: gate.error, project: project.id }, { status: 402 });
       }
     }
@@ -115,7 +121,8 @@ export async function POST(req) {
 </style></head><body>${html}</body></html>`;
 
   try {
-    const pdf = await renderHtmlPdf(full);
+    // made in /demo: DEMO on every page (lib/demoServer.js)
+    const pdf = await renderHtmlPdf(full, { watermark: isDemoEmail(user?.email) ? "DEMO" : null });
     return new NextResponse(pdf, {
       headers: {
         "content-type": "application/pdf",

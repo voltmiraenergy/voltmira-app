@@ -20,6 +20,7 @@ import { acceptProposal } from "../../../../lib/acceptProposal.js";
 import { acceptIo } from "../../../../lib/acceptIo.js";
 import { publicProposalResponse } from "../../../../lib/proposalPublic.js";
 import { offerTrackingOn } from "../../../../lib/offerSwitches.js";
+import { isDemoCompany } from "../../../../lib/demoServer.js";
 
 /**
  * Email the company owner that a client asked for a call. Never breaks the
@@ -210,6 +211,10 @@ export async function POST(req, props) {
   if (kind === "accept" && prop.accepted_at) {
     // only the first signature counts; the second signer is shown whose it is, not their own name
     return NextResponse.json({ ok: true, already: true, signedName: prop.signer_name || null });
+  }
+  // a demo workspace's offer is an example: nobody signs it (lib/demoServer.js)
+  if (kind === "accept" && !prop.accepted_at && await isDemoCompany(db, prop.company_id)) {
+    return NextResponse.json({ error: "demo_only" }, { status: 403 });
   }
   if (kind === "accept" && !prop.accepted_at) {
     // E-signature + audit trail. What gives an electronic signature evidentiary

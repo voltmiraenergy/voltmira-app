@@ -50,6 +50,12 @@ export async function DELETE(req) {
     return NextResponse.json({ error: "confirm_mismatch" }, { status: 400 });
   }
 
+  // VoltMira fees still owed (signed jobs not paid yet, on a statement or not): the workspace stays until they are
+  // paid or waived, so a fee cannot be walked away from by deleting the account. The fees themselves outlive a
+  // deleted workspace anyway (add-fee-lockdown.sql), so its free jobs stay counted on its tax id.
+  const { count: owed, error: owedErr } = await admin.from("job_fees").select("id", { count: "exact", head: true }).eq("company_id", co.id).eq("status", "due");
+  if (!owedErr && owed > 0) return NextResponse.json({ error: "fees_owed", count: owed }, { status: 409 });
+
   const { error: delErr } = await admin.from("companies").delete().eq("id", co.id);
   if (delErr) return NextResponse.json({ error: "delete_failed" }, { status: 502 });
 

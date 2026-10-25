@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { Receipt, Lock, X, Undo2, FileText } from "lucide-react";
 import { ft, monthName, feeDay } from "../lib/feeText.js";
 import { feeLei, feeMonth, FEE_PER_KW_MINOR, FREE_JOBS } from "../lib/jobFees.js";
-import { clientGaveUp } from "../lib/feeActions.js";
+import { clientGaveUp, askFeeWaiver } from "../lib/feeActions.js";
 
 /**
  * @param {object} p
@@ -26,6 +26,7 @@ export default function FeeCard({ projectId, lang, status, state, open = null, o
   const [gate, setGate] = useState(open === "locked" || open === "idno");
   const [ask, setAsk] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [reason, setReason] = useState("");
   const [err, setErr] = useState("");
   // the dialog also opens when another part of the page meets a locked document
   useEffect(() => {
@@ -58,7 +59,8 @@ export default function FeeCard({ projectId, lang, status, state, open = null, o
     return (
       <section className="card fee-card fee-mini" aria-labelledby="fee-h">
         <p className="fee-mini-h" id="fee-h"><Undo2 size={15} aria-hidden="true" />{F("st_void")}</p>
-        <p className="fee-line">{fee.status === "paid" ? F("cancel_paid_p") : F("void_p")}</p>
+        <p className="fee-line">{fee.status === "paid" ? F("cancel_paid_p") : fee.status === "due" ? F("cancel_kept_p") : F("void_p")}</p>
+        {fee.status === "due" && fee.waiver_requested_at && <p className="fee-line">{F("waiver_pending")}</p>}
         <Style />
       </section>
     );
@@ -81,9 +83,14 @@ export default function FeeCard({ projectId, lang, status, state, open = null, o
     : due ? F("in_statement", { m: monthName(month, lang) }) : "";
   const note = state?.sample ? F("sample_p") : !state?.on ? F("off_p") : state?.error === "needs_idno" ? F("needs_idno") : locked ? F("locked_p", { m: monthName(st?.month || month, lang) }) : "";
 
+  // paperwork was made for the job: cancelling no longer voids the fee (lib/jobFees.js feeOnLost), so the client
+  // giving up goes with a request to VoltMira to waive it, and its reason
+  const kept = fee?.status === "due" && !!fee?.docs_at;
   async function gaveUp() {
+    if (kept && reason.trim().length < 5) { setErr(F("e_reason")); return; }
     setBusy(true); setErr("");
     const r = await clientGaveUp(projectId).catch(() => ({ ok: false }));
+    if (r.ok && (kept || r.kept)) await askFeeWaiver(projectId, reason.trim() || "-").catch(() => null);
     setBusy(false);
     if (!r.ok) { setErr(F("e_save")); return; }
     setAsk(false);
@@ -120,11 +127,17 @@ export default function FeeCard({ projectId, lang, status, state, open = null, o
         <div className="overlay" onClick={() => setAsk(false)}>
           <div className="modal fee-gate" role="dialog" aria-modal="true" aria-labelledby="fee-ask-h" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="fee-x" aria-label={F("close")} onClick={() => setAsk(false)}><X size={18} /></button>
-            <h3 id="fee-ask-h">{F("cancel_h")}</h3>
-            <p>{fee?.status === "paid" ? F("cancel_paid_p") : F("cancel_p")}</p>
+            <h3 id="fee-ask-h">{kept ? F("cancel_kept_h") : F("cancel_h")}</h3>
+            <p>{fee?.status === "paid" ? F("cancel_paid_p") : kept ? F("cancel_kept_p") : F("cancel_p")}</p>
+            {kept && (
+              <div className="field">
+                <label htmlFor="fee-why">{F("waiver_label")}</label>
+                <textarea id="fee-why" className="input" rows={3} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
+              </div>
+            )}
             {err && <p className="fee-line fee-warn" role="status">{err}</p>}
             <div className="fee-acts">
-              <button type="button" className="btn amber" disabled={busy} aria-busy={busy} onClick={gaveUp}>{F("cancel_yes")}</button>
+              <button type="button" className="btn amber" disabled={busy} aria-busy={busy} onClick={gaveUp}>{kept ? F("waiver_send") : F("cancel_yes")}</button>
               <button type="button" className="btn ghost" onClick={() => setAsk(false)}>{F("not_now")}</button>
             </div>
           </div>

@@ -16,6 +16,7 @@ import { checkPackage, gridAdapterFor } from "../../../../../lib/gridSubmission.
 import { submitGrid, updateGridStatus, resendGrid } from "../../../../../lib/gridFlow.js";
 import { buildGridPackage, gridNotifier } from "../../../../../lib/gridServer.js";
 import { sendEmail, emailConfigured } from "../../../../../lib/email.js";
+import { isDemoEmail } from "../../../../../lib/demo.js";
 import { mdDayKey } from "../../../../../lib/tz.js";
 import { jobGate } from "../../../../../lib/jobFeeServer.js";
 import { gridRulesFor } from "../../../../../lib/gridRulesStore.js";
@@ -24,7 +25,7 @@ import { canOverrideGrid } from "../../../../../lib/rbac.js";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const STATUS_CODE = { override_not_allowed: 403, override_reason: 400, incomplete: 400, bad_transition: 409, already_submitted: 409, not_found: 404, needs_db: 503, needs_credit: 402, email_not_configured: 503, no_operator_email: 503 };
+const STATUS_CODE = { demo_only: 403, override_not_allowed: 403, override_reason: 400, incomplete: 400, bad_transition: 409, already_submitted: 409, not_found: 404, needs_db: 503, needs_credit: 402, email_not_configured: 503, no_operator_email: 503 };
 
 export async function POST(req, props) {
   const { id } = await props.params;
@@ -61,8 +62,10 @@ export async function POST(req, props) {
   }
 
   // sending the file is a won job's paperwork: it waits on the fee once the 14 days to pay are over
+  // a demo workspace never sends a grid file to a real operator (lib/demoServer.js)
+  if (body.action !== "client_lang" && body.action !== "status" && isDemoEmail(user.email)) return answer({ ok: false, error: "demo_only" });
   if (body.action === "resend" || body.action === "submit") {
-    const gate = await jobGate(db, { project, co, user });
+    const gate = await jobGate(db, { project, co, user, produce: "grid_submit" });
     if (gate.locked) return NextResponse.json({ ok: false, error: gate.error, fee: gate.fee ? { status: gate.fee.status, amount_minor: gate.fee.amount_minor } : null }, { status: 402 });
   }
 

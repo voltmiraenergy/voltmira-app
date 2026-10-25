@@ -10,7 +10,7 @@
 // document to request a deposit / bank transfer against.
 import { notFound, redirect } from "next/navigation";
 import { supabaseServer, supabaseAdmin } from "../../../../../lib/supabase.js";
-import { jobGate } from "../../../../../lib/jobFeeServer.js";
+import { jobGate, feeParam } from "../../../../../lib/jobFeeServer.js";
 import { currentCompany, currentUser } from "../../../../../lib/session.js";
 import { projectVisibility } from "../../../../../lib/projectAccess.js";
 import { projectInvoice } from "../../../../../lib/invoiceServer.js";
@@ -37,8 +37,8 @@ export default async function InvoicePage(props) {
   const u = await currentUser();
   if (!u || !(await projectVisibility(u, co))(p)) notFound();
   // a won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js)
-  const gate = await jobGate(supabaseAdmin(), { project: p, co, user: u });
-  if (gate.locked) redirect(`/projects/${p.id}?fee=${gate.error === "needs_idno" ? "idno" : "locked"}`);
+  const gate = await jobGate(supabaseAdmin(), { project: p, co, user: u, produce: "invoice" });
+  if (gate.locked) redirect(`/projects/${p.id}?fee=${feeParam(gate.error)}`);
 
   const lang = normLang(co.lang);
   const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB";

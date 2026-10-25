@@ -6,8 +6,9 @@
 import { NextResponse } from "next/server";
 import { supabaseServer, supabaseAdmin } from "../../../../../lib/supabase.js";
 import { currentUser, currentCompany } from "../../../../../lib/session.js";
+import { isDemoEmail } from "../../../../../lib/demo.js";
 import { projectVisibility } from "../../../../../lib/projectAccess.js";
-import { jobGate } from "../../../../../lib/jobFeeServer.js";
+import { jobGate, feeParam } from "../../../../../lib/jobFeeServer.js";
 import { cleanRecord, FIELD_ITEMS, SERIAL_KINDS, PHOTO_SLOTS } from "../../../../../lib/siteRecord.js";
 import { jt } from "../../../../../lib/jobText.js";
 import { bomLineText } from "../../../../../lib/quoteAnalysis.js";
@@ -33,8 +34,8 @@ export async function GET(req, props) {
   const sb = await supabaseServer();
   const { data: project } = await sb.from("projects").select("*").eq("id", id).maybeSingle();
   if (!co || !project || project.company_id !== co.id || !(await projectVisibility(user, co))(project)) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  const gate = await jobGate(supabaseAdmin(), { project, co, user });
-  if (gate.locked) return NextResponse.redirect(new URL(`/projects/${id}?fee=${gate.error === "needs_idno" ? "idno" : "locked"}`, req.url));
+  const gate = await jobGate(supabaseAdmin(), { project, co, user, produce: "handover" });
+  if (gate.locked) return NextResponse.redirect(new URL(`/projects/${id}?fee=${feeParam(gate.error)}`, req.url));
 
   const lang = ["en", "ro", "ru", "uk"].includes(project.client_lang) ? project.client_lang : co.lang || "ro";
   const J = (k, v) => jt(k, lang, v);
@@ -115,7 +116,8 @@ export async function GET(req, props) {
   </body></html>`;
 
   try {
-    const pdf = await renderHtmlPdf(html);
+    // made in /demo: DEMO on every page (lib/demoServer.js)
+    const pdf = await renderHtmlPdf(html, { watermark: isDemoEmail(user.email) ? "DEMO" : null });
     const name = `predare-${String(project.client_name || project.title || "lucrare").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").slice(0, 40)}.pdf`;
     return new NextResponse(pdf, { headers: { "content-type": "application/pdf", "content-disposition": `inline; filename="${name}"`, "cache-control": "no-store" } });
   } catch (err) {

@@ -46,10 +46,11 @@ export default function FeeAdmin({ rows, totals }) {
                   {r.name || "Unnamed"}
                   {r.dueFees.length > 0 && (
                     <details className="tr-waive">
-                      <summary>Waive a job&rsquo;s fee</summary>
+                      <summary>Waive a job&rsquo;s fee{r.dueFees.some((f) => f.waiverReason != null) ? ` (${r.dueFees.filter((f) => f.waiverReason != null).length} asked)` : ""}</summary>
                       {r.dueFees.map((f) => (
                         <div key={f.id} className="tr-waive-row">
-                          <span>{f.job || "Job"}, {KW(f.kw)} kW, {LEI(f.amount_minor)}</span>
+                          <span>{f.job || "Job"}, {KW(f.kw)} kW, {LEI(f.amount_minor)}{f.docs?.length ? `, papers: ${f.docs.join(", ")}` : ""}
+                            {f.waiverReason != null && <small className="tr-waiver">Asked to waive: {f.waiverReason || "no reason given"}</small>}</span>
                           <input className="input" aria-label="Why it is waived" placeholder="Why" value={note[f.id] || ""} onChange={(e) => setNote({ ...note, [f.id]: e.target.value })} />
                           <button type="button" className="dx-btn" disabled={!!busy} onClick={() => post(f.id, { action: "waive", feeId: f.id, reason: note[f.id] || "" })}>Waive</button>
                         </div>

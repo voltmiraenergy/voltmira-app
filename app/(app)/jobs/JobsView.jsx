@@ -203,7 +203,7 @@ function VisitDialog({ lang, form: f0, data, crewById, onClose, onSaved }) {
       return;
     }
     const field = (r.fields || [])[0];
-    setErr(field === "project" ? J("e_project") : field === "crew" ? J("e_crew") : field === "time" || field === "day" ? J("e_time") : r.error === "needs_db" ? J("needs_db") : J("e_save"));
+    setErr(field === "project" ? J("e_project") : field === "crew" ? J("e_crew") : field === "time" || field === "day" ? J("e_time") : r.error === "needs_db" ? J("needs_db") : r.error === "not_signed" ? J("e_not_signed") : J("e_save"));
   }
   async function remove() {
     setBusy(true);

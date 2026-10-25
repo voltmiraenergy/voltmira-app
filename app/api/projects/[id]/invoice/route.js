@@ -19,6 +19,7 @@ import { renderPdf, requestOrigin } from "../../../../../lib/renderProposalPdf.j
 import { supabaseServer } from "../../../../../lib/supabase.js";
 import { currentUser, currentCompany, currentActor } from "../../../../../lib/session.js";
 import { sendEmail, proformaEmail, emailConfigured } from "../../../../../lib/email.js";
+import { isDemoEmail } from "../../../../../lib/demo.js";
 import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
 import { logActivity } from "../../../../../lib/activity.js";
 import { supabaseAdmin } from "../../../../../lib/supabase.js";
@@ -26,7 +27,7 @@ import { projectVisibility } from "../../../../../lib/projectAccess.js";
 import { projectInvoice } from "../../../../../lib/invoiceServer.js";
 import { issueInvoiceFor } from "../../../../../lib/invoiceIssue.js";
 import { sendCrmWebhook } from "../../../../../lib/crmWebhook.js";
-import { jobGate } from "../../../../../lib/jobFeeServer.js";
+import { jobGate, feeParam } from "../../../../../lib/jobFeeServer.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -80,13 +81,14 @@ export async function GET(req, props) {
   if (auth instanceof NextResponse) return auth;
 
   // a won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js)
-  const gate = await jobGate(supabaseAdmin(), { project: auth.project, co: auth.co, user: auth.user });
-  if (gate.locked) return NextResponse.redirect(new URL(`/projects/${params.id}?fee=${gate.error === "needs_idno" ? "idno" : "locked"}`, req.url), 303);
+  const gate = await jobGate(supabaseAdmin(), { project: auth.project, co: auth.co, user: auth.user, produce: "invoice" });
+  if (gate.locked) return NextResponse.redirect(new URL(`/projects/${params.id}?fee=${feeParam(gate.error)}`, req.url), 303);
   // Downloading never draws a number: the invoice is issued first (the invoice page, or the editor's Download).
   if (!auth.project.invoice_no) return NextResponse.json({ error: "not_issued" }, { status: 409 });
   const dep = depositOf(new URL(req.url).searchParams.get("deposit"));
   try {
-    const { pdf, timings } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page" });
+    // made in /demo: DEMO on every page (lib/demoServer.js)
+    const { pdf, timings } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page", watermark: isDemoEmail(auth.user?.email) ? "DEMO" : null });
     const name = `${auth.project.invoice_no || "proforma"}.pdf`.replace(/[^\w.-]+/g, "-");
     return new NextResponse(pdf, {
       headers: {
@@ -112,8 +114,10 @@ export async function POST(req, props) {
   const auth = await authorize(req, params.id);
   if (auth instanceof NextResponse) return auth;
   // a won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js)
-  const gate = await jobGate(supabaseAdmin(), { project: auth.project, co: auth.co, user: auth.user });
+  const gate = await jobGate(supabaseAdmin(), { project: auth.project, co: auth.co, user: auth.user, produce: "invoice" });
   if (gate.locked) return NextResponse.json({ error: gate.error }, { status: 402 });
+  // a demo workspace is for looking: its invoices are not emailed to anyone (lib/demoServer.js)
+  if (isDemoEmail(auth.user?.email)) return NextResponse.json({ error: "demo_only" }, { status: 403 });
 
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }
@@ -139,7 +143,7 @@ export async function POST(req, props) {
 
   let pdf;
   try {
-    ({ pdf } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page" }));
+    ({ pdf } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page", watermark: isDemoEmail(auth.user?.email) ? "DEMO" : null }));
   } catch (e) {
     console.error("[invoice-mail] render failed:", e?.message || e);
     return NextResponse.json({ error: "pdf_failed" }, { status: 500 });

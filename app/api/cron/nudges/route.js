@@ -12,6 +12,8 @@ import { sendPayReminders } from "../../../../lib/payReminders.js";
 import { sendServiceReminders } from "../../../../lib/serviceServer.js";
 import { monthlyStatements, sellerDetails, feeVatRate } from "../../../../lib/jobFeePay.js";
 import { feePaywallOn } from "../../../../lib/jobFees.js";
+import { repriceForStatement, sweepWonWithoutFee } from "../../../../lib/jobFeeServer.js";
+import { demoCompanyCheck } from "../../../../lib/demoServer.js";
 import { sendEmail, emailConfigured, ownerAlertEmail } from "../../../../lib/email.js";
 import { logActivity } from "../../../../lib/activity.js";
 
@@ -36,7 +38,12 @@ export async function GET(req) {
   // VoltMira's fee for signed jobs: last month's statements (lib/jobFeePay.js), first issued on the 1st and asked for
   // again each day, so a missed run still issues them (one per workspace and month), then their reminders
   // (lib/feeReminders.js). Nothing while JOB_FEES is off.
-  const statements = feePaywallOn() ? await monthlyStatements(db, { seller: sellerDetails(), vatRate: feeVatRate() }) : null;
+  // first, any signed job without its fee gets one (lib/jobFeeServer.js sweepWonWithoutFee)
+  const demoCo = demoCompanyCheck(db);
+  const sweep = feePaywallOn() ? await sweepWonWithoutFee(db, { skipCompany: demoCo }) : null;
+  const statements = feePaywallOn()
+    ? await monthlyStatements(db, { seller: sellerDetails(), vatRate: feeVatRate(), io: { skipCompany: demoCo, reprice: (f) => repriceForStatement(db, f) } })
+    : null;
   const fees = await sendFeeReminders(db, { io: { sendEmail, emailConfigured, ownerAlertEmail, logActivity }, budgetMs: 10_000 });
   // the client's payments in stages: the reminders for invoices not paid yet (lib/payReminders.js)
   const pay = await sendPayReminders(db, { io: { sendEmail, emailConfigured, ownerAlertEmail, logActivity }, budgetMs: 10_000 });
@@ -51,5 +58,5 @@ export async function GET(req) {
     else if (r.skipped) tally.skipped++;
     else tally.failed++;
   }
-  return NextResponse.json({ ok: true, ...tally, digests, fees, statements, pay, service });
+  return NextResponse.json({ ok: true, ...tally, digests, sweep, fees, statements, pay, service });
 }
