@@ -8,6 +8,7 @@ import { qft } from "../../../lib/quoteFastText.js";
 import { SCORE_SIGNALS, DEFAULT_WEIGHTS } from "../../../lib/leadScore.js";
 import { cleanSlug } from "../../../lib/publicPage.js";
 import { RAIONS } from "../../../lib/mdRaions.js";
+import { rangeFill } from "../../../lib/rangeFill.js";
 
 const LOCS = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
 
@@ -101,7 +102,7 @@ export default function EstimateSettings({ lang }) {
                 <label htmlFor={"esW-" + k}>{qft("sig_" + k, lang)}</label>
                 <output htmlFor={"esW-" + k} className="es-w-v">{s.weights[k]}</output>
               </div>
-              <input id={"esW-" + k} type="range" min="0" max="100" step="5" value={s.weights[k]} disabled={locked}
+              <input id={"esW-" + k} type="range" min="0" max="100" step="5" value={s.weights[k]} disabled={locked} style={rangeFill(s.weights[k], 0, 100)}
                 onChange={(e) => edit({ weights: { ...s.weights, [k]: Number(e.target.value) } })} />
               <span className="es-w-share">{qft("share", lang, { p: share(k) })}</span>
             </div>

@@ -8,6 +8,7 @@ import { Zap, ShieldCheck, Gift, Undo2, Calculator, FileText, Landmark } from "l
 import { loadFeeOverview, setCompanyIdno } from "../../../lib/feeActions.js";
 import { feeFor, feeLei, FEE_PER_KW_MINOR, FEE_CAP_MINOR, FREE_JOBS } from "../../../lib/jobFees.js";
 import { ft, monthName, feeDay } from "../../../lib/feeText.js";
+import { rangeFill } from "../../../lib/rangeFill.js";
 
 const LOCS = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
 
@@ -68,7 +69,7 @@ export default function FeesPanel({ lang }) {
           <span className="fp-calc-i" aria-hidden="true"><Calculator size={16} /></span>
           <label htmlFor="fpKw">{F("calc_kw")}</label>
           <input id="fpKw" className="input" type="number" min="0" max="5000" step="0.5" inputMode="decimal" value={kw} onChange={(e) => setKw(e.target.value)} />
-          <input aria-hidden="true" tabIndex={-1} type="range" min="1" max="60" step="0.5" value={Math.min(60, Number(kw) || 1)} onChange={(e) => setKw(e.target.value)} className="fp-range" />
+          <input aria-hidden="true" tabIndex={-1} type="range" min="1" max="60" step="0.5" value={Math.min(60, Number(kw) || 1)} style={rangeFill(Math.min(60, Number(kw) || 1), 1, 60)} onChange={(e) => setKw(e.target.value)} className="fp-range" />
           <span className="fp-calc-out" aria-live="polite">
             <small>{F("calc_out", { kw: kwTxt(kw) })}</small>
             <b>{feeLei(calc.minorMdl, lang)}</b>
