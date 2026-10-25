@@ -22,9 +22,11 @@ export default async function ReportPage(props) {
   const db = supabaseAdmin();
   const { data: p, error } = await db.from("projects").select("id, company_id, title, client_name, client_lang, address, status").eq("service_token", token).maybeSingle();
   if (error || !p || p.status !== "won") notFound();
-  const [{ data: co }, { data: open }] = await Promise.all([
-    db.from("companies").select("name, short_name, phone, logo_url, lang").eq("id", p.company_id).maybeSingle(),
+  const [{ data: co }, { data: open }, { data: owner }] = await Promise.all([
+    db.from("companies").select("name, short_name, logo_url, lang").eq("id", p.company_id).maybeSingle(),
     db.from("service_requests").select("status, created_at").eq("project_id", p.id).in("status", OPEN_STATUSES).order("created_at", { ascending: false }).limit(1),
+    // the installer's phone is on the owner's profile (companies has none)
+    db.from("profiles").select("phone").eq("company_id", p.company_id).eq("role", "owner").limit(1).maybeSingle(),
   ]);
   if (!co) notFound();
   const lang = LANGS.includes(p.client_lang) ? p.client_lang : LANGS.includes(co.lang) ? co.lang : "ro";
@@ -47,7 +49,7 @@ export default async function ReportPage(props) {
         </header>
         {last && <p className="pay-note">{V("cp_open_p", { company, d: when, s: V("rs_" + last.status).toLowerCase() })}</p>}
         <ReportForm lang={lang} token={token} company={company} name={p.client_name || ""} />
-        {co.phone && <footer className="pay-foot"><p>{V("cp_call", { company, phone: co.phone })}</p></footer>}
+        {owner?.phone && <footer className="pay-foot"><p>{V("cp_call", { company, phone: owner.phone })}</p></footer>}
       </article>
     </main>
   );

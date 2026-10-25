@@ -22,10 +22,12 @@ export default async function PayPage(props) {
   const { data: m, error } = await db.from("pay_milestones").select("*").eq("pay_token", token).maybeSingle();
   // a stage not invoiced yet has no page: the client gets the link only once it is
   if (error || !m || m.status === "planned") notFound();
-  const [{ data: p }, { data: co }, { data: all }] = await Promise.all([
+  const [{ data: p }, { data: co }, { data: all }, { data: owner }] = await Promise.all([
     db.from("projects").select("id, title, client_name, client_lang, address").eq("id", m.project_id).maybeSingle(),
-    db.from("companies").select("name, short_name, legal_name, legal_address, reg_no, iban, phone, logo_url, lang").eq("id", m.company_id).maybeSingle(),
+    db.from("companies").select("name, short_name, legal_name, legal_address, reg_no, iban, logo_url, lang").eq("id", m.company_id).maybeSingle(),
     db.from("pay_milestones").select("seq, amount_minor, status").eq("project_id", m.project_id),
+    // the installer's phone is on the owner's profile (companies has none)
+    db.from("profiles").select("phone").eq("company_id", m.company_id).eq("role", "owner").limit(1).maybeSingle(),
   ]);
   if (!p || !co) notFound();
   const lang = LANGS.includes(p.client_lang) ? p.client_lang : LANGS.includes(co.lang) ? co.lang : "ro";
@@ -73,7 +75,7 @@ export default async function PayPage(props) {
           </>
         )}
         <footer className="pay-foot">
-          <p>{P("pp_questions", { company })}{co.phone ? ` ${co.phone}` : ""}</p>
+          <p>{P("pp_questions", { company })}{owner?.phone ? ` ${owner.phone}` : ""}</p>
         </footer>
       </article>
     </main>

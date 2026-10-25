@@ -3,10 +3,10 @@
 // stage (lib/milestones.js). Four tiles (overdue, due within 7 days, the next 30 days, received this month), the
 // invoices with their state and what to do with each (copy the pay link, mark it received, see the client's proof,
 // pause the job's reminders), and the earlier months. Loaded by lib/cashActions.js loadCash.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Link2, Check, FileImage, BellOff, Bell, ExternalLink } from "lucide-react";
+import { Link2, Check, FileImage, BellOff, Bell, ExternalLink, Eye } from "lucide-react";
 import { pt, money, dayName } from "../../../lib/payText.js";
 import { markReceived, setReminders, proofLink } from "../../../lib/cashActions.js";
 
@@ -17,6 +17,11 @@ export default function CashView({ cash, lang }) {
   const [note, setNote] = useState("");
   const [pay, setPay] = useState(null);   // the invoice in the "received" dialog
   const [busy, setBusy] = useState(false);
+  // "how it works" stays open until it is folded once (remembered on this device)
+  const howRef = useRef(null);
+  useEffect(() => {
+    try { if (localStorage.getItem("vm_cash_how") === "closed" && howRef.current) howRef.current.open = false; } catch { /* storage blocked */ }
+  }, []);
   const cur = cash?.currency || "MDL";
   const M = (minor, c = cur) => money(minor, c, lang);
   const rows = useMemo(() => {
@@ -55,7 +60,20 @@ export default function CashView({ cash, lang }) {
 
   return (
     <div className="cs">
-      <p className="jb-hint">{P("cash_sub")}</p>
+      {/* how it works, in four steps, with the client's own page one click away */}
+      <details ref={howRef} className="cs-how" open onToggle={(e) => { try { localStorage.setItem("vm_cash_how", e.currentTarget.open ? "open" : "closed"); } catch { /* storage blocked */ } }}>
+        <summary>{P("how_h")}</summary>
+        <ol className="cs-steps">
+          {[1, 2, 3, 4].map((n) => <li key={n}><b>{P(`how_${n}_h`)}</b><span>{P(`how_${n}`)}</span></li>)}
+        </ol>
+        <div className="cs-how-acts">
+          {(() => {
+            const open = (cash?.rows || []).find((r) => r.invoice_no && ["overdue", "due_soon", "open"].includes(r.state)) || (cash?.rows || []).find((r) => r.invoice_no);
+            return open ? <a className="btn amber" href={`/pay/${open.token}`} target="_blank" rel="noopener noreferrer"><Eye size={15} aria-hidden="true" />{P("how_try")}</a> : null;
+          })()}
+          <Link className="btn ghost" href="/settings?tab=documents">{P("how_plan")}</Link>
+        </div>
+      </details>
       <dl className="cs-tiles">
         <div className={t?.overdue.n ? "is-late" : ""}><dt>{P("t_overdue")}</dt><dd className="cs-big">{M(t?.overdue.minor || 0)}</dd><dd>{nInv(t?.overdue.n || 0)}</dd></div>
         <div><dt>{P("t_week")}</dt><dd className="cs-big">{M(t?.week.minor || 0)}</dd><dd>{nInv(t?.week.n || 0)}</dd></div>
