@@ -20,7 +20,7 @@ import { supabaseAdmin } from "../../../../../lib/supabase.js";
 import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
 import { quote, amortizedMonthlyPayment } from "@voltmira/engine";
 import { snapshotEngine } from "../../../../../lib/engineSettings.js";
-import { bomHasBattery } from "../../../../../lib/quoteInput.js";
+import { offerQuoteInput } from "../../../../../lib/offerInput.js";
 import { rateFor } from "../../../../../lib/money.js";
 import { effectiveOfferCurrency } from "../../../../../lib/offerCurrency.js";
 import { findWarrantyInfo } from "../../../../../lib/supplierCatalog.js";
@@ -32,6 +32,7 @@ import { normalizePolicy, evaluateDiscount, evaluateOption, OFFER_VALID_DAYS } f
 import { loadOffers, offerFigures, describeRecorded, recordDiscount, recordOption, recordEscalation } from "../../../../../lib/proposalOffers.js";
 import { runProposalAgent, systemBlocks, buildMessages } from "../../../../../lib/proposalAgent.js";
 import { agentCall, agentConfigured, DEFAULT_MODEL } from "../../../../../lib/claudeClient.js";
+import { aiWorkspaceLimited } from "../../../../../lib/aiLimits.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,7 +44,7 @@ const MAX_TURN_LEN = 500;
 const MAX_TURNS = 6;
 const MAX_ANSWER_LEN = 1500;
 
-// Same default as the bill reader (extract-bill), overridable per deployment.
+// The default model, overridable per deployment.
 const MODEL = process.env.PROPOSAL_QA_MODEL || DEFAULT_MODEL;
 // A chat answer rarely needs deep deliberation; raise it if answers fall short.
 const EFFORT = process.env.PROPOSAL_QA_EFFORT || "low";
@@ -87,6 +88,8 @@ export async function POST(req, props) {
   const db = supabaseAdmin();
   const { data: prop } = await db.from("proposals").select("*").eq("code", code).single();
   if (!prop) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  // the installer's AI calls for the minute and the day, across every AI feature (lib/aiLimits.js)
+  if (await aiWorkspaceLimited(prop.company_id)) return NextResponse.json({ error: "rate" }, { status: 429 });
 
   // negotiation needs add-proposal-agent.sql; read without it if absent.
   let { data: co, error: coErr } = await db.from("companies")
@@ -112,7 +115,7 @@ export async function POST(req, props) {
   // The FROZEN quote: the same numbers already printed on this page
   // (snapshotEngine, and the BOM battery flag exactly as the page's GET sets it).
   const E = snapshotEngine(prop.snapshot.engine, co);
-  const snap = { ...prop.snapshot, bomHasBattery: bomHasBattery(prop.snapshot.bom) };
+  const snap = offerQuoteInput(prop.snapshot);
   const q = quote(snap, E);
   const cost = q.e.cost;
   const financeRate = Number(E.financeRatePct);

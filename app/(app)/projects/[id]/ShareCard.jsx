@@ -20,9 +20,13 @@ export default function ShareCard({ companyName, companyLogo, client, systemLabe
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // An uploaded logo is a link to the storage bucket, not a data: URL, and was skipped, so the image went out
+  // without it. Loaded as a cross-origin image: if the host allows it the canvas stays clean; if not the load
+  // fails and the logo is left out, as before, rather than tainting the canvas and failing the whole share.
   const loadLogo = () => new Promise((res) => {
-    if (!companyLogo || !/^data:image\//i.test(companyLogo)) return res(null);
+    if (!companyLogo || !/^(data:image\/|https?:\/\/)/i.test(companyLogo)) return res(null);
     const img = new window.Image();
+    if (!/^data:/i.test(companyLogo)) img.crossOrigin = "anonymous";
     img.onload = () => res(img); img.onerror = () => res(null);
     img.src = companyLogo;
   });

@@ -55,6 +55,16 @@ const T = {
   warr_maker: { en: "Manufacturer warranty: {y}", ro: "Garanția producătorului: {y}", ru: "Гарантия производителя: {y}", uk: "Гарантія виробника: {y}" },
   product_page: { en: "Product page", ro: "Pagina produsului", ru: "Страница продукта", uk: "Сторінка продукту" },
   new_tab: { en: "opens in a new tab", ro: "se deschide într-o filă nouă", ru: "откроется в новой вкладке", uk: "відкриється в новій вкладці" },
+  rs_h: { en: "The roof, side by side", ro: "Acoperișul, parte cu parte", ru: "Крыша по скатам", uk: "Дах за схилами" },
+  rs_face: { en: "Faces", ro: "Orientare", ru: "Ориентация", uk: "Орієнтація" },
+  rs_pitch: { en: "Pitch", ro: "Înclinare", ru: "Наклон", uk: "Нахил" },
+  rs_panels: { en: "Panels", ro: "Panouri", ru: "Панелей", uk: "Панелей" },
+  rs_kwh: { en: "kWh a year", ro: "kWh pe an", ru: "кВт·ч в год", uk: "кВт·год на рік" },
+  rs_est: { en: "estimated", ro: "estimată", ru: "приблизительно", uk: "приблизно" },
+  rs_note: { en: "Each side faces its own way at its own pitch, so each produces differently. The yearly energy is worked out for each side from PVGIS data.", ro: "Fiecare parte privește într-o altă direcție, la o altă înclinare, deci produce diferit. Energia anuală este calculată pentru fiecare parte din datele PVGIS.", ru: "Каждый скат смотрит в свою сторону под своим наклоном, поэтому выработка у каждого своя. Годовая энергия рассчитана для каждого ската по данным PVGIS.", uk: "Кожен схил дивиться в свій бік під своїм нахилом, тому виробіток у кожного свій. Річну енергію розраховано для кожного схилу за даними PVGIS." },
+  mark_sat: { en: "Designed from satellite imagery. {co} confirms the measurements on site before installing.", ro: "Proiectat din imagini din satelit. {co} confirmă măsurătorile la fața locului înainte de montaj.", ru: "Проект выполнен по спутниковым снимкам. {co} подтвердит размеры на объекте перед монтажом.", uk: "Проєкт виконано за супутниковими знімками. {co} підтвердить розміри на об’єкті перед монтажем." },
+  mark_ver: { en: "Measured and verified on site on {d}.", ro: "Măsurat și verificat la fața locului pe {d}.", ru: "Замерено и проверено на объекте {d}.", uk: "Заміряно й перевірено на об’єкті {d}." },
+  mark_ver_nd: { en: "Measured and verified on site.", ro: "Măsurat și verificat la fața locului.", ru: "Замерено и проверено на объекте.", uk: "Заміряно й перевірено на об’єкті." },
   install_warr: { en: "Workmanship warranty from {co}: {y}", ro: "Garanția manoperei de la {co}: {y}", ru: "Гарантия на монтаж от {co}: {y}", uk: "Гарантія на монтаж від {co}: {y}" },
   qty: { en: "Quantity", ro: "Cantitate", ru: "Количество", uk: "Кількість" },
   backup_h: { en: "About {h} hours of backup power", ro: "Aproximativ {h} ore de rezervă", ru: "Около {h} ч автономной работы", uk: "Близько {h} год автономної роботи" },
@@ -331,6 +341,22 @@ const T = {
   rec_more: { en: "More apps", ro: "Alte aplicații", ru: "Другие приложения", uk: "Інші застосунки" },
   rec_copy: { en: "Copy the link", ro: "Copiați linkul", ru: "Скопировать ссылку", uk: "Скопіювати посилання" },
   rec_copied: { en: "Link copied", ro: "Link copiat", ru: "Ссылка скопирована", uk: "Посилання скопійовано" },
+
+  // ---- in short: the offer in plain words, no jargon
+  plain_h: { en: "In short", ro: "Pe scurt", ru: "Коротко", uk: "Коротко" },
+  plain_save: { en: "With this system you pay about {v} less for electricity every month.", ro: "Cu acest sistem plătiți la curent cu aproximativ {v} mai puțin în fiecare lună.", ru: "С этой системой вы платите за электричество примерно на {v} меньше каждый месяц.", uk: "З цією системою ви платите за електроенергію приблизно на {v} менше щомісяця." },
+  plain_pay: { en: "Paid in instalments, the payment of {p} a month sits beside the {v} you save each month.", ro: "Plătit în rate, rata de {p} pe lună stă alături de cei {v} pe care îi economisiți lunar.", ru: "При оплате в рассрочку платёж {p} в месяц стоит рядом с экономией {v} в месяц.", uk: "При оплаті в розстрочку платіж {p} на місяць стоїть поруч з економією {v} на місяць." },
+  plain_payback: { en: "The system pays for itself in about {y}. After that, the saving stays with you.", ro: "Sistemul se plătește singur în aproximativ {y}. După aceea, economia rămâne la dumneavoastră.", ru: "Система окупается примерно за {y}. После этого экономия остаётся у вас.", uk: "Система окупається приблизно за {y}. Після цього економія залишається у вас." },
+  plain_net: { en: "Over {y} you end up about {v} better off, after paying for the system.", ro: "În {y} rămâneți cu aproximativ {v} în plus, după ce ați plătit sistemul.", ru: "За {y} вы остаётесь в плюсе примерно на {v}, уже заплатив за систему.", uk: "За {y} ви залишаєтеся в плюсі приблизно на {v}, уже заплативши за систему." },
+  // ---- proof from nearby systems (lib/nearbyProof.js)
+  near_h: { en: "What systems nearby really produce", ro: "Cât produc cu adevărat sistemele din apropiere", ru: "Сколько на самом деле вырабатывают системы рядом", uk: "Скільки насправді виробляють системи поруч" },
+  near_body: { en: "In {d}, {n} monitored systems produced a typical {y} kWh for each kWp installed over the last 12 months.", ro: "În {d}, {n} sisteme monitorizate au produs în mod obișnuit {y} kWh pentru fiecare kWp instalat în ultimele 12 luni.", ru: "В районе {d} {n} систем под мониторингом обычно вырабатывали {y} кВт·ч на каждый установленный кВт за последние 12 месяцев.", uk: "У районі {d} {n} систем під моніторингом зазвичай виробляли {y} кВт·год на кожен встановлений кВт за останні 12 місяців." },
+  near_own: { en: "This offer counts on {y} kWh for each kWp.", ro: "Această ofertă calculează cu {y} kWh pentru fiecare kWp.", ru: "Это предложение рассчитано на {y} кВт·ч на каждый кВт.", uk: "Ця пропозиція розрахована на {y} кВт·год на кожен кВт." },
+  near_src: { en: "Measured production of systems VoltMira monitors, from several installers; no system or owner is named.", ro: "Producția măsurată a sistemelor monitorizate de VoltMira, de la mai mulți instalatori; niciun sistem sau proprietar nu este numit.", ru: "Измеренная выработка систем, которые отслеживает VoltMira, от нескольких монтажников; ни система, ни владелец не называются.", uk: "Виміряний виробіток систем, які відстежує VoltMira, від кількох монтажників; жодна система чи власник не називаються." },
+  // ---- reading time per section, with a way out
+  track_note: { en: "{co} sees which parts of this offer you read, to answer your questions better. No other data is collected.", ro: "{co} vede ce părți ale ofertei citiți, ca să vă poată răspunde mai bine. Nu se colectează alte date.", ru: "{co} видит, какие части предложения вы читали, чтобы лучше ответить на вопросы. Другие данные не собираются.", uk: "{co} бачить, які частини пропозиції ви читали, щоб краще відповісти на запитання. Інші дані не збираються." },
+  track_off: { en: "Don't record my reading", ro: "Nu înregistrați citirea mea", ru: "Не записывать моё чтение", uk: "Не записувати моє читання" },
+  track_offed: { en: "Your reading is not recorded.", ro: "Citirea dumneavoastră nu este înregistrată.", ru: "Ваше чтение не записывается.", uk: "Ваше читання не записується." },
 
   // ---- footer
   valid_full: { en: "This offer is valid until {d}. All figures are estimates based on the assumptions on this page.", ro: "Această ofertă este valabilă până la {d}. Toate cifrele sunt estimări bazate pe ipotezele de pe această pagină.", ru: "Предложение действует до {d}. Все цифры являются оценками на основе допущений на этой странице.", uk: "Пропозиція дійсна до {d}. Усі цифри є оцінками на основі припущень на цій сторінці." },

@@ -148,7 +148,8 @@ export async function GET(req) {
   // ---- provisioning is expensive: rate-limit it ----------------------
   // Creating a tenant means 4 auth users plus ~60 rows. Cheap enough for a real
   // visitor, worth capping against a crawler or someone hammering the link.
-  if (await isRateLimited(`demo:${clientIp(req)}`, 6, 60 * 60 * 1000)) {
+  // Not on a developer's own machine: there every browser check and every seed change asks for a fresh one.
+  if (process.env.NODE_ENV === "production" && await isRateLimited(`demo:${clientIp(req)}`, 6, 60 * 60 * 1000)) {
     return page("Demo limit reached",
       `<h1>Too many demo workspaces from here</h1><p>Try again in an hour, or get in touch and we'll walk you through it live.</p><a class="alt" href="/">Back to the site</a>`, 429);
   }

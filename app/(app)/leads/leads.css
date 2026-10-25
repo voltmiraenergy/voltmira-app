@@ -121,6 +121,14 @@ html[data-theme="dark"] .app .ld-reach.wa:hover { color: #4FCB84 !important; }
 .app .ld-dlg-err { color: var(--red); font-size: 13px; padding: 0 22px 12px; }
 .app .ld-dlg-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 22px; border-top: 1px solid var(--line); background: var(--paper); }
 
+/* ---------------------------------------------------------------- lead score (lib/leadScore.js) */
+.app .ld-score { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; border: 1px solid var(--line); color: var(--muted); background: var(--paper-2); }
+.app .ld-score.hot { background: var(--amber); border-color: var(--amber); color: var(--on-amber, #142A21); }
+.app .ld-score.warm { background: var(--amber-tint); border-color: var(--amber-tint); color: var(--ink); }
+.app .ld-tools { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
+.app .ld-est { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 6px; font-size: 13px; color: var(--muted); }
+.app .ld-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; background: var(--green-tint); color: var(--green); font-size: 12px; font-weight: 600; }
+
 /* ---------------------------------------------------------------- responsive */
 @media (max-width: 1080px) {
   .app .ld-layout { grid-template-columns: minmax(0, 1fr); }

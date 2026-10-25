@@ -19,9 +19,15 @@ import { renderPdf, requestOrigin } from "../../../../../lib/renderProposalPdf.j
 import { supabaseServer } from "../../../../../lib/supabase.js";
 import { currentUser, currentCompany, currentActor } from "../../../../../lib/session.js";
 import { sendEmail, proformaEmail, emailConfigured } from "../../../../../lib/email.js";
+import { isDemoEmail } from "../../../../../lib/demo.js";
 import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
 import { logActivity } from "../../../../../lib/activity.js";
 import { supabaseAdmin } from "../../../../../lib/supabase.js";
+import { projectVisibility } from "../../../../../lib/projectAccess.js";
+import { projectInvoice } from "../../../../../lib/invoiceServer.js";
+import { issueInvoiceFor } from "../../../../../lib/invoiceIssue.js";
+import { sendCrmWebhook } from "../../../../../lib/crmWebhook.js";
+import { jobGate, feeParam } from "../../../../../lib/jobFeeServer.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,8 +52,10 @@ async function authorize(req, id) {
   if (!co) return NextResponse.json({ error: "no_company" }, { status: 403 });
   // RLS-scoped read: a project outside the caller's company simply isn't there.
   const { data: project } = await (await supabaseServer())
-    .from("projects").select("id, title, client_name, company_id, invoice_no").eq("id", id).maybeSingle();
+    .from("projects").select("id, title, client_name, company_id, owner_id, invoice_no, status, kw").eq("id", id).maybeSingle();
   if (!project) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  // a Sales member does not take a colleague's proforma by its address
+  if (!(await projectVisibility(user, co))(project)) return NextResponse.json({ error: "not_found" }, { status: 404 });
   return { user, co, project };
 }
 
@@ -72,9 +80,15 @@ export async function GET(req, props) {
   const auth = await authorize(req, params.id);
   if (auth instanceof NextResponse) return auth;
 
+  // a won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js)
+  const gate = await jobGate(supabaseAdmin(), { project: auth.project, co: auth.co, user: auth.user, produce: "invoice" });
+  if (gate.locked) return NextResponse.redirect(new URL(`/projects/${params.id}?fee=${feeParam(gate.error)}`, req.url), 303);
+  // Downloading never draws a number: the invoice is issued first (the invoice page, or the editor's Download).
+  if (!auth.project.invoice_no) return NextResponse.json({ error: "not_issued" }, { status: 409 });
   const dep = depositOf(new URL(req.url).searchParams.get("deposit"));
   try {
-    const { pdf, timings } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page" });
+    // made in /demo: DEMO on every page (lib/demoServer.js)
+    const { pdf, timings } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page", watermark: isDemoEmail(auth.user?.email) ? "DEMO" : null });
     const name = `${auth.project.invoice_no || "proforma"}.pdf`.replace(/[^\w.-]+/g, "-");
     return new NextResponse(pdf, {
       headers: {
@@ -99,16 +113,37 @@ export async function POST(req, props) {
   }
   const auth = await authorize(req, params.id);
   if (auth instanceof NextResponse) return auth;
+  // a won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js)
+  const gate = await jobGate(supabaseAdmin(), { project: auth.project, co: auth.co, user: auth.user, produce: "invoice" });
+  if (gate.locked) return NextResponse.json({ error: gate.error }, { status: 402 });
+  // a demo workspace is for looking: its invoices are not emailed to anyone (lib/demoServer.js)
+  if (isDemoEmail(auth.user?.email)) return NextResponse.json({ error: "demo_only" }, { status: 403 });
 
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }
   const to = String(body?.to || "").trim();
   if (!EMAIL_RE.test(to)) return NextResponse.json({ error: "bad_email" }, { status: 400 });
+  // a day's cap for the workspace and for one recipient (the mail goes out from VoltMira's own domain)
+  if (await isRateLimited(`invmail-co:${auth.co.id}`, 100, 86_400_000) || await isRateLimited(`invmail-to:${auth.co.id}:${to.toLowerCase()}`, 5, 86_400_000)) {
+    return NextResponse.json({ error: "rate" }, { status: 429 });
+  }
   const dep = depositOf(body?.deposit);
+
+  // Sending the proforma is an explicit act, so it issues the invoice if it is not yet (the PDF then carries the number)
+  let invoiceNo = auth.project.invoice_no;
+  if (!invoiceNo) {
+    const sb = await supabaseServer();
+    const { data: full } = await sb.from("projects").select("*").eq("id", params.id).maybeSingle();
+    if (!full) return NextResponse.json({ error: "not_found" }, { status: 404 });
+    const inv = await projectInvoice(full, auth.co, { depositPct: dep });
+    const r = await issueInvoiceFor({ sb, co: auth.co, project: full, inv, webhook: (ev, payload) => sendCrmWebhook(auth.co.id, ev, payload) });
+    if (!r.ok) return NextResponse.json({ error: "issue_failed" }, { status: 500 });
+    invoiceNo = r.invoiceNo;
+  }
 
   let pdf;
   try {
-    ({ pdf } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page" }));
+    ({ pdf } = await renderPdf(targetUrl(req, params.id, dep), { cookies: authCookies(req), ready: ".inv-page", watermark: isDemoEmail(auth.user?.email) ? "DEMO" : null }));
   } catch (e) {
     console.error("[invoice-mail] render failed:", e?.message || e);
     return NextResponse.json({ error: "pdf_failed" }, { status: 500 });
@@ -124,7 +159,7 @@ export async function POST(req, props) {
   const res = await sendEmail({
     to, subject, html,
     replyTo: auth.user.email || undefined,
-    attachments: [{ filename: `${auth.project.invoice_no || "proforma"}.pdf`.replace(/[^\w.-]+/g, "-"), content: pdf.toString("base64") }],
+    attachments: [{ filename: `${invoiceNo || "proforma"}.pdf`.replace(/[^\w.-]+/g, "-"), content: pdf.toString("base64") }],
   });
   if (!res.sent) return NextResponse.json({ error: res.error || "send_failed" }, { status: 502 });
 

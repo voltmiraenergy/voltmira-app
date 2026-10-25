@@ -7,8 +7,9 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setLeadStatus, deleteLead, createProjectFromLead } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
+import { qft } from "../../../lib/quoteFastText.js";
 
-export default function LeadActions({ id, status, projectId, lang, onEdit, onVisit, editing = false }) {
+export default function LeadActions({ id, status, projectId, lang, onEdit, onVisit, editing = false, fromEstimate = false }) {
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -39,7 +40,8 @@ export default function LeadActions({ id, status, projectId, lang, onEdit, onVis
           {t("lead_open_quote", lang)}
         </button>
       ) : (
-        <button type="button" className="dx-btn primary" disabled={pending} onClick={convert}>{t("lead_make_quote", lang)}</button>
+        // a lead from the estimate page becomes a quote with its options already filled in
+        <button type="button" className="dx-btn primary" disabled={pending} onClick={convert}>{fromEstimate ? qft("from_estimate", lang) : t("lead_make_quote", lang)}</button>
       )}
       {status !== "contacted" && status !== "converted" && (
         <button type="button" className="dx-btn" disabled={pending} onClick={() => set("contacted")}>{t("lead_mark_contacted", lang)}</button>

@@ -15,6 +15,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { supabaseServer } from "../../../lib/supabase.js";
+import { aiWorkspaceLimited } from "../../../lib/aiLimits.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +55,10 @@ export async function POST(req) {
       message: "AI BOM builder isn't switched on yet, add ANTHROPIC_API_KEY in Vercel to enable it.",
     }, { status: 503 });
   }
+
+  // the workspace's AI calls for the minute and the day (lib/aiLimits.js)
+  const { data: me } = await sb.from("profiles").select("company_id").eq("id", user.id).maybeSingle();
+  if (await aiWorkspaceLimited(me?.company_id, { email: user.email })) return NextResponse.json({ error: "ai_limit" }, { status: 429 });
 
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "bad_request" }, { status: 400 }); }

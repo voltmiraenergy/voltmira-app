@@ -53,7 +53,7 @@ const CSS = `
 .guide .g-tip p{margin:0;font-size:14px;color:var(--ink);line-height:1.55}
 .guide .nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0 4px}
 .guide .num-c{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:13px 14px;border-top:3px solid var(--bc)}
-.guide .num-c .t{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--bc);font-weight:700}
+.guide .num-c .t{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink);font-weight:700}
 .guide .num-c p{margin:5px 0 0;font-size:13px;color:var(--ink);opacity:.8;line-height:1.45}
 .guide details{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:0 18px;margin-bottom:9px;transition:border-color .15s}
 .guide details[open]{border-color:color-mix(in srgb,var(--green) 40%,var(--line))}
@@ -161,13 +161,15 @@ const HTML = {
 </section>
 
 <section>
-  <div class="g-h"><span class="g-n">6</span><h2>Plans</h2></div>
-  <p class="g-lede">Free during beta, no card required. Founder pricing is locked for the first 50 installers.</p>
+  <div class="g-h"><span class="g-n">6</span><h2>What it costs</h2></div>
+  <p class="g-lede">VoltMira is free for every installer, with every feature and no limit on offers or people. You pay only when a client signs: 200 lei for each kW of the signed system, at most 8,000 lei a job. Your first 2 signed jobs are free, a job the client gives up costs nothing, and the month's fees come on one statement at the start of the next, paid by bank transfer by the 15th.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Pro: €49/mo</div><div class="pd">Your logo on every proposal &amp; PDF, tracked links + open alerts, grid forms filled from the quote, full pipeline.</div></div>
-    <div class="plan"><div class="pn">Team: €119/mo</div><div class="pd">Everything in Pro, up to 5 people on one pipeline, win-rate analytics, priority support.</div></div>
-    <div class="plan"><div class="pn">Enterprise: custom pricing</div><div class="pd">Unlimited seats for multi-branch installers, full audit log, a dedicated manager.</div></div>
+    <div class="plan hot"><div class="pn">200 lei</div><div class="pd">per kW of each signed job</div></div>
+    <div class="plan"><div class="pn">8,000 lei</div><div class="pd">the most a job costs</div></div>
+    <div class="plan"><div class="pn">2 jobs</div><div class="pd">your first signed jobs, free</div></div>
+    <div class="plan"><div class="pn">0 lei</div><div class="pd">when the client gives up</div></div>
   </div>
+  <p class="g-lede" style="margin-top:12px">Settings, Pay per job, shows this month's signed jobs, VoltMira's statements and your company IDNO.</p>
 </section>
 
 <section>
@@ -245,7 +247,7 @@ const HTML = {
     <p><b>Amortizare: trei scenarii oneste.</b> În loc de o singură cifră măgulitoare, fiecare ofertă arată trei, ca să aibă clientul încredere:</p>
     <div class="nums">
       <div class="num-c" style="--bc:#C4543B"><div class="t">Pesimist</div><p>Ghinion: soare mai slab, uzură mai rapidă, prețuri constante.</p></div>
-      <div class="num-c" style="--bc:var(--amber)"><div class="t">Așteptat</div><p>Mijlocul realist: ce ai oferta.</p></div>
+      <div class="num-c" style="--bc:var(--amber)"><div class="t">Așteptat</div><p>Mijlocul realist: ce ai oferi.</p></div>
       <div class="num-c" style="--bc:var(--green)"><div class="t">Optimist</div><p>Soare puternic, prețuri în creștere.</p></div>
     </div>
   </div>
@@ -270,13 +272,15 @@ const HTML = {
 </section>
 
 <section>
-  <div class="g-h"><span class="g-n">6</span><h2>Planuri</h2></div>
-  <p class="g-lede">Gratuit în beta: fără card. Prețul de fondator e blocat pentru primii 50 de instalatori.</p>
+  <div class="g-h"><span class="g-n">6</span><h2>Cât costă</h2></div>
+  <p class="g-lede">VoltMira este gratuit pentru orice instalator, cu toate funcțiile și fără limită de oferte sau oameni. Plătești doar când un client semnează: 200 lei pentru fiecare kW al sistemului semnat, maximum 8.000 lei pe lucrare. Primele 2 lucrări semnate sunt gratuite, o lucrare la care clientul renunță nu costă nimic, iar taxele lunii vin pe un singur extras la începutul lunii următoare, plătit prin transfer până pe 15.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Pro: €49/lună</div><div class="pd">Logo-ul tău pe fiecare propunere și PDF, linkuri urmărite + alerte de deschidere, cererile de racordare completate din ofertă, pipeline complet.</div></div>
-    <div class="plan"><div class="pn">Team: €119/lună</div><div class="pd">Tot ce e în Pro, până la 5 persoane pe un pipeline, analiză a ratei de câștig, suport prioritar.</div></div>
-    <div class="plan"><div class="pn">Enterprise: preț personalizat</div><div class="pd">Locuri nelimitate pentru instalatori cu mai multe filiale, jurnal complet de audit, manager dedicat.</div></div>
+    <div class="plan hot"><div class="pn">200 lei</div><div class="pd">pe kW din fiecare lucrare semnată</div></div>
+    <div class="plan"><div class="pn">8.000 lei</div><div class="pd">maximum pe o lucrare</div></div>
+    <div class="plan"><div class="pn">2 lucrări</div><div class="pd">primele semnate, gratuite</div></div>
+    <div class="plan"><div class="pn">0 lei</div><div class="pd">când clientul renunță</div></div>
   </div>
+  <p class="g-lede" style="margin-top:12px">În Setări, Plată per lucrare, vezi lucrările semnate luna aceasta, extrasele VoltMira și IDNO-ul companiei.</p>
 </section>
 
 <section>
@@ -380,13 +384,15 @@ const HTML = {
 </section>
 
 <section>
-  <div class="g-h"><span class="g-n">6</span><h2>Тарифы</h2></div>
-  <p class="g-lede">Бесплатно на бета-этапе: без карты. Цена основателя зафиксирована для первых 50 монтажников.</p>
+  <div class="g-h"><span class="g-n">6</span><h2>Сколько стоит</h2></div>
+  <p class="g-lede">VoltMira бесплатна для любого монтажника, со всеми функциями и без ограничений на предложения или людей. Вы платите, только когда клиент подписывает: 200 лей за каждый кВт подписанной системы, не больше 8 000 лей за объект. Первые 2 подписанных объекта бесплатны, объект, от которого клиент отказался, ничего не стоит, а плата за месяц приходит одной выпиской в начале следующего, оплата переводом до 15-го.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Pro: €49/мес</div><div class="pd">Ваш логотип на каждом предложении и PDF, отслеживаемые ссылки + уведомления об открытии, виджет заявок на сайте, полный пайплайн.</div></div>
-    <div class="plan"><div class="pn">Team: €119/мес</div><div class="pd">Всё из Pro, до 5 человек в одном пайплайне, аналитика конверсии, приоритетная поддержка.</div></div>
-    <div class="plan"><div class="pn">Enterprise: индивидуальная цена</div><div class="pd">Неограниченные места для монтажников с филиалами, полный журнал аудита, персональный менеджер.</div></div>
+    <div class="plan hot"><div class="pn">200 лей</div><div class="pd">за кВт каждого подписанного объекта</div></div>
+    <div class="plan"><div class="pn">8 000 лей</div><div class="pd">максимум за объект</div></div>
+    <div class="plan"><div class="pn">2 объекта</div><div class="pd">первые подписанные, бесплатно</div></div>
+    <div class="plan"><div class="pn">0 лей</div><div class="pd">если клиент отказался</div></div>
   </div>
+  <p class="g-lede" style="margin-top:12px">В Настройках, Оплата за объект, видны подписанные в этом месяце объекты, выписки VoltMira и IDNO компании.</p>
 </section>
 
 <section>
@@ -489,13 +495,15 @@ const HTML = {
 </section>
 
 <section>
-  <div class="g-h"><span class="g-n">6</span><h2>Тарифи</h2></div>
-  <p class="g-lede">Безкоштовно на етапі бета, без картки. Ціна засновника зафіксована для перших 50 монтажників.</p>
+  <div class="g-h"><span class="g-n">6</span><h2>Скільки коштує</h2></div>
+  <p class="g-lede">VoltMira безкоштовна для будь-якого монтажника, з усіма функціями й без обмежень на пропозиції чи людей. Ви платите, лише коли клієнт підписує: 200 лей за кожен кВт підписаної системи, не більше 8 000 лей за об’єкт. Перші 2 підписані об’єкти безкоштовні, об’єкт, від якого клієнт відмовився, нічого не коштує, а плата за місяць надходить однією випискою на початку наступного, оплата переказом до 15-го.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">Pro: €49/міс.</div><div class="pd">Ваш логотип на кожній пропозиції та PDF, відстежувані посилання + сповіщення про відкриття, віджет заявок на сайті, повна воронка.</div></div>
-    <div class="plan"><div class="pn">Team: €119/міс.</div><div class="pd">Усе з Pro, до 5 людей в одній воронці, аналітика конверсії, пріоритетна підтримка.</div></div>
-    <div class="plan"><div class="pn">Enterprise: індивідуальна ціна</div><div class="pd">Необмежені місця для монтажників із філіями, повний журнал аудиту, персональний менеджер.</div></div>
+    <div class="plan hot"><div class="pn">200 лей</div><div class="pd">за кВт кожного підписаного об’єкта</div></div>
+    <div class="plan"><div class="pn">8 000 лей</div><div class="pd">максимум за об’єкт</div></div>
+    <div class="plan"><div class="pn">2 об’єкти</div><div class="pd">перші підписані, безкоштовно</div></div>
+    <div class="plan"><div class="pn">0 лей</div><div class="pd">якщо клієнт відмовився</div></div>
   </div>
+  <p class="g-lede" style="margin-top:12px">У Налаштуваннях, Оплата за об’єкт, видно підписані цього місяця об’єкти, виписки VoltMira та IDNO компанії.</p>
 </section>
 
 <section>

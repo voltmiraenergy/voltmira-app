@@ -13,8 +13,9 @@ import { PenLine } from "lucide-react";
 import { t } from "../../../lib/i18n.js";
 import { ppt } from "./text.js";
 import SignaturePad from "./SignaturePad.jsx";
+import { ft as feeT } from "../../../lib/feeText.js";
 
-export default function Tracker({ code, accepted: initialAccepted, lang = "en", signedName = null, signedDate = null, signature = null, qsign = null, qsignOutcome = null }) {
+export default function Tracker({ code, accepted: initialAccepted, lang = "en", signedName = null, signedDate = null, signature = null, qsign = null, qsignOutcome = null, demo = false }) {
   const [accepted, setAccepted] = useState(initialAccepted);
   const [requested, setRequested] = useState(false);
   const [asking, setAsking] = useState(false);       // the call request's small form is open
@@ -77,12 +78,16 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
     if (signing && focusName.current) { focusName.current = false; nameRef.current?.focus(); }
   }, [signing]);
 
-  const ready = Boolean(sig) && Boolean(signer.trim()) && !sending;
+  const [signedBy, setSignedBy] = useState("");
+  const ready = Boolean(sig) && signer.trim().length >= 2 && !sending;
 
   async function confirm() {
     if (!ready) return;
     setSending(true); setFailed(false);
     const res = await send("accept", { signature: sig, signerName: signer.trim() });
+    // someone else signed first: show their name, not the one typed here (that signature was not taken)
+    const out = res && res.ok ? await res.clone().json().catch(() => null) : null;
+    if (out?.already) setSignedBy(out.signedName || "");
     // Only a confirmed write closes the deal on screen; a dropped connection or a
     // rate limit used to read as "signed" while nothing reached the installer.
     if (!res || !res.ok) { setFailed(true); setSending(false); return; }
@@ -113,7 +118,7 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
   }
 
   const REF = ["recommend", "google", "social", "installer", "other"];
-  const who = signedName || signer.trim();
+  const who = signedBy || signedName || signer.trim();
   const signedLine = who
     ? (signedDate ? ppt("signed_by", lang, { name: who, date: signedDate }) : ppt("signed_by_nd", lang, { name: who }))
     : ppt("sig_done", lang);
@@ -127,6 +132,8 @@ export default function Tracker({ code, accepted: initialAccepted, lang = "en", 
           <PenLine className="pp-ic" aria-hidden="true" />
           <span>{signedLine}<span className={"pp-lvl" + (level === "lvl_simulated" ? " is-sim" : "")}>{ppt(level, lang)}</span>{who ? <span style={{ display: "block", fontWeight: 500 }}>{ppt("sig_done", lang)}</span> : null}</span>
         </div>
+      ) : demo ? (
+        <p className="pp-demo-sign" role="note">{feeT("demo_offer_p", lang)}</p>
       ) : !signing ? (
         <>
           <button type="button" className="pp-btn pp-btn-accept pp-btn-block"

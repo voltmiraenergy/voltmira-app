@@ -303,5 +303,6 @@ export async function geocode(address, { fetchImpl = globalThis.fetch, email = "
   if (!res.ok) throw new Error(`Geocoder HTTP ${res.status}`);
   const arr = await res.json();
   if (!Array.isArray(arr) || !arr.length) return null;
-  return { lat: parseFloat(arr[0].lat), lon: parseFloat(arr[0].lon), display: arr[0].display_name };
+  // how exact the match is ("house", "building", "road", "village"...): a town's centre is not the house
+  return { lat: parseFloat(arr[0].lat), lon: parseFloat(arr[0].lon), display: arr[0].display_name, kind: String(arr[0].addresstype || arr[0].type || "") };
 }

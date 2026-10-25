@@ -23,12 +23,13 @@ import { kindLabel, bomLineText, surplusRevenue } from "../../../lib/quoteAnalys
 import { findWarrantyInfo } from "../../../lib/supplierCatalog.js";
 import { backupHours } from "../../../lib/batteryBackup.js";
 import { compassLabel } from "../../../lib/roofLayout.js";
-import { weightedExportPriceMdl } from "../../../lib/prosumerPrice.js";
 import { CashflowSVG, MonthlySVG, CHART } from "./charts.jsx";
-import { ppt, yearsN } from "./text.js";
+import { ppt, yearsN, kwhUnit, kwUnit } from "./text.js";
 import { Moon, Scale, Snowflake, ThermometerSun, TriangleAlert } from "lucide-react";
 import UaSection from "./UaSection.jsx";
 import RoofSatellite from "../../../components/RoofSatellite.jsx";
+import RoofPhotoPlan from "../../../components/RoofPhotoPlan.jsx";
+import RoofSides from "./RoofSides.jsx";
 
 // Per-market export data (same table as the demo's MARKETS).
 const MKT = {
@@ -233,14 +234,14 @@ const CSS = `
   }
 `;
 
-export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null, acceptUrl = "", fx = null, support = null, signed = null }) {
+export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofSite = null, roofPhoto = null, roofPhotoPlace = null, roofSides = null, roofStatus = null, acceptUrl = "", fx = null, support = null, tariff = null, signed = null }) {
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
   // Minus ahead of the currency symbol: "€-31" reads as a broken string.
   // Lei for a Moldovan installer at the rate frozen with the proposal, with
   // the minus ahead of the symbol (lib/money.js); decimals with a comma.
   const fmt = moneyFormatter({ currency: company.currency, lang, fx });
   const nf = numFor(lang);
-  const yrsF = (n) => n === null ? "25+" : n === 0 ? t("pp_immediate", lang) : nf(n, 1);
+  const yrsF = (n) => n === null ? `${Number(q.horizon) || 25}+` : n === 0 ? t("pp_immediate", lang) : nf(n, 1);
   const pct = (n) => (n == null ? "∞" : Math.round(n) + "%");
   const tr = (k, v) => t(k, lang, v);
   const E = q.assumptions;
@@ -260,7 +261,8 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   // Cost of doing nothing: the client's own consumption bought from the grid
   // for the whole horizon, inflating at the expected band's rate.
   const inflPct = Number(E.bands?.expc?.infl ?? 0);
-  const consY = Number(inputs.cons) || 0;
+  // the consumption the offer was computed on (the monthly profile when used), as the live page does
+  const consY = Math.max(0, Number(effectiveConsumption(inputs)) || 0);
   const priceY = Number(inputs.price) || 0;
   const infl = inflPct / 100;
   const doNothing = consY > 0 && priceY > 0 ? consY * priceY * (infl === 0 ? hz : ((Math.pow(1 + infl, hz) - 1) / infl)) : 0;
@@ -306,8 +308,8 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   // ---- what the exported surplus earns (Moldova's net billing only; Romania
   // credits exports 1:1 at the retail price).
   const isMD = inputs.market === "MD";
-  const surplus = isMD ? surplusRevenue(q.prod0, q.self, FX.MDL) : null;
-  const weightedMdl = isMD ? weightedExportPriceMdl(SOLAR_SEASON) : 0;
+  const surplus = isMD ? surplusRevenue(q.prod0, q.self, Number(fx?.MDL) || FX.MDL, tariff?.exportMdlPerKwh) : null;
+  const weightedMdl = isMD ? surplus.effectiveMdlPerKwh : 0;
 
   // ---- energy, month by month (PVGIS's own monthly shape when looked up).
   const shape = Array.isArray(inputs.monthlyYieldShape) && inputs.monthlyYieldShape.length === 12 ? inputs.monthlyYieldShape : SOLAR_SEASON;
@@ -415,14 +417,19 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
             }) : (
               <>
                 <tr><td className="k">{tr("pdf_panels")}</td><td className="g">{tr("pdf_panels_v", { n: panels })}</td>{anyWarranty && <td />}<td className="q" /></tr>
-                <tr><td className="k">{tr("pdf_inverter")}</td><td className="g">~{nf(inputs.kw, 1)} kW</td>{anyWarranty && <td />}<td className="q" /></tr>
-                {inputs.batt && <tr><td className="k">{tr("pdf_batt_row")}</td><td className="g">{battKwh ? `${battKwh} kWh` : tr("pdf_included")}</td>{anyWarranty && <td />}<td className="q" /></tr>}
+                <tr><td className="k">{tr("pdf_inverter")}</td><td className="g">~{nf(inputs.kw, 1)} {kwUnit(lang)}</td>{anyWarranty && <td />}<td className="q" /></tr>
+                {inputs.batt && <tr><td className="k">{tr("pdf_batt_row")}</td><td className="g">{battKwh ? `${battKwh} ${kwhUnit(lang)}` : tr("pdf_included")}</td>{anyWarranty && <td />}<td className="q" /></tr>}
               </>
             )}
           </tbody></table>
           {/* the real roof from above when the offer carries its position;
               offers sent before that keep the plain drawing */}
-          {roofPhoto ? (
+          {roofPhoto && roofPhotoPlace && roofSat ? (
+            <div className="p-roof">
+              <RoofPhotoPlan photo={roofPhoto} place={roofPhotoPlace} roof={roofSat} />
+              <small>{tr("pdf_roof_photo_plan_note", { n: roofSat.quoted || roofSat.planes.reduce((s, pl) => s + pl.panels.length, 0) })}</small>
+            </div>
+          ) : roofPhoto ? (
             <div className="p-roof">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={roofPhoto} alt="" style={{ display: "block", width: "100%", maxWidth: 680, borderRadius: 10 }} />
@@ -433,18 +440,25 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
               <RoofSatellite roof={roofSat} />
               <small>{tr("pdf_roof_sat_note", { n: roofSat.quoted || roofSat.planes.reduce((s, pl) => s + pl.panels.length, 0) })}</small>
             </div>
-          ) : hasRoof && (
+          ) : hasRoof ? (
             <div className="p-roof">
               <RoofSnapshotSVG planes={roofPlanes} />
               <small>{tr("pdf_roof_snap_note", { n: roofPlanes.reduce((s, pl) => s + pl.panels.length, 0) })}</small>
             </div>
-          )}
+          ) : roofSite ? (
+            <div className="p-roof">
+              <RoofSatellite roof={{ planes: [], center: roofSite, tileZoom: roofSite.tileZoom }} />
+              <small>{tr(roofSite.approx ? "pdf_roof_area_note" : "pdf_roof_site_note")}</small>
+            </div>
+          ) : null}
         </div>
         <div className="p-chips">
           <span className="p-chip">{tr(roofAreaM2 ? "pdf_roof_real" : "pdf_roof")}: <b>~{roofArea} m²</b></span>
           <span className="p-chip">{tr("pdf_orient")}: <b>{orientText}</b></span>
           {installWarrantyYears > 0 && <span className="p-chip"><b>{tr("pdf_warranty_install_v", { n: installWarrantyYears, co: company?.name || "" })}</b></span>}
         </div>
+        <RoofSides sides={roofSides} status={roofStatus} lang={lang} company={company.shortName || company.name || ""} nf={nf}
+          day={roofStatus?.at ? fmtDate(new Date(roofStatus.at + "T12:00:00Z"), loc) : null} />
         {/* A battery is its own product (keeping the lights on), not just a
             savings add-on: the honest, computable claim is hours of backup at
             this household's own average draw. */}
@@ -510,7 +524,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
             k: Math.round(surplus.totalKwh).toLocaleString(loc),
             p: nf(weightedMdl, 2),
             // already in lei when the workspace is: say it once
-            v: fmt.local ? fmt(surplus.eur) : `${Math.round(surplus.mdl).toLocaleString(loc)} lei (${fmt(surplus.eur)})`,
+            v: fmt.local ? fmt(surplus.eur) : `${Math.round(surplus.mdl).toLocaleString(loc)} ${lang === "ru" || lang === "uk" ? "лей" : "lei"} (${fmt(surplus.eur)})`,
           })}</p>
         )}
       </section>
@@ -592,7 +606,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
 
       <div className="p-foot">
         <span>{preparedBy?.name ? `${tr("pp_prepared_by")} ${preparedBy.name}${preparedBy.phone ? ", " + preparedBy.phone : ""}` : company.name}</span>
-        <span>{company.name}{company.plan === "free" ? `, ${tr("pdf_foot")}, voltmira.com` : ""}</span>
+        <span>{company.name}, {tr("pdf_foot")}, voltmira.com</span>
       </div>
     </div>
   );

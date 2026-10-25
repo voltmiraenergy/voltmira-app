@@ -1,51 +1,64 @@
-// app/not-found.jsx — branded 404 that respects the shared theme system.
+// app/not-found.jsx — branded 404 that respects the shared theme system, in the language the visitor last used
+// (the voltmira_lang cookie the app and the proposals keep), English when there is none.
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { LogoMark } from "../lib/Logo.jsx";
 
-export const metadata = { title: "Page not found | VoltMira", robots: { index: false, follow: true } };
+const WORDS = {
+  en: { title: "Page not found", eyebrow: "Error 404", h: "This roof isn't in our database.", p: "The page you're after moved, was renamed, or never existed. Head home or explore the live demo.", home: "Back home", demo: "Open the live demo" },
+  ro: { title: "Pagina nu a fost găsită", eyebrow: "Eroare 404", h: "Acoperișul acesta nu e în baza noastră de date.", p: "Pagina căutată a fost mutată, redenumită sau nu a existat niciodată. Mergi acasă sau încearcă demo-ul live.", home: "Înapoi acasă", demo: "Deschide demo-ul live" },
+  ru: { title: "Страница не найдена", eyebrow: "Ошибка 404", h: "Этой крыши нет в нашей базе.", p: "Страница, которую вы ищете, перемещена, переименована или никогда не существовала. Вернитесь на главную или откройте живое демо.", home: "На главную", demo: "Открыть живое демо" },
+  uk: { title: "Сторінку не знайдено", eyebrow: "Помилка 404", h: "Цього даху немає в нашій базі.", p: "Сторінку, яку ви шукаєте, переміщено, перейменовано або її ніколи не існувало. Поверніться на головну або відкрийте живе демо.", home: "На головну", demo: "Відкрити живе демо" },
+};
+async function wordsNow() {
+  let l = "en";
+  try { const c = (await cookies()).get("voltmira_lang")?.value; if (WORDS[c]) l = c; } catch { /* no request: English */ }
+  return { l, w: WORDS[l] };
+}
 
-export default function NotFound() {
+export async function generateMetadata() {
+  const { w } = await wordsNow();
+  return { title: `${w.title} | VoltMira`, robots: { index: false, follow: true } };
+}
+
+export default async function NotFound() {
+  const { l, w } = await wordsNow();
   return (
-    <div style={{
+    <div lang={l} style={{
       minHeight: "100vh", background: "var(--app-bg)", color: "var(--app-text)",
       display: "grid", placeItems: "center", padding: "40px 24px",
       fontFamily: "Inter, system-ui, sans-serif",
     }}>
       <main style={{ maxWidth: 520, textAlign: "center" }}>
         <div aria-hidden="true" style={{ marginBottom: 22, display: "inline-flex" }}>
-          <svg width="56" height="56" viewBox="0 0 34 34" fill="none">
-            <rect width="34" height="34" rx="8" fill="#142A21" />
-            <path d="M8 26 L14 12" stroke="#C4543B" strokeWidth="3.2" strokeLinecap="round" />
-            <path d="M14.5 26 L20.5 8" stroke="#E89B2D" strokeWidth="3.2" strokeLinecap="round" />
-            <path d="M21 26 L27 5.5" stroke="#3FAE6A" strokeWidth="3.2" strokeLinecap="round" />
-          </svg>
+          <LogoMark size={56} />
         </div>
         <p style={{
           fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12.5,
           letterSpacing: ".14em", textTransform: "uppercase",
           color: "var(--app-muted)", margin: "0 0 12px",
-        }}>Error 404</p>
+        }}>{w.eyebrow}</p>
         <h1 style={{
           fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700,
           fontSize: "clamp(30px, 5vw, 44px)", letterSpacing: "-.03em",
           lineHeight: 1.05, margin: "0 0 14px",
-        }}>This roof isn&apos;t in our database.</h1>
+        }}>{w.h}</h1>
         <p style={{
           fontSize: 15.5, lineHeight: 1.55, color: "var(--app-text)",
           opacity: .78, margin: "0 0 30px",
         }}>
-          The page you&apos;re after moved, was renamed, or never existed.
-          Head home or explore the live demo.
+          {w.p}
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <Link href="/" style={{
             background: "#1E6B4E", color: "#fff", padding: "12px 20px",
             borderRadius: 10, fontWeight: 700, fontSize: 14.5, textDecoration: "none",
-          }}>← Back home</Link>
+          }}>{w.home}</Link>
           <Link href="/demo" style={{
             background: "transparent", color: "var(--app-text)",
             border: "1px solid var(--app-line)", padding: "12px 20px",
             borderRadius: 10, fontWeight: 600, fontSize: 14.5, textDecoration: "none",
-          }}>Open the live demo →</Link>
+          }}>{w.demo}</Link>
         </div>
       </main>
     </div>

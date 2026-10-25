@@ -7,10 +7,12 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "../../../lib/supabase.js";
 import { currentUser, currentCompany } from "../../../lib/session.js";
+import { projectVisibility } from "../../../lib/projectAccess.js";
 import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
 import { projectInvoice } from "../../../lib/invoiceServer.js";
 import { cleanMapping, toCsv, toXml, buildExportRows, rangeOk } from "../../../lib/export1c.js";
 import { zip } from "../../../lib/zip.js";
+import { dayKeyOf } from "../../../lib/tz.js";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -36,12 +38,13 @@ export async function GET(req) {
     sb.from("export_mappings").select("mapping").maybeSingle(),
   ]);
   const mapping = cleanMapping(mp.data?.mapping || {});
-  const list = projects || [];
+  const sees = await projectVisibility(user, co);
+  const list = (projects || []).filter(sees);
   // amounts only for the invoices inside the range, or behind a payment in it
   const payIds = new Set((pm.data || []).map((m) => m.project_id));
   const amounts = new Map();
   for (const p of list) {
-    const day = String(p.invoiced_at || "").slice(0, 10);
+    const day = dayKeyOf(p.invoiced_at);
     if ((day && day >= from && day <= to) || payIds.has(p.id)) {
       const inv = await projectInvoice(p, co);
       amounts.set(p.id, { ...inv.amounts, cur: inv.cur });

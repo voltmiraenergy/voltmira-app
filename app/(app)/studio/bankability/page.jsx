@@ -317,7 +317,7 @@ export default function BankabilityPreview() {
       <div className="pv-doc">
         <div className="doc-co">VoltMira, {d("Energy Yield Assessment & Bankability Summary", "Evaluarea producției de energie & rezumat de bancabilitate")}, {new Date().toLocaleDateString(loc)}</div>
         <h1>{project.name}</h1>
-        <p className="doc-sub">Ref. {project.ref}, {d("prepared for the lender's technical adviser", "pregătit pentru consultantul tehnic al finanțatorului")}, {d("methodology", "metodologie")}: PVGIS-SARAH3 {d("resource", "resursă")} + VoltMira {d("honesty engine", "motor de onestitate")} (P50 = {d("expected band", "banda așteptată")})</p>
+        <p className="doc-sub">Ref. {project.ref}, {d("prepared for the lender's technical adviser", "pregătit pentru consultantul tehnic al finanțatorului")}, {d("methodology", "metodologie")}: PVGIS {d("resource", "resursă")} + VoltMira {d("honesty engine", "motor de onestitate")} (P50 = {d("expected band", "banda așteptată")})</p>
 
         <h2>{d("Project summary", "Rezumatul proiectului")}</h2>
         <div className="doc-grid">
@@ -458,8 +458,8 @@ export default function BankabilityPreview() {
         <h2>{d("Methodology & limitations", "Metodologie și limitări")}</h2>
         <p style={{ fontSize: "11px" }}>
           {d(
-            "Resource from PVGIS-SARAH3 (2005–2023) for the site coordinates. Energy model and losses per the VoltMira engine (SR EN 50549-1 export scheme, per-market tariff rules). P-values assume a normal distribution of annual energy about P50 with the combined σ above. This is a screening assessment for financing discussions, not a substitute for an independent engineer's report where required by the facility.",
-            "Resursă din PVGIS-SARAH3 (2005–2023) pentru coordonatele sitului. Model energetic și pierderi conform motorului VoltMira (schemă de export SR EN 50549-1, reguli tarifare per piață). Valorile P presupun o distribuție normală a energiei anuale în jurul P50, cu σ combinat de mai sus. Este o evaluare de screening pentru discuții de finanțare, nu înlocuiește raportul unui inginer independent, acolo unde este cerut de facilitate."
+            "Resource from PVGIS satellite irradiance data (JRC; the radiation database and the years are those PVGIS reports for the site) for the site coordinates. Energy model and losses per the VoltMira engine (SR EN 50549-1 export scheme, per-market tariff rules). P-values assume a normal distribution of annual energy about P50 with the combined σ above. This is a screening assessment for financing discussions, not a substitute for an independent engineer's report where required by the facility.",
+            "Resursă din datele satelitare de iradiere PVGIS (JRC; baza de date și anii sunt cei raportați de PVGIS pentru sit) pentru coordonatele sitului. Model energetic și pierderi conform motorului VoltMira (schemă de export SR EN 50549-1, reguli tarifare per piață). Valorile P presupun o distribuție normală a energiei anuale în jurul P50, cu σ combinat de mai sus. Este o evaluare de screening pentru discuții de finanțare, nu înlocuiește raportul unui inginer independent, acolo unde este cerut de facilitate."
           )}
         </p>
         <p style={{ fontSize: "11px" }}>

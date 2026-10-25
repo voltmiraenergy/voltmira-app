@@ -17,6 +17,9 @@
 import { NextResponse } from "next/server";
 import { renderProposalPdf } from "../../../../../lib/renderProposalPdf.js";
 import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
+import { supabaseAdmin } from "../../../../../lib/supabase.js";
+import { isDemoCompany } from "../../../../../lib/demoServer.js";
+import { proposalFileName } from "../../../../../lib/proposalFileName.js";
 
 // Chromium needs a real filesystem and ~1GB of RAM: Node runtime, never Edge.
 export const runtime = "nodejs";
@@ -37,12 +40,23 @@ export async function GET(req, props) {
 
   try {
     const base = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
-    const { pdf, timings } = await renderProposalPdf(code, base);
+    // an offer made in /demo says DEMO on every page (lib/demoServer.js)
+    const { data: owner } = await supabaseAdmin().from("proposals").select("company_id").eq("code", code).maybeSingle();
+    const demo = owner ? await isDemoCompany(supabaseAdmin(), owner.company_id) : false;
+    const { pdf, timings } = await renderProposalPdf(code, base, { watermark: demo ? "DEMO" : null });
+    // a paid plan is white-labelled: the file carries the installer's name, not VoltMira's
+    let fileName = proposalFileName({ code });
+    try {
+      const db = supabaseAdmin();
+      const { data: pr } = await db.from("proposals").select("company_id").eq("code", code).maybeSingle();
+      const { data: co } = pr ? await db.from("companies").select("name, plan").eq("id", pr.company_id).maybeSingle() : { data: null };
+      if (co) fileName = proposalFileName({ companyName: co.name, code });
+    } catch { /* the default name */ }
     return new NextResponse(pdf, {
       headers: {
         "content-type": "application/pdf",
         // `inline` so a click opens the viewer; the filename still applies on save.
-        "content-disposition": `inline; filename="VoltMira-proposal-${code}.pdf"`,
+        "content-disposition": `inline; filename="${fileName}"`,
         "cache-control": "private, max-age=0, must-revalidate",
         // Cumulative phase marks, so a slow export can be diagnosed from the
         // response instead of by guessing.

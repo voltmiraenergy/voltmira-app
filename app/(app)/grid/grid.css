@@ -1,0 +1,39 @@
+/* app/(app)/grid/grid.css — the grid connections overview (/grid). Built on the dashboard's pieces (dx.css:
+   dx-head, dx-card, dx-tabs, dx-count) and the app's theme tokens, so it reads the same in light and dark. */
+
+.app .gdx-warn { margin: 0 0 14px; padding: 10px 14px; border-radius: 12px; background: var(--app-warn-tint); color: var(--app-warn-ink); font-size: 13.5px; font-weight: 600; }
+
+.app .gdx-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; }
+@media (max-width: 720px) { .app .gdx-strip { grid-template-columns: 1fr 1fr; } .app .gdx-strip .gdx-avg { grid-column: 1 / -1; } }
+.app .gdx-strip > div { padding: 14px 16px; border-radius: 14px; background: var(--app-surface); border: 1px solid var(--app-line); min-width: 0; }
+.app .gdx-strip dt { font-size: 12.5px; font-weight: 600; color: var(--app-muted); }
+.app .gdx-strip dd { margin: 4px 0 0; font-family: "Inter Tight", Inter, system-ui, sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--app-text); font-variant-numeric: tabular-nums; }
+.app .gdx-strip dd.gdx-sub { margin-top: 2px; font-family: inherit; font-size: 12.5px; font-weight: 500; letter-spacing: 0; color: var(--app-muted); }
+.app .gdx-strip .is-late { border-color: var(--app-bad); }
+.app .gdx-strip .is-late dd { color: var(--app-bad); }
+
+.app .gdx-card-head { flex-wrap: wrap; align-items: center; }
+.app .gdx-scroll { overflow-x: auto; margin: 0 -4px; }
+.app .gdx-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.app .gdx-table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--app-muted); padding: 8px 10px; border-bottom: 1px solid var(--app-line); white-space: nowrap; }
+.app .gdx-table td { padding: 11px 10px; border-bottom: 1px solid var(--app-line); vertical-align: top; color: var(--app-text); }
+.app .gdx-table td small { display: block; margin-top: 3px; font-size: 12px; color: var(--app-muted); }
+.app .gdx-table .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.app .gdx-table tr.is-late td:first-child { box-shadow: inset 3px 0 0 var(--app-bad); }
+.app .gdx-table small.gdx-late { color: var(--app-bad); font-weight: 600; }
+.app .gdx-who { font-weight: 600; color: var(--app-text); text-decoration: none; }
+.app .gdx-who:hover { text-decoration: underline; }
+.app small.gdx-exc { color: var(--app-warn-ink); }
+.app .gdx-ref { font-size: 12.5px; color: var(--app-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app .gdx-st { display: inline-flex; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--app-bg); border: 1px solid var(--app-line); color: var(--app-muted); white-space: nowrap; }
+.app .gdx-st.s-approved, .app .gdx-st.s-meter_installed, .app .gdx-st.s-connected { background: var(--app-ok-tint); border-color: transparent; color: var(--app-ok); }
+.app .gdx-st.s-docs_requested { background: var(--app-warn-tint); border-color: transparent; color: var(--app-warn-ink); }
+.app .gdx-st.s-rejected { background: var(--app-bad-tint); border-color: transparent; color: var(--app-bad); }
+.app .gdx-empty { margin: 4px 0 6px; font-size: 14px; color: var(--app-muted); }
+.app .gdx-note { margin: 12px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--app-muted); }
+
+.app .gdx-closed { list-style: none; margin: 0; padding: 0; display: grid; }
+.app .gdx-closed li { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--app-line); font-size: 13.5px; }
+.app .gdx-closed li:last-child { border-bottom: 0; }
+.app .gdx-closed small { color: var(--app-muted); font-size: 12px; white-space: nowrap; }
+@media (max-width: 560px) { .app .gdx-closed li { grid-template-columns: 1fr auto; } }

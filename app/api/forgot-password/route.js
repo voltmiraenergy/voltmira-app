@@ -7,33 +7,23 @@
 //     captcha; everyone else must pass Turnstile when TURNSTILE_SECRET_KEY is set.
 //   • The reply is ALWAYS { ok: true } — a different answer for unknown emails
 //     would let anyone probe which addresses have accounts.
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
 import { sendEmail, resetPasswordEmail, supportFrom, emailConfigured } from "../../../lib/email.js";
+import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
+import { turnstileOk } from "../../../lib/turnstile.js";
 
 const siteUrl = () => process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com";
-
-/** Verify a Turnstile token. Returns true when the secret isn't configured
- *  (local/dev) so the flow still works before Turnstile is wired up. */
-async function turnstileOk(token) {
-  const secret = process.env.TURNSTILE_SECRET_KEY || process.env.TURNSTILE_SECRET;
-  if (!secret) return true;          // not configured — don't block
-  if (!token) return false;
-  try {
-    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ secret, response: token }),
-    });
-    const j = await res.json().catch(() => ({}));
-    return !!j.success;
-  } catch { return false; }
-}
 
 export async function POST(req) {
   let b; try { b = await req.json(); } catch { return NextResponse.json({ ok: true }); }
   const email = String(b.email || "").trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ ok: true });
+
+  // Limits, answered like everything else ({ ok: true }): a loop of requests must not be a mail bomb on
+  // one person, nor a way to burn the mail quota.
+  if (await isRateLimited(`fp-ip:${clientIp(req)}`, 10, 3_600_000) || await isRateLimited(`fp-mail:${email}`, 3, 3_600_000))
+    return NextResponse.json({ ok: true });
 
   // A signed-in user resetting their own address (from /profile) is trusted and
   // skips the captcha; a logged-out request from /login must pass Turnstile.
@@ -47,6 +37,13 @@ export async function POST(req) {
     return NextResponse.json({ ok: true });   // same reply, no probing
   }
 
+  // The lookup and the send happen after the reply, so an address with an account answers as fast as one
+  // without: the time taken says nothing about who has an account.
+  after(() => sendReset(email));
+  return NextResponse.json({ ok: true });
+}
+
+async function sendReset(email) {
   const admin = supabaseAdmin();
   const redirectTo = `${siteUrl()}/reset-password`;
   try {
@@ -78,6 +75,4 @@ export async function POST(req) {
       });
     }
   } catch { /* never reveal anything about the address */ }
-
-  return NextResponse.json({ ok: true });
 }

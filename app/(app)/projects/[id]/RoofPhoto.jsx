@@ -7,31 +7,8 @@
 // offer link (or "Update with the latest changes") carries it.
 import { useRef, useState } from "react";
 import { t } from "../../../../lib/i18n.js";
+import { uploadRoofPhoto } from "../../../../lib/photoShrink.js";
 
-const MAX = 1600;
-
-/** A photo as a JPEG blob no larger than MAX on its long side. */
-function shrink(file) {
-  return new Promise((resolve, reject) => {
-    if (!file?.type?.startsWith("image/")) { reject(new Error("not_image")); return; }
-    // read as a data: URL, which the CSP allows for images (a blob: URL it blocks)
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("read"));
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const s = Math.min(1, MAX / Math.max(img.width, img.height));
-        const c = document.createElement("canvas");
-        c.width = Math.max(1, Math.round(img.width * s)); c.height = Math.max(1, Math.round(img.height * s));
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-        c.toBlob((b) => (b ? resolve(b) : reject(new Error("encode"))), "image/jpeg", 0.82);
-      };
-      img.onerror = () => reject(new Error("decode"));
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
 
 export default function RoofPhoto({ projectId, url, lang, onChange }) {
   const input = useRef(null);
@@ -42,13 +19,8 @@ export default function RoofPhoto({ projectId, url, lang, onChange }) {
     if (!file) return;
     setBusy(true); setFailed(false);
     try {
-      const blob = await shrink(file);
-      const form = new FormData();
-      form.append("photo", blob, "roof.jpg");
-      const res = await fetch(`/api/projects/${projectId}/roof-photo`, { method: "POST", body: form });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok || !j.url) throw new Error(j.error || "upload");
-      onChange(j.url);
+      const url2 = await uploadRoofPhoto(projectId, file);
+      onChange(url2);
     } catch {
       setFailed(true);
     } finally {

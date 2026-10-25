@@ -4,63 +4,53 @@ import LegalShell from "../LegalShell.jsx";
 export const metadata = {
   title: "Refund Policy | VoltMira",
   description:
-    "Refunds for VoltMira subscriptions: the 14-day window, duplicate charges, outages and cancellations, handled with Paddle, our merchant of record.",
+    "Refunds for VoltMira's fee for signed jobs: nothing owed when a client gives up, credit for a job already paid, duplicate payments, and how to ask.",
   alternates: { canonical: "/refunds" },
 };
 
 export default function Refunds() {
   return (
-    <LegalShell title="Refund Policy" updated="26 September 2026">
+    <LegalShell title="Refund Policy" updated="24 October 2026">
       <p className="note">
-        Payments for VoltMira are processed by <b>Paddle</b>, our merchant of record, so your receipt
-        comes from Paddle and refunds are paid back through Paddle to the card or account you paid
-        with.
+        VoltMira is free to use. Its one charge is a fee for each job your client signs, 200 lei a kW
+        and at most 8,000 lei a job, billed on one statement a month and paid by bank transfer. Developers&apos; bank
+        packs, where offered, are paid through <b>Paddle</b>, our merchant of record, so their receipts
+        and refunds go through Paddle.
       </p>
 
-      <h2>Free plans and trials</h2>
+      <h2>Nothing is charged until a client signs</h2>
       <p>
-        Nothing is charged on a free plan or during beta access. Where a free trial is offered at
-        checkout, you are not charged if you cancel before the trial ends, and the date of the first
-        charge is shown before you confirm.
+        Quotes, offers, clients and every feature cost nothing. A fee is due only for a job your client
+        signed online or that you marked as signed, and your company&apos;s first 2 signed jobs are free.
+        If the client gives up the job before you paid, you owe nothing for it, also when it is already
+        on a statement: the statement then asks only for the rest.
       </p>
 
-      <h2>14-day refund on your first payment</h2>
+      <h2>A job cancelled after you paid</h2>
       <p>
-        If you ask within <b>14 days</b> of your first payment for a plan, we refund it in full,
-        provided the workspace has not yet been used for paid-plan features during that period (such
-        as tracked proposal links, branded PDF exports or extra team seats). If you have used them, we
-        refund the unused part of the period. This is in addition to any right of withdrawal you have
-        as a consumer under the law of your country, which this policy never limits.
+        If a job you already paid the fee for is later cancelled (the client gives up), the fee becomes
+        a credit of the same amount, used on your next signed job. A refund in money instead is at our
+        discretion, on request, for example if you stop using VoltMira. This is in addition to any right
+        you have under the law of your country, which this policy never limits.
       </p>
 
       <h2>Other refunds</h2>
       <ul>
-        <li><b>Duplicate or mistaken charges</b>: refunded in full, at any time.</li>
-        <li><b>An outage caused by us</b>: a pro-rated credit or refund for the affected period, on
-          request, once the outage is confirmed.</li>
-        <li><b>Cancelling</b>: you can cancel at any time and keep access until the end of the period
-          you paid for. Outside the 14-day window, payments for the current period are not refunded
-          unless the law requires it.</li>
-      </ul>
-
-      <h2>What is not refunded</h2>
-      <ul>
-        <li>Billing periods that ended before you asked.</li>
-        <li>Requests more than 14 days after the first payment, except in the cases above.</li>
+        <li><b>Duplicate or mistaken payments</b>: refunded in full, at any time.</li>
+        <li><b>A fee charged for a job that was never signed</b> (for example, marked signed by mistake
+          and corrected at once): write to us and we refund it or turn it into credit.</li>
+        <li><b>Bank packs</b>: refunded through Paddle under the terms shown at checkout.</li>
       </ul>
 
       <h2>How to ask for a refund</h2>
       <ul>
         <li>
           Email <a href="mailto:voltmiraenergy@gmail.com">voltmiraenergy@gmail.com</a> from the
-          address on your account, with your Paddle receipt or transaction ID.
+          address on your account, with the statement number (VMF-...) or the transfer reference.
         </li>
         <li>
-          Or use the link at the bottom of any Paddle receipt email to contact Paddle directly.
-        </li>
-        <li>
-          We reply within <b>2 business days</b>. Approved refunds usually reach your card or account
-          within 5 to 10 business days, depending on your bank.
+          We reply within <b>2 business days</b>. Approved refunds are sent by bank transfer to your
+          company&apos;s account and usually arrive within 5 to 10 business days, depending on your bank.
         </li>
       </ul>
 

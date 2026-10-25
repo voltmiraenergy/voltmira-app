@@ -5,15 +5,16 @@
 // energy is worth at the offer's prices, the steps folded away. Always: a way
 // to recommend the installer (RecommendShare.jsx). Data from the offer
 // route's `after` (lib/clientJourney.js). Server-rendered.
-import { ppt } from "./text.js";
+import { ppt, kwhUnit } from "./text.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { toIntlPhone } from "../../../lib/phone.js";
 import RecommendShare from "./RecommendShare.jsx";
 import ProdBars from "./ProdBars.jsx";
+import { svt } from "../../../lib/serviceText.js";
 
 const LOC = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
 
-export default function ClientAfter({ after, lang, code, company, nf, fmt, preparedBy = null, market = "MD" }) {
+export default function ClientAfter({ after, lang, code, referral = null, company, nf, fmt, preparedBy = null, market = "MD" }) {
   const loc = LOC[lang] || LOC.en;
   const day = (d) => fmtDate(`${d}T12:00:00Z`, loc, { day: "numeric", month: "long" });
   const monthLong = (m) => fmtDate(`${m}-15T12:00:00Z`, loc, { month: "long", year: "numeric" });
@@ -81,7 +82,7 @@ export default function ClientAfter({ after, lang, code, company, nf, fmt, prepa
           {rows.length ? (
             <>
               <dl className="pp-af-tiles">
-                <div><dt>{ppt("af_t_total", lang)}</dt><dd>{nf(production.total, 0)} <small>kWh</small></dd><dd className="s">{ppt("af_t_total_s", lang, { n: rows.length })}</dd></div>
+                <div><dt>{ppt("af_t_total", lang)}</dt><dd>{nf(production.total, 0)} <small>{kwhUnit(lang)}</small></dd><dd className="s">{ppt("af_t_total_s", lang, { n: rows.length })}</dd></div>
                 {production.pct != null && (
                   <div className={production.pct >= 100 ? "up" : ""}><dt>{ppt("af_t_pct", lang)}</dt><dd>{nf(production.pct, 0)}%</dd><dd className="s">{ppt("af_t_pct_s", lang)}</dd></div>
                 )}
@@ -89,7 +90,7 @@ export default function ClientAfter({ after, lang, code, company, nf, fmt, prepa
                   <div><dt>{ppt("af_t_value", lang)}</dt><dd>{fmt(facts.valueEur)}</dd><dd className="s">{ppt("af_t_value_s", lang)}</dd></div>
                 )}
                 {facts.best && (
-                  <div><dt>{ppt("af_t_best", lang)}</dt><dd>{nf(facts.best.kwh, 0)} <small>kWh</small></dd><dd className="s">{monthLong(facts.best.month)}</dd></div>
+                  <div><dt>{ppt("af_t_best", lang)}</dt><dd>{nf(facts.best.kwh, 0)} <small>{kwhUnit(lang)}</small></dd><dd className="s">{monthLong(facts.best.month)}</dd></div>
                 )}
               </dl>
               <ProdBars rows={rows} lang={lang} nf={nf} best={facts.best} />
@@ -106,10 +107,19 @@ export default function ClientAfter({ after, lang, code, company, nf, fmt, prepa
 
       {ask}
 
+      {/* something wrong with the system: the client tells the installer from their own page (Phase 5) */}
+      {live && after?.serviceUrl && (
+        <div className="pp-card pp-rec">
+          <h3>{svt("cp_card_h", lang)}</h3>
+          <p>{svt("cp_card_p", lang, { company: co })}</p>
+          <a className="pp-btn" href={after.serviceUrl}>{svt("cp_title", lang)}</a>
+        </div>
+      )}
+
       <div className="pp-card pp-rec">
         <h3>{ppt("rec_h", lang)}</h3>
         <p>{ppt("rec_p", lang, { co })}</p>
-        <RecommendShare code={code} lang={lang} company={co} />
+        <RecommendShare code={referral || code} lang={lang} company={co} />
         <p className="pp-rec-note">{ppt("rec_get", lang)}</p>
       </div>
 

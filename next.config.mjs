@@ -67,6 +67,8 @@ const nextConfig = {
       // It is also meaningless as a search result, so keep it out of the index.
       { source: "/widget", headers: [...widgetHeaders, ...noIndexHeaders] },
       { source: "/widget/:path*", headers: [...widgetHeaders, ...noIndexHeaders] },
+      // an installer's estimate page: embeddable the same way, and found through the installer's own site
+      { source: "/estimate/:path*", headers: [...widgetHeaders, ...noIndexHeaders] },
 
       // Client proposals carry a homeowner's NAME, ADDRESS, CONSUMPTION and
       // PRICE. They were fully indexable: no metadata, no noindex, HTTP 200 to
@@ -111,7 +113,7 @@ const nextConfig = {
       { source: "/:path*", has: [{ type: "host", value: "(?<vhost>.+)\\.vercel\\.app" }], headers: noIndexHeaders },
       // Everything else (the negative lookahead keeps /widget from also matching
       // here and inheriting X-Frame-Options: DENY).
-      { source: "/((?!widget).*)", headers: securityHeaders },
+      { source: "/((?!widget|estimate/).*)", headers: securityHeaders },
     ];
   },
   async rewrites() {

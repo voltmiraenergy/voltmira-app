@@ -20,10 +20,17 @@ import LoanCalculator from "./LoanCalculator.jsx";
 import AutoPrint from "./AutoPrint.jsx";
 import PrintSheet, { RoofSnapshotSVG } from "./PrintSheet.jsx";
 import RoofSatellite from "../../../components/RoofSatellite.jsx";
+import RoofPhotoPlan from "../../../components/RoofPhotoPlan.jsx";
 import ClientAudit from "./ClientAudit.jsx";
 import { MonthlySVG, CashflowSVG, CHART, monthNames } from "./charts.jsx";
 import FinanceToggle from "./FinanceToggle.jsx";
+import RoofSides from "./RoofSides.jsx";
 import { notFound } from "next/navigation";
+import { cache } from "react";
+import { headers } from "next/headers";
+import { isRateLimited } from "../../../lib/ratelimit.js";
+import { publicProposalResponse } from "../../../lib/proposalPublic.js";
+import { ft as feeT } from "../../../lib/feeText.js";
 import OfferBanner from "./OfferBanner.jsx";
 import UaSection from "./UaSection.jsx";
 import LivePrice from "./LivePrice.jsx";
@@ -41,18 +48,26 @@ import { findWarrantyInfo } from "../../../lib/supplierCatalog.js";
 import { backupHours } from "../../../lib/batteryBackup.js";
 import { designCheck, designCheckRows } from "../../../lib/designCheck.js";
 import { compassLabel } from "../../../lib/roofLayout.js";
-import { weightedExportPriceMdl } from "../../../lib/prosumerPrice.js";
 import { SOLAR_SEASON, FX, effectiveConsumption, amortizedMonthlyPayment } from "@voltmira/engine";
 import { ppt, yearsN, kwhUnit, kwUnit } from "./text.js";
 import { ArrowUpRight, BatteryCharging, CalendarClock, ChevronDown, Info, Moon, Package, Phone, Plug, Scale, Snowflake, SolarPanel, ThermometerSun, TrendingUp, TriangleAlert, Wrench, Zap, Award, MapPin } from "lucide-react";
+import { LogoMark } from "../../../lib/Logo.jsx";
+import SectionTracker from "./SectionTracker.jsx";
 
-async function getProposal(code) {
-  const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const res = await fetch(`${base}/api/proposal/${code}`, { cache: "no-store" });
+// Read straight from the server (lib/proposalPublic.js), not through an HTTP call to our own API: that call
+// reached the limiter with the server's address, so a few visits to made-up links could lock every client
+// out of their real one. The visitor's own address is what is limited here. cache(): the page and its
+// metadata share one read and one count.
+const getProposal = cache(async (code) => {
+  if (!/^[a-z0-9]{4,32}$/i.test(String(code || ""))) return { missing: true };
+  const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0].trim() || h.get("x-real-ip") || "anon";
+  if (await isRateLimited(`prop:page:${ip}`, 60, 60_000)) return null;
+  const res = await publicProposalResponse(code);
   if (res.status === 404) return { missing: true };
   if (!res.ok) return null;
   return res.json();
-}
+});
 
 export const dynamic = "force-dynamic";
 
@@ -89,15 +104,17 @@ export default async function ProposalPage(props) {
     return (
       <main className="pp">
         <div className="pp-wrap" style={{ paddingTop: 64 }}>
-          <h1 className="pp-h2">{t("pp_not_found", "en")}</h1>
-          <p className="pp-lead">{t("pp_expired", "en")}</p>
+          {/* a short failure or a rate limit, not a revoked offer: say so, in the languages clients here read */}
+          <h1 className="pp-h2">Oferta nu se poate încărca acum</h1>
+          <p className="pp-lead">Încercați din nou peste un minut. / Предложение временно недоступно, попробуйте снова через минуту. / The offer cannot load right now, please try again in a minute.</p>
         </div>
       </main>
     );
   }
   const { after = null, company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
-    offer = null, chosenOption = null, cned = null, support = null, financing = null, signature = null, qsign = null,
-    roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofPhoto = null } = data;
+    offer = null, chosenOption = null, cned = null, support = null, tariff = null, referral = null, financing = null, signature = null, qsign = null,
+    roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofSite = null, roofPhoto = null, roofPhotoPlace = null, roofSides = null, roofStatus = null,
+    nearby = null, tracking = false, demo = false } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
   const signedDate = signedAt
@@ -115,8 +132,8 @@ export default async function ProposalPage(props) {
       <main lang={lang} style={{ background: "#fff", minHeight: "100vh" }}>
         <HtmlLang lang={lang} />
         <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom}
-          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat} roofPhoto={roofPhoto}
-          acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} support={support}
+          roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat} roofSite={roofSite} roofPhoto={roofPhoto} roofPhotoPlace={roofPhotoPlace} roofSides={roofSides} roofStatus={roofStatus}
+          acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} support={support} tariff={tariff}
           signed={accepted && signedName ? { name: signedName, date: signedDate, ...signature } : null} />
         {/* The PDF route drives printing through CDP and passes auto=0:
             window.print() inside headless Chromium blocks rather than returns. */}
@@ -134,7 +151,7 @@ export default async function ProposalPage(props) {
   const E = q.assumptions;
   const hz = q.horizon;
   const bands = q.bands;
-  const yrs = (n) => n === null ? "25+" : n === 0 ? t("pp_immediate", lang) : nf(n, 1);
+  const yrs = (n) => n === null ? `${hz}+` : n === 0 ? t("pp_immediate", lang) : nf(n, 1);
   const yrsUnit = (n) => (n === 0 ? "" : t("pp_years", lang));
   const kwU = kwUnit(lang), kwhU = kwhUnit(lang);
   const kw = Number(inputs.kw) || 0;
@@ -178,13 +195,16 @@ export default async function ProposalPage(props) {
   // for the whole horizon, inflating at the expected band's rate (PrintSheet.jsx).
   const inflPct = Number(E?.bands?.expc?.infl ?? 0);
   const infl = inflPct / 100;
-  const consY = Number(inputs.cons) || 0, priceY = Number(inputs.price) || 0;
+  // the consumption the offer was computed on (the monthly profile when it was used), not the annual figure
+  // left in the form: they can differ by a lot, and the headline and this comparison must agree
+  const consY = consEff, priceY = Number(inputs.price) || 0;
   const doNothing = consY > 0 && priceY > 0 ? consY * priceY * (infl === 0 ? hz : ((Math.pow(1 + infl, hz) - 1) / infl)) : 0;
   const withSolar = Math.max(0, doNothing - lifeGross) + q.cost;
   const vsMax = Math.max(doNothing, withSolar, 1);
 
   // What the exported surplus earns (Moldova's net billing only).
-  const surplus = inputs.market === "MD" ? surplusRevenue(q.prod0, q.self, FX.MDL) : null;
+  // at the rate and the export price the offer was frozen with
+  const surplus = inputs.market === "MD" ? surplusRevenue(q.prod0, q.self, Number(fx?.MDL) || FX.MDL, tariff?.exportMdlPerKwh) : null;
 
   // Valid for the company's validity window from when the link was created.
   // (A per-request server render: reading the clock once here is the point.)
@@ -256,6 +276,10 @@ export default async function ProposalPage(props) {
 
         {/* The cover: the installer's brand first, then what this is, what it
             costs, what it saves, when it has paid for itself, and the button. */}
+        {/* an offer made in /demo is an example: said at the top, and it cannot be signed (lib/demoServer.js) */}
+        {demo && (
+          <div className="pp-demo" role="note"><b>{feeT("demo_offer_h", lang)}</b> {feeT("demo_offer_p", lang)}</div>
+        )}
         <header id="pp-hero" className="pp-hero">
           <div className="pp-hero-copy">
             <div className="pp-brand">
@@ -319,12 +343,25 @@ export default async function ProposalPage(props) {
           <div className="pp-main">
 
             {/* signed: the client's own page, their installation and their production */}
-            {accepted && after && <ClientAfter after={after} lang={lang} code={params.code} company={company} nf={nf} fmt={fmt} preparedBy={preparedBy} market={inputs.market} />}
+            {accepted && after && <ClientAfter after={after} lang={lang} code={params.code} referral={referral || params.code} company={company} nf={nf} fmt={fmt} preparedBy={preparedBy} market={inputs.market} />}
 
             {/* Ukraine: outages first, the way a Ukrainian household decides. */}
             {inputs.market === "UA" && (
               <section className="pp-sec">
                 <UaSection inputs={inputs} quote={q} assumptions={E} fx={fx} money={fmt} lang={lang} />
+              </section>
+            )}
+
+            {/* the offer in plain words, before any table or chart */}
+            {!accepted && (
+              <section className="pp-sec pp-plain" aria-labelledby="pp-plain-h">
+                <h2 className="pp-h2" id="pp-plain-h">{ppt("plain_h", lang)}</h2>
+                <ul className="pp-plain-list">
+                  <li>{ppt("plain_save", lang, { v: fmt(mSave) })}</li>
+                  {hasFinance && monthlyPayment > 0 && <li>{ppt("plain_pay", lang, { p: fmt(monthlyPayment), v: fmt(mSave) })}</li>}
+                  {bands.expc.payback != null && <li>{ppt("plain_payback", lang, { y: yearsN(Math.round(bands.expc.payback * 10) / 10, lang) })}</li>}
+                  {lifeNet > 0 && <li>{ppt("plain_net", lang, { y: yearsN(hz, lang), v: fmt(lifeNet) })}</li>}
+                </ul>
               </section>
             )}
 
@@ -336,7 +373,7 @@ export default async function ProposalPage(props) {
                     { key: "rec", rec: true, label: ppt("opt_rec", lang), kw, batt: battKwh, cost: q.cost, payback: bands.expc.payback, year1: q.year1 },
                     ...options.map((o, i) => ({ key: i, label: o.label || ppt("opt_n", lang, { n: i + 2 }), kw: o.kw, batt: o.battKwh, cost: o.cost, payback: o.payback, year1: o.year1 })),
                   ].map((o) => (
-                    <article key={o.key} className={"pp-opt pp-card" + (o.rec ? " is-rec" : "")}>
+                    <article key={o.key} className={"pp-opt pp-card" + (o.rec ? " is-rec" : "")} data-opt={String(o.label).slice(0, 40)}>
                       <span className="pp-tag">{o.label}</span>
                       <h3 className="pp-opt-sys">{nf(o.kw, 1)} {kwU}{o.batt > 0 ? ppt("with_batt", lang, { b: n1(o.batt) }) : ""}</h3>
                       <dl className="pp-mini">
@@ -406,7 +443,15 @@ export default async function ProposalPage(props) {
                 </div>
               )}
 
-              {roofPhoto ? (
+              <RoofSides sides={roofSides} status={roofStatus} lang={lang} company={coShort} nf={nf}
+                day={roofStatus?.at ? fmtDate(roofStatus.at + "T12:00:00Z", loc, { day: "numeric", month: "long", year: "numeric" }) : null} />
+
+              {roofPhoto && roofPhotoPlace && roofSat ? (
+                <figure className="pp-roof pp-card">
+                  <RoofPhotoPlan photo={roofPhoto} place={roofPhotoPlace} roof={roofSat} />
+                  <figcaption>{t("pdf_roof_photo_plan_note", lang, { n: roofSat.quoted || roofSat.planes.reduce((s, pl) => s + pl.panels.length, 0) })}</figcaption>
+                </figure>
+              ) : roofPhoto ? (
                 <figure className="pp-roof pp-card">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img className="pp-roof-photo" src={roofPhoto} alt={t("pdf_roof_photo_note", lang)} />
@@ -414,15 +459,21 @@ export default async function ProposalPage(props) {
                 </figure>
               ) : roofSat ? (
                 <figure className="pp-roof pp-card">
-                  <RoofSatellite roof={roofSat} />
+                  <RoofSatellite roof={roofSat} width={900} height={400} />
                   <figcaption>{t("pdf_roof_sat_note", lang, { n: roofSat.quoted || roofSat.planes.reduce((s, pl) => s + pl.panels.length, 0) })}</figcaption>
                 </figure>
-              ) : hasRoof && (
+              ) : hasRoof ? (
                 <figure className="pp-roof pp-card">
                   <RoofSnapshotSVG planes={roofPlanes} />
                   <figcaption>{t("pdf_roof_snap_note", lang, { n: roofPlanes.reduce((s, pl) => s + pl.panels.length, 0) })}</figcaption>
                 </figure>
-              )}
+              ) : roofSite ? (
+                // the roof was not drawn: the client still sees their own house from above
+                <figure className="pp-roof pp-card">
+                  <RoofSatellite roof={{ planes: [], center: roofSite, tileZoom: roofSite.tileZoom }} width={900} height={400} />
+                  <figcaption>{t(roofSite.approx ? "pdf_roof_area_note" : "pdf_roof_site_note", lang)}</figcaption>
+                </figure>
+              ) : null}
 
               {backupHrs != null && (
                 <div className="pp-callout">
@@ -490,10 +541,19 @@ export default async function ProposalPage(props) {
               {surplus && surplus.totalKwh > 0 && (
                 <p className="pp-note">{t("pdf2_surplus", lang, {
                   k: Math.round(surplus.totalKwh).toLocaleString(loc),
-                  p: nf(weightedExportPriceMdl(SOLAR_SEASON), 2),
+                  p: nf(surplus.effectiveMdlPerKwh, 2),
                   // already in lei when the offer is: say it once
-                  v: fmt.currency === "MDL" ? fmt(surplus.eur) : `${Math.round(surplus.mdl).toLocaleString(loc)} lei (${fmt(surplus.eur)})`,
+                  v: fmt.currency === "MDL" ? fmt(surplus.eur) : `${Math.round(surplus.mdl).toLocaleString(loc)} ${lang === "ru" || lang === "uk" ? "лей" : "lei"} (${fmt(surplus.eur)})`,
                 })}</p>
+              )}
+              {/* what monitored systems in this district really produced (lib/nearbyProof.js) */}
+              {nearby && (
+                <div className="pp-near pp-card">
+                  <h3 className="pp-h3">{ppt("near_h", lang)}</h3>
+                  <p>{ppt("near_body", lang, { d: nearby.name?.[lang] || nearby.name?.ro || nearby.district, n: nearby.systems, y: nf(nearby.kwhPerKwp, 0) })}</p>
+                  {nearby.ownYield > 0 && <p>{ppt("near_own", lang, { y: nf(nearby.ownYield, 0) })}</p>}
+                  <small>{ppt("near_src", lang)}</small>
+                </div>
               )}
             </section>
 
@@ -640,7 +700,7 @@ export default async function ProposalPage(props) {
                 </div>
                 <OfferBanner lang={lang} accepted={accepted} offer={offer} chosenOption={chosenOption} currency={fmt.currency} rate={fmt.rate}
                   optionLabels={Object.fromEntries(options.map((o, i) => [i + 2, o.label || ppt("opt_n", lang, { n: i + 2 })]))} />
-                <Tracker code={params.code} accepted={accepted} lang={lang} signedName={signedName} signedDate={signedDate}
+                <Tracker code={params.code} accepted={accepted} lang={lang} demo={demo} signedName={signedName} signedDate={signedDate}
                   signature={signature} qsign={qsign} qsignOutcome={["declined", "invalid", "pending"].includes(searchParams?.qsign) ? searchParams.qsign : null} />
               </div>
               <div className="pp-accept-foot">
@@ -696,24 +756,19 @@ export default async function ProposalPage(props) {
 
         <footer className="pp-foot">
           <p>{signedDay ? ppt("signed_on", lang, { d: signedDay }) : expired ? ppt("expired_full", lang, { d: validUntil }) : ppt("valid_full", lang, { d: validUntil })}</p>
-          {/* Growth loop: every free-plan proposal a homeowner opens carries a
-              tasteful VoltMira credit. Pro/Team white-labels it away. The mark
-              is drawn exactly as the brand's, never recoloured. */}
-          {company.plan === "free" ? (
-            <a className="pp-credit" href="https://voltmira.com" target="_blank" rel="noopener noreferrer">
-              <span>
-                <span style={{ display: "inline-grid", placeItems: "center", width: 22, height: 22, borderRadius: 6, background: "#142A21" }} aria-hidden="true">
-                  <svg width="13" height="13" viewBox="0 0 34 34"><path d="M8 25 L14 12" stroke="#C4543B" strokeWidth="3" strokeLinecap="round" /><path d="M14.5 25 L20.5 9" stroke="#E89B2D" strokeWidth="3" strokeLinecap="round" /><path d="M21 25 L27 6.5" stroke="#3FAE6A" strokeWidth="3" strokeLinecap="round" /></svg>
-                </span>
-                {t("powered_by", lang)}
-              </span>
-              <small>{t("powered_by_sub", lang)}</small>
-            </a>
-          ) : null /* Pro/Team: white-label, no VoltMira footer */}
-          {/* This page tracks real opens/time-viewed on a real homeowner (see
-              Privacy Policy's "Proposal analytics"): that disclosure has to stay
-              reachable even when Pro/Team hides the branding above; transparency
-              isn't a white-label option. Deliberately NOT hidden by company.plan. */}
+          {/* the reading time per section, said plainly, with the way out (OFFER_TRACKING) */}
+          {tracking && !accepted && <SectionTracker code={params.code} lang={lang} company={coName} />}
+          {/* Every offer a homeowner opens carries a tasteful VoltMira credit (VoltMira is free; its one charge is a
+              fee per won project). The mark is drawn exactly as the brand's, never recoloured. */}
+          <a className="pp-credit" href="https://voltmira.com" target="_blank" rel="noopener noreferrer">
+            <span>
+              <LogoMark size={22} />
+              {t("powered_by", lang)}
+            </span>
+            <small>{t("powered_by_sub", lang)}</small>
+          </a>
+          {/* This page tracks real opens/time-viewed on a real homeowner (see Privacy Policy's "Proposal analytics"):
+              the disclosure is always reachable. */}
           <a className="pp-privacy" href="https://voltmira.com/privacy" target="_blank" rel="noopener noreferrer">
             {ppt("privacy", lang)}
           </a>

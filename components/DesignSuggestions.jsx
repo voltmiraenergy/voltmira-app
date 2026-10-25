@@ -11,6 +11,8 @@
 import { useMemo, useState } from "react";
 import { designCheck } from "../lib/designCheck.js";
 import { inverterOptions } from "../lib/inverterOptions.js";
+import { dec } from "../lib/decimals.js";
+import { kwUnit } from "../app/p/[code]/text.js";
 
 const t3 = (lang, ro, en, ru, uk) => (lang === "en" ? en : lang === "ru" ? ru : lang === "uk" ? (uk ?? en) : ro);
 
@@ -51,9 +53,9 @@ export default function DesignSuggestions({ lang, bom, kw, battKwh, phases, mark
       </div>
       <p className="ds-lead">
         {t3(lang,
-          `Fiecare combinație de invertoare care poate deservi acest array de ${d.dcKw.toFixed(1)} kWp, nu doar cea aleasă acum. „Captură energetică” arată cât din producție NU se pierde prin limitare, nu o estimare de profitabilitate.`,
-          `Every inverter combination that can serve this ${d.dcKw.toFixed(1)} kWp array, not just the one currently picked. "Energy capture" is how much of the output ISN'T lost to clipping, not a profitability estimate.`,
-          `Все комбинации инверторов для этого массива ${d.dcKw.toFixed(1)} кВт·п. «Захват энергии»: доля выработки, не потерянная на ограничении, а не оценка доходности.`, `Усі комбінації інверторів, які підходять для цього масиву ${d.dcKw.toFixed(1)} кВтп, а не лише вибрана зараз. «Захоплення енергії» це частка генерації, яка НЕ втрачається на обмеженні, а не оцінка прибутковості.`)}
+          `Fiecare combinație de invertoare care poate deservi acest array de ${dec(d.dcKw, 1, lang)} kWp, nu doar cea aleasă acum. „Captură energetică” arată cât din producție NU se pierde prin limitare, nu o estimare de profitabilitate.`,
+          `Every inverter combination that can serve this ${dec(d.dcKw, 1, lang)} kWp array, not just the one currently picked. "Energy capture" is how much of the output ISN'T lost to clipping, not a profitability estimate.`,
+          `Все комбинации инверторов для этого массива ${dec(d.dcKw, 1, lang)} кВт·п. «Захват энергии»: доля выработки, не потерянная на ограничении, а не оценка доходности.`, `Усі комбінації інверторів, які підходять для цього масиву ${dec(d.dcKw, 1, lang)} кВтп, а не лише вибрана зараз. «Захоплення енергії» це частка генерації, яка НЕ втрачається на обмеженні, а не оцінка прибутковості.`)}
       </p>
 
       {rows.length === 0 ? (
@@ -83,7 +85,7 @@ export default function DesignSuggestions({ lang, bom, kw, battKwh, phases, mark
                   <span className="ds-bar"><i style={{ width: r.capturePct + "%" }} /></span>
                   {r.capturePct}%
                 </td>
-                <td>{r.acKw.toFixed(2)} kW</td>
+                <td>{dec(r.acKw, 2, lang)} {kwUnit(lang)}</td>
                 <td>
                   <button type="button" className="btn primary sm" onClick={() => { onApply(r); setOpen(false); }}>
                     {t3(lang, "Aplică", "Apply", "Применить", "Застосувати")}

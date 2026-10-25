@@ -8,6 +8,7 @@ import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
 import { qsignAdapterFor } from "../../../../../lib/qsign.js";
 import { qsignMode, startQualified } from "../../../../../lib/qsignFlow.js";
 import { offerDocument } from "../../../../../lib/qsignServer.js";
+import { isDemoCompany } from "../../../../../lib/demoServer.js";
 
 export async function POST(req, props) {
   const { code } = await props.params;
@@ -18,6 +19,7 @@ export async function POST(req, props) {
   const db = supabaseAdmin();
   const { data: prop } = await db.from("proposals").select("code, company_id, project_id, accepted_at").eq("code", code).maybeSingle();
   if (!prop) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (await isDemoCompany(db, prop.company_id)) return NextResponse.json({ error: "demo_only" }, { status: 403 });
   const doc = await offerDocument(db, code);
   if (!doc) return NextResponse.json({ error: "not_found" }, { status: 404 });
 

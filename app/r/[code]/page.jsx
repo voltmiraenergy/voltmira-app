@@ -11,11 +11,13 @@ import { quote, SOLAR_SEASON } from "@voltmira/engine";
 import { supabaseAdmin } from "../../../lib/supabase.js";
 import { normLang } from "../../../lib/i18n.js";
 import { snapshotEngine } from "../../../lib/engineSettings.js";
-import { bomHasBattery } from "../../../lib/quoteInput.js";
+import { offerQuoteInput } from "../../../lib/offerInput.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { toIntlPhone } from "../../../lib/phone.js";
 import { journeySteps, nextStep, productionSeries, journeyFacts, firstName, localityOf } from "../../../lib/clientJourney.js";
+import { findByReferral } from "../../../lib/referral.js";
 import { rt } from "./text.js";
+import { kwUnit, kwhUnit } from "../../p/[code]/text.js";
 import ReferralForm from "./ReferralForm.jsx";
 import ProdBars from "../../p/[code]/ProdBars.jsx";
 import HtmlLang from "../../../lib/HtmlLang.jsx";
@@ -27,9 +29,9 @@ const LOC = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
 const BILL_UNIT = { MDL: "lei", RON: "lei", UAH: "грн", EUR: "€" };
 
 async function load(code) {
-  if (!/^[a-z0-9]{6,16}$/i.test(String(code || ""))) return null;
   const db = supabaseAdmin();
-  const { data: prop } = await db.from("proposals").select("code, project_id, company_id, accepted_at, snapshot").eq("code", code).maybeSingle();
+  // the link carries the referral token, not the offer's own code
+  const prop = await findByReferral(db, code, "code, project_id, company_id, accepted_at, snapshot");
   if (!prop || !prop.accepted_at || !prop.snapshot) return null;
   const [{ data: co }, { data: pj }, { data: reads }] = await Promise.all([
     db.from("companies").select("name, short_name, logo_url, lang, engine, currency").eq("id", prop.company_id).maybeSingle(),
@@ -40,7 +42,7 @@ async function load(code) {
   const snap = prop.snapshot;
   let prod0 = 0, year1 = 0;
   try {
-    const q = quote({ ...snap, bomHasBattery: bomHasBattery(snap.bom) }, snapshotEngine(snap.engine, co));
+    const q = quote(offerQuoteInput(snap), snapshotEngine(snap.engine, co));
     prod0 = Number(q.e.solar0) || Number(q.e.prod0) || 0;
     year1 = Number(q.e.year1) || 0;
   } catch { /* an old snapshot the engine cannot read: no forecast line */ }
@@ -109,12 +111,12 @@ export default async function ReferralPage(props) {
             <section className="pp-card rf-proof" aria-labelledby="rf-proof-h">
               <h2 id="rf-proof-h">{d.who ? rt("proof_h_who", lang, { who: d.who }) : rt("proof_h", lang)}</h2>
               <dl className="rf-facts">
-                <div><dt>{rt("k_kw", lang)}</dt><dd>{kw} <small>kW</small></dd></div>
-                {d.battKwh > 0 && <div><dt>{rt("k_batt", lang)}</dt><dd>{nf(d.battKwh, d.battKwh % 1 ? 1 : 0)} <small>kWh</small></dd></div>}
+                <div><dt>{rt("k_kw", lang)}</dt><dd>{kw} <small>{kwUnit(lang)}</small></dd></div>
+                {d.battKwh > 0 && <div><dt>{rt("k_batt", lang)}</dt><dd>{nf(d.battKwh, d.battKwh % 1 ? 1 : 0)} <small>{kwhUnit(lang)}</small></dd></div>}
                 {d.where && <div><dt>{rt("k_where", lang)}</dt><dd>{d.where}</dd></div>}
                 {d.liveAt && <div><dt>{rt("k_since", lang)}</dt><dd>{monthYear(d.liveAt)}</dd></div>}
                 {facts.days != null && <div><dt>{rt("k_days", lang)}</dt><dd>{rt("k_days_v", lang, { d: facts.days })}</dd></div>}
-                {hasProd && <div><dt>{rt("k_prod", lang, { n: rows.length })}</dt><dd>{nf(pr.total)} <small>kWh</small></dd></div>}
+                {hasProd && <div><dt>{rt("k_prod", lang, { n: rows.length })}</dt><dd>{nf(pr.total)} <small>{kwhUnit(lang)}</small></dd></div>}
                 {hasProd && pr.pct != null && <div className={pr.pct >= 100 ? "up" : ""}><dt>{rt("k_pct", lang)}</dt><dd>{nf(pr.pct)}%</dd></div>}
                 {!d.live && <div><dt>{rt("k_state", lang)}</dt><dd>{rt("k_state_v", lang)}</dd></div>}
               </dl>

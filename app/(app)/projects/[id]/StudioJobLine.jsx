@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { studioJobFor } from "../../../../lib/studioLink.js";
 import { t } from "../../../../lib/i18n.js";
+import { dec } from "../../../../lib/decimals.js";
 
 export default function StudioJobLine({ projectId, kw, lang }) {
   const [job, setJob] = useState(null);
@@ -18,7 +19,7 @@ export default function StudioJobLine({ projectId, kw, lang }) {
   const differs = Math.abs(job.kw - (Number(kw) || 0)) > 0.05;
   return (
     <section className="card sj-line">
-      <span><b>{t("sj_h", lang)}</b> {job.name || t("sj_unnamed", lang)}{differs ? <small>{t("sj_differs", lang, { j: job.kw.toFixed(1) })}</small> : null}</span>
+      <span><b>{t("sj_h", lang)}</b> {job.name || t("sj_unnamed", lang)}{differs ? <small>{t("sj_differs", lang, { j: dec(job.kw, 1, lang) })}</small> : null}</span>
       <Link className="btn ghost sm" href={`/studio/jobs/${encodeURIComponent(job.id)}`}>{t("sj_open", lang)}</Link>
     </section>
   );

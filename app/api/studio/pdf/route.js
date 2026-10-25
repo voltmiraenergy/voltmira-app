@@ -13,8 +13,13 @@ import { NextResponse } from "next/server";
 import { renderHtmlPdf } from "../../../../lib/renderProposalPdf.js";
 import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
 import { supabaseServer } from "../../../../lib/supabase.js";
-import { docDecision, creditsPaywallOn, DOC_KINDS } from "../../../../lib/credits.js";
-import { creditBalance, paidBefore, spendCredits } from "../../../../lib/creditAccess.js";
+import { JOBS_KEY } from "../../../../lib/studioKeys.js";
+import { jobGate } from "../../../../lib/jobFeeServer.js";
+import { supabaseAdmin } from "../../../../lib/supabase.js";
+import { isDemoEmail } from "../../../../lib/demo.js";
+
+// the documents of a won job (lib/jobFees.js LOCKED_DOCS) that this route renders
+const PAPERWORK = ["annex", "protocol", "handover", "performance", "contract", "commissioning", "diagram"];
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,21 +42,31 @@ export async function POST(req) {
   }
 
   let b; try { b = await req.json(); } catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }
-  // The free plan pays one credit per job for the technical annex, the handover
-  // certificate and the performance report (lib/credits.js); a paid plan has
-  // them, and nothing is charged until CREDITS_PAYWALL is on. The browser names
-  // the document (kind) and the job (ref); the credit is taken only once the
-  // PDF has rendered. Out of credits answers 402 and the page goes to Settings, Plan.
-  const kind = DOC_KINDS.includes(b.kind) ? b.kind : null;
+  // A won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js). The browser names the
+  // document (kind) and either the quote (project, from the quote's documents) or the Studio job (ref), which
+  // knows its quote (job.projectId). A Studio job with no quote is not a won job: nothing to wait on.
+  const kind = PAPERWORK.includes(b.kind) ? b.kind : null;
   const ref = String(b.ref || "").slice(0, 80) || null;
-  let spend = 0, companyId = null;
-  if (kind && creditsPaywallOn()) {
-    const { data: co } = await (await supabaseServer()).from("companies").select("id, plan").maybeSingle();
-    companyId = co?.id || null;
-    if (companyId) {
-      const d = docDecision({ plan: co.plan || "free", kind, balance: await creditBalance(companyId), paidBefore: ref ? await paidBefore(companyId, kind, ref) : false });
-      if (!d.allowed) return NextResponse.json({ error: "credits", kind }, { status: 402 });
-      spend = d.spend;
+  if (kind) {
+    const sb = await supabaseServer();
+    let projectId = /^[0-9a-f-]{36}$/i.test(String(b.project || "")) ? String(b.project) : null;
+    if (!projectId && ref) {
+      const { data: js } = await sb.from("studio_state").select("value").eq("key", JOBS_KEY).maybeSingle();
+      const job = Array.isArray(js?.value) ? js.value.find((j) => j && String(j.id) === ref) : null;
+      if (job?.projectId) projectId = String(job.projectId);
+    }
+    // the quote's own documents (contract, commissioning act, diagram) always name their job: without it they are
+    // not rendered, so the lock below cannot be stepped round by leaving the job out
+    const QUOTE_DOCS = ["contract", "commissioning", "diagram"];
+    if (!projectId && QUOTE_DOCS.includes(kind)) return NextResponse.json({ error: "project_required" }, { status: 400 });
+    if (projectId) {
+      const { data: project } = await sb.from("projects").select("*").eq("id", projectId).maybeSingle();
+      if (!project && QUOTE_DOCS.includes(kind)) return NextResponse.json({ error: "not_found" }, { status: 404 });
+      const { data: co } = project ? await sb.from("companies").select("id, idno").eq("id", project.company_id).maybeSingle() : { data: null };
+      if (project) {
+        const gate = await jobGate(supabaseAdmin(), { project, co, user, produce: kind });
+        if (gate.locked) return NextResponse.json({ error: gate.error, project: project.id }, { status: 402 });
+      }
     }
   }
 
@@ -67,7 +82,10 @@ export async function POST(req) {
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/\son\w+\s*=\s*"[^"]*"/gi, "")
     .replace(/\son\w+\s*=\s*'[^']*'/gi, "")
-    .replace(/<img\b(?![^>]*\bsrc\s*=\s*["']data:)[^>]*>/gi, "");
+    .replace(/<img\b(?![^>]*\bsrc\s*=\s*["']data:)[^>]*>/gi, "")
+    // nothing that loads another page or file: frames, objects, embedded documents, stylesheets by link,
+    // redirects by meta, and a base that would re-point every relative address
+    .replace(/<\/?(?:iframe|frame|frameset|object|embed|applet|link|meta|base|form|portal)\b[^>]*>/gi, "");
   const css = rawCss.replace(/<\/?style[^>]*>/gi, "");
 
   let filename = (String(b.filename || "voltmira-document").replace(/[^\w.-]+/g, "-").slice(0, 60)) || "voltmira-document";
@@ -103,8 +121,8 @@ export async function POST(req) {
 </style></head><body>${html}</body></html>`;
 
   try {
-    const pdf = await renderHtmlPdf(full);
-    if (spend && !(await spendCredits(companyId, spend, kind, ref))) return NextResponse.json({ error: "credits", kind }, { status: 402 });
+    // made in /demo: DEMO on every page (lib/demoServer.js)
+    const pdf = await renderHtmlPdf(full, { watermark: isDemoEmail(user?.email) ? "DEMO" : null });
     return new NextResponse(pdf, {
       headers: {
         "content-type": "application/pdf",

@@ -11,18 +11,18 @@ import "../../dx.css";
 import "./builder.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "../../../../lib/supabase-browser.js";
-import { regenerateProposal, saveQuoteTemplate, markProjectWon, offerPhone } from "../../../../lib/actions.js";
-import { sendOffer } from "../../../../lib/sendOffer.js";
+import { regenerateProposal, saveQuoteTemplate, markProjectWon, offerPhone, issueInvoice } from "../../../../lib/actions.js";
+import { sendOffer, feeHoldAnswer } from "../../../../lib/sendOffer.js";
 import { isStandalone, openPdfInApp } from "../../../../lib/openPdf.js";
 import { aiOn } from "../../../../lib/featureFlags.js";
 import AddressField from "../../../../components/AddressField.jsx";
 import SiteDesigner from "../../../../components/SiteDesigner.jsx";
 import BackLink from "../../../../components/BackLink.jsx";
+import NumInput from "../../../../components/NumInput.jsx";
+import { productionPower } from "../../../../lib/gridPower.js";
 import BomCard from "../../../../components/BomCard.jsx";
 import DesignChecks from "../../../../components/DesignChecks.jsx";
 import StructuralLoads from "../../../../components/StructuralLoads.jsx";
-import BosEstimate from "../../../../components/BosEstimate.jsx";
-import PeakShaving from "../../../../components/PeakShaving.jsx";
 import DesignSuggestions from "../../../../components/DesignSuggestions.jsx";
 import BatterySizingPanel from "../../../../components/BatterySizingPanel.jsx";
 import SurplusPanel, { useBuyback } from "../../../../components/SurplusPanel.jsx";
@@ -30,6 +30,7 @@ import UaPanel from "../../../../components/UaPanel.jsx";
 import InstallChecklist from "./InstallChecklist.jsx";
 import GridFile from "./GridFile.jsx";
 import RoofPhoto from "./RoofPhoto.jsx";
+import OfferInsights from "./OfferInsights.jsx";
 import FoldColumn from "../../../../components/FoldColumn.jsx";
 import StudioJobLine from "./StudioJobLine.jsx";
 import WorkflowRail from "../../../../components/WorkflowRail.jsx";
@@ -40,15 +41,27 @@ import { batteryEur } from "../../../../lib/greenSupport.js";
 import SignedContract from "./SignedContract.jsx";
 import ShareCard from "./ShareCard.jsx";
 import LegalDocsModal from "./LegalDocsModal.jsx";
+import FeeCard from "../../../../components/FeeCard.jsx";
+import { ft as feeT } from "../../../../lib/feeText.js";
+import { feeLei, FREE_JOBS } from "../../../../lib/jobFees.js";
+import { useRouter } from "next/navigation";
+import SiteRecord from "./SiteRecord.jsx";
+
+// how many panels, inverters and batteries the quote sells, beside the serial numbers typed on site
+const quoteCounts = (bom) => {
+  const n = (k) => (Array.isArray(bom) ? bom : []).filter((l) => l?.kind === k).reduce((s, l) => s + (Number(l.qty) || 0), 0);
+  return { panel: n("panel"), inverter: n("inverter"), battery: n("battery") };
+};
 import { quote, MARKETS, FX, effectiveConsumption } from "@voltmira/engine";
 import { financials, bomTotal } from "../../../../lib/quoteAnalysis.js";
 import { startYearOf, mdFeedFor } from "../../../../lib/quoteInput.js";
 import { t } from "../../../../lib/i18n.js";
+import { dec } from "../../../../lib/decimals.js";
+import { kwUnit } from "../../../p/[code]/text.js";
 import { xt } from "../../../../lib/integrationText.js";
 import { autoBom, recommendMount, findPanel } from "../../../../lib/supplierCatalog.js";
 import { fmtDate } from "../../../../lib/tz.js";
-import { designCheck } from "../../../../lib/designCheck.js";
-import { fitPanels, fitOptions, limitPanels } from "../../../../lib/roofLayout.js";
+import { blendYields, fetchSideYield } from "../../../../lib/sideYield.js";
 import { moneyFormatter, numFor } from "../../../../lib/money.js";
 import { effectiveOfferCurrency, currencyOnMarketChange, betterCurrencyFor, normCurrency } from "../../../../lib/offerCurrency.js";
 import { saveOutbox, readOutbox, clearOutbox, isNetworkError } from "../../../../lib/offline.js";
@@ -164,6 +177,18 @@ const CUR_TXT = {
 const curTxt = (lang, cur, k) => t3(lang, ...(CUR_TXT[cur] || CUR_TXT.EUR)[k]);
 
 /* ---------- editor ---------- */
+// A labelled switch. A component of its own (not a helper called while the page renders), so the handler it is
+// given is never taken for something that runs during render.
+function CheckRow({ on, label, sub, onChange }) {
+  return (
+    <label className="check" style={{ marginTop: 10 }}>
+      <input type="checkbox" checked={on} onChange={(e) => onChange(e.target.checked)} />
+      <span className="toggle-pill" />
+      <span className="txt">{label}<small>{sub}</small></span>
+    </label>
+  );
+}
+
 // A money field typed in the offer's own currency (lei, hryvnia), for the
 // electricity price and the monthly loan payment. The quote stores EUR, so the
 // field keeps the text being typed ("3," then "3,4") and only converts what it
@@ -186,8 +211,9 @@ function LocalMoneyInput({ eur, fmt, onEur, dec = 2, allowZero = false, classNam
 
 // `currency` is the WORKSPACE's (companies.currency); the offer may name its
 // own (p.offerCurrency, null = follow the workspace), see lib/offerCurrency.js.
-export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null }) {
+export default function Editor({ initial, engineSettings: E, prosumerLimitKw, lang, currency: workspaceCurrency = "EUR", team = [], catalog = [], proposalSentAt = null, companyName = "VoltMira", companyLogo = "", companyLegal = {}, signed = null, signedOffer = null, canEditTechnical = true, vatRatePct = 0, cnedOn = false, loans = [], gridSub = null, jobFee = null, feeOpen = null, meName = "" }) {
   const tr = (k, v) => t(k, lang, v);
+  const router = useRouter();
   const [p, setP] = useState({
     title: initial.title, client: initial.client_name, clientEmail: initial.client_email || "", address: initial.address,
     // Coordinates of the resolved address pick. Null until someone picks a
@@ -214,6 +240,13 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     // The currency this offer is written in; null follows the workspace.
     offerCurrency: normCurrency(initial.offer_currency),
   });
+  // The newest state, for handlers that run after an await (a PVGIS lookup, the designer closing):
+  // merging into the render's copy of `p` would put back whatever was typed in the meantime.
+  const pRef = useRef(null);
+  if (pRef.current === null) pRef.current = p;
+  // The status the database is known to hold. The autosave never writes a status it read at page
+  // load: a client who signed meanwhile turned the job to won, and writing "sent" back undid it.
+  const statusRef = useRef(initial.status);
   // What the database holds for offer_currency, so the autosave writes it only
   // when it changes (it is stored best-effort, see persist).
   const storedOfferCur = useRef(normCurrency(initial.offer_currency));
@@ -222,10 +255,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const [curNote, setCurNote] = useState(null);
   const [saved, setSaved] = useState("saved");     // saved | saving | error
   const [pvgisBusy, setPvgisBusy] = useState(false);
-  const [billBusy, setBillBusy] = useState(false);   // AI bill extractor
-  const [billRes, setBillRes] = useState(null);      // extracted values awaiting review
-  const [billErr, setBillErr] = useState("");
-  const billInput = useRef(null);
   const [propUrl, setPropUrl] = useState(null);
   const [sendingVia, setSendingVia] = useState(null);   // "viber" | "wa" while the header's one-tap send works
   const [refreshing, setRefreshing] = useState(false);
@@ -238,9 +267,62 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // of a proforma (asking for money up front) was reachable only by hand-editing
   // the URL. 0 = invoice the full amount.
   const [invOpen, setInvOpen] = useState(false);
+  // an invoice is for a signed job: on a quote not signed yet, "mark signed first" (lib/feeText.js sign_*)
+  const [signAsk, setSignAsk] = useState(feeOpen === "sign");
+  // a document refused for a job not signed (the documents window, the grid file) asks to mark it signed
+  useEffect(() => {
+    const ask = () => setSignAsk(true);
+    window.addEventListener("vm-sign-needed", ask);
+    return () => window.removeEventListener("vm-sign-needed", ask);
+  }, []);
+  const [signBusy, setSignBusy] = useState(false);
   // what the workflow rail last saved (a ticked step, a grid-file stage), so the
   // checklist and grid-file cards below show it without a reload
   const [railProg, setRailProg] = useState(null);
+  // Which tab of a signed job is open: the job itself by default (that is what a signed job is opened for), the
+  // quote otherwise; a fee link opens the job. Remembered per quote for this browser tab.
+  const [view, setView] = useState(feeOpen || initial.status === "won" ? "job" : "offer");
+  const viewKey = "vm_qview_" + initial.id;
+  const pickView = (v) => {
+    setView(v);
+    try { sessionStorage.setItem(viewKey, v); } catch { /* not remembered, still switches */ }
+    // switched from far down the page: back to the tabs, the top of the new tab
+    const bar = document.querySelector("#workflow .wfr-tabs");
+    if (bar && bar.getBoundingClientRect().top < 0) bar.scrollIntoView({ block: "start" });
+  };
+  useEffect(() => {
+    // after the first paint: the tab this browser had open on this quote, then a link's card
+    const restore = () => {
+      try {
+        const saved = sessionStorage.getItem(viewKey);
+        if (!feeOpen && (saved === "offer" || saved === "job")) setView(saved);
+      } catch { /* storage blocked: the default tab */ }
+      toHash();
+    };
+    // a link to a card (#portfolio), the fee asked for, or another part of the page asking: that card's tab
+    const toHash = () => {
+      try {
+        const el = location.hash && document.querySelector(location.hash);
+        if (el?.closest("#q-job")) setView("job");
+        else if (el?.closest("#q-offer")) setView("offer");
+      } catch { /* not a selector */ }
+    };
+    const toJob = () => setView("job");
+    const ask = (e) => { if (e.detail === "job" || e.detail === "offer") setView(e.detail); };
+    const first = setTimeout(restore, 0);
+    window.addEventListener("hashchange", toHash);
+    window.addEventListener("vm-fee-locked", toJob);
+    window.addEventListener("vm-quote-view", ask);
+    return () => {
+      clearTimeout(first);
+      window.removeEventListener("hashchange", toHash);
+      window.removeEventListener("vm-fee-locked", toJob);
+      window.removeEventListener("vm-quote-view", ask);
+    };
+  }, [viewKey, feeOpen]);
+  // after the grid card sends or records a step the page is refreshed: what the server now holds replaces what the
+  // rail last saved here, or the grid-file and checklist cards kept showing the stages from before
+  useEffect(() => { setRailProg(null); }, [initial.install_progress]);
   const [legalDocsOpen, setLegalDocsOpen] = useState(false);
   const [legalTab, setLegalTab] = useState("contract");
   const [siteDesignerOpen, setSiteDesignerOpen] = useState(false);
@@ -351,7 +433,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       const sb = supabaseBrowser();
       const { error } = await sb.from("projects").update({
         title: next.title, client_name: next.client, address: next.address,
-        market: next.market, status: next.status,
+        market: next.market,
         kw: next.kw, price: next.price, cons: next.cons,
         batt: next.batt,
         loan_monthly: next.loan,
@@ -364,6 +446,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         next_follow_up: next.nextFollowUp || null,
         notes: next.notes ?? "",
       }).eq("id", initial.id);
+      // The one status change the editor makes itself, draft to sent when the offer goes out: written
+      // only while the job is still a draft, so a job won, lost or signed meanwhile keeps its status.
+      if (!error && next.status === "sent" && statusRef.current === "draft") {
+        const { error: se } = await sb.from("projects").update({ status: "sent" }).eq("id", initial.id).eq("status", "draft");
+        if (!se) statusRef.current = "sent";
+      }
       // No signal: keep the edit on this device and save it when the signal
       // is back (lib/offline.js), instead of calling it a failure.
       if (error && isNetworkError(error)) { if (saveOutbox(initial.id, next)) { setSaved("device"); return; } }
@@ -426,6 +514,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     const flush = () => {
       const box = readOutbox(initial.id);
       if (!box) return;
+      pRef.current = box.data;
       setP(box.data);
       setSaved(navigator.onLine === false ? "device" : "saving");
       if (navigator.onLine !== false) persist(box.data);
@@ -437,37 +526,12 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial.id]);
   function update(patch) {
-    const next = { ...p, ...patch };
+    const next = { ...pRef.current, ...patch };
+    pRef.current = next;
     setP(next); setSaved("saving");
     clearTimeout(timer.current);
     timer.current = setTimeout(() => persist(next), 600);
   }
-  // AI energy-bill extractor: upload a photo/PDF → /api/extract-bill reads it →
-  // installer reviews the values → applyBill() fills them in. Never auto-applies.
-  async function handleBill(e) {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = "";                       // allow re-picking the same file
-    if (!file) return;
-    setBillErr(""); setBillRes(null); setBillBusy(true);
-    try {
-      const fd = new FormData(); fd.append("file", file);
-      const r = await fetch("/api/extract-bill", { method: "POST", body: fd });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok || !d.ok) setBillErr(d.message || tr("bill_err"));
-      else setBillRes(d);
-    } catch { setBillErr(tr("bill_err")); }
-    finally { setBillBusy(false); }
-  }
-  function applyBill() {
-    if (billRes && billRes.annualKwh > 0) {
-      const kwh = Math.round(billRes.annualKwh);
-      update(p.useMonthly
-        ? { cons: kwh, consMonthly: Array(12).fill(Math.round(kwh / 12)) }
-        : { cons: kwh });
-    }
-    setBillRes(null);
-  }
-
   // side-by-side comparison options (max 2 alternatives beyond the base quote)
   const setOption = (i, patch) => update({ options: p.options.map((o, j) => j === i ? { ...o, ...patch } : o) });
   const addOption = () => { if (p.options.length < 2) update({ options: [...p.options, { label: "", kw: p.kw, battKwh: 0 }] }); };
@@ -510,6 +574,18 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     if (!p.address && p.lat == null) return alert(tr("add_address"));
     setPvgisBusy(true);
     try {
+      // a roof drawn side by side has the yield of those sides (their own pitch and facing, weighted by what each
+      // holds); this button used to replace it with 35 degrees facing south and call it "this exact roof"
+      const sides = (Array.isArray(p.siteDesign?.sides) ? p.siteDesign.sides : []).filter((s) => s.count > 0);
+      if (sides.length && p.lat != null && p.lon != null) {
+        const got = await Promise.all(sides.map(async (s) => ({ ...s, ...(await fetchSideYield({ lat: p.lat, lon: p.lon, tiltDeg: s.tiltDeg, azimuthDeg: s.azimuthDeg })) })));
+        const b = blendYields(got);
+        if (b.yieldOverride) {
+          update({ yieldOverride: b.yieldOverride, ...(b.monthlyYieldShape ? { monthlyYieldShape: b.monthlyYieldShape } : {}) });
+          if (b.failed) alert(t3(lang, `Pentru ${b.failed} parte/părți nu s-au găsit date solare: randamentul le numără pe celelalte.`, `No solar data for ${b.failed} side(s): the yield counts the others.`, `Нет данных о солнце для скатов: ${b.failed}. В выработке учтены остальные.`, `Немає даних про сонце для схилів: ${b.failed}. У виробітку враховано решту.`));
+          return;
+        }
+      }
       // Coordinates from a picked address beat re-geocoding its text: the same
       // street name exists in several towns, and the text lookup can resolve to
       // a different one than the installer saw on the pin.
@@ -532,51 +608,37 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // Lets the Site Designer preview real payback/ROI/CO2 for whatever kW its
   // current drawn layout implies — same engine call as the main quote above,
   // just with kw swapped for the layout's, so the two can never disagree.
-  const computeSiteDesignQuote = useCallback((kw) =>
-    quote({ ...p, kw, costOverride: 0, ...(feedOverride ? { feedOverride } : {}) }, E),
+  const computeSiteDesignQuote = useCallback((kw, extra) =>
+    quote({ ...p, kw, costOverride: 0, ...(extra || {}), ...(feedOverride ? { feedOverride } : {}) }, E),
     [p, E, feedOverride]);
 
-  // Rail/clamp quantities for BosEstimate: the SAME real drawn roof planes
-  // and fitPanels() math applySiteDesignLayout/lib/actions.js's PDF snapshot
-  // already use, not a separate guess — recomputed live here (not persisted
-  // with the project) since a plane's geometry, or the BOM's real panel,
-  // can change without reopening Site Designer.
-  const siteRows = useMemo(() => {
+  // the roof side that holds most of the panels: the one the structural loads read (they read
+  // the first side drawn, which on a roof with a small dormer drawn first was the wrong one)
+  const mainPlane = useMemo(() => {
     const planes = Array.isArray(p.siteDesign?.planes) ? p.siteDesign.planes : [];
-    const validPlanes = planes.filter((pl) => Array.isArray(pl.polygon) && pl.polygon.length >= 3);
-    if (!validPlanes.length) return [];
-    const obstacles = Array.isArray(p.siteDesign?.obstacles)
-      ? p.siteDesign.obstacles.map((o) => o.polygon).filter((o) => Array.isArray(o) && o.length >= 3)
-      : [];
-    const dc = designCheck({ bom: p.bom, kw: p.kw });
-    const { w, h } = dc.panel.dimensionsMm || { w: 1909, h: 1134 };
-    const opts = fitOptions(p.siteDesign?.layout);
-    // rails for the panels the quote sells, not for every place on the roof
-    return limitPanels(validPlanes.map((pl) => ({ ...fitPanels(pl.polygon, obstacles, h, w, { ...opts, tiltDeg: Number(pl.tiltDeg) || 0, azimuthDeg: Number(pl.azimuthDeg) || 0 }), azimuthDeg: Number(pl.azimuthDeg) || 0 })),
-      Math.max(0, Number(dc.modules) || 0)).flatMap((f) => f.rows);
-  }, [p.siteDesign, p.bom, p.kw]);
+    const sides = Array.isArray(p.siteDesign?.sides) ? p.siteDesign.sides : [];
+    const best = [...sides].sort((a, b) => (b.count || 0) - (a.count || 0))[0];
+    return (best && planes.find((pl) => pl.id === best.id)) || planes[0] || null;
+  }, [p.siteDesign]);
 
   async function applySiteDesignLayout(layout) {
     if (!layout || !layout.totalCount) return;
     setSiteDesignApplying(true);
     try {
-      const results = await Promise.all(layout.perPlane.filter((pl) => pl.count > 0).map(async (pl) => {
-        try {
-          const r = await fetch(`/api/pvgis?lat=${pl.lat}&lon=${pl.lon}&angle=${pl.tiltDeg}&aspect=${pl.azimuthDeg}`);
-          const j = await r.json();
-          return { ...pl, yieldPerKwp: j.yieldPerKwp, monthlyShape: j.monthlyShape };
-        } catch { return { ...pl, yieldPerKwp: null }; }
-      }));
-      const valid = results.filter((r) => r.yieldPerKwp);
+      // each side's own yield: the designer already looked it up while it was open; any side still without one is
+      // looked up now
+      const results = await Promise.all(layout.perPlane.filter((pl) => pl.count > 0).map(async (pl) =>
+        (pl.yieldPerKwp > 0 ? pl : { ...pl, ...(await fetchSideYield(pl)) })));
+      const blend = blendYields(results);
       let patch = { kw: layout.kw };
-      if (valid.length) {
-        const totalCount = valid.reduce((s, r) => s + r.count, 0) || 1;
-        patch.yieldOverride = valid.reduce((s, r) => s + r.yieldPerKwp * r.count, 0) / totalCount;
-        if (valid.every((r) => Array.isArray(r.monthlyShape) && r.monthlyShape.length === 12)) {
-          patch.monthlyYieldShape = Array.from({ length: 12 },
-            (_, i) => valid.reduce((s, r) => s + r.monthlyShape[i] * r.count, 0) / totalCount);
-        }
+      if (blend.yieldOverride) {
+        patch.yieldOverride = blend.yieldOverride;
+        if (blend.monthlyYieldShape) patch.monthlyYieldShape = blend.monthlyYieldShape;
       }
+      // a side that got no solar data is counted in the roof's yield by the others: said, not dropped in silence
+      if (blend.failed) alert(t3(lang, `Pentru ${blend.failed} parte/părți nu s-au găsit date solare: randamentul acoperișului le numără pe celelalte.`, `No solar data for ${blend.failed} side(s): the roof's yield counts the others.`, `Нет данных о солнце для скатов: ${blend.failed}. В выработке крыши учтены остальные.`, `Немає даних про сонце для схилів: ${blend.failed}. У виробітку даху враховано решту.`));
+      // the sides' own figures stay with the roof: the offer shows them
+      if (Array.isArray(layout.sides)) patch.siteDesign = { ...(pRef.current.siteDesign || {}), sides: layout.sides };
       // The roof material the most panels actually sit on, so a building with
       // one small trapezoidal-sheet dormer and one large tile main roof still
       // gets the mount that matches where the array actually is.
@@ -653,10 +715,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   async function refreshProposal() {
     setRefreshing(true); setRefreshMsg(null);
     try {
-      await regenerateProposal(initial.id);
+      feeHoldAnswer(await regenerateProposal(initial.id));
       setRefreshMsg({ ok: true, text: tr("prop_refreshed") });
     } catch (e) {
-      setRefreshMsg({ ok: false, text: e.message === "already_accepted" ? tr("prop_refresh_accepted") : tr("prop_refresh_err") });
+      setRefreshMsg({ ok: false, text: e.message === "already_accepted" ? tr("prop_refresh_accepted") : /^fee_hold/.test(e.message) ? feeT("e_hold_offers", lang) : tr("prop_refresh_err") });
     } finally {
       setRefreshing(false);
     }
@@ -702,6 +764,39 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     fetch("/api/proposal/warm", { method: "POST", keepalive: true }).catch(() => { });
   }, [propUrl, invOpen]);
 
+  // Signed (from the rail, or before an invoice): record it (activity, CRM hook, the fee), then save the status
+  // through this editor's own autosave, so a pending edit still waiting on its timer cannot write the old status back.
+  async function markSigned() {
+    clearTimeout(timer.current);
+    await markProjectWon(initial.id);
+    const next = { ...pRef.current, status: "won" };
+    pRef.current = next;
+    statusRef.current = "won";
+    setP(next);
+    await persist(next);
+    router.refresh();
+  }
+  // an invoice is issued for a signed job; a quote still out asks to mark it signed first
+  function openInvoice() {
+    if (pRef.current.status === "won") setInvOpen(true);
+    else setSignAsk(true);
+  }
+
+  // The PDF is of an issued invoice: Download issues it first (the one click that draws the number), then opens it.
+  async function downloadProforma() {
+    const w = window.open("", "_blank");
+    setInvMsg(null);
+    try {
+      const r = await issueInvoice(initial.id, depPct);
+      if (!r?.ok) throw new Error("issue");
+      const url = `/api/projects/${initial.id}/invoice${depPct > 0 ? `?deposit=${depPct}` : ""}`;
+      if (w) w.location.href = url; else window.open(url, "_blank");
+    } catch {
+      w?.close();
+      setInvMsg({ ok: false, text: tr("inv_issue_fail") });
+    }
+  }
+
   async function sendProforma() {
     if (!invTo.trim()) return;
     setInvBusy(true); setInvMsg(null);
@@ -712,7 +807,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       });
       const d = await r.json().catch(() => ({}));
       if (r.ok) setInvMsg({ ok: true, text: tr("email_sent_to", { to: invTo.trim() }) });
-      else setInvMsg({ ok: false, text: d.error === "email_not_configured" ? tr("email_off") : tr("email_failed") });
+      else setInvMsg({ ok: false, text: d.error === "email_not_configured" ? tr("email_off") : d.error === "demo_only" ? feeT("demo_only", lang) : tr("email_failed") });
     } catch {
       setInvMsg({ ok: false, text: tr("email_failed") });
     } finally { setInvBusy(false); }
@@ -729,7 +824,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       });
       const d = await r.json().catch(() => ({}));
       if (r.ok) setEmailMsg({ ok: true, text: tr("email_sent_to", { to: emailTo.trim() }) });
-      else setEmailMsg({ ok: false, text: d.error === "email_not_configured" ? tr("email_off") : tr("email_failed") });
+      else setEmailMsg({ ok: false, text: d.error === "email_not_configured" ? tr("email_off") : d.error === "fee_hold_offers" ? feeT("e_hold_offers", lang) : d.error === "demo_only" ? feeT("demo_only", lang) : tr("email_failed") });
     } catch {
       setEmailMsg({ ok: false, text: tr("email_failed") });
     } finally { setEmailBusy(false); }
@@ -776,18 +871,50 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     ? { kind: "mismatch", currency: betterCurrencyFor(offerCur, p.market) } : null);
 
   // A demo-style .check toggle row.
-  const check = (on, l, sub, fn) => (
-    <label className="check" style={{ marginTop: 10 }}>
-      <input type="checkbox" checked={on} onChange={e => fn(e.target.checked)} />
-      <span className="toggle-pill" />
-      <span className="txt">{l}<small>{sub}</small></span>
-    </label>
-  );
 
   // The margin behind the price, from the same bill-of-materials total BomCard shows.
   const materials = bomTotal(p.bom);
   const margin = q.e.grossCost - materials;
   const clientLine = [p.client, String(p.address || "").split(",").slice(0, 2).join(",").trim()].filter(Boolean).join(", ");
+
+  // The job's own cards (lib/jobFees.js fee, the install steps, on site, the grid file, the portfolio). In their
+  // own tab once the job is signed or its grid file is under way; under the results before that.
+  const gridShown = (isMD || isUA) && (p.status !== "draft" || !!initial.install_progress?.gridFile);
+  const jobTab = p.status === "won" || gridShown;
+  const jobCards = [
+    signed && <SignedContract key="signed" signed={signed} lang={lang} />,
+    /* VoltMira's fee for this job: what it will cost, free, on a statement, paid, or nothing when the client gave up (lib/jobFees.js) */
+    jobFee && <FeeCard key="fee" projectId={initial.id} lang={lang} status={p.status} state={jobFee} open={feeOpen}
+      onGaveUp={() => { const next = { ...pRef.current, status: "lost" }; pRef.current = next; statusRef.current = "lost"; setP(next); }} />,
+    p.status === "won" && <InstallChecklist key={"steps" + (railProg ? JSON.stringify(railProg) : "init")} projectId={initial.id}
+      initial={railProg || initial.install_progress} lang={lang} />,
+    /* The grid-connection file, Moldova's or Ukraine's: from the moment the offer is out (some installers apply
+       for the approval before the client signs). */
+    gridShown && <GridFile key={"grid" + p.market + (railProg?.gridFile ? JSON.stringify(railProg.gridFile) : "")} projectId={initial.id}
+      market={p.market} address={[p.address, p.title].filter(Boolean).join(", ")}
+      initial={(railProg || initial.install_progress)?.gridFile} lang={lang}
+      client={{ client_name: p.client || "", client_email: p.clientEmail || "", address: p.address || "", client_kind: initial.client_kind || null }} submission={{ ...gridSub, installedKw: productionPower({ kw: p.kw, bom: p.bom, batt: p.batt, batt_kwh: p.battKwh }).kw }} />,
+    /* on site: checklist, serial numbers, photos and the client's signature, with no signal too (Phase 3) */
+    p.status === "won" && <SiteRecord key="site" projectId={initial.id} companyId={initial.company_id} lang={lang} me={meName}
+      clientName={p.client || ""} clientLang={initial.client_lang || null} quoteCounts={quoteCounts(p.bom)} />,
+    /* A signed job in Moldova or Ukraine goes into a portfolio for a lender (renders nothing otherwise). */
+    <AddToPortfolio key="portfolio" projectId={initial.id} lang={lang} status={p.status} market={p.market} />,
+    /* the Studio job this quote belongs to, when one is linked */
+    <StudioJobLine key="studio" projectId={initial.id} kw={p.kw} lang={lang} />,
+  ].filter(Boolean);
+  // the left column ends after the grid file: papers and fee there, the work on site and the rest on the right
+  // A signed job (or one whose grid file is under way) has two pages: the quote, and the job itself, each in two
+  // columns of about the same height. The tabs are the progress card's bottom edge (components/WorkflowRail.jsx).
+  const viewTabs = jobTab ? (
+    <div role="tablist" aria-label={tr("q_views_label")}>
+      {[["offer", tr("q_view_offer")], ["job", tr("q_view_job")]].map(([id, label]) => (
+        <button key={id} type="button" role="tab" id={"q-tab-" + id} aria-selected={view === id} aria-controls={"q-" + id}
+          onClick={() => pickView(id)}>{label}</button>
+      ))}
+    </div>
+  ) : null;
+  const siteAt = jobCards.findIndex((c) => c.key === "site");
+  const jobSplit = siteAt > 0 ? siteAt : 1;
 
   return (
     <div className="qb">
@@ -841,7 +968,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               <button className="btn ghost" onClick={openTemplate}><Qi d={tplSaved ? "check" : "bookmark"} />{tplSaved ? tr("tpl_saved") : tr("tpl_save")}</button>
             )}
             <button className="btn ghost" onClick={downloadPdf}><Qi d="pdf" />{tr("dl_pdf")}</button>
-            <button className="btn ghost" onClick={() => setInvOpen(true)}><Qi d="receipt" />{tr("inv_button")}</button>
+            <button className="btn ghost" onClick={openInvoice}><Qi d="receipt" />{tr("inv_button")}</button>
             <button className="btn ghost" onClick={() => { setLegalTab("contract"); setLegalDocsOpen(true); }}><Qi d="scale" />{tr("ld_open")}</button>
             {/* the three ways to send, kept together when the row wraps */}
             <span className="qb-sendgrp">
@@ -874,21 +1001,11 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
 
       {/* Where this job is in the workflow, and the one next thing to do
           (lib/workflow.js). The dashboard and the quotes list link here (#workflow). */}
-      <WorkflowRail projectId={initial.id} lang={lang} status={p.status}
+      <WorkflowRail projectId={initial.id} lang={lang} status={p.status} tabs={viewTabs}
         onAction={async (a) => {
           if (a.type === "send" || a.type === "copy_link") { makeProposal(); return true; }
-          if (a.type === "invoice") { setInvOpen(true); return true; }
-          if (a.type === "won") {
-            // Signed from the rail: record it (activity, CRM hook), then save the
-            // status through this editor's own autosave, so a pending edit still
-            // waiting on its timer cannot write the old status back.
-            clearTimeout(timer.current);
-            await markProjectWon(initial.id);
-            const next = { ...p, status: "won" };
-            setP(next);
-            await persist(next);
-            return true;
-          }
+          if (a.type === "invoice") { openInvoice(); return true; }
+          if (a.type === "won") { await markSigned(); return true; }
           return false;
         }}
         onChange={({ installProgress, gridFile }) => {
@@ -900,8 +1017,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         }} />
 
       <LinkLabels root=".editor" />
-      <div className="editor">
-        {/* left: inputs */}
+      <div className="editor q-pane" id="q-offer" hidden={jobTab && view !== "offer"} role={jobTab ? "tabpanel" : undefined} aria-labelledby={jobTab ? "q-tab-offer" : undefined}>
+        {/* left: inputs, and whether the design is buildable */}
         <FoldColumn className="stack" lang={lang}>
           <section className="card">
             <h3>{tr("client_site")}</h3>
@@ -948,7 +1065,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               </button>
               {/* the installer's own roof photo, the offer's picture */}
               <RoofPhoto projectId={initial.id} url={p.siteDesign?.photoUrl || null} lang={lang}
-                onChange={(url) => { const sd = { ...(p.siteDesign || {}) }; if (url) sd.photoUrl = url; else delete sd.photoUrl; update({ siteDesign: sd }); }} />
+                onChange={(url) => { const sd = { ...(p.siteDesign || {}) }; delete sd.photoPlace; if (url) sd.photoUrl = url; else delete sd.photoUrl; update({ siteDesign: sd }); }} />
             </div>
             {p.yieldOverride && (
               <div className="pvgis-data">
@@ -1036,7 +1153,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           <section className="card">
             <h3>{tr("system")}</h3>
             <div className="field">
-              <label>{tr("system_size")}<output>{p.kw.toFixed(1)} kW</output></label>
+              <label>{tr("system_size")}<output>{dec(p.kw, 1, lang)} {kwUnit(lang)}</output></label>
               <div className="slider-row">
                 <input type="range" min={KW_MIN} max={KW_MAX} step="0.5" value={p.kw} style={{ "--fill": kwFill + "%" }}
                   aria-valuemin={KW_MIN} aria-valuemax={KW_MAX} aria-valuenow={p.kw}
@@ -1044,47 +1161,47 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 {/* A drag is imprecise once the range spans 2-500 kW — this
                     lets an exact figure (from a real design, a client ask) be
                     typed directly instead of hunted for on the slider. */}
-                <input type="number" className="slider-num" inputMode="decimal" step="0.1"
+                <NumInput className="slider-num" inputMode="decimal" step="0.1" min={KW_MIN} max={KW_MAX}
                   aria-label={tr("system_size")} value={p.kw}
-                  onChange={e => update({ kw: +e.target.value || KW_MIN })} />
+                  onValue={(v) => update({ kw: v })} />
               </div>
             </div>
             {/* Typed in the offer's currency (lei, hryvnia or euro); stored in EUR. */}
             <div className="field"><label>{fmt.local ? tr("elec_price_local", { u: fmt.unit }) : tr("elec_price")}</label>
               {fmt.local
                 ? <LocalMoneyInput eur={p.price} fmt={fmt} onEur={(v) => update({ price: v })} />
-                : <input className="input" type="number" step="0.01" value={p.price}
-                    onChange={e => update({ price: +e.target.value || 0.21 })} />}</div>
+                : <NumInput className="input" step="0.01" min="0.01" max="5" value={p.price}
+                    onValue={(v) => update({ price: v })} />}</div>
             {/* Only Moldova has this plan (Premier Energy/RED Nord, ANRE-
                 approved) — real self-consumption is ~entirely daytime, so a
                 differentiated plan makes solar worth more than the flat
                 price above implies. Defaults off: every existing/new project
                 keeps computing against the flat price unless explicitly
                 switched. */}
-            {p.market === "MD" && check(p.tariffMode === "differentiated", tr("md_tariff_diff"), tr("md_tariff_diff_sub"),
-              v => update({ tariffMode: v ? "differentiated" : "flat" }))}
+            {p.market === "MD" && <CheckRow on={p.tariffMode === "differentiated"} label={tr("md_tariff_diff")} sub={tr("md_tariff_diff_sub")}
+              onChange={(v) => update({ tariffMode: v ? "differentiated" : "flat" })} />}
             {!p.useMonthly && (
               <div className="field"><label>{tr("annual_cons")}</label>
-                <input className="input" type="number" step="100" value={p.cons}
-                  onChange={e => update({ cons: +e.target.value || 5000 })} /></div>
+                <NumInput className="input" step="100" min="1" max="50000000" value={p.cons}
+                  onValue={(v) => update({ cons: v })} /></div>
             )}
-            {check(p.useMonthly, tr("use_monthly"), tr("use_monthly_sub"),
-              v => update(v
+            <CheckRow on={p.useMonthly} label={tr("use_monthly")} sub={tr("use_monthly_sub")}
+              onChange={(v) => update(v
                 ? { useMonthly: true, consMonthly: (Array.isArray(p.consMonthly) && p.consMonthly.length === 12)
                     ? p.consMonthly : Array(12).fill(Math.round((p.cons || 5000) / 12)) }
-                : { useMonthly: false }))}
+                : { useMonthly: false })} />
             {p.useMonthly && (
               <div style={{ marginTop: 12 }}>
                 <div className="mo-grid">
                   {monthLabels(lang).map((m, i) => (
                     <div className="mo-cell" key={i}>
                       <label>{m}</label>
-                      <input className="input mo-in" type="number" min="0" step="10"
+                      <NumInput className="input mo-in" min="0" max="5000000" step="10"
                         value={(p.consMonthly && p.consMonthly[i]) ?? 0}
-                        onChange={e => {
-                          const arr = (Array.isArray(p.consMonthly) && p.consMonthly.length === 12)
-                            ? p.consMonthly.slice() : Array(12).fill(0);
-                          arr[i] = +e.target.value || 0;
+                        onValue={(v) => {
+                          const cur = pRef.current.consMonthly;
+                          const arr = (Array.isArray(cur) && cur.length === 12) ? cur.slice() : Array(12).fill(0);
+                          arr[i] = v;
                           update({ consMonthly: arr });
                         }} />
                     </div>
@@ -1092,32 +1209,6 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 </div>
                 <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8, textAlign: "right" }}>
                   {tr("mo_total_yr", { v: num((p.consMonthly || []).reduce((a, b) => a + (+b || 0), 0)) })}
-                </div>
-              </div>
-            )}
-            {/* AI energy-bill extractor — snap the client's bill, review, apply.
-                Hidden until AI is switched on (lib/featureFlags.js). */}
-            {aiOn() && <>
-              <input ref={billInput} type="file" accept="image/*,application/pdf" hidden onChange={handleBill} />
-              <button type="button" className="qb-tool" style={{ marginTop: 10 }}
-                onClick={() => billInput.current && billInput.current.click()} disabled={billBusy} aria-busy={billBusy}>
-                <span className="qb-tool-ic"><Qi d="upload" size={17} /></span>
-                <span className="qb-tool-tx"><b>{billBusy ? tr("bill_reading") : tr("bill_upload")}</b><small>{tr("qb_tool_bill_sub")}</small></span>
-                <Qi d="chev" size={15} />
-              </button>
-            </>}
-            {billErr && <div style={{ fontSize: 12.5, color: "var(--red)", marginTop: 6 }}>{billErr}</div>}
-            {billRes && (
-              <div className="pvgis-data" style={{ marginTop: 8 }}>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>{tr("bill_found")}</div>
-                <div>{tr("annual_cons")}: <span className="pvg-k">{billRes.annualKwh ? num(billRes.annualKwh) : "—"}</span> kWh</div>
-                {billRes.meterNumber && <div>{tr("bill_meter")}: {billRes.meterNumber}</div>}
-                {billRes.supplier && <div>{tr("bill_supplier")}: {billRes.supplier}</div>}
-                {billRes.subsidy && <div>{tr("bill_subsidy")}: {billRes.subsidy}</div>}
-                {billRes.notes && <div style={{ color: "var(--muted)", marginTop: 2 }}>{billRes.notes}</div>}
-                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                  <button type="button" className="btn sm primary" onClick={applyBill} disabled={!billRes.annualKwh}>{tr("bill_apply")}</button>
-                  <button type="button" className="btn sm ghost" onClick={() => setBillRes(null)}>{tr("bill_cancel")}</button>
                 </div>
               </div>
             )}
@@ -1144,8 +1235,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 <div className="field" style={{ margin: "2px 0 4px 30px" }}>
                   <label>{tr("battery_cap")}</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                    <input className="input" type="number" min="0" step="0.5" style={{ width: 120 }}
-                      value={p.battKwh} onChange={e => update({ battKwh: +e.target.value || 0 })} />
+                    <NumInput className="input" min="0" max="5000" step="0.5" style={{ width: 120 }}
+                      value={p.battKwh} onValue={(v) => update({ battKwh: v })} />
                     <span style={{ color: "var(--muted)", fontSize: 13 }}>kWh, {fmt(battCost)}</span>
                   </div>
                 </div>
@@ -1204,6 +1295,19 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             </div>
           )}
 
+          {/* Whether the thing is buildable, before whether it's profitable —
+              run against the equipment actually picked in the bill of materials. */}
+          <DesignChecks
+            lang={lang}
+            bom={p.bom}
+            kw={p.kw}
+            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
+            consKwh={consEff}
+            market={p.market}
+          />
+
+          <StructuralLoads lang={lang} roofPitchDeg={mainPlane?.tiltDeg} />
+
         </FoldColumn>
 
         {/* right: results */}
@@ -1245,11 +1349,11 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             {oversize > 1.8 && (
               <div className="warn-card">
                 {tr("oversize_warn", {
-                  x: oversize < 10 ? oversize.toFixed(1) : Math.round(oversize),
+                  x: oversize < 10 ? dec(oversize, 1, lang) : Math.round(oversize),
                   p: Math.round((1 - q.e.self) * 100),
                   fe: eurKwh(mkt.feed), pr: eurKwh(Number(p.price) || 0),
                 })}
-                {suggestKw > 0 ? " " + tr("oversize_hint", { kw: suggestKw.toFixed(1) }) : ""}
+                {suggestKw > 0 ? " " + tr("oversize_hint", { kw: dec(suggestKw, 1, lang) }) : ""}
               </div>
             )}
 
@@ -1297,39 +1401,18 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             {/* NPV / IRR / LCOE — what a commercial client or a lender asks for
                 once payback alone stops being the whole question. */}
             <div className="fin-metrics">
-              <div className="fm"><b>{fmt(fin.npv)}</b><span>{tr("m_npv")} @ {disc.toFixed(0)}%</span></div>
-              <div className="fm"><b>{fin.irr == null ? "—" : (fin.irr * 100).toFixed(1) + "%"}</b><span>{tr("m_irr")}</span></div>
+              <div className="fm"><b>{fmt(fin.npv)}</b><span>{tr("m_npv")} @ {dec(disc, 0, lang)}%</span></div>
+              <div className="fm"><b>{fin.irr == null ? "—" : dec(fin.irr * 100, 1, lang) + "%"}</b><span>{tr("m_irr")}</span></div>
               <div className="fm"><b>{eurKwh(fin.lcoe)}</b>
                 <span>{tr("m_lcoe")}, {tr("m_vs_price")} {eurKwh(Number(p.price) || 0)}</span></div>
             </div>
             <label className="disc-row">
-              {tr("m_disc")}<output>{disc.toFixed(1)}%</output>
+              {tr("m_disc")}<output>{dec(disc, 1, lang)}%</output>
               <input type="range" min="3" max="12" step="0.5" value={disc}
                 style={{ "--fill": ((disc - 3) / 9) * 100 + "%" }}
                 onChange={e => setDisc(+e.target.value)} />
             </label>
           </section>
-
-          {/* Whether the thing is buildable, before whether it's profitable —
-              run against the equipment actually picked in the bill of materials. */}
-          <DesignChecks
-            lang={lang}
-            bom={p.bom}
-            kw={p.kw}
-            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0}
-            consKwh={consEff}
-            market={p.market}
-          />
-
-          <StructuralLoads lang={lang} roofPitchDeg={p.siteDesign?.planes?.[0]?.tiltDeg} />
-
-          <BosEstimate lang={lang} bom={p.bom} kw={p.kw}
-            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} consKwh={consEff} phases={undefined} market={p.market}
-            rows={siteRows} />
-
-          <PeakShaving lang={lang} lat={p.lat} lon={p.lon} kw={p.kw} cons={consEff}
-            battKwh={p.batt ? (Number(p.battKwh) || 0) : 0} market={p.market}
-            roofPitchDeg={p.siteDesign?.planes?.[0]?.tiltDeg} roofAzimuthDeg={p.siteDesign?.planes?.[0]?.azimuthDeg} />
 
           {/* Compare every inverter that could serve this array, not just the
               one in the BOM — applying a row swaps the BOM's inverter line. */}
@@ -1394,7 +1477,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 {fmt.local
                   ? <LocalMoneyInput eur={p.loan || 0} fmt={fmt} dec={0} allowZero className=""
                       onEur={(v) => update({ loan: v })} />
-                  : <input type="number" value={p.loan} onChange={e => update({ loan: +e.target.value || 0 })} />}
+                  : <NumInput min="0" max="1000000" value={p.loan} onValue={(v) => update({ loan: v })} />}
               </div>
               <div className="fin-box">
                 <div className="lbl">{tr("est_savings")}</div>
@@ -1420,41 +1503,55 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             <RaionCard projectId={initial.id} lang={lang} lat={p.lat} lon={p.lon} initialShow={!!initial.show_raion} />
           )}
 
-          {signed && <SignedContract signed={signed} lang={lang} />}
-
-          {p.status === "won" && (
-            <InstallChecklist key={railProg ? JSON.stringify(railProg) : "init"} projectId={initial.id}
-              initial={railProg || initial.install_progress} lang={lang} />
-          )}
-
-          {/* The grid-connection file, Moldova's or Ukraine's: from the moment
-              the offer is out (some installers apply for the approval before
-              the client signs). */}
-          {(isMD || isUA) && (p.status !== "draft" || initial.install_progress?.gridFile) && (
-            <GridFile key={p.market + (railProg?.gridFile ? JSON.stringify(railProg.gridFile) : "")} projectId={initial.id}
-              market={p.market} address={[p.address, p.title].filter(Boolean).join(", ")}
-              initial={(railProg || initial.install_progress)?.gridFile} lang={lang}
-              client={{ client_name: p.client || "", client_email: p.clientEmail || "", address: p.address || "" }} submission={gridSub} />
-          )}
-
-          {/* A signed job in Moldova or Ukraine goes into a portfolio for a
-              lender (renders nothing otherwise). */}
-          <AddToPortfolio projectId={initial.id} lang={lang} status={p.status} market={p.market} />
-          {/* the Studio job this quote belongs to, when one is linked */}
-          <StudioJobLine projectId={initial.id} kw={p.kw} lang={lang} />
+          {/* a quote with no job yet: what it will cost to sign stays under the results */}
+          {!jobTab && jobCards}
         </FoldColumn>
       </div>
 
+      {/* the job: the papers and the fee on the left, the work on site on the right */}
+      {jobTab && (
+        <div className="editor q-pane q-job" id="q-job" hidden={view !== "job"} role="tabpanel" aria-labelledby="q-tab-job">
+          <FoldColumn className="stack" lang={lang}>{jobCards.slice(0, jobSplit)}</FoldColumn>
+          <FoldColumn className="stack" lang={lang}>{jobCards.slice(jobSplit)}</FoldColumn>
+        </div>
+      )}
+
       {/* site designer: draw the roof on satellite imagery, full screen */}
       {siteDesignerOpen && p.lat != null && p.lon != null && (
-        <SiteDesigner lang={lang} lat={p.lat} lon={p.lon} address={p.address} siteDesign={p.siteDesign}
-          onChange={(sd) => update({ siteDesign: { ...(p.siteDesign?.photoUrl ? { photoUrl: p.siteDesign.photoUrl } : {}), ...sd } })}
+        <SiteDesigner lang={lang} lat={p.lat} lon={p.lon} address={p.address} siteDesign={p.siteDesign} projectId={initial.id}
+          onChange={(sd) => {
+            // the designer sends the photo and its place with the roof; no photo, no place
+            const next = { ...sd };
+            if (!next.photoUrl) { delete next.photoUrl; delete next.photoPlace; }
+            else if (!next.photoPlace) delete next.photoPlace;
+            update({ siteDesign: next });
+          }}
           onApply={applySiteDesignLayout} applying={siteDesignApplying}
           projectInputs={p} onComputeQuote={computeSiteDesignQuote} money={fmt}
           onClose={() => setSiteDesignerOpen(false)} />
       )}
 
       {/* proforma modal: pick a deposit, then open the document */}
+      {signAsk && (
+        <div className="overlay" onClick={() => setSignAsk(false)}>
+          <div className="modal fee-sign" role="dialog" aria-modal="true" aria-labelledby="fee-sign-h" onClick={(e) => e.stopPropagation()}>
+            <h3 id="fee-sign-h">{feeT("sign_h", lang)}</h3>
+            <p>{feeT("sign_p", lang)}</p>
+            {jobFee?.preview && (
+              <p className="fee-sign-fee">{jobFee.preview.free ? feeT("before_free", lang, { t: FREE_JOBS }) : feeT("sign_fee", lang, { v: feeLei(jobFee.preview.minorMdl, lang) })}</p>
+            )}
+            <div className="modal-acts">
+              <button type="button" className="btn ghost" onClick={() => setSignAsk(false)}>{feeT("not_now", lang)}</button>
+              <button type="button" className="btn amber" disabled={signBusy} aria-busy={signBusy}
+                onClick={async () => { setSignBusy(true); try { await markSigned(); setSignAsk(false); setInvOpen(true); } finally { setSignBusy(false); } }}>
+                {feeT("sign_yes", lang)}
+              </button>
+            </div>
+            <style>{`.app .fee-sign{max-width:440px;display:grid;gap:10px}.app .fee-sign h3{margin:0;font-size:19px}.app .fee-sign p{margin:0;line-height:1.5}.app .fee-sign-fee{padding:10px 12px;border-radius:11px;background:var(--paper);border:1px solid var(--line);font-weight:650;font-variant-numeric:tabular-nums}`}</style>
+          </div>
+        </div>
+      )}
+
       {invOpen && (
         <div className="overlay" onClick={() => setInvOpen(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -1488,8 +1585,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
               <button className="btn ghost" onClick={() => setInvOpen(false)}>{tr("close")}</button>
               {/* Server-rendered: the browser print path stamped Chrome's header
                   and the internal /projects/<uuid> URL onto a financial document. */}
-              <a className="btn ghost" target="_blank" rel="noopener noreferrer"
-                href={`/api/projects/${initial.id}/invoice${depPct > 0 ? `?deposit=${depPct}` : ""}`}>{tr("inv_dl")}</a>
+              <button type="button" className="btn ghost" onClick={downloadProforma}>{tr("inv_dl")}</button>
               <a className="btn primary" target="_blank" rel="noopener noreferrer"
                 href={`/projects/${initial.id}/invoice${depPct > 0 ? `?deposit=${depPct}` : ""}`}
                 onClick={() => setInvOpen(false)}>{tr("inv_dep_open")}</a>
@@ -1504,8 +1600,11 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           amount the client read on the proposal (it used to say EUR always). */}
       {legalDocsOpen && (
         <LegalDocsModal lang={lang} onClose={() => setLegalDocsOpen(false)} initialTab={legalTab}
+          feeLocked={!!jobFee?.locked}
+          signNeeded={!!jobFee?.on && !jobFee?.sample && p.status !== "won"}
+          docsNote={!!jobFee?.on && !jobFee?.sample && jobFee?.fee?.status === "due" && !jobFee?.fee?.docs_at}
           company={{ name: companyName, ...companyLegal }}
-          project={{ id: initial.id, clientName: p.client, address: p.address, kw: p.kw, price: fmt.toLocal(q.e.cost), currency: fmt.currency, batt: p.batt, battKwh: p.battKwh, market: p.market, bom: p.bom, gridOperator: initial.install_progress?.gridFile?.operator, title: p.title }} />
+          project={{ id: initial.id, clientName: signedOffer?.clientName ?? p.client, address: signedOffer?.address ?? p.address, kw: signedOffer?.kw ?? p.kw, price: signedOffer?.price ?? fmt.toLocal(q.e.cost), currency: signedOffer?.currency ?? fmt.currency, batt: signedOffer ? signedOffer.batt : p.batt, battKwh: signedOffer?.battKwh ?? p.battKwh, market: p.market, bom: signedOffer?.bom ?? p.bom, gridOperator: initial.install_progress?.gridFile?.operator, title: p.title }} />
       )}
 
       {/* proposal modal */}
@@ -1521,6 +1620,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 setCopied(true); setTimeout(() => setCopied(false), 1800);
               }}>{copied ? tr("t_copied") : tr("copy")}</button>
             </div>
+            {/* this offer's reminders, and what the client read (lib/offerInsights.js) */}
+            <OfferInsights projectId={initial.id} lang={lang} />
+            {/* a quote with no address shows the client no picture of their house from above */}
+            {!String(p.address || "").trim() && p.lat == null && <p className="sub" role="note">{tr("offer_site_hint")}</p>}
             {/* The link stays the same; this refreshes what it SHOWS from the
                 project's current state — the escape hatch for edits made after
                 the first "Generate" click, which createProposal() itself will
@@ -1567,7 +1670,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 { label: tr("expected"), years: yrs(q.e.payback) + " " + tr("yrs") },
                 { label: tr("optimistic"), years: yrs(q.o.payback) + " " + tr("yrs") },
               ]}
-              savings={fmt(q.e.rows[q.e.rows.length - 1])}
+              savings={fmt(lifetime)}
               waText={shareMsg} />
             <div className="modal-acts">
               <button className="btn ghost" onClick={() => setPropUrl(null)}>{tr("close")}</button>

@@ -1,6 +1,6 @@
 import { Analytics } from "@vercel/analytics/next";
 import { connection } from "next/server";
-import { NO_FLASH } from "../lib/inlineScripts.js";
+import ThemeScript from "../components/ThemeScript.jsx";
 import AppNavBar from "../components/AppNavBar.jsx";
 
 export const metadata = {
@@ -120,8 +120,6 @@ export default async function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#142A21" />
-        {/* the theme before paint; allowed by its hash (lib/inlineScripts.js, lib/csp.js) */}
-        <script dangerouslySetInnerHTML={{ __html: NO_FLASH }} />
         <style dangerouslySetInnerHTML={{ __html: THEME_VARS }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -133,6 +131,9 @@ export default async function RootLayout({ children }) {
       {/* Vercel Analytics only in production: in development it loads a debug
           script from another host, which the CSP rightly blocks on every page */}
       <body style={{ margin: 0 }}>
+        {/* the theme before paint, written into the server's HTML only (components/ThemeScript.jsx); allowed by its
+            hash (lib/inlineScripts.js, lib/csp.js) */}
+        <ThemeScript />
         {/* back, forward, reload and the PDF viewer: only in the installed (home-screen) app */}
         <AppNavBar />
         {children}{process.env.NODE_ENV === "production" && <Analytics />}

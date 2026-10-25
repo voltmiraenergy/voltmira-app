@@ -10,6 +10,7 @@ import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
 import { buildEfacturaInvoice, efacturaAdapterFor } from "../../../../../lib/efactura.js";
 import { submitEfactura, refreshEfactura } from "../../../../../lib/billingFlow.js";
 import { projectInvoice, billingGuard } from "../../../../../lib/invoiceServer.js";
+import { dayKeyOf, mdDayKey } from "../../../../../lib/tz.js";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,7 @@ export async function POST(req, props) {
     company: co,
     buyer: { name: p.client_name || p.title || "", kind: inv.kind, idno: inv.kind === "company" ? buyerIdno : "", address: p.address || "" },
     amounts: inv.amounts, currency: inv.cur, invoiceNo: p.invoice_no || "",
-    date: String(p.invoiced_at || new Date().toISOString()).slice(0, 10), description: inv.description,
+    date: dayKeyOf(p.invoiced_at) || mdDayKey(Date.now()), description: inv.description,
   });
   const r = await submitEfactura(db, { companyId: co.id, projectId: p.id, invoice, adapter, actor });
   const status = r.ok || r.submission ? 200 : r.error === "needs_db" || r.error === "not_configured" ? 503 : 409;

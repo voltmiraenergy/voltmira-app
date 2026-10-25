@@ -252,6 +252,20 @@
 }
 .pp-chip b { color: var(--ink); font-weight: 600; }
 .pp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+/* the roof side by side, and how it was designed */
+.pp-sides { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+.pp-sides .pp-h3 { margin: 0; }
+.pp-sides-scroll { overflow-x: auto; }
+.pp-sides table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.pp-sides th, .pp-sides td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.pp-sides th[scope=col]:first-child, .pp-sides th[scope=row] { text-align: left; }
+.pp-sides thead th { font-size: 12px; font-weight: 600; color: var(--muted); }
+.pp-sides tbody th { font-weight: 600; }
+.pp-sides td small { display: block; font-size: 11.5px; color: var(--muted); }
+.pp-sides-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.pp-mark { margin: 0; padding: 10px 14px; border-radius: 10px; font-size: 13.5px; line-height: 1.45; border: 1px solid var(--line); background: var(--sunk); color: inherit; }
+.pp-mark.is-ver { border-color: #1E6B4E; }
+.p-doc .pp-sides, .p-page .pp-sides { margin-top: 10px; }
 .pp-link {
   display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--green);
   text-decoration: underline; text-decoration-color: rgba(30, 107, 78, 0.35); text-underline-offset: 3px;
@@ -490,7 +504,7 @@
   display: block; width: 100%; min-height: 50px; padding: 0 14px; border-radius: 12px;
   border: 1.5px solid var(--line-2); background: var(--card); color: var(--ink); font: 16px var(--f);
 }
-.pp-input::placeholder { color: #7C877F; }
+.pp-input::placeholder { color: var(--muted); }
 .pp-input:focus { outline: none; border-color: var(--green-2); box-shadow: 0 0 0 3px rgba(31, 122, 85, 0.18); }
 .pp-pad { position: relative; border: 1.5px dashed var(--line-2); border-radius: 12px; background: var(--card); }
 .pp-pad canvas { display: block; width: 100%; touch-action: none; cursor: crosshair; border-radius: 12px; }
@@ -848,3 +862,18 @@
 .qm-hash { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-weight: 500; font-size: 12.5px; }
 .qm-btns { display: flex; gap: 10px; flex-wrap: wrap; }
 .qm-btns .pp-btn { flex: 1 1 160px; }
+
+/* ---- Phase 1: the offer in plain words, nearby systems, the reading notice */
+.pp-plain-list { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.pp-plain-list li { position: relative; padding: 12px 14px 12px 40px; border-radius: 12px; background: var(--paper-2, #fff); border: 1px solid var(--line); font-size: 16px; line-height: 1.5; }
+.pp-plain-list li::before { content: ""; position: absolute; left: 16px; top: 19px; width: 10px; height: 10px; border-radius: 3px; background: var(--green, #1e6b4e); }
+.pp-near { margin-top: 16px; padding: 16px 18px; }
+.pp-near p { margin: 6px 0 0; line-height: 1.55; }
+.pp-near small { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.pp-track { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.pp-link-btn { background: none; border: none; padding: 0; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+
+/* an offer made in /demo: an example, said so, and no signature (lib/demoServer.js) */
+.pp-demo { margin: 0 0 14px; padding: 10px 14px; border-radius: 12px; background: var(--amber-tint); border: 1px solid var(--amber); color: var(--ink); font-size: 13.5px; line-height: 1.45; }
+.pp-demo b { text-transform: uppercase; letter-spacing: .06em; font-size: 11.5px; color: var(--amber-ink); margin-right: 6px; }
+.pp-demo-sign { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--amber-tint); color: var(--ink); font-size: 13.5px; line-height: 1.45; }

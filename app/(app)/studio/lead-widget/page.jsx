@@ -168,7 +168,7 @@ export default function LeadWidgetPreview() {
               </div>
             </label>
 
-            <button className="btn lw-calc" onClick={() => setShown(true)}>{w.calc}</button>
+            <button className="btn primary lw-calc" onClick={() => setShown(true)}>{w.calc}</button>
 
             {shown && (
               <div className="lw-out">
@@ -184,7 +184,7 @@ export default function LeadWidgetPreview() {
                     <input className="pv-input" aria-label={w.name} placeholder={w.name} value={name} onChange={(e) => setName(e.target.value)} />
                     <input className="pv-input" aria-label={w.phone} placeholder={w.phone} value={phone} onChange={(e) => setPhone(e.target.value)} />
                   </div>
-                  <button className="btn lw-send" type="submit">{w.send}</button>
+                  <button className="btn primary lw-send" type="submit">{w.send}</button>
                   {sent && <div className="lw-sent">{w.sent}</div>}
                 </form>
 

@@ -8,20 +8,16 @@
 // Honesty note printed on it: this is a PROFORMA, not a fiscal invoice — in
 // Romania a fiscal invoice must be issued through ANAF e-Factura. It's the right
 // document to request a deposit / bank transfer against.
-import { notFound } from "next/navigation";
-import { headers } from "next/headers";
-import { supabaseServer } from "../../../../../lib/supabase.js";
-import { currentCompany } from "../../../../../lib/session.js";
-import { quote } from "@voltmira/engine";
-import { companyEngine } from "../../../../../lib/engineSettings.js";
-import { getRate } from "../../../../../lib/fx.js";
-import { rowToQuoteInput } from "../../../../../lib/quoteInput.js";
-import { invoiceAmounts } from "../../../../../lib/invoiceMath.js";
-import { effectiveOfferCurrency } from "../../../../../lib/offerCurrency.js";
-import { sendCrmWebhook } from "../../../../../lib/crmWebhook.js";
+import { notFound, redirect } from "next/navigation";
+import { supabaseServer, supabaseAdmin } from "../../../../../lib/supabase.js";
+import { jobGate, feeParam } from "../../../../../lib/jobFeeServer.js";
+import { currentCompany, currentUser } from "../../../../../lib/session.js";
+import { projectVisibility } from "../../../../../lib/projectAccess.js";
+import { projectInvoice } from "../../../../../lib/invoiceServer.js";
 import { t, normLang } from "../../../../../lib/i18n.js";
 import { fmtDate } from "../../../../../lib/tz.js";
 import PrintNow from "./PrintNow.jsx";
+import IssueInvoice from "./IssueInvoice.jsx";
 import BackLink from "../../../../../components/BackLink.jsx";
 import { appTitle } from "../../../../../lib/pageTitle.js";
 import { xt } from "../../../../../lib/integrationText.js";
@@ -37,96 +33,46 @@ export default async function InvoicePage(props) {
   const co = await currentCompany();
   const { data: p } = await sb.from("projects").select("*").eq("id", params.id).maybeSingle();
   if (!p || !co) notFound();
+  // access control: a Sales member does not open a colleague's proforma by its address
+  const u = await currentUser();
+  if (!u || !(await projectVisibility(u, co))(p)) notFound();
+  // a won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js)
+  const gate = await jobGate(supabaseAdmin(), { project: p, co, user: u, produce: "invoice" });
+  if (gate.locked) redirect(`/projects/${p.id}?fee=${feeParam(gate.error)}`);
 
   const lang = normLang(co.lang);
   const locale = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-GB";
-  // Issued in the QUOTE's currency (lib/offerCurrency.js): the offer's own
-  // when the installer chose one (hryvnia for a client in Ukraine), else the
-  // workspace's. Same resolution as the editor and the proposal snapshot, so
-  // the proforma is in the currency the client was quoted in.
-  const cur = effectiveOfferCurrency(p.offer_currency, co.currency, p.market);
-  // CONVERT, don't just relabel. The engine works entirely in EUR ("All money in
-  // EUR. Display conversion happens in the UI layer only." — engine.js) and
-  // exports FX for this. Formatting a EUR figure with currency:"MDL" printed a
-  // €23,375 system as "23.375 MDL" — roughly €1,180, a ~20x understatement on a
-  // document a client can pay against. RON was the same bug at ~5x.
-  // Live rate (ECB for RON, BNM for MDL, NBU for UAH), falling back to the
-  // engine constant if one is unreachable. getRate never throws — an invoice
-  // must render.
-  const fxInfo = await getRate(cur);
-  const fx = Number(fxInfo.rate) > 0 ? Number(fxInfo.rate) : 1;
-  // Every amount below is ALREADY in `cur` (invoiceAmounts converts), so this
-  // only formats it.
+  // Every figure comes from projectInvoice (lib/invoiceServer.js). Once the invoice is issued these are the figures
+  // written with its number (the amounts, the currency, the rate and where it came from), so this page, the PDF,
+  // the exports and e-Factura print the same amount on any day. Before that it is a draft, worked out from the
+  // quote, the live rate (ECB for RON, BNM for MDL, NBU for UAH) and the workspace's settings, in the QUOTE's
+  // currency (lib/offerCurrency.js): the offer's own when the installer chose one, else the workspace's.
+  // CONVERT, don't just relabel: the engine works in EUR, and formatting a EUR figure as MDL once printed a
+  // 23,375 EUR system as "23.375 MDL". Optional deposit on a draft: ?deposit=30 -> a 30% deposit line + balance.
+  const inv = await projectInvoice(p, co, { depositPct: searchParams?.deposit });
+  const { cur, fx, fxInfo } = inv;
+  // Prices shown to homeowners are VAT-inclusive, so the net + VAT are backed out of the total. A rate of 0 means
+  // NOT CONFIGURED (Settings shows it blank-as-zero), and printing "VAT (0%)" on a document a client keeps asserts
+  // a zero rating that is very likely false for a RO/MD installer, so below a single Total is shown instead of an
+  // invented breakdown (and, on screen only, a nudge to set it). Every printed line adds up to the printed total.
+  const { gross, net, vat, rate, showVat, depositPct: depPct, deposit, balance } = inv.amounts;
+  // Every amount is ALREADY in `cur`, so this only formats it.
   const money = (n) => new Intl.NumberFormat(locale, { style: "currency", currency: cur, maximumFractionDigits: 0 })
     .format(Math.round(n || 0));
 
-  const E = await companyEngine(co);
-  const q = quote(rowToQuoteInput(p, E), E).e;
-
-  // Prices shown to homeowners are VAT-inclusive, so back out the net + VAT.
-  // A rate of 0 means NOT CONFIGURED (Settings shows it blank-as-zero), and
-  // printing "VAT (0%)" on a document a client keeps asserts a zero rating that
-  // is very likely false for a RO/MD installer. So below we show a single Total
-  // instead of inventing a breakdown — and nudge, on screen only, to set it.
-  // invoiceAmounts converts the total to the invoice's currency FIRST and splits
-  // VAT, deposit and balance from it there, so every printed line adds up to
-  // the printed total; its total is the fiscal CSV export's
-  // (app/api/export-invoices/route.js) for the same currency and rate.
-  // Optional deposit: ?deposit=30 → a 30% deposit line + balance.
-  const { gross, net, vat, rate, showVat, depositPct: depPct, deposit, balance } = invoiceAmounts({
-    grossEur: q.cost, fx, vatRatePct: co.vat_rate, depositPct: searchParams?.deposit,
-  });
-
-  const today = new Date();
-  const prefix = (co.invoice_prefix || "PF").toString().slice(0, 6);
-
-  // A real running sequence (PF-2026-0001, -0002, …) instead of a slice of the
-  // project's UUID. The number is drawn ONCE and then frozen on the project, so
-  // reopening or re-printing the same invoice always shows the same number.
-  // next_invoice_no() bumps companies.invoice_seq atomically, so two tabs can't
-  // land on the same number. Skipped on router prefetch so merely hovering the
-  // link can't burn a number. Falls back to the old id-derived string when the
-  // migration hasn't been run yet, so nothing breaks in the meantime.
-  let invNo = p.invoice_no || null;
-  if (!invNo && (await headers()).get("next-router-prefetch") !== "1") {
-    const { data: seq } = await sb.rpc("next_invoice_no", { p_company: co.id });
-    if (seq) {
-      const candidate = `${prefix}-${today.getFullYear()}-${String(seq).padStart(4, "0")}`;
-      // invoiced_at: the real moment this number was drawn, for the fiscal
-      // CSV export (add-invoice-date.sql) — degrade to invoice_no alone
-      // before that migration has run.
-      let { error } = await sb.from("projects").update({ invoice_no: candidate, invoiced_at: today.toISOString() }).eq("id", p.id);
-      if (error && /invoiced_at/i.test(error.message || "")) {
-        ({ error } = await sb.from("projects").update({ invoice_no: candidate }).eq("id", p.id));
-      }
-      if (!error) {
-        invNo = candidate;   // couldn't persist ⇒ don't show a number we'd forget
-        // CRM/accounting webhook: fires exactly once, the moment a NEW number
-        // is drawn (this whole block only runs when invNo was null coming in)
-        // — reopening/reprinting the same invoice never re-fires it. This is
-        // also the honest path to 1C/accounting software: VoltMira has no
-        // live 1C instance to build or verify a direct API integration
-        // against, so this generic webhook (lib/crmWebhook.js) is what an
-        // installer's own Make/Zapier/n8n scenario reads from to push a real
-        // fiscal event across, same reasoning as export-invoices/route.js.
-        // net/vat/gross are the printed amounts, in `currency` (they used to
-        // be EUR figures labelled with the workspace currency).
-        await sendCrmWebhook(co.id, "invoice.created", {
-          project_id: p.id, invoice_no: candidate, client_name: p.client_name || p.title,
-          net, vat, gross, currency: cur, deposit_pct: depPct || undefined,
-        });
-      }
-    }
-  }
-  if (!invNo) invNo = `${prefix}-${today.getFullYear()}-${String(params.id).replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+  // The number is drawn when the installer issues the invoice (IssueInvoice, lib/invoiceIssue.js), never by opening
+  // this page or its PDF: a draft prints no number, and the day on it is today until it is issued.
+  const issued = !!p.invoice_no;
+  const invNo = p.invoice_no || t("inv_draft", lang);
+  const docDate = issued && p.invoiced_at ? new Date(p.invoiced_at) : new Date();
   // the invoice's e-Factura status (billing page, docs/INTEGRATIONS.md): once
   // SFS has accepted it, its fiscal number prints on the proforma
   const { data: ef } = await sb.from("efactura_submissions").select("status, fiscal_number, provider").eq("project_id", p.id).order("attempt", { ascending: false }).limit(1).maybeSingle();
   // Decimals the way the client writes them ("6,0 kW" in Romanian), like the
   // amounts below: toFixed() printed "6.0" on a Romanian invoice.
   const dec = (n, d) => Number(n).toLocaleString(locale, { minimumFractionDigits: d, maximumFractionDigits: d });
-  const kw = dec(p.kw, 1);
-  const lineDesc = t("inv_line", lang, { kw }) + (p.batt ? t("inv_line_batt", lang, { n: Number(p.batt_kwh || 10).toLocaleString(locale, { maximumFractionDigits: 1 }) }) : "");
+  const kw = dec(inv.line.kw, 1);
+  const lineDesc = t("inv_line", lang, { kw }) + (inv.line.battKwh ? t("inv_line_batt", lang, { n: Number(inv.line.battKwh).toLocaleString(locale, { maximumFractionDigits: 1 }) }) : "");
   const legalName = co.legal_name || co.name || "—";
 
   const S = {
@@ -154,6 +100,8 @@ export default async function InvoicePage(props) {
           .no-print { display: none !important; }
           body { background: #fff !important; }
         }
+        .inv-issue { max-width: 820px; margin: 12px auto 14px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; background: #FBF0DD; color: #142A21; border-radius: 12px; }
+        .inv-issue p { margin: 0; font-size: 13.5px; line-height: 1.5; max-width: 560px; }
         .inv-actions { max-width: 820px; margin: 12px auto 0; padding: 0 40px; display: flex; gap: 10px; }
         .inv-back-row { max-width: 820px; margin: 0 auto; padding: 16px 40px 0; }
         @media screen and (max-width: 640px) {
@@ -184,6 +132,16 @@ export default async function InvoicePage(props) {
         </Link>
       </div>
 
+      {/* On screen only. A draft has no number; issuing draws the next one and fixes the amounts shown. */}
+      <div className="inv-issue no-print">
+        {issued
+          ? <p>{t("inv_issued_note", lang, { d: fmtDate(docDate.toISOString(), locale, { day: "numeric", month: "long", year: "numeric" }) })}</p>
+          : <>
+              <p>{t("inv_issue_note", lang)}</p>
+              <IssueInvoice projectId={params.id} deposit={depPct} lang={lang} />
+            </>}
+      </div>
+
       <div className="inv-page" style={S.page}>
         {/* header */}
         <div className="inv-head" style={{ ...S.row, alignItems: "flex-start", marginBottom: 34 }}>
@@ -208,7 +166,7 @@ export default async function InvoicePage(props) {
             <h1 style={S.h1}>{t("inv_title", lang)}</h1>
             <div style={{ ...S.muted, marginTop: 8 }}>
               {t("inv_no", lang)}: <b style={{ color: "#142A21" }}>{invNo}</b><br />
-              {t("inv_date", lang)}: {fmtDate(today.toISOString(), locale, { day: "numeric", month: "short", year: "numeric" })}
+              {t("inv_date", lang)}: {fmtDate(docDate.toISOString(), locale, { day: "numeric", month: "short", year: "numeric" })}
               {ef?.status === "accepted" && ef.fiscal_number && ef.provider === "sfs" && <><br />{t("inv_efactura_no", lang)}: <b style={{ color: "#142A21" }}>{ef.fiscal_number}</b></>}
             </div>
           </div>
@@ -230,7 +188,7 @@ export default async function InvoicePage(props) {
           </tr></thead>
           <tbody>
             <tr>
-              <td style={S.td}><b>{p.title || t("inv_system", lang)}</b><div style={S.muted}>{lineDesc}</div></td>
+              <td style={S.td}><b>{inv.line.title || t("inv_system", lang)}</b><div style={S.muted}>{lineDesc}</div></td>
               <td style={{ ...S.td, textAlign: "right" }}>1</td>
               <td style={{ ...S.td, textAlign: "right", fontWeight: 700 }}>{money(net)}</td>
             </tr>
@@ -302,7 +260,7 @@ export default async function InvoicePage(props) {
 
       {/* The PDF route drives printing via CDP and passes pdf=1; window.print()
             inside headless Chromium blocks rather than returning. */}
-      {searchParams?.pdf !== "1" && <PrintNow />}
+      {issued && searchParams?.pdf !== "1" && <PrintNow />}
     </div>
   );
 }

@@ -7,6 +7,15 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../lib/supabase.js";
 import { dueNudges, sendNudge } from "../../../../lib/nudgeRun.js";
 import { sendOpenDigests } from "../../../../lib/openDigest.js";
+import { sendFeeReminders } from "../../../../lib/feeReminders.js";
+import { sendPayReminders } from "../../../../lib/payReminders.js";
+import { sendServiceReminders } from "../../../../lib/serviceServer.js";
+import { monthlyStatements, sellerDetails, feeVatRate } from "../../../../lib/jobFeePay.js";
+import { feePaywallOn } from "../../../../lib/jobFees.js";
+import { repriceForStatement, sweepWonWithoutFee } from "../../../../lib/jobFeeServer.js";
+import { demoCompanyCheck } from "../../../../lib/demoServer.js";
+import { sendEmail, emailConfigured, ownerAlertEmail } from "../../../../lib/email.js";
+import { logActivity } from "../../../../lib/activity.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,8 +28,27 @@ export async function GET(req) {
   }
   const db = supabaseAdmin();
   const started = Date.now();
+  // reading time per section and the options looked at are kept 12 months (the notice on the offer says what is
+  // recorded; docs/features/phase1.md the retention), then removed
+  const { error: purgeErr } = await db.from("proposal_events").delete().in("kind", ["section", "option"])
+    .lt("created_at", new Date(started - 365 * 86_400_000).toISOString());
+  if (purgeErr && !/kind|check|constraint/i.test(purgeErr.message || "")) console.error("[cron nudges] reading purge failed:", purgeErr.message);
   // the morning "offers opened" email, for companies that chose it or keep quiet hours
   const digests = await sendOpenDigests(db, { budgetMs: 15_000 });
+  // VoltMira's fee for signed jobs: last month's statements (lib/jobFeePay.js), first issued on the 1st and asked for
+  // again each day, so a missed run still issues them (one per workspace and month), then their reminders
+  // (lib/feeReminders.js). Nothing while JOB_FEES is off.
+  // first, any signed job without its fee gets one (lib/jobFeeServer.js sweepWonWithoutFee)
+  const demoCo = demoCompanyCheck(db);
+  const sweep = feePaywallOn() ? await sweepWonWithoutFee(db, { skipCompany: demoCo }) : null;
+  const statements = feePaywallOn()
+    ? await monthlyStatements(db, { seller: sellerDetails(), vatRate: feeVatRate(), io: { skipCompany: demoCo, reprice: (f) => repriceForStatement(db, f) } })
+    : null;
+  const fees = await sendFeeReminders(db, { io: { sendEmail, emailConfigured, ownerAlertEmail, logActivity }, budgetMs: 10_000 });
+  // the client's payments in stages: the reminders for invoices not paid yet (lib/payReminders.js)
+  const pay = await sendPayReminders(db, { io: { sendEmail, emailConfigured, ownerAlertEmail, logActivity }, budgetMs: 10_000 });
+  // Service: the client's note before a yearly check, and the installer's Monday digest (lib/serviceServer.js)
+  const service = await sendServiceReminders(db, { io: { sendEmail, emailConfigured, ownerAlertEmail }, budgetMs: 8_000 });
   const due = await dueNudges(db);
   const tally = { due: due.length, sent: 0, skipped: 0, failed: 0 };
   for (const n of due) {
@@ -30,5 +58,5 @@ export async function GET(req) {
     else if (r.skipped) tally.skipped++;
     else tally.failed++;
   }
-  return NextResponse.json({ ok: true, ...tally, digests });
+  return NextResponse.json({ ok: true, ...tally, digests, sweep, fees, statements, pay, service });
 }

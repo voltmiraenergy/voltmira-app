@@ -17,6 +17,8 @@ import { renderProposalPdf } from "../../../../../lib/renderProposalPdf.js";
 import { sendEmail, proposalEmail, emailConfigured } from "../../../../../lib/email.js";
 import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
 import { logActivity } from "../../../../../lib/activity.js";
+import { isDemoEmail } from "../../../../../lib/demo.js";
+import { holdFor } from "../../../../../lib/feeHold.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,12 +46,21 @@ export async function POST(req, props) {
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const co = await currentCompany();
   if (!co) return NextResponse.json({ error: "no_company" }, { status: 403 });
+  // a demo workspace is for looking: nothing it makes is sent to a real address (lib/demoServer.js)
+  if (isDemoEmail(user.email)) return NextResponse.json({ error: "demo_only" }, { status: 403 });
+  // a VoltMira statement 30 days late: no offer goes out until it is paid (lib/feeHold.js)
+  if ((await holdFor(supabaseAdmin(), co.id)).level >= 2) return NextResponse.json({ error: "fee_hold_offers" }, { status: 402 });
 
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }
   const to = String(body?.to || "").trim();
   const note = String(body?.note || "").slice(0, 1000);
   if (!EMAIL_RE.test(to)) return NextResponse.json({ error: "bad_email" }, { status: 400 });
+  // This sends mail from VoltMira's own domain to any address typed in: a day's cap for the workspace, and for
+  // one recipient, so an account cannot be used to flood a stranger's inbox or burn the sender's reputation.
+  if (await isRateLimited(`pdfmail-co:${co.id}`, 100, 86_400_000) || await isRateLimited(`pdfmail-to:${co.id}:${to.toLowerCase()}`, 5, 86_400_000)) {
+    return NextResponse.json({ error: "rate" }, { status: 429 });
+  }
 
   const admin = supabaseAdmin();
   const { data: prop } = await admin.from("proposals")
@@ -64,7 +75,7 @@ export async function POST(req, props) {
   const base = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
   let pdf;
   try {
-    ({ pdf } = await renderProposalPdf(code, base));
+    ({ pdf } = await renderProposalPdf(code, base, { watermark: isDemoEmail(user.email) ? "DEMO" : null }));
   } catch (e) {
     console.error("[pdfmail] render failed:", e?.message || e);
     return NextResponse.json({ error: "pdf_failed" }, { status: 500 });

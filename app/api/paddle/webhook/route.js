@@ -1,20 +1,14 @@
-// app/api/paddle/webhook/route.js — keeps companies.plan in sync with Paddle Billing.
-// Setup: Paddle dashboard → Notifications → New destination → this URL
-//   (https://voltmira.com/api/paddle/webhook), subscribe to:
-//   subscription.created, subscription.activated, subscription.updated,
-//   subscription.canceled, subscription.paused, and transaction.completed (a
-//   bank pack paid by card: lib/packPricing.js unlockFromTransaction; or a
-//   pack of credits: lib/credits.js creditsFromTransaction).
-// Copy the destination's signing secret into PADDLE_WEBHOOK_SECRET (Vercel env).
+// app/api/paddle/webhook/route.js — a developer's bank pack paid by card (lib/packPricing.js unlockFromTransaction).
+// Setup: Paddle dashboard → Notifications → New destination → this URL (https://voltmira.com/api/paddle/webhook),
+// subscribed to transaction.completed. Copy the destination's signing secret into PADDLE_WEBHOOK_SECRET.
 //
-// company_id + plan arrive in custom_data (set at checkout in lib/paddle.js), so
-// the webhook knows which company to upgrade without any lookup.
+// Since 2026-10-24 installers have no plans and no credits (their one charge is a fee per won project, paid through
+// the bank's gateway: lib/jobFees.js), so subscription and credit notifications are acknowledged and ignored.
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { supabaseAdmin } from "../../../../lib/supabase.js";
 import { unlockFromTransaction } from "../../../../lib/packPricing.js";
 import { PLANTS_KEY } from "../../../../lib/portfolioModel.js";
-import { creditsFromTransaction } from "../../../../lib/credits.js";
 
 // Paddle-Signature header looks like "ts=1700000000;h1=<hex>". The signed
 // payload is `${ts}:${rawBody}`, HMAC-SHA256 with the destination secret.
@@ -26,6 +20,9 @@ function verifySignature(raw, header, secret) {
     if (i > 0) parts[kv.slice(0, i).trim()] = kv.slice(i + 1).trim();
   });
   if (!parts.ts || !parts.h1) return false;
+  // a captured, correctly signed notification cannot be played back later: the signed time must be recent
+  const age = Math.abs(Date.now() / 1000 - Number(parts.ts));
+  if (!Number.isFinite(age) || age > 300) return false;
   const expected = crypto.createHmac("sha256", secret).update(`${parts.ts}:${raw}`).digest("hex");
   try {
     return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(parts.h1));
@@ -47,15 +44,6 @@ export async function POST(req) {
   const data = evt.data || {};
   const custom = data.custom_data || {};
   const companyId = custom.company_id;
-  // The plan comes from the PRICE that was subscribed to (monthly or yearly), so
-  // a checkout cannot name a dearer plan than the one it paid for; custom_data
-  // is only the fallback for a price id this server does not know.
-  const priceIds = (data.items || []).map((it) => it?.price?.id || it?.price_id).filter(Boolean);
-  const E = process.env;
-  const byPrice = priceIds.some((id) => id && (id === E.NEXT_PUBLIC_PADDLE_PRICE_TEAM || id === E.NEXT_PUBLIC_PADDLE_PRICE_TEAM_YEARLY)) ? "team"
-    : priceIds.some((id) => id && (id === E.NEXT_PUBLIC_PADDLE_PRICE_PRO || id === E.NEXT_PUBLIC_PADDLE_PRICE_PRO_YEARLY)) ? "pro"
-    : priceIds.some((id) => id && id === E.NEXT_PUBLIC_PADDLE_PRICE_ENTERPRISE) ? "enterprise" : null;
-  const plan = byPrice || (["pro", "team", "enterprise"].includes(custom.plan) ? custom.plan : "pro");
   if (!companyId) return NextResponse.json({ received: true, note: "no company_id" });
 
   const db = supabaseAdmin();
@@ -64,7 +52,14 @@ export async function POST(req) {
   // transaction id is unique, so a retried notification adds nothing)
   if (type === "transaction.completed" && custom.kind === "pack") {
     const { data: portfolio } = await db.from("portfolios").select("id, company_id, assets").eq("id", custom.portfolio_id || "").maybeSingle();
-    const { row, error } = unlockFromTransaction({ data, portfolio, plantsKey: PLANTS_KEY });
+    // the company's earlier packs for this portfolio: the renewal price only counts for a plant that had one
+    let unlocks = null;
+    if (portfolio) {
+      const { data: had, error: uErr } = await db.from("pack_unlocks").select("portfolio_id, plant_id, expires_at").eq("company_id", portfolio.company_id).eq("portfolio_id", portfolio.id);
+      if (uErr) { console.error("[paddle] pack unlocks lookup failed:", uErr.message); return NextResponse.json({ error: "unlock_failed" }, { status: 500 }); }
+      unlocks = had || [];
+    }
+    const { row, error } = unlockFromTransaction({ data, portfolio, plantsKey: PLANTS_KEY, unlocks });
     if (error) {
       console.error("[paddle] pack not unlocked:", error, data.id);
       return NextResponse.json({ received: true, note: error });
@@ -82,44 +77,6 @@ export async function POST(req) {
     return NextResponse.json({ received: true, unlocked: true });
   }
 
-  // credits paid by card: add the pack the price paid for, once (the
-  // transaction id is unique, so a retried notification adds nothing)
-  if (type === "transaction.completed" && custom.kind === "credits") {
-    const { row, error } = creditsFromTransaction({ data });
-    if (error) {
-      console.error("[paddle] credits not added:", error, data.id);
-      return NextResponse.json({ received: true, note: error });
-    }
-    const { error: dbErr } = await db.from("credit_ledger").upsert(row, { onConflict: "paddle_txn_id", ignoreDuplicates: true });
-    if (dbErr) {
-      console.error("[paddle] credits failed:", dbErr.message);
-      return NextResponse.json({ error: "credits_failed" }, { status: 500 });
-    }
-    return NextResponse.json({ received: true, credited: row.delta });
-  }
-
-  const setPlan = (p, subId, custId) =>
-    db.from("companies").update({
-      plan: p,
-      paddle_subscription_id: subId || null,
-      paddle_customer_id: custId || null,
-    }).eq("id", companyId);
-
-  switch (type) {
-    case "subscription.created":
-    case "subscription.activated":
-    case "subscription.updated": {
-      const active = data.status === "active" || data.status === "trialing";
-      await setPlan(active ? plan : "free", data.id, data.customer_id);
-      break;
-    }
-    case "subscription.canceled":
-    case "subscription.paused": {
-      await setPlan("free", null, data.customer_id);
-      break;
-    }
-    default:
-      break;
-  }
-  return NextResponse.json({ received: true });
+  // no plans and no credits any more: nothing else to act on
+  return NextResponse.json({ received: true, note: "ignored" });
 }

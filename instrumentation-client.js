@@ -4,6 +4,23 @@
 // Inert with no NEXT_PUBLIC_SENTRY_DSN, like the server/edge configs.
 import * as Sentry from "@sentry/nextjs";
 
+// Development only. React's own timing of Server Components (its performance track) can hand performance.measure a
+// negative time when a page calls notFound() or redirect() while it renders, and the dev overlay then shows
+// "Failed to execute 'measure' on 'Performance': ... cannot have a negative time stamp" in place of the 404 or the
+// redirect (vercel/next.js #86060, still open). The error is swallowed here and nothing else is changed; a production
+// build never runs this.
+if (process.env.NODE_ENV === "development" && typeof performance !== "undefined" && typeof performance.measure === "function") {
+  const measure = performance.measure.bind(performance);
+  performance.measure = (...args) => {
+    try {
+      return measure(...args);
+    } catch (e) {
+      if (/negative time stamp|cannot be negative/i.test(String(e?.message || e))) return undefined;
+      throw e;
+    }
+  };
+}
+
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
   tracesSampleRate: 0.1,

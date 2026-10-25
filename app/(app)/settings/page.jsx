@@ -1,6 +1,6 @@
 "use client";
 // app/(app)/settings/page.jsx — company identity, documents, calculation
-// numbers, assistants, notifications and billing.
+// numbers, assistants, notifications and the fee per won project.
 //
 // Six sections, one on screen at a time: a side menu on a computer, a row of
 // tabs on a phone. It used to be thirteen cards in one column, ten phone
@@ -12,25 +12,23 @@ import "../dx.css";
 import "./settings.css";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Receipt, Calculator, Bot, Bell, CreditCard, Upload, Trash2, RotateCcw, Download, Lock, PencilLine } from "lucide-react";
+import { Building2, Receipt, Calculator, Bot, Bell, CreditCard, Upload, Trash2, RotateCcw, Download, Lock, PencilLine, Globe } from "lucide-react";
 import { supabaseBrowser } from "../../../lib/supabase-browser.js";
-import { openCheckout, yearlyReady } from "../../../lib/paddle.js";
-import { cr } from "../../../lib/creditsText.js";
-import { creditsPreview } from "../../../lib/creditsPreview.js";
 import { saveCompany, seedSampleData, clearSampleData, getMyRole } from "../../../lib/actions.js";
 import { sendTestEmail, testWebhook } from "../../../lib/notifyTest.js";
 import { defaultEngineSettings } from "@voltmira/engine";
 import { t, normLang, LANGS, LANG_NAMES } from "../../../lib/i18n.js";
 import { xt } from "../../../lib/integrationText.js";
 import { dlt } from "../../../lib/deadlineText.js";
-import { hasFeature, planFor } from "../../../lib/features.js";
-import UpsellModal from "../../../components/UpsellModal.jsx";
 import { CONTRACT_TOKENS, COMMISSIONING_TOKENS } from "../../../lib/legalDocs.js";
 import LeadAssistant from "./LeadAssistant.jsx";
-import MonitoringBill from "./MonitoringBill.jsx";
-import CreditsPanel from "./CreditsPanel.jsx";
+import FeesPanel from "./FeesPanel.jsx";
+import { DefaultPayPlan } from "../../../components/PayPlan.jsx";
+import { pt } from "../../../lib/payText.js";
 import { clearOfflineData } from "../../../lib/offline.js";
 import { aiOn } from "../../../lib/featureFlags.js";
+import EstimateSettings from "./EstimateSettings.jsx";
+import { ft as feeT } from "../../../lib/feeText.js";
 
 // the assistants and the website widget are hidden until AI is switched on (lib/featureFlags.js)
 const TABS = [
@@ -38,10 +36,13 @@ const TABS = [
   { id: "documents", Icon: Receipt, label: "st_tab_docs", hint: "st_tab_docs_h" },
   { id: "calculations", Icon: Calculator, label: "st_tab_calc", hint: "st_tab_calc_h" },
   ...(aiOn() ? [{ id: "assistants", Icon: Bot, label: "st_tab_ai", hint: "st_tab_ai_h" }] : []),
+  { id: "estimate", Icon: Globe, label: "st_tab_estimate", hint: "st_tab_estimate_h" },
   { id: "notifications", Icon: Bell, label: "st_tab_alerts", hint: "st_tab_alerts_h" },
-  { id: "plan", Icon: CreditCard, label: "st_tab_plan", hint: "st_tab_plan_h" },
+  { id: "fees", Icon: CreditCard, label: "st_tab_fees", hint: "st_tab_fees_h" },
 ];
 const TAB_IDS = TABS.map((x) => x.id);
+// the old address of the account tab (links, emails, bookmarks) opens its successor
+const tabOf = (want) => (want === "plan" ? "fees" : want);
 
 /* The embeddable lead widget. The snippet carries the company id; the widget
    page resolves the form language from the company automatically. */
@@ -125,14 +126,12 @@ export default function Settings() {
   const router = useRouter();
   const [co, setCo] = useState(null);
   const [msg, setMsg] = useState("");
-  const [period, setPeriod] = useState("month");   // the plan buttons: monthly or yearly
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tab, setTabState] = useState("company");
   const [demoBusy, setDemoBusy] = useState(false);
   const [demoMsg, setDemoMsg] = useState("");
   const [isOwner, setIsOwner] = useState(true);   // default true so owners see no flash
-  const [upsell, setUpsell] = useState(null);      // feature key, or null
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [askUa, setAskUa] = useState(false);
@@ -146,7 +145,7 @@ export default function Settings() {
     load();
     getMyRole().then(r => setIsOwner(r === "owner")).catch(() => {});
     try {
-      const want = new URLSearchParams(location.search).get("tab");
+      const want = tabOf(new URLSearchParams(location.search).get("tab"));
       if (TAB_IDS.includes(want)) setTabState(want);
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -156,7 +155,7 @@ export default function Settings() {
   useEffect(() => {
     const onPop = () => {
       try {
-        const want = new URLSearchParams(location.search).get("tab") || "company";
+        const want = tabOf(new URLSearchParams(location.search).get("tab") || "company");
         if (TAB_IDS.includes(want)) setTabState(want);
       } catch {}
     };
@@ -272,29 +271,13 @@ export default function Settings() {
         active_subscription: t("s_delete_err_sub", lang),
         confirm_mismatch: t("s_delete_err_mismatch", lang),
         owner_only: t("s_delete_err_owner", lang),
+        fees_owed: feeT("e_delete_fees", lang),
       };
       setDeleteErr(ERR[j.error] || t("s_delete_err_generic", lang));
     } catch {
       setDeleteErr(t("s_delete_err_generic", lang));
     } finally {
       setDeleteBusy(false);
-    }
-  }
-
-  async function upgrade(plan) {
-    setMsg(t("checkout_opening", lang));
-    try {
-      const { data: { user } } = await sb.auth.getUser();
-      await openCheckout({
-        plan,
-        interval: period === "year" && yearlyReady(plan) ? "year" : "month",
-        email: user?.email,
-        companyId: co.id,
-        successUrl: (process.env.NEXT_PUBLIC_APP_URL || location.origin) + "/settings?tab=plan&upgraded=1",
-      });
-      setMsg("");
-    } catch (e) {
-      setMsg(e.message || t("checkout_failed", lang));
     }
   }
 
@@ -406,6 +389,8 @@ export default function Settings() {
 
   // ---------------------------------------------------------------- sections
   const panels = {
+    // the public estimate page, the lead score and the follow-up days, saved on their own (lib/leadSettings.js)
+    estimate: <EstimateSettings lang={lang} />,
     company: (
       <>
         <Card title={t("st_profile_h", lang)} desc={t("st_company_desc", lang)}>
@@ -473,6 +458,10 @@ export default function Settings() {
 
     documents: (
       <>
+        {/* the client's payments in stages: the default plan for every job signed (lib/milestones.js) */}
+        <Card title={pt("sch_def_h", lang)} desc={pt("sch_def_p", lang)}>
+          <DefaultPayPlan lang={lang} />
+        </Card>
         <Card title={t("s_invoicing", lang)} desc={t("s_invoicing_sub", lang)}
           extra={<><a className="dx-btn" href="/api/export-invoices"><Download size={14} aria-hidden="true" />CSV</a> <a className="dx-btn" href="/documents/export"><Download size={14} aria-hidden="true" />{xt("ex_link", lang)}</a></>}>
           <div className="set-grid">
@@ -499,15 +488,13 @@ export default function Settings() {
           <details className="st-fold" open={Boolean(co.contract_template_override)}>
             <summary>{t("s_wl_contract", lang)}</summary>
             <textarea className="input st-mono" value={co.contract_template_override || ""}
-              onFocus={() => { if (!hasFeature(co.plan, "customTemplates")) setUpsell("customTemplates"); }}
-              onChange={e => { if (!hasFeature(co.plan, "customTemplates")) { setUpsell("customTemplates"); return; } setCo({ ...co, contract_template_override: e.target.value }); touch(); }}
+              onChange={e => { setCo({ ...co, contract_template_override: e.target.value }); touch(); }}
               placeholder={t("s_wl_placeholder", lang)} aria-label={t("s_wl_contract", lang)} />
           </details>
           <details className="st-fold" open={Boolean(co.commissioning_template_override)}>
             <summary>{t("s_wl_commissioning", lang)}</summary>
             <textarea className="input st-mono" value={co.commissioning_template_override || ""}
-              onFocus={() => { if (!hasFeature(co.plan, "customTemplates")) setUpsell("customTemplates"); }}
-              onChange={e => { if (!hasFeature(co.plan, "customTemplates")) { setUpsell("customTemplates"); return; } setCo({ ...co, commissioning_template_override: e.target.value }); touch(); }}
+              onChange={e => { setCo({ ...co, commissioning_template_override: e.target.value }); touch(); }}
               placeholder={t("s_wl_placeholder", lang)} aria-label={t("s_wl_commissioning", lang)} />
           </details>
           <p className="set-note">{t("s_wl_tokens", lang, { tokens: [...CONTRACT_TOKENS, ...COMMISSIONING_TOKENS].filter((v, i, a) => a.indexOf(v) === i).map(x => `{{${x}}}`).join(" ") })}</p>
@@ -678,10 +665,7 @@ export default function Settings() {
           <Card title={t("st_crm_h", lang)}>
             <div className="st-toggles">
               <Toggle checked={co.crm_webhook_enabled === true}
-                onChange={e => {
-                  if (e.target.checked && !hasFeature(co.plan, "crmWebhook")) { setUpsell("crmWebhook"); return; }
-                  setCo({ ...co, crm_webhook_enabled: e.target.checked }); touch();
-                }}
+                onChange={e => { setCo({ ...co, crm_webhook_enabled: e.target.checked }); touch(); }}
                 title={t("s_crm", lang)} note={t("s_crm_note", lang)} />
               {co.crm_webhook_enabled === true && (
                 <div className="field st-indent">
@@ -697,32 +681,10 @@ export default function Settings() {
       </>
     ),
 
-    plan: (
+    fees: (
       <>
-        <Card title={t("s_plan", lang)} extra={<span className="st-plan-badge">{co.plan}</span>}>
-          {co.plan === "free" ? (
-            <>
-              {/* monthly or yearly: the yearly prices are 10 months for 12 */}
-              {(yearlyReady("pro") || yearlyReady("team")) && (
-                <div className="seg2 cr-seg" role="group" aria-label={cr("period_l", lang)}>
-                  <button type="button" className={period === "month" ? "on" : ""} aria-pressed={period === "month"} onClick={() => setPeriod("month")}>{cr("per_month", lang)}</button>
-                  <button type="button" className={period === "year" ? "on" : ""} aria-pressed={period === "year"} onClick={() => setPeriod("year")}>{cr("per_year", lang)}, {cr("two_free", lang)}</button>
-                </div>
-              )}
-              <div className="st-plan-acts">
-                <button className="dx-btn primary" onClick={() => upgrade("pro")}>{cr(period === "year" ? "pro_year" : "pro_month", lang)}</button>
-                <button className="dx-btn" onClick={() => upgrade("team")}>{cr(period === "year" ? "team_year" : "team_month", lang)}</button>
-              </div>
-              {period === "year" && <p className="st-p cr-dim">{yearlyReady("pro") ? cr("year_note", lang) : cr("year_off", lang)}</p>}
-            </>
-          ) : <p className="st-p">{t("s_billing_note", lang, { plan: co.plan })}</p>}
-        </Card>
-        <Card title={cr("h", lang)}>
-          <CreditsPanel lang={lang} companyId={co.id} plan={creditsPreview() ? "free" : co.plan} />
-        </Card>
-        <Card title={t("mb_title", lang)} desc={t("mb_desc", lang)}>
-          <MonitoringBill lang={lang} />
-        </Card>
+        {/* VoltMira's one charge: a fee for each signed job (lib/jobFees.js) */}
+        <FeesPanel lang={lang} />
         {isOwner && (
           <>
             <Card title={t("dd_title", lang)} desc={t("dd_desc", lang)}>
@@ -773,10 +735,6 @@ export default function Settings() {
         </div>
       </div>
 
-      {upsell && (
-        <UpsellModal lang={lang} plan={planFor(upsell)} onClose={() => setUpsell(null)}
-          onUpgrade={(p) => { setUpsell(null); upgrade(p); }} />
-      )}
 
       {deleteOpen && (
         <div className="overlay" onClick={() => !deleteBusy && setDeleteOpen(false)}>

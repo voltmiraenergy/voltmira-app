@@ -10,7 +10,7 @@ export const metadata = {
 
 export default function Terms() {
   return (
-    <LegalShell title="Terms of Service" updated="26 September 2026">
+    <LegalShell title="Terms of Service" updated="25 October 2026">
       <p className="note">
         In short: use VoltMira for lawful quoting and sales work, you own the data you put in, payback
         figures are estimates rather than guarantees, the AI assistants act only within the limits you
@@ -128,17 +128,38 @@ export default function Terms() {
           our written agreement.</li>
       </ul>
 
-      <h2>11. Plans and payment</h2>
+      <h2>11. Fees and payment</h2>
       <p>
-        Free plans and beta access may have limits, which we can change with 30 days&rsquo; notice.
-        Paid plans are billed in advance through Paddle, our merchant of record, on the cycle and at
-        the price shown at checkout, including any VAT. Where a free trial is offered at checkout, its
-        length and the date of the first charge are shown before you confirm, and you are not charged
-        if you cancel before it ends. We give at least 30 days&rsquo; notice of a price change, which
-        applies from your next billing period. Founder or pilot pricing, where offered, lasts as long
-        as your subscription stays active without interruption. You can cancel at any time and keep
-        access until the end of the paid period. Refunds follow our{" "}
-        <a href="/refunds">Refund Policy</a>.
+        Using VoltMira is free: there is no subscription and no limit on offers, people or features.
+        We charge one thing, a fee for each job your client signs, that is, when your client accepts an
+        offer online or you mark a quote as signed. The fee is 200 lei for each kW of the signed system,
+        rounded to the lei, and at most 8,000 lei a job, as shown in Settings and on our website. Any VAT
+        due is added on our invoice. Your company&rsquo;s first 2 signed jobs, counted by its IDNO across
+        its workspaces, are free. You mark a job signed in VoltMira when your client signs it; its
+        documents, installation steps and crew visits open once it is. If the client gives up the job
+        before any paperwork for it was made in VoltMira (a contract, an invoice, the grid connection
+        file, the commissioning or handover documents), you owe nothing for it; after that, the fee stays
+        and you can ask us to waive it, telling us why.
+      </p>
+      <p>
+        The fees for the jobs signed in a month come on one statement, our invoice to your company,
+        issued at the start of the next month and paid by bank transfer by the 15th of that month, with
+        the reference printed on it. If a statement is still unpaid after that, the paperwork of its jobs
+        (contract, invoice, grid connection file, commissioning and handover documents) stays locked
+        until the transfer arrives. 30 days after that date, no new offer can be sent and sent offers
+        cannot be changed; 60 days after it, the workspace is read-only. Nothing is deleted, each step is
+        announced by email 5 days before it starts, everything opens again as soon as the transfer
+        arrives, and your client is never asked to pay us anything. A workspace cannot be deleted while a
+        fee is owed. A fee may rise if the signed system grows before the
+        fee is paid; it never falls. If a job whose fee you already paid is later cancelled, the amount
+        becomes a credit on your next signed job. We give at least 30 days&rsquo; notice of a change to
+        the fees, which applies to jobs signed after it takes effect. The demo workspace is for looking
+        at VoltMira: nothing made in it is sent to anyone, its offers cannot be signed, and its documents
+        are marked DEMO.
+      </p>
+      <p>
+        Developers&rsquo; bank packs, where offered, are billed through Paddle, our merchant of record,
+        at the price shown at checkout. Refunds follow our <a href="/refunds">Refund Policy</a>.
       </p>
 
       <h2>12. Intellectual property</h2>

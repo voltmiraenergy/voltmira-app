@@ -492,8 +492,8 @@ export async function downloadStudioDoc(filename = "voltmira-document", label, o
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ html: doc.outerHTML, css, title: label || filename, filename, kind: opts.kind, ref: opts.ref }),
     });
-    // out of credits on the free plan: the plan page explains and sells them
-    if (res.status === 402) { window.location.assign(`/settings?tab=plan&need=${encodeURIComponent(opts.kind || "annex")}`); return; }
+    // a won job whose fee is overdue (lib/jobFees.js): its quote, with the payment open
+    if (res.status === 402) { const j = await res.json().catch(() => ({})); window.location.assign(j.project ? `/projects/${j.project}?fee=${j.error === "needs_idno" ? "idno" : j.error === "not_signed" ? "sign" : "locked"}` : "/settings?tab=fees"); return; }
     if (!res.ok) throw new Error("pdf_" + res.status);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
