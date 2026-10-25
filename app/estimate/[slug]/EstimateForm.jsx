@@ -11,6 +11,7 @@ import { et, PHONE_EXAMPLE } from "../../../lib/estimateText.js";
 import { moneyFormatter, numFor } from "../../../lib/money.js";
 import { yearsN, kwhUnit, kwUnit } from "../../p/[code]/text.js";
 import RoofSatellite from "../../../components/RoofSatellite.jsx";
+import AddressField from "../../../components/AddressField.jsx";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 const CURRENCY = { MD: "MDL", RO: "RON", UA: "UAH" };
@@ -23,6 +24,9 @@ export default function EstimateForm({ slug, lang, langs = [], market = "MD", co
   const co = company.name;
 
   const [address, setAddress] = useState("");
+  // the place the client picked from the suggestions (street, number, town), as the quote editor does: the estimate is
+  // for that exact spot, and the client sees it from above before calculating
+  const [place, setPlace] = useState(null);
   const [by, setBy] = useState("bill");
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
@@ -60,9 +64,12 @@ export default function EstimateForm({ slug, lang, langs = [], market = "MD", co
   async function calculate(e) {
     e.preventDefault();
     if (!address.trim()) { setErr(et("err_address", lang)); return; }
+    // a street alone is in a dozen towns: a place picked from the list, or the town written after a comma
+    if (!place && !address.includes(",")) { setErr(et("err_town", lang)); return; }
     setBusy(true); setErr(""); setRes(null);
     try {
       const qs = new URLSearchParams({ address, country: market });
+      if (place) { qs.set("lat", String(place.lat)); qs.set("lon", String(place.lng)); }
       if (amount) qs.set(by === "kwh" ? "kwh" : "bill", amount);
       const r = await fetch(`/api/estimate?${qs}`);
       const d = await r.json().catch(() => null);
@@ -153,9 +160,20 @@ export default function EstimateForm({ slug, lang, langs = [], market = "MD", co
               <h2 className="ep-panel-h" id="ep-panel-h">{et("form_h", lang)}</h2>
               <div className="ep-field">
                 <label className="ep-label" htmlFor="est-addr">{et("addr", lang)}</label>
-                <input id="est-addr" className="ep-input" value={address} onChange={(e) => setAddress(e.target.value)}
-                  placeholder={et("addr_ph", lang)} autoComplete="street-address" required />
+                <AddressField lang={lang} value={address} lat={place?.lat} lng={place?.lng} showMap={false}
+                  inputClassName="ep-input" placeholder={et("addr_ph", lang)}
+                  onText={(s) => { setAddress(s); setPlace(null); }}
+                  onPick={(p) => { setAddress(p.address); setPlace({ lat: Number(p.lat), lng: Number(p.lng) }); setErr(""); }} />
               </div>
+              {place && Number.isFinite(place.lat) && Number.isFinite(place.lng) && (
+                <figure className="ep-pick">
+                  <RoofSatellite roof={{ planes: [], center: { lat: place.lat, lon: place.lng, approx: !/\d/.test(address.split(",")[0]) }, tileZoom: 18 }} width={640} height={300} />
+                  <figcaption>
+                    <b><MapPin className="ep-ic" aria-hidden="true" />{address}</b>
+                    <span>{et("pick_note", lang)}</span>
+                  </figcaption>
+                </figure>
+              )}
               <div className="ep-seg" role="radiogroup" aria-label={et("by", lang)}>
                 {["bill", "kwh"].map((k) => (
                   <button key={k} type="button" role="radio" aria-checked={by === k} onClick={() => setBy(k)}>

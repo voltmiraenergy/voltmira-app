@@ -38,6 +38,8 @@ export async function GET(req) {
     const admin = supabaseAdmin();
     const est = await estimateSavings({
       address: url.searchParams.get("address") || "",
+      // the place the client picked from the suggestions, when they did (lib/estimateCore.js checks it)
+      lat: url.searchParams.get("lat"), lon: url.searchParams.get("lon"),
       bill: url.searchParams.get("bill") || "",
       kwh: url.searchParams.get("kwh") || "",
       monthlyPayment: offerFinancingOn(),
