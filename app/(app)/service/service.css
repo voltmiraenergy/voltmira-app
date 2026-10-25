@@ -1,0 +1,77 @@
+/* app/(app)/service/service.css — Service (/service): tiles, the systems, requests, checks and warranties tables, the
+   dialogs. Built on dx.css and the app's theme tokens, so it reads the same in light and dark. Chips, never dots. */
+
+.app .svx .dx-tabs button{display:inline-flex;align-items:center;gap:6px}
+.app .svx .dx-head-tools .btn{display:inline-flex;align-items:center;gap:7px}
+.app .sv-warn{margin:0;padding:10px 14px;border-radius:12px;background:var(--app-warn-tint);color:var(--app-warn-ink);font-size:13.5px;font-weight:600}
+.app .sv-note{margin:0;font-size:13px;font-weight:650;color:var(--app-ok)}
+.app .sv-err{margin:0;color:var(--app-bad);font-size:13px;font-weight:600}
+.app .sv-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0}
+.app .sv-tiles>div{padding:14px 15px;border-radius:14px;background:var(--app-surface);border:1px solid var(--app-line);min-width:0}
+.app .sv-tiles dt{font-size:12.5px;font-weight:650;color:var(--app-muted)}
+.app .sv-tiles dd{margin:2px 0 0;font-size:12.5px;color:var(--app-muted)}
+.app .sv-tiles dd.sv-big{margin:4px 0 2px;font-family:"Inter Tight",Inter,system-ui,sans-serif;font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--app-text);font-variant-numeric:tabular-nums}
+.app .sv-tiles .is-warn dd.sv-big{color:var(--app-warn-ink)}
+.app .sv-pills{display:flex;gap:6px;flex-wrap:wrap}
+.app .sv-pills button{padding:5px 13px;border-radius:99px;font:inherit;font-size:12.5px;font-weight:650;background:var(--app-surface);border:1px solid var(--app-line);color:var(--app-text);cursor:pointer}
+.app .sv-pills button.on{background:var(--app-ok);border-color:var(--app-ok);color:#fff}
+.app .sv-card{padding:6px 10px}
+.app .sv-h,.app .sv-set h2{margin:10px 6px 6px;font-size:15px}
+.app .sv-set{display:grid;gap:8px;padding:10px 16px 16px}
+.app .sv-set .dx-muted-note{margin:0 6px}
+.app .sv-scroll{overflow-x:auto}
+.app .sv-table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+.app .sv-table th{text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--app-muted);padding:9px 10px;border-bottom:1.5px solid var(--app-line);white-space:nowrap}
+.app .sv-table td{padding:11px 10px;border-bottom:1px solid var(--app-line);vertical-align:top;color:var(--app-text)}
+.app .sv-table tr:last-child td{border-bottom:0}
+.app .sv-table td small{display:block;font-size:11.5px;color:var(--app-muted);margin-top:2px}
+.app .sv-table .r{text-align:right}
+.app .sv-click{cursor:pointer}
+.app .sv-click:hover td{background:color-mix(in srgb,var(--app-ok) 5%,transparent)}
+.app .sv-clip{max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app .sv-nowrap{white-space:nowrap}
+.app .sv-muted{color:var(--app-muted)}
+.app .sv-name{font-weight:650;color:var(--app-text);text-decoration:none}
+.app .sv-name:hover{text-decoration:underline}
+.app .sv-acts{white-space:nowrap;text-align:right}
+.app .sv-acts .btn{display:inline-flex;align-items:center;gap:5px;margin-left:4px;vertical-align:middle}
+.app .sv-icon{display:inline-grid;place-items:center;width:30px;height:30px;margin-left:4px;border-radius:8px;border:1px solid var(--app-line);background:var(--app-bg);color:var(--app-text);cursor:pointer;vertical-align:middle}
+.app .sv-icon:hover:not(:disabled){border-color:var(--app-ok)}
+.app .sv-icon:disabled{opacity:.45;cursor:default}
+.app .sv-text{border:0;background:none;padding:0 0 0 8px;font:inherit;font-size:12.5px;font-weight:650;color:var(--app-muted);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.app .sv-text:hover{color:var(--app-text)}
+.app .sv-chip{display:inline-flex;padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:700;white-space:nowrap;background:var(--app-surface);border:1px solid var(--app-line);color:var(--app-muted)}
+.app .sv-chip.h-ok,.app .sv-chip.r-resolved{background:var(--app-ok-tint);border-color:transparent;color:var(--app-ok)}
+.app .sv-chip.h-watch,.app .sv-chip.h-nodata,.app .sv-chip.r-new,.app .sv-chip.r-planned,.app .sv-chip.r-in_progress{background:var(--app-warn-tint);border-color:transparent;color:var(--app-warn-ink)}
+.app .sv-chip.h-warn,.app .sv-chip.h-critical{background:var(--app-bad-tint);border-color:transparent;color:var(--app-bad)}
+.app .st-overdue{color:var(--app-bad) !important;font-weight:650}
+.app .st-soon{color:var(--app-warn-ink) !important;font-weight:650}
+.app .sv-portals{padding:12px 16px}
+.app .sv-portals summary{cursor:pointer;font-weight:700;font-size:15px}
+.app .sv-portals[open] summary{margin-bottom:10px}
+.app .sv-modal{position:relative;max-width:480px;display:grid;gap:12px}
+.app .sv-modal.wide{max-width:640px}
+.app .sv-modal h3{margin:0;font-size:18px;padding-right:28px}
+.app .sv-x{position:absolute;top:12px;right:12px;background:none;border:0;color:var(--app-muted);cursor:pointer;padding:4px}
+.app .sv-form{display:grid;gap:10px}
+.app .sv-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.app .sv-three{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px}
+.app .sv-check{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.app .sv-req{display:grid;gap:10px}
+.app .sv-req-meta{margin:0;font-size:13px;color:var(--app-muted)}
+.app .sv-req-meta a{color:var(--app-text);font-weight:650}
+.app .sv-req-desc{margin:0;font-size:14px;line-height:1.55;white-space:pre-wrap}
+.app .sv-photos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.app .sv-photos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--app-line)}
+.app .sv-hist summary{cursor:pointer;font-size:13px;font-weight:650}
+.app .sv-hist ul{margin:6px 0 0;padding-left:18px;font-size:12.5px;color:var(--app-muted);display:grid;gap:3px}
+.app .sv-move{border-top:1px solid var(--app-line);padding-top:10px}
+.app .sv-move .modal-acts .btn{display:inline-flex;align-items:center;gap:6px}
+.app .sv-wsoon{list-style:none;margin:0 6px 8px;padding:0;display:grid}
+.app .sv-wsoon li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--app-line);font-size:13.5px}
+.app .sv-wsoon li:last-child{border-bottom:0}
+.app .sv-wsoon .sv-text{padding:0;text-align:left;color:var(--app-text)}
+.app .sv-pick{max-width:360px;margin:10px 6px}
+.app .sv-serials{font-family:ui-monospace,Consolas,monospace;font-size:11.5px}
+@media (max-width:900px){.app .sv-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.app .sv-two,.app .sv-three{grid-template-columns:1fr}.app .sv-photos{grid-template-columns:repeat(2,minmax(0,1fr))}}

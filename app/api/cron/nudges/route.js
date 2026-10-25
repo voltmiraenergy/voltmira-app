@@ -9,6 +9,7 @@ import { dueNudges, sendNudge } from "../../../../lib/nudgeRun.js";
 import { sendOpenDigests } from "../../../../lib/openDigest.js";
 import { sendFeeReminders } from "../../../../lib/feeReminders.js";
 import { sendPayReminders } from "../../../../lib/payReminders.js";
+import { sendServiceReminders } from "../../../../lib/serviceServer.js";
 import { monthlyStatements, sellerDetails, feeVatRate } from "../../../../lib/jobFeePay.js";
 import { feePaywallOn } from "../../../../lib/jobFees.js";
 import { sendEmail, emailConfigured, ownerAlertEmail } from "../../../../lib/email.js";
@@ -39,6 +40,8 @@ export async function GET(req) {
   const fees = await sendFeeReminders(db, { io: { sendEmail, emailConfigured, ownerAlertEmail, logActivity }, budgetMs: 10_000 });
   // the client's payments in stages: the reminders for invoices not paid yet (lib/payReminders.js)
   const pay = await sendPayReminders(db, { io: { sendEmail, emailConfigured, ownerAlertEmail, logActivity }, budgetMs: 10_000 });
+  // Service: the client's note before a yearly check, and the installer's Monday digest (lib/serviceServer.js)
+  const service = await sendServiceReminders(db, { io: { sendEmail, emailConfigured, ownerAlertEmail }, budgetMs: 8_000 });
   const due = await dueNudges(db);
   const tally = { due: due.length, sent: 0, skipped: 0, failed: 0 };
   for (const n of due) {
@@ -48,5 +51,5 @@ export async function GET(req) {
     else if (r.skipped) tally.skipped++;
     else tally.failed++;
   }
-  return NextResponse.json({ ok: true, ...tally, digests, fees, statements, pay });
+  return NextResponse.json({ ok: true, ...tally, digests, fees, statements, pay, service });
 }

@@ -52,6 +52,8 @@ export default async function AppLayout({ children }) {
     { href: "/projects", label: t("nav_projects", lang) },
     // the signed jobs: the board by install step and the crews' week (Phase 3)
     { href: "/jobs", label: t("nav_jobs", lang) },
+    // after the handover: systems, requests, yearly checks, warranties (Phase 5)
+    { href: "/service", label: t("nav_service", lang) },
     // the grid connections overview: Moldova's operators only (Phase 2)
     ...((co?.default_market || "MD") === "MD" ? [{ href: "/grid", label: t("nav_grid", lang) }] : []),
     { href: "/portfolios", label: pt("nav", lang) },

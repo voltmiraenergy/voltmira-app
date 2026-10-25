@@ -14,6 +14,8 @@ import { bomLineText } from "../../../../../lib/quoteAnalysis.js";
 import { escapeHtml } from "../../../../../lib/safe.js";
 import { renderHtmlPdf } from "../../../../../lib/renderProposalPdf.js";
 import { isRateLimited, clientIp } from "../../../../../lib/ratelimit.js";
+import { ensureServiceToken } from "../../../../../lib/serviceServer.js";
+import QRCode from "qrcode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,6 +54,17 @@ export async function GET(req, props) {
   }
 
   const e = escapeHtml;
+  // the client's "report a problem" link, as a QR code to scan from the paper (Phase 5); left out before add-service.sql
+  let service = null;
+  {
+    const admin = supabaseAdmin();
+    const { data: tk, error: tkErr } = await admin.from("projects").select("id, service_token").eq("id", id).maybeSingle();
+    const token = !tkErr && tk ? await ensureServiceToken(admin, tk) : null;
+    if (token) {
+      const url = `${String(process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin).replace(/\/+$/, "")}/s/${token}`;
+      service = { url, svg: await QRCode.toString(url, { type: "svg", margin: 0, width: 96, color: { dark: "#142A21", light: "#FFFFFF" } }) };
+    }
+  }
   const day = (iso) => new Date(iso).toLocaleDateString(loc, { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Chisinau" });
   const today = day(new Date().toISOString());
   const company = co.legal_name || co.name || "";
@@ -81,6 +94,8 @@ export async function GET(req, props) {
   .sign div{border-top:1px solid #142A21;padding-top:6px}
   .sign img{height:60px;display:block;margin-bottom:4px}
   .note{color:#5D6B62}
+  .svc{display:flex;gap:14px;align-items:center;margin:14px 0;padding:10px 12px;border:1px solid #E3E1D6;border-radius:6px}
+  .svc .qr svg{width:96px;height:96px;display:block}
   </style></head><body>
   <h1>${e(J("ho_title"))}</h1>
   <p class="meta">${e(company)}, ${e(today)}</p>
@@ -92,6 +107,7 @@ export async function GET(req, props) {
   ${checks ? `<h2>${e(J("ho_checks"))}</h2><ul>${checks}</ul>` : ""}
   ${imgs.length ? `<h2>${e(J("ho_photos"))}</h2><div class="photos">${imgs.map((p) => `<figure><img src="${p.src}" alt=""><figcaption>${e(J("p_" + p.slot))}</figcaption></figure>`).join("")}</div>` : ""}
   ${co.install_warranty_years ? `<p class="note">${e(J("ho_warranty", { n: co.install_warranty_years }))}</p>` : ""}
+  ${service ? `<div class="svc"><div class="qr">${service.svg}</div><div><b>${e(J("ho_service_h"))}</b><br>${e(J("ho_service_p", { company }))}<br><span class="note">${e(service.url)}</span></div></div>` : ""}
   <div class="sign">
     <div><b>${e(J("ho_installer"))}</b><br>${e(company)}<br><span class="note">${e(J("ho_date"))}: ${e(today)}</span></div>
     <div><b>${e(J("ho_signed"))}</b><br>${rec.signature ? `<img src="${rec.signature.png}" alt="">${e(client)}<br><span class="note">${e(J("ho_date"))}: ${e(day(rec.signature.at))}</span>` : `<span class="note">${e(J("ho_unsigned"))}</span>`}</div>

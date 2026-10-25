@@ -7,7 +7,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Inbox, FileText, BriefcaseBusiness, Leaf, FolderOpen, Activity, PencilRuler, Package, Users, Settings, BookOpen, Ellipsis, PlugZap, HardHat } from "lucide-react";
+import { LayoutDashboard, Inbox, FileText, BriefcaseBusiness, Leaf, FolderOpen, Activity, PencilRuler, Package, Users, Settings, BookOpen, Ellipsis, PlugZap, HardHat, Wrench } from "lucide-react";
 
 // Tabs shown directly in the mobile bottom bar; the rest go in the More sheet.
 const PRIMARY = ["/dashboard", "/leads", "/projects", "/activity"];
@@ -21,6 +21,7 @@ const ICONS = {
   "/leads": <Inbox {...ICON} />,
   "/projects": <FileText {...ICON} />,
   "/jobs": <HardHat {...ICON} />,
+  "/service": <Wrench {...ICON} />,
   "/grid": <PlugZap {...ICON} />,
   "/portfolios": <BriefcaseBusiness {...ICON} />,
   "/energy": <Leaf {...ICON} />,

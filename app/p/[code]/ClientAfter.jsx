@@ -10,6 +10,7 @@ import { fmtDate } from "../../../lib/tz.js";
 import { toIntlPhone } from "../../../lib/phone.js";
 import RecommendShare from "./RecommendShare.jsx";
 import ProdBars from "./ProdBars.jsx";
+import { svt } from "../../../lib/serviceText.js";
 
 const LOC = { en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" };
 
@@ -105,6 +106,15 @@ export default function ClientAfter({ after, lang, code, referral = null, compan
       )}
 
       {ask}
+
+      {/* something wrong with the system: the client tells the installer from their own page (Phase 5) */}
+      {live && after?.serviceUrl && (
+        <div className="pp-card pp-rec">
+          <h3>{svt("cp_card_h", lang)}</h3>
+          <p>{svt("cp_card_p", lang, { company: co })}</p>
+          <a className="pp-btn" href={after.serviceUrl}>{svt("cp_title", lang)}</a>
+        </div>
+      )}
 
       <div className="pp-card pp-rec">
         <h3>{ppt("rec_h", lang)}</h3>
