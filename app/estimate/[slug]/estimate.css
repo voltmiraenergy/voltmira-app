@@ -3,8 +3,9 @@
    Scoped under .ep. Light only, on purpose, like the offer: the installer's logo is drawn for a light ground and the
    page often sits in an <iframe> on the installer's own (light) site.
 
-   One difference from the offer: the key action takes the installer's own colour (--brand, from Settings), with
-   --on-brand for its text, because this page carries their brand, not VoltMira's. */
+   The key action is amber with ink text, as on the rest of VoltMira (the landing's "Start free", the app's main
+   buttons); the installer's own colour (--brand, from Settings) marks their logo tile, the cover's glow, the input in
+   focus and the options chosen, because this page carries their brand. */
 
 :root:has(.ep) { color-scheme: light; background: #F6F5F0; }
 :root:has(.ep) body { background: #F6F5F0; }
@@ -64,7 +65,7 @@
 .ep-hero {
   position: relative; overflow: hidden; border-radius: 20px; padding: 18px 18px 20px; color: var(--on-ink);
   background:
-    radial-gradient(120% 70% at 100% 0%, rgba(232, 155, 45, 0.12), transparent 58%),
+    radial-gradient(120% 70% at 100% 0%, rgba(232, 155, 45, 0.22), transparent 58%),
     radial-gradient(90% 80% at 0% 100%, color-mix(in srgb, var(--brand) 55%, transparent), transparent 62%),
     var(--ink);
 }
@@ -144,15 +145,15 @@ textarea.ep-input { min-height: 72px; resize: vertical; }
 .ep-btn:active:not(:disabled) { transform: translateY(1px); }
 .ep-btn:disabled { cursor: default; opacity: 0.6; }
 .ep-btn .ep-ic { width: 18px; height: 18px; }
-.ep-btn-key { background: var(--brand); color: var(--on-brand); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 10px 22px -12px color-mix(in srgb, var(--brand) 85%, black); }
-.ep-btn-key:hover:not(:disabled) { filter: brightness(1.07); }
+.ep-btn-key { background: var(--amber); color: var(--ink); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 12px 26px -14px rgba(232, 155, 45, 0.85); }
+.ep-btn-key:hover:not(:disabled) { background: var(--amber-hi); }
 .ep-btn-text { min-height: 40px; padding: 0 4px; background: none; color: var(--muted); font-size: 14px; }
 .ep-btn-text:hover { color: var(--ink); }
 .ep-btn-block { display: flex; width: 100%; }
 
 /* the result: one figure, then the rows */
 .ep-for { display: flex; align-items: flex-start; gap: 6px; font-size: 12.5px; line-height: 1.45; color: var(--muted); margin-bottom: 12px; }
-.ep-for .ep-ic { width: 15px; height: 15px; margin-top: 1px; }
+.ep-for .ep-ic { width: 15px; height: 15px; margin-top: 1px; color: var(--amber); }
 .ep-big-k { display: block; font-size: 13px; font-weight: 500; color: var(--muted); }
 .ep-big {
   display: block; margin: 4px 0 4px; font-family: var(--f-d); font-weight: 700; font-size: clamp(34px, 8.6vw, 44px);
@@ -229,7 +230,7 @@ textarea.ep-input { min-height: 72px; resize: vertical; }
 .ep-step { padding: 16px 18px 18px; counter-increment: ep-step; }
 .ep-step::before {
   content: counter(ep-step); display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 999px;
-  background: var(--green-tint); color: var(--green); font: 700 14px/1 var(--f-d); margin-bottom: 12px;
+  background: var(--amber-tint); color: var(--amber-ink); font: 700 14px/1 var(--f-d); margin-bottom: 12px;
 }
 .ep-step p { margin-top: 4px; font-size: 14px; line-height: 1.5; color: var(--text-2); }
 
@@ -240,5 +241,17 @@ textarea.ep-input { min-height: 72px; resize: vertical; }
 .ep-foot { margin-top: 40px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; font-size: 12.5px; color: var(--muted); }
 .ep-foot a { color: var(--muted); }
 .is-embed .ep-foot { margin-top: 16px; }
-.ep-pick figcaption b, .ep-pick figcaption span { display: block; }
-.ep-pick figcaption b { display: flex; }
+
+/* the address picker (components/AddressField.jsx): its suggestion list on this page's own colours, solid and above
+   the fields below it; and the place the client picked, seen from above, with the address under it */
+.ep { --paper-2: var(--card); }
+.ep-panel .ep-field:has(.af-wrap) { position: relative; z-index: 3; }
+.ep-panel .af-inputrow input.ep-input { padding-right: 112px; }
+.ep-panel .af-drop { background: var(--card); border-color: var(--line-2); box-shadow: 0 12px 28px rgba(20, 42, 33, 0.18); }
+.ep-panel .af-drop li:hover { background: var(--green-tint); }
+.ep-pick { margin: 0 0 14px; display: grid; gap: 8px; }
+.ep-pick .roof-sat { max-width: 100% !important; height: auto; }
+.ep-pick figcaption { display: grid; gap: 2px; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.ep-pick figcaption b { display: flex; align-items: flex-start; gap: 6px; font-size: 14px; color: var(--text); font-weight: 650; }
+.ep-pick figcaption span { display: block; }
+.ep-pick figcaption .ep-ic { flex: none; margin-top: 2px; color: var(--amber); }
