@@ -29,6 +29,7 @@ import { clearOfflineData } from "../../../lib/offline.js";
 import { aiOn } from "../../../lib/featureFlags.js";
 import EstimateSettings from "./EstimateSettings.jsx";
 import { ft as feeT } from "../../../lib/feeText.js";
+import { termsFor } from "../../../lib/offerTerms.js";
 
 // the assistants and the website widget are hidden until AI is switched on (lib/featureFlags.js)
 const TABS = [
@@ -479,6 +480,24 @@ export default function Settings() {
           <div className="set-grid st-narrow">
             {numField("iInstWarr", t("s_install_warranty_years", lang), co.install_warranty_years ?? "", 1, t("unit_years", lang), setCoNum("install_warranty_years"))}
           </div>
+        </Card>
+        {/* what the price includes and leaves out, printed in every offer (lib/offerTerms.js); the standard lists until
+            the installer saves their own. Kept with the calculation settings, so each offer keeps the lists it was sent with. */}
+        <Card title={t("s_scope", lang)} desc={t("s_scope_sub", lang)}>
+          <div className="set-grid">
+            {[["include", "s_scope_inc"], ["exclude", "s_scope_exc"]].map(([k, label]) => (
+              <div className="field" key={k}>
+                <label htmlFor={"scope-" + k}>{t(label, lang)}</label>
+                <textarea id={"scope-" + k} className="input" rows={7}
+                  value={(eng.offerTerms?.[k] ?? termsFor(null, lang)[k]).join("\n")}
+                  onChange={(e) => {
+                    const cur = { include: eng.offerTerms?.include ?? termsFor(null, lang).include, exclude: eng.offerTerms?.exclude ?? termsFor(null, lang).exclude };
+                    setCo({ ...co, engine: { ...eng, offerTerms: { ...cur, [k]: e.target.value.split("\n") } } }); touch();
+                  }} />
+              </div>
+            ))}
+          </div>
+          <p className="set-note">{t("s_scope_note", lang)}</p>
         </Card>
         {/* The installer's own wording on the two documents a client signs.
             Team+ (lib/features.js). The Premier Energy form is a real

@@ -45,6 +45,8 @@ import { raionName } from "../../../lib/mdRaions.js";
 import { fmtDate } from "../../../lib/tz.js";
 import { kindLabel, bomLineText, surplusRevenue } from "../../../lib/quoteAnalysis.js";
 import { findWarrantyInfo } from "../../../lib/supplierCatalog.js";
+import { productOf } from "../../../lib/offerTerms.js";
+import { inlinePhotos } from "../../../lib/photoInline.js";
 import { backupHours } from "../../../lib/batteryBackup.js";
 import { designCheck, designCheckRows } from "../../../lib/designCheck.js";
 import { compassLabel } from "../../../lib/roofLayout.js";
@@ -114,7 +116,7 @@ export default async function ProposalPage(props) {
   const { after = null, company, inputs, quote: q, accepted, sentAt, preparedBy = null, options = [], bom = [], signedName = null, signedAt = null, fx = null,
     offer = null, chosenOption = null, cned = null, support = null, tariff = null, referral = null, financing = null, signature = null, qsign = null,
     roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofSite = null, roofPhoto = null, roofPhotoPlace = null, roofSides = null, roofStatus = null,
-    nearby = null, tracking = false, demo = false } = data;
+    nearby = null, tracking = false, demo = false, legal = null, paySchedule = null, terms = null, expired: offerExpired = false } = data;
   // The client reads this in the installer's language, not always English.
   const lang = normLang(company.lang);
   const signedDate = signedAt
@@ -134,7 +136,8 @@ export default async function ProposalPage(props) {
         <PrintSheet company={company} inputs={inputs} quote={q} lang={lang} sentAt={sentAt} preparedBy={preparedBy} bom={bom}
           roofAreaM2={roofAreaM2} roofOrientation={roofOrientation} roofPlanes={roofPlanes} roofSat={roofSat} roofSite={roofSite} roofPhoto={roofPhoto} roofPhotoPlace={roofPhotoPlace} roofSides={roofSides} roofStatus={roofStatus}
           acceptUrl={`${(process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com").replace(/\/+$/, "")}/p/${params.code}`} fx={fx} support={support} tariff={tariff}
-          signed={accepted && signedName ? { name: signedName, date: signedDate, ...signature } : null} />
+          signed={accepted && signedName ? { name: signedName, date: signedDate, ...signature } : null}
+          legal={legal} paySchedule={paySchedule} terms={terms} expired={offerExpired} photos={await inlinePhotos(bom.map((l) => productOf(l)?.photoUrl))} />
         {/* The PDF route drives printing through CDP and passes auto=0:
             window.print() inside headless Chromium blocks rather than returns. */}
         {searchParams?.auto !== "0" && <AutoPrint />}

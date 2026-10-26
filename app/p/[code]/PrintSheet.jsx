@@ -21,6 +21,8 @@ import { SOLAR_SEASON, FX, effectiveConsumption, amortizedMonthlyPayment } from 
 import { designCheck, designCheckRows } from "../../../lib/designCheck.js";
 import { kindLabel, bomLineText, surplusRevenue } from "../../../lib/quoteAnalysis.js";
 import { findWarrantyInfo } from "../../../lib/supplierCatalog.js";
+import { termsFor, warrantyRows, inverterFacts, paymentStages, productOf } from "../../../lib/offerTerms.js";
+import { pt } from "../../../lib/payText.js";
 import { backupHours } from "../../../lib/batteryBackup.js";
 import { compassLabel } from "../../../lib/roofLayout.js";
 import { CashflowSVG, MonthlySVG, CHART } from "./charts.jsx";
@@ -131,6 +133,33 @@ const CSS = `
     color:#fff;font-family:${D};font-size:10.5px;font-weight:700}
   .p-lead{margin:0 0 7px;font-size:12px;color:#3B5046;max-width:92ch}
   .p-note{margin:6px 0 0;font-size:11px;color:#66756C;line-height:1.45}
+  /* the equipment's photo and figure */
+  .p-gl{display:flex;align-items:center;gap:8px}
+  .p-gimg{width:30px;height:30px;object-fit:contain;border-radius:6px;background:#F4F3EE;flex:none}
+  .p-gl small{display:block;font-size:9.5px;color:#66756C;margin-top:1px}
+  /* warranties and scope */
+  .p-war{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:9px}
+  .p-war th{text-align:left;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#66756C;border-bottom:1.5px solid #E3E1D6;padding:4px 6px}
+  .p-war td{padding:5px 6px;border-bottom:1px solid #EEECE4;color:#142A21;vertical-align:top}
+  .p-war td.k{font-weight:600;white-space:nowrap}
+  .p-war td.by{color:#66756C}
+  .p-scope{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  .p-scope > div{border:1px solid #E3E1D6;border-radius:10px;padding:8px 11px}
+  .p-scope > div.out{background:#FBFAF6}
+  .p-scope h3{margin:0 0 4px;font-size:11px;font-weight:700;color:#1E6B4E}
+  .p-scope .out h3{color:#A8432A}
+  .p-scope ul{margin:0;padding-left:15px;font-size:10.5px;color:#3B5046;line-height:1.45}
+  /* payment and acceptance */
+  .p-stages{list-style:none;margin:0 0 9px;padding:0;display:flex;gap:8px}
+  .p-stages li{flex:1;border:1px solid #E3E1D6;border-radius:10px;padding:7px 10px;display:flex;flex-direction:column;gap:1px}
+  .p-stages b{font-family:${D};font-size:16px;font-weight:800;color:#1E6B4E}
+  .p-stages span{font-size:10.5px;color:#3B5046}
+  .p-stages em{font-style:normal;font-size:10.5px;font-weight:600;color:#142A21}
+  .p-accept p{margin:0 0 4px;font-size:11px;color:#3B5046;overflow-wrap:anywhere}
+  .p-acc-or{color:#66756C !important}
+  .p-sign{display:grid;grid-template-columns:1.4fr .8fr 1.4fr;gap:14px;margin-top:20px}
+  .p-sign div{font-size:9.5px;color:#66756C}
+  .p-sign span{display:block;border-bottom:1px solid #142A21;height:22px;margin-bottom:3px}
   /* the year's energy in four figures */
   .p-etiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:9px}
   .p-etiles > div{border:1px solid #E3E1D6;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:1px}
@@ -144,7 +173,7 @@ const CSS = `
   .p-buy.has-roof{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
   /* a photo or the view from above sits beside the equipment, not under it: full width it took half of page 1 and
      pushed the energy chart onto a page of its own */
-  .p-buy.has-pic{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .p-buy.has-pic{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
   .p-gear-t{width:100%;border-collapse:collapse;font-size:11.5px}
   .p-gear-t th{text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#66756C;
     padding:0 8px 6px 0;border-bottom:1.5px solid #142A21}
@@ -231,7 +260,8 @@ const CSS = `
   /* pagination: the sections follow one another (a forced page before the money left page 2 with only the
      monthly chart when the roof photo filled page 1); a unit is never split across two pages */
   .p-money{break-inside:avoid;page-break-inside:avoid}
-  .p-offer,.p-scen,.p-chart,.p-duo,.p-fit,.p-steps,.p-cta,.p-gear-t,.p-backup,.p-annex,.p-ua,.p-etiles,.p-energy{break-inside:avoid;page-break-inside:avoid}
+  .p-offer,.p-scen,.p-chart,.p-duo,.p-fit,.p-steps,.p-cta,.p-gear-t,.p-backup,.p-annex,.p-ua,.p-etiles,.p-energy,.p-war,.p-scope,.p-pay{break-inside:avoid;page-break-inside:avoid}
+  .p-terms > h2{break-after:avoid;page-break-after:avoid}
   @page{ size:A4; margin:14mm; }
   @media print{ .print-sheet{width:auto;padding:0;margin:0} }
   @media screen{ .p-money{margin-top:28px;padding-top:18px;border-top:1px dashed #E3E1D6} }
@@ -244,10 +274,12 @@ const CSS = `
     .p-offer > div:nth-child(n+3){border-top:1px solid #E3E1D6}
     .p-scen,.p-buy.has-roof,.p-buy.has-pic,.p-duo,.p-fit,.p-assump{grid-template-columns:minmax(0,1fr)}
     .p-steps,.p-etiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .p-scope,.p-sign{grid-template-columns:minmax(0,1fr)}
+    .p-stages{flex-direction:column}
   }
 `;
 
-export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofSite = null, roofPhoto = null, roofPhotoPlace = null, roofSides = null, roofStatus = null, acceptUrl = "", fx = null, support = null, tariff = null, signed = null }) {
+export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = null, preparedBy = null, bom = [], roofAreaM2 = null, roofOrientation = null, roofPlanes = null, roofSat = null, roofSite = null, roofPhoto = null, roofPhotoPlace = null, roofSides = null, roofStatus = null, acceptUrl = "", fx = null, support = null, tariff = null, signed = null, legal = null, paySchedule = null, terms = null, photos = {}, expired = false }) {
   const loc = { en: "en-IE", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "en-IE";
   // Minus ahead of the currency symbol: "€-31" reads as a broken string.
   // Lei for a Moldovan installer at the rate frozen with the proposal, with
@@ -296,6 +328,20 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   const lines = (Array.isArray(bom) ? bom : []).filter((l) => (Number(l.qty) || 0) > 0);
   // Manufacturer warranties only where brand+model match the supplier catalog.
   const lineWarranty = lines.map((l) => findWarrantyInfo(l.brand, l.model));
+  // the maker's photo and the figure that matters of each quoted product, when the catalog knows it exactly
+  const lineInfo = lines.map((l) => {
+    const p = productOf(l);
+    if (!p) return {};
+    const spec = l.kind === "panel" && p.eff ? ppt("g_eff", lang, { e: nf(p.eff, 1) })
+      : l.kind === "inverter" ? [p.type === "hybrid" ? ppt("g_hybrid", lang) : p.type === "string" ? ppt("g_string", lang) : "", p.phases === 3 ? ppt("g_ph3", lang) : p.phases === 1 ? ppt("g_ph1", lang) : ""].filter(Boolean).join(", ")
+      : "";
+    // only a photo the server could fetch (lib/photoInline.js): a maker's site that refused printed a broken image
+    return { photo: photos?.[p.photoUrl] || null, spec };
+  });
+  const inv = inverterFacts(lines);
+  const wRows = warrantyRows(lines, { installYears: Number(company?.installWarrantyYears) || 0, company: company?.name || "", lang });
+  const scope = termsFor(terms, lang);
+  const stages = paymentStages(paySchedule);
   const anyWarranty = lineWarranty.some(Boolean);
   const installWarrantyYears = Number(company?.installWarrantyYears) || 0;
   const battKwh = inputs.batt ? (Number(inputs.battKwh) || 0) : 0;
@@ -342,6 +388,9 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   const validityDays = E.quoteValidityDays || 30;
   const validBase = sentAt ? new Date(sentAt).getTime() : Date.now();
   const validUntil = fmtDate(new Date(validBase + validityDays * 864e5), loc);
+  // the date the offer was issued (when its link was made), not the day the PDF is printed: an old offer printed
+  // today read "25.10.2026, valid until 16.08.2026"
+  const issuedOn = fmtDate(new Date(validBase), loc);
   // The default title ("New quote", or its translation) is not a title: describe the system instead of printing it.
   const placeholderTitle = isPlaceholderTitle(inputs.title);
   const headline = placeholderTitle ? t("pdf_auto_title", lang, { kw: nf(inputs.kw, 1) }) : inputs.title;
@@ -364,7 +413,8 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         </div>
         <div className="p-meta">
           <b>{tr("pdf_title")}</b>
-          <span>{fmtDate(new Date(), loc)}, {tr("pdf2_valid", { d: validUntil })}</span>
+          <span>{signed?.name ? tr("pdf2_signed_on", { d: signed.date || "" })
+            : `${tr("pdf2_issued", { d: issuedOn })}, ${expired ? tr("pdf2_expired", { d: validUntil }) : tr("pdf2_valid_l", { d: validUntil })}`}</span>
         </div>
       </header>
 
@@ -379,11 +429,13 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         <div>
           <span>{tr("pdf2_k_price")}</span>
           <b>{fmt(q.cost)}</b>
-          {hasFinance && monthlyPayment > 0 && <em>{tr("pdf2_k_monthly", { v: fmt(monthlyPayment) })}</em>}
+          {/* one monthly figure in the whole offer: the installer's when typed, else the example with its terms */}
+          {loan > 0 ? <em>{tr("pdf2_k_monthly3", { v: fmt(loan) })}</em>
+            : hasFinance && monthlyPayment > 0 && <em>{tr("pdf2_k_monthly2", { v: fmt(monthlyPayment), n: financeTerm, r: nf(financeRate, 1) })}</em>}
         </div>
         <div>
           <span>{tr("pdf2_k_save")}</span>
-          <b>{fmt(q.year1)}</b>
+          <b>{tr("pdf2_per_year", { v: fmt(q.year1) })}</b>
           <em>{tr("pdf2_k_save_s", { v: fmt(q.year1 / 12) })}</em>
         </div>
         <div>
@@ -423,7 +475,16 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
               return (
                 <tr key={i}>
                   <td className="k">{kindLabel(l.kind, lang)}</td>
-                  <td className="g">{w?.productUrl ? <a href={w.productUrl} target="_blank" rel="noopener noreferrer">{bomLineText(l, lang)}</a> : bomLineText(l, lang)}</td>
+                  <td className="g">
+                    <span className="p-gl">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {lineInfo[i].photo && <img className="p-gimg" src={lineInfo[i].photo} alt="" />}
+                      <span>
+                        {w?.productUrl ? <a href={w.productUrl} target="_blank" rel="noopener noreferrer">{bomLineText(l, lang)}</a> : bomLineText(l, lang)}
+                        {lineInfo[i].spec && <small>{lineInfo[i].spec}</small>}
+                      </span>
+                    </span>
+                  </td>
                   {anyWarranty && <td className="w">{w ? tr("pdf_warranty_v", { n: w.warrantyYears }) : ""}</td>}
                   <td className="q">× {Number(l.qty)}</td>
                 </tr>
@@ -471,6 +532,12 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
           <span className="p-chip">{tr("pdf_orient")}: <b>{orientText}</b></span>
           {installWarrantyYears > 0 && <span className="p-chip"><b>{tr("pdf_warranty_install_v", { n: installWarrantyYears, co: company?.name || "" })}</b></span>}
         </div>
+        {inv && (inv.hybrid != null || inv.app || lines.length) && (
+          <p className="p-note">
+            {battKwh === 0 && inv.hybrid === true ? ppt("g_batt_later", lang) + " " : battKwh === 0 && inv.hybrid === false ? ppt("g_batt_no", lang) + " " : ""}
+            {inv.app ? ppt("g_app", lang, { a: inv.app }) : ppt("g_app_any", lang)}
+          </p>
+        )}
         <RoofSides sides={roofSides} status={roofStatus} lang={lang} company={company.shortName || company.name || ""} nf={nf}
           day={roofStatus?.at ? fmtDate(new Date(roofStatus.at + "T12:00:00Z"), loc) : null} />
         {/* A battery is its own product (keeping the lights on), not just a
@@ -610,6 +677,21 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         );
       })()}
 
+      {/* the warranties of what is quoted (verified in the catalog) and the installer's scope (Settings) */}
+      <section className="p-terms">
+        <h2><span className="p-n">{num()}</span>{ppt("war_h", lang)}</h2>
+        {wRows.length > 0 ? (
+          <table className="p-war"><tbody>
+            <tr><th>{ppt("war_what", lang)}</th><th>{ppt("war_len", lang)}</th><th>{ppt("war_by", lang)}</th></tr>
+            {wRows.map(([what, len, by], i) => <tr key={i}><td className="k">{what}</td><td>{len}</td><td className="by">{by}</td></tr>)}
+          </tbody></table>
+        ) : <p className="p-lead">{ppt("war_none", lang)}</p>}
+        <div className="p-scope">
+          <div><h3>{ppt("inc_h", lang)}</h3><ul>{scope.include.map((s, i) => <li key={i}>{s}</li>)}</ul></div>
+          <div className="out"><h3>{ppt("exc_h", lang)}</h3><ul>{scope.exclude.map((s, i) => <li key={i}>{s}</li>)}</ul></div>
+        </div>
+      </section>
+
       <section>
         <h2><span className="p-n">{num()}</span>{tr("pdf_next_h")}</h2>
         <ol className="p-steps">
@@ -619,6 +701,30 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
           <li>{ppt("step4", lang)}</li>
         </ol>
         {fit.length === 0 && <p className="p-eco">{co2(tr("pdf2_eco", { kg: Math.round(co2Year).toLocaleString(loc), t: trees }))}</p>}
+      </section>
+
+      {/* how it is paid (the job's stages, Phase 4) and where the client accepts it */}
+      <section className="p-pay">
+        <h2><span className="p-n">{num()}</span>{ppt("pay_h", lang)}</h2>
+        <p className="p-lead">{ppt("pay_lead", lang)}</p>
+        <ol className="p-stages">
+          {stages.map((s) => (
+            <li key={s.trigger}><b>{s.pct}%</b><span>{pt("tr_" + s.trigger, lang)}</span><em>{fmt((q.cost * s.pct) / 100)}</em></li>
+          ))}
+        </ol>
+        {signed?.name ? (
+          <p className="p-lead"><b>{ppt("sig_print", lang, { name: signed.name, date: signed.date || "", level: ppt(signed.level === "qualified" ? (signed.simulated ? "lvl_simulated" : "lvl_qualified") : "lvl_simple", lang) })}</b></p>
+        ) : (
+          <div className="p-accept">
+            {acceptUrl && <p>{ppt("acc_online", lang, { u: acceptUrl })}</p>}
+            <p className="p-acc-or">{ppt("acc_paper", lang)}</p>
+            <div className="p-sign">
+              <div><span />{ppt("acc_client", lang)}</div>
+              <div><span />{ppt("acc_date", lang)}</div>
+              <div><span />{ppt("acc_for", lang, { c: legal?.name || company.name })}</div>
+            </div>
+          </div>
+        )}
       </section>
 
       <div className="p-end">
@@ -631,20 +737,21 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
           <div><dt>{tr("as_cost_basis")}</dt><dd>{fmt(E.costPerKw)}/kW{E.batteryCost ? ` + ${fmt(E.batteryCost)}` : ""}</dd></div>
           <div><dt>{tr("pdf_horizon")}</dt><dd>{tr("as_horizon_v", { n: hz })}</dd></div>
           <div><dt>{co2(tr("pdf_co2_factor"))}</dt><dd>{mkt.co2} kg/kWh</dd></div>
+          <div><dt>{ppt("as_price_now", lang)}</dt><dd>{fmt.perKwh(priceY)}</dd></div>
+          <div><dt>{ppt("as_infl", lang)}</dt><dd>{ppt("as_infl_v", lang, { n: nf(inflPct, 1) })}</dd></div>
+          <div><dt>{ppt("as_degr", lang)}</dt><dd>{ppt("as_degr_v", lang, { n: nf(Number(E.bands?.expc?.degr ?? 0.5), 1) })}</dd></div>
+          {hasFinance && loan === 0 && <div><dt>{ppt("as_loan", lang)}</dt><dd>{ppt("as_loan_v", lang, { n: financeTerm, r: nf(financeRate, 1) })}</dd></div>}
           {inputs.tariffMode === "differentiated" && (
             <div><dt>{tr("as_md_tariff")}</dt><dd>{tr("as_md_tariff_v", { d: E.mdDayRateMdl, n: E.mdNightRateMdl })}</dd></div>
           )}
         </dl>
       </div>
 
-      {/* signed: who, when and the signature's legal level (simple or qualified) */}
-      {signed?.name && (
-        <p className="p-lead"><b>{ppt("sig_print", lang, { name: signed.name, date: signed.date || "", level: ppt(signed.level === "qualified" ? (signed.simulated ? "lvl_simulated" : "lvl_qualified") : "lvl_simple", lang) })}</b></p>
-      )}
 
       {/* one line: who prepared it, and the company's note */}
       <p className="p-foot">
         {preparedBy?.name ? `${tr("pp_prepared_by")} ${preparedBy.name}${preparedBy.phone ? ", " + preparedBy.phone : ""}. ` : ""}
+        {legal?.name && legal?.idno ? <>{ppt("legal_line", lang, { name: legal.name, idno: legal.idno, addr: legal.address || "" })}{legal.iban ? `, IBAN ${legal.iban}` : ""}. </> : null}
         {company.name}, {tr("pdf_foot")}, voltmira.com
       </p>
       </div>
