@@ -11,6 +11,7 @@ import AppTheme from "./AppTheme.jsx";
 import OfflineReady from "./OfflineReady.jsx";
 import MobileBack from "../../components/MobileBack.jsx";
 import KeepSignedIn from "../../components/KeepSignedIn.jsx";
+import SignupSeen from "../../components/SignupSeen.jsx";
 import Logo from "../../lib/Logo.jsx";
 import HtmlLang from "../../lib/HtmlLang.jsx";
 import { t, normLang } from "../../lib/i18n.js";
@@ -126,6 +127,8 @@ export default async function AppLayout({ children }) {
         <MobileBack lang={lang} />
         {/* renews this device's 30-day sign-in once a day (lib/authCookie.js) */}
         <KeepSignedIn />
+        {/* the first visit puts the person's country on their sign-up (app/api/signup-seen) */}
+        {!isDemoEmail(user.email) && <SignupSeen />}
         {isDemoEmail(user.email) && (
           <div className="demo-bar">
             <span className="demo-badge">{t("demo_badge", lang)}</span>
