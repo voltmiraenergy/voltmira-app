@@ -110,7 +110,7 @@ const CSS = `
   .p-brand-n{font-family:${D};font-weight:800;font-size:17px;letter-spacing:-.01em}
   .p-meta{text-align:right;font-size:10.5px;color:#66756C;line-height:1.5}
   .p-meta b{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#1E6B4E}
-  .p-title{margin:16px 0 14px}
+  .p-title{margin:12px 0 10px}
   .p-title h1{font-family:${D};font-weight:800;font-size:26px;letter-spacing:-.02em;line-height:1.1;margin:0 0 4px}
   .p-title p{margin:0;font-size:12px;color:#66756C}
 
@@ -135,7 +135,7 @@ const CSS = `
   .p-note{margin:6px 0 0;font-size:11px;color:#66756C;line-height:1.45}
   /* the equipment's photo and figure */
   .p-gl{display:flex;align-items:center;gap:8px}
-  .p-gimg{width:30px;height:30px;object-fit:contain;border-radius:6px;background:#F4F3EE;flex:none}
+  .p-gimg{width:26px;height:26px;object-fit:contain;border-radius:6px;background:#F4F3EE;flex:none}
   .p-gl small{display:block;font-size:9.5px;color:#66756C;margin-top:1px}
   /* warranties and scope */
   .p-war{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:9px}
@@ -263,7 +263,21 @@ const CSS = `
   .p-offer,.p-scen,.p-chart,.p-duo,.p-fit,.p-steps,.p-cta,.p-gear-t,.p-backup,.p-annex,.p-ua,.p-etiles,.p-energy,.p-war,.p-scope,.p-pay{break-inside:avoid;page-break-inside:avoid}
   .p-terms > h2{break-after:avoid;page-break-after:avoid}
   @page{ size:A4; margin:14mm; }
-  @media print{ .print-sheet{width:auto;padding:0;margin:0} }
+  @media print{
+    .print-sheet{width:auto;padding:0;margin:0}
+    /* each page exactly one A4 (269 mm inside the margins), its sections spread over it */
+    .p-page{min-height:268mm;display:flex;flex-direction:column;justify-content:space-between;break-after:page;page-break-after:always}
+    .p-page.p-last{break-after:auto;page-break-after:auto}
+    .p-page > section:first-child{margin-top:0}
+  }
+  /* the year table */
+  .p-yt{width:100%;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+  .p-yt th{text-align:right;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#66756C;border-bottom:1.5px solid #E3E1D6;padding:4px 8px}
+  .p-yt th:first-child,.p-yt td:first-child{text-align:left}
+  .p-yt td{text-align:right;padding:4px 8px;border-bottom:1px solid #EEECE4;color:#142A21}
+  .p-yt tr.pos td:last-child b{color:#1E6B4E}
+  .p-yt td:last-child b{color:#A8432A}
+  .p-years{break-inside:avoid;page-break-inside:avoid}
   @media screen{ .p-money{margin-top:28px;padding-top:18px;border-top:1px dashed #E3E1D6} }
   /* opened on a phone (the PDF renders as print, so this never reaches the paper): a side margin,
      the four offer figures two by two, and the side-by-side blocks stacked */
@@ -382,6 +396,12 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   const fromSolar = Math.min(selfKwh, consEff);
   const coverPct = consEff > 0 ? Math.round((fromSolar / consEff) * 100) : 0;
   const kwh = (v) => `${Math.round(v).toLocaleString(loc)} ${kwhUnit(lang)}`;
+  // the years the table shows: what the system makes (it ages), what it saves that year, the money position
+  const degrPct = Number(E.bands?.expc?.degr ?? 0.5);
+  const yearRows = [1, 2, 3, 5, 10, 15, 20, 25].filter((y) => y <= hz && rowsE.length >= y).map((y) => ({
+    y, kwh: q.prod0 * Math.pow(1 - degrPct / 100, y - 1),
+    save: rowsE[y - 1] - (y > 1 ? rowsE[y - 2] : -q.cost), pos: rowsE[y - 1],
+  }));
 
   // Valid for the company's validity window from when the quote was sent,
   // in the app's timezone.
@@ -404,6 +424,8 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
   return (
     <div className="print-sheet">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      {/* page 1: the offer, what is bought, the energy */}
+      <div className="p-page">
 
       <header className="p-mast">
         <div className="p-brand">
@@ -530,7 +552,6 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         <div className="p-chips">
           <span className="p-chip">{tr(roofAreaM2 ? "pdf_roof_real" : "pdf_roof")}: <b>~{roofArea} m²</b></span>
           <span className="p-chip">{tr("pdf_orient")}: <b>{orientText}</b></span>
-          {installWarrantyYears > 0 && <span className="p-chip"><b>{tr("pdf_warranty_install_v", { n: installWarrantyYears, co: company?.name || "" })}</b></span>}
         </div>
         {inv && (inv.hybrid != null || inv.app || lines.length) && (
           <p className="p-note">
@@ -553,8 +574,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
 
       <section className="p-energy">
         <h2><span className="p-n">{num()}</span>{ppt("energy_h", lang)}</h2>
-        <MonthlySVG prod={prodMonthly} cons={consMonthly} lang={lang} loc={loc} compact />
-        {consEff > 0 && <p className="p-note">{ppt("e_line", lang, { s: selfPct, c: coverPct })}</p>}
+        <MonthlySVG prod={prodMonthly} cons={consMonthly} lang={lang} loc={loc} compact axisUnit={kwhUnit(lang)} />
         {/* the year in four figures: what it makes, where it goes, what is still bought */}
         <div className="p-etiles">
           <div className="t-prod">
@@ -580,7 +600,10 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         </div>
       </section>
 
-      {/* Page 2: the money, as one argument. */}
+      </div>
+
+      {/* page 2: the money, year by year, and the design checks */}
+      <div className="p-page">
       <section className="p-money">
         <h2><span className="p-n">{num()}</span>{ppt("money_h", lang, { y: yearsN(hz, lang) })}</h2>
         <div className="p-scen">
@@ -593,7 +616,8 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
             </div>
           ))}
         </div>
-        <CashflowSVG bands={bands} cost={q.cost} horizon={hz} lang={lang} money={fmt} compact />
+        <CashflowSVG bands={bands} cost={q.cost} horizon={hz} lang={lang} money={fmt}
+          tickFmt={(v) => nf(Math.round(fmt.toLocal(v) / 1000) * 1000, 0)} axisUnit={fmt.local ? fmt.unit : "€"} />
         <div className="p-legend">
           <span><i />{tr("expected")}</span>
           <span><i style={{ borderColor: CHART.pess, borderTopStyle: "dashed" }} />{tr("pessimistic")}</span>
@@ -632,6 +656,22 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
           })}</p>
         )}
       </section>
+
+      {/* year by year in the expected scenario: what it produces, what it saves that year, and where the money stands */}
+      {!(support?.results?.length > 0) && (
+        <section className="p-years">
+          <h2><span className="p-n">{num()}</span>{ppt("yr_h", lang)}</h2>
+          <table className="p-yt"><tbody>
+            <tr><th>{ppt("yr_year", lang)}</th><th>{ppt("yr_prod", lang)}</th><th>{ppt("yr_save", lang)}</th><th>{ppt("yr_pos", lang)}</th></tr>
+            {yearRows.map((r) => (
+              <tr key={r.y} className={r.pos >= 0 ? "pos" : ""}>
+                <td>{r.y}</td><td>{kwh(r.kwh)}</td><td>{fmt(r.save)}</td><td><b>{fmt(r.pos)}</b></td>
+              </tr>
+            ))}
+          </tbody></table>
+          <p className="p-note">{ppt("yr_note", lang, { i: nf(inflPct, 1), d: nf(degrPct, 1) })}</p>
+        </section>
+      )}
 
       {fit.length > 0 && (
         <section>
@@ -677,6 +717,10 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         );
       })()}
 
+      </div>
+
+      {/* page 3: the warranties and the scope, the next steps, payment and acceptance, the assumptions */}
+      <div className="p-page p-last">
       {/* the warranties of what is quoted (verified in the catalog) and the installer's scope (Settings) */}
       <section className="p-terms">
         <h2><span className="p-n">{num()}</span>{ppt("war_h", lang)}</h2>
@@ -754,6 +798,7 @@ export default function PrintSheet({ company, inputs, quote: q, lang, sentAt = n
         {legal?.name && legal?.idno ? <>{ppt("legal_line", lang, { name: legal.name, idno: legal.idno, addr: legal.address || "" })}{legal.iban ? `, IBAN ${legal.iban}` : ""}. </> : null}
         {company.name}, {tr("pdf_foot")}, voltmira.com
       </p>
+      </div>
       </div>
     </div>
   );

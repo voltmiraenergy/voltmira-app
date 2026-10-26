@@ -58,7 +58,7 @@ function columnPath(x, y, w, base, r) {
 // 1:1, so the labels read at about 10 px instead of shrinking to 4 px, which is
 // what the 720-unit desktop drawing does on a 320 px wide screen. The page
 // renders both and CSS shows one; print and PDF always use the wide one.
-export function CashflowSVG({ bands, cost, horizon, lang, money, narrow = false, compact = false, title = "", labelScale = 1 }) {
+export function CashflowSVG({ bands, cost, horizon, lang, money, narrow = false, compact = false, title = "", labelScale = 1, tickFmt = null, axisUnit = "" }) {
   // compact: the shorter drawing the two-page PDF uses.
   const [W, H, PADL0, PADR, PADT, PADB] = narrow ? [360, 230, 64, 12, 18, 30] : compact ? [720, 188, 62, 18, 14, 30] : [720, 250, 62, 18, 16, 34];
   // labelScale: the live page shows the wide drawing at about 1:1 on a desktop,
@@ -69,7 +69,9 @@ export function CashflowSVG({ bands, cost, horizon, lang, money, narrow = false,
   const step = niceStep((Math.max(...all) - Math.min(...all)) / 4);
   const lo = Math.floor(Math.min(...all) / step) * step;
   const hi = Math.ceil(Math.max(...all) / step) * step;
-  const money1 = money.compact || money;
+  // tickFmt + axisUnit (the PDF): plain numbers on the axis and the currency named once above it, as "808 mii lei"
+  // read as "808 mil" at a glance
+  const money1 = tickFmt || money.compact || money;
   const ticks = [];
   for (let v = lo; v <= hi + 1e-9; v += step) ticks.push(v);
   // Room for the longest money label ("−1,2 млн грн" is far wider than "€-4k").
@@ -92,6 +94,7 @@ export function CashflowSVG({ bands, cost, horizon, lang, money, narrow = false,
 
   return (
     <svg className="p-chart" viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label={title || undefined}>
+      {axisUnit && <text x={PADL - 7} y={Math.max(FS, PADT - 5)} textAnchor="end" fontSize={FS} fontWeight="700" fill={CHART.ink}>{axisUnit}</text>}
       {ticks.map((v) => (
         <g key={v}>
           <line x1={PADL} y1={Y(v)} x2={W - PADR} y2={Y(v)} stroke={CHART.grid} strokeWidth="1" />
@@ -130,7 +133,7 @@ export function CashflowSVG({ bands, cost, horizon, lang, money, narrow = false,
 // Month by month: what the roof makes against what the household uses,
 // answers "will it cover my winter?" in one glance. `legend={false}` drops the
 // key drawn inside the picture, for a page that sets its own above the chart.
-export function MonthlySVG({ prod, cons, lang, loc, narrow = false, compact = false, legend = true, title = "", labelScale = 1 }) {
+export function MonthlySVG({ prod, cons, lang, loc, narrow = false, compact = false, legend = true, title = "", labelScale = 1, axisUnit = "" }) {
   const KEY = 14;
   const [W, H0, PADL, PADR, PADT, PADB0] = narrow ? [360, 210, 38, 6, 12, 40] : compact ? [720, 176, 52, 14, 12, 34] : [720, 210, 52, 14, 14, 34];
   const FS = (narrow ? 10 : 8) * labelScale, FS_KEY = narrow ? 10.5 : 8.5, KEY_GAP = narrow ? 120 : 132;
@@ -153,6 +156,7 @@ export function MonthlySVG({ prod, cons, lang, loc, narrow = false, compact = fa
   const n0 = (v) => Math.round(v).toLocaleString(loc);
   return (
     <svg className="p-chart" viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label={title || undefined}>
+      {axisUnit && <text x={PADL - 6} y={Math.max(FS, PADT - 3)} textAnchor="end" fontSize={FS} fontWeight="700" fill={CHART.ink}>{axisUnit}</text>}
       {ticks.map((v) => (
         <g key={v}>
           <line x1={PADL} y1={Y(v)} x2={W - PADR} y2={Y(v)} stroke={CHART.grid} strokeWidth="1" />

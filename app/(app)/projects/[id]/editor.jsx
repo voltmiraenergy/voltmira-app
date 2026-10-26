@@ -60,6 +60,7 @@ import { dec } from "../../../../lib/decimals.js";
 import { kwUnit } from "../../../p/[code]/text.js";
 import { xt } from "../../../../lib/integrationText.js";
 import { autoBom, recommendMount, findPanel } from "../../../../lib/supplierCatalog.js";
+import { catalogBom } from "../../../../lib/quoteOptions.js";
 import { fmtDate } from "../../../../lib/tz.js";
 import { blendYields, fetchSideYield } from "../../../../lib/sideYield.js";
 import { moneyFormatter, numFor } from "../../../../lib/money.js";
@@ -671,7 +672,23 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     }
   }
 
+  // An offer is never sent without makes and models: a quote with no equipment gets the starter system (the
+  // installer's catalog first, else the supplier catalog), saved before the offer is made and said in the share panel.
+  const [equipNote, setEquipNote] = useState(false);
+  async function ensureEquipment() {
+    const cur = pRef.current;
+    if (Array.isArray(cur.bom) && cur.bom.length) return;
+    const battKwh = cur.batt ? Number(cur.battKwh) || 0 : 0;
+    const bom = catalogBom(Number(cur.kw) || 0, battKwh, catalog) || autoBom(Number(cur.kw) || 0, battKwh);
+    if (!bom?.length) return;
+    const next = { ...cur, bom };
+    pRef.current = next; setP(next);
+    await persist(next);
+    setEquipNote(true);
+  }
+
   async function makeProposal() {
+    await ensureEquipment();
     const code = await sendOffer(initial.id);
     setPropUrl(`${location.origin}/p/${code}`);
     if (p.status === "draft") update({ status: "sent" });
@@ -688,6 +705,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     const tab = app === "wa" ? window.open("", "_blank") : null;
     setSendingVia(app);
     try {
+      await ensureEquipment();
       const [code, phone] = await Promise.all([
         propUrl ? propUrl.split("/p/")[1] : sendOffer(initial.id),
         app === "wa" ? offerPhone(initial.id).catch(() => "") : "",
@@ -715,6 +733,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   async function refreshProposal() {
     setRefreshing(true); setRefreshMsg(null);
     try {
+      await ensureEquipment();
       feeHoldAnswer(await regenerateProposal(initial.id));
       setRefreshMsg({ ok: true, text: tr("prop_refreshed") });
     } catch (e) {
@@ -739,6 +758,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     // blockers don't swallow it — they do when window.open runs after an await,
     // which is why "Download PDF" appeared to do nothing on a phone.
     const tab = window.open("", "_blank");
+    await ensureEquipment();
     let code = propUrl ? propUrl.split("/p/")[1] : null;
     if (!code) {
       // createProposal is idempotent (returns the existing code), so this does
@@ -1613,6 +1633,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h4>{tr("prop_title")}</h4>
             <p className="sub">{tr("prop_desc", { client: p.client || tr("your_client") })}</p>
+            {equipNote && <p className="warn-card" role="status" style={{ marginBottom: 10 }}>{tr("equip_autofilled")}</p>}
             <div className="link-row">
               <code>{propUrl}</code>
               <button className="btn sm amber" onClick={() => {

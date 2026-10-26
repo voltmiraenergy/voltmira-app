@@ -110,6 +110,14 @@ const T = {
   as_loan_v: { en: "{n} years, {r}% a year", ro: "{n} ani, {r}% pe an", ru: "{n} лет, {r}% годовых", uk: "{n} років, {r}% річних" },
   legal_line: { en: "{name}, IDNO {idno}, {addr}", ro: "{name}, IDNO {idno}, {addr}", ru: "{name}, IDNO {idno}, {addr}", uk: "{name}, IDNO {idno}, {addr}" },
 
+  // ---- year by year (PrintSheet.jsx, page 2)
+  yr_h: { en: "Year by year", ro: "An cu an", ru: "Год за годом", uk: "Рік за роком" },
+  yr_year: { en: "Year", ro: "Anul", ru: "Год", uk: "Рік" },
+  yr_prod: { en: "Production", ro: "Producție", ru: "Выработка", uk: "Генерація" },
+  yr_save: { en: "Saved that year", ro: "Economie în acel an", ru: "Экономия за год", uk: "Економія за рік" },
+  yr_pos: { en: "Money position", ro: "Sold cumulat", ru: "Итог нарастающим", uk: "Підсумок наростаючим" },
+  yr_note: { en: "Expected scenario: electricity {i}% dearer each year, the panels producing {d}% less each year. A negative position is what the system has still to pay back.", ro: "Scenariul așteptat: curentul cu {i}% mai scump în fiecare an, panourile cu {d}% mai puțină producție în fiecare an. Un sold negativ e ce mai are sistemul de recuperat.", ru: "Ожидаемый сценарий: электроэнергия дорожает на {i}% в год, панели вырабатывают на {d}% меньше каждый год. Отрицательный итог: то, что система ещё должна окупить.", uk: "Очікуваний сценарій: електроенергія дорожчає на {i}% на рік, панелі виробляють на {d}% менше щороку. Від’ємний підсумок: те, що система ще має окупити." },
+
   // the year's energy in four figures, under the monthly chart (PrintSheet.jsx)
   e_t_home: { en: "used in your home", ro: "folosiți în casă", ru: "используется дома", uk: "використовується вдома" },
   e_t_out: { en: "sent to the grid", ro: "trimiși în rețea", ru: "отдаётся в сеть", uk: "віддається в мережу" },
