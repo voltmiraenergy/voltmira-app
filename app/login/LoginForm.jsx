@@ -19,6 +19,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "../../lib/supabase-browser.js";
 import { LOGIN_LANGS, SITE_PATH } from "./copy.js";
 import { bootstrapWorkspace } from "../../lib/bootstrapWorkspace.js";
+import { toIntlPhone } from "../../lib/phone.js";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
@@ -50,6 +51,7 @@ export default function LoginForm({ lang, c, error = "", dev = false }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [company, setCompany] = useState("");
+  const [phone, setPhone] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPw, setShowPw] = useState(false);
@@ -131,13 +133,19 @@ export default function LoginForm({ lang, c, error = "", dev = false }) {
 
     try {
       if (mode === "signup") {
+        // the phone as digits with the country code (lib/phone.js): Moldovan, Romanian and Ukrainian numbers written
+        // the local way are read by the page's language; anything that cannot be a phone is asked for again
+        const intl = toIntlPhone(phone, lang === "uk" ? "UA" : "MD");
+        if (!intl) return toast(M.phone);
         const { error } = await sb.auth.signUp({
-          email, password, options: { captchaToken },
+          email, password, options: { captchaToken, data: { phone: "+" + intl } },
         });
         if (error) { resetCaptcha(); return toast(M.signup); }
         // The workspace starts in the language this page is in.
         const { error: e2 } = await bootstrapWorkspace(sb, { company, lang });
         if (e2) return toast(M.setup);
+        // the number also goes on the profile (offers print the installer's phone); a failure never stops sign-up
+        try { const { data: { user: me } } = await sb.auth.getUser(); if (me) await sb.from("profiles").update({ phone: "+" + intl }).eq("id", me.id); } catch { /* the sign-up log has it */ }
         await keepSignedIn();
         location.href = dest;
       } else {
@@ -250,6 +258,12 @@ export default function LoginForm({ lang, c, error = "", dev = false }) {
                   <label htmlFor="company">{c.company}</label>
                   <input id="company" placeholder={c.company_ph} value={company} autoComplete="organization"
                          onChange={e => setCompany(e.target.value)}
+                         required={isUp} disabled={!isUp} tabIndex={isUp ? 0 : -1} />
+                </div>
+                <div className="field">
+                  <label htmlFor="phone">{c.phone}</label>
+                  <input id="phone" type="tel" placeholder={c.phone_ph} value={phone} autoComplete="tel" inputMode="tel"
+                         onChange={e => setPhone(e.target.value)}
                          required={isUp} disabled={!isUp} tabIndex={isUp ? 0 : -1} />
                 </div>
               </div>

@@ -7,7 +7,7 @@ import { isPlatformAdmin } from "../../../../lib/platformAdmin.js";
 import { supabaseAdmin } from "../../../../lib/supabase.js";
 import { normLang } from "../../../../lib/i18n.js";
 import { at } from "../../../../lib/adminText.js";
-import { buildSignups } from "../../../../lib/signupsAdmin.js";
+import { buildSignups, deviceOf } from "../../../../lib/signupsAdmin.js";
 import { fmtDate, fmtTime } from "../../../../lib/tz.js";
 import { relTime } from "../../../../lib/relTime.js";
 import AdminNav, { ADMIN_CSS } from "../AdminNav.jsx";
@@ -27,7 +27,7 @@ export default async function SignupsPage() {
   const needsDb = !!error;
   const ids = (log || []).map((r) => r.user_id);
   const [{ data: profs }, { data: cos }, { data: projs }] = needsDb || !ids.length ? [{ data: [] }, { data: [] }, { data: [] }] : await Promise.all([
-    db.from("profiles").select("id, name, role, company_id").in("id", ids.slice(0, 1000)),
+    db.from("profiles").select("id, name, role, phone, company_id").in("id", ids.slice(0, 1000)),
     db.from("companies").select("id, name, lang"),
     db.from("projects").select("company_id").eq("sample", false).limit(20000),
   ]);
@@ -65,21 +65,25 @@ export default async function SignupsPage() {
         <h2>Sign-ups</h2>
         <div className="adm-scroll">
           <table className="adm-table">
-            <thead><tr><th>When</th><th>Name</th><th>Email</th><th>Company</th><th>Country</th><th>Signed up with</th><th>Status</th><th>Quotes</th></tr></thead>
+            <thead><tr><th>When</th><th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th>Country</th><th>First opened</th><th>Device</th><th>Signed up with</th><th>Status</th><th>Quotes</th><th>User id</th></tr></thead>
             <tbody>
               {s.rows.map((r) => (
                 <tr key={r.id}>
                   <td className="num" title={`${fmtDate(r.at, "en-GB", { day: "numeric", month: "short", year: "numeric" })} ${fmtTime(r.at, "en-GB")}`}>{relTime(r.at, "en-GB")}</td>
                   <td>{r.name || "-"}</td>
                   <td><a href={`mailto:${r.email}`}>{r.email}</a></td>
+                  <td className="num">{r.phone ? <a href={`tel:${r.phone}`}>{r.phone}</a> : "-"}</td>
                   <td>{r.company || "-"}</td>
                   <td>{r.country}{r.city ? `, ${r.city}` : ""}</td>
+                  <td className="num">{r.seen ? `${fmtDate(r.seen, "en-GB", { day: "numeric", month: "short" })} ${fmtTime(r.seen, "en-GB")}` : "not yet"}</td>
+                  <td title={r.userAgent}>{deviceOf(r.userAgent)}</td>
                   <td>{r.provider === "google" ? "Google" : "Email"}</td>
                   <td>{KIND[r.kind]}</td>
                   <td className="num">{r.quotes}</td>
+                  <td><code title={r.id} style={{ fontSize: 11 }}>{r.id}</code></td>
                 </tr>
               ))}
-              {!s.rows.length && <tr><td colSpan={8}>No sign-ups yet.</td></tr>}
+              {!s.rows.length && <tr><td colSpan={12}>No sign-ups yet.</td></tr>}
             </tbody>
           </table>
         </div>
