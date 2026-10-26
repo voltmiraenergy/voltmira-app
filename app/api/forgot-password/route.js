@@ -12,6 +12,7 @@ import { supabaseServer, supabaseAdmin } from "../../../lib/supabase.js";
 import { sendEmail, resetPasswordEmail, supportFrom, emailConfigured } from "../../../lib/email.js";
 import { isRateLimited, clientIp } from "../../../lib/ratelimit.js";
 import { turnstileOk } from "../../../lib/turnstile.js";
+import { deviceOf } from "../../../lib/signupsAdmin.js";
 
 const siteUrl = () => process.env.NEXT_PUBLIC_APP_URL || "https://voltmira.com";
 
@@ -39,11 +40,16 @@ export async function POST(req) {
 
   // The lookup and the send happen after the reply, so an address with an account answers as fast as one
   // without: the time taken says nothing about who has an account.
-  after(() => sendReset(email));
+  // the request itself goes in the email (when, from where, which device), so someone who did not ask sees it
+  const h = req.headers;
+  let city = h.get("x-vercel-ip-city") || "";
+  try { city = decodeURIComponent(city); } catch { /* as sent */ }
+  const meta = { at: Date.now(), country: (h.get("x-vercel-ip-country") || "").toUpperCase().slice(0, 2), city: city.slice(0, 60), device: deviceOf(h.get("user-agent")) };
+  after(() => sendReset(email, meta));
   return NextResponse.json({ ok: true });
 }
 
-async function sendReset(email) {
+async function sendReset(email, meta = {}) {
   const admin = supabaseAdmin();
   const redirectTo = `${siteUrl()}/reset-password`;
   try {
@@ -71,7 +77,7 @@ async function sendReset(email) {
       await sendEmail({
         to: email,
         from: supportFrom(),
-        ...resetPasswordEmail({ resetLink: data.properties.action_link, lang }),
+        ...resetPasswordEmail({ resetLink: data.properties.action_link, lang, meta }),
       });
     }
   } catch { /* never reveal anything about the address */ }

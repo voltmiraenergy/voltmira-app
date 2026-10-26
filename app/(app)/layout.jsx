@@ -11,6 +11,7 @@ import AppTheme from "./AppTheme.jsx";
 import OfflineReady from "./OfflineReady.jsx";
 import MobileBack from "../../components/MobileBack.jsx";
 import KeepSignedIn from "../../components/KeepSignedIn.jsx";
+import SignupSeen from "../../components/SignupSeen.jsx";
 import Logo from "../../lib/Logo.jsx";
 import HtmlLang from "../../lib/HtmlLang.jsx";
 import { t, normLang } from "../../lib/i18n.js";
@@ -19,6 +20,7 @@ import { et } from "../../lib/energyText.js";
 import { currentUser, currentCompany } from "../../lib/session.js";
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { isDemoEmail } from "../../lib/demo.js";
+import { isPlatformAdmin } from "../../lib/platformAdmin.js";
 import { holdFor } from "../../lib/feeHold.js";
 import { monthName } from "../../lib/feeText.js";
 import FeeHoldBanner from "../../components/FeeHoldBanner.jsx";
@@ -109,6 +111,10 @@ export default async function AppLayout({ children }) {
               </span>
               <ChevronRight className="sp-go" size={15} strokeWidth={2} aria-hidden="true" />
             </Link>
+            {/* VoltMira's own team (PLATFORM_ADMIN_EMAILS): the admin screens, starting with who signs up */}
+            {isPlatformAdmin(user.email) && (
+              <Link className="side-admin" href="/admin/signups">{t("side_admin", lang)}</Link>
+            )}
           </div>
           {/* theme and sign-out on one line, so a short screen still shows both */}
           <div className="side-acts">
@@ -126,6 +132,8 @@ export default async function AppLayout({ children }) {
         <MobileBack lang={lang} />
         {/* renews this device's 30-day sign-in once a day (lib/authCookie.js) */}
         <KeepSignedIn />
+        {/* the first visit puts the person's country on their sign-up (app/api/signup-seen) */}
+        {!isDemoEmail(user.email) && <SignupSeen />}
         {isDemoEmail(user.email) && (
           <div className="demo-bar">
             <span className="demo-badge">{t("demo_badge", lang)}</span>

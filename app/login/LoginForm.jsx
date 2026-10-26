@@ -19,6 +19,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "../../lib/supabase-browser.js";
 import { LOGIN_LANGS, SITE_PATH } from "./copy.js";
 import { bootstrapWorkspace } from "../../lib/bootstrapWorkspace.js";
+import PhoneField from "../../components/PhoneField.jsx";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
@@ -50,6 +51,8 @@ export default function LoginForm({ lang, c, error = "", dev = false }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [company, setCompany] = useState("");
+  // the phone as stored ("+37369123456"), "" when left empty (it is optional), null when it cannot be a phone
+  const [phone, setPhone] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPw, setShowPw] = useState(false);
@@ -131,13 +134,17 @@ export default function LoginForm({ lang, c, error = "", dev = false }) {
 
     try {
       if (mode === "signup") {
+        // optional: left empty it is simply not sent; typed, it must be a phone (components/PhoneField.jsx)
+        if (phone === null) return toast(M.phone);
         const { error } = await sb.auth.signUp({
-          email, password, options: { captchaToken },
+          email, password, options: { captchaToken, ...(phone ? { data: { phone } } : {}) },
         });
         if (error) { resetCaptcha(); return toast(M.signup); }
         // The workspace starts in the language this page is in.
         const { error: e2 } = await bootstrapWorkspace(sb, { company, lang });
         if (e2) return toast(M.setup);
+        // the number also goes on the profile (offers print the installer's phone); a failure never stops sign-up
+        if (phone) try { const { data: { user: me } } = await sb.auth.getUser(); if (me) await sb.from("profiles").update({ phone }).eq("id", me.id); } catch { /* the sign-up log has it */ }
         await keepSignedIn();
         location.href = dest;
       } else {
@@ -252,6 +259,8 @@ export default function LoginForm({ lang, c, error = "", dev = false }) {
                          onChange={e => setCompany(e.target.value)}
                          required={isUp} disabled={!isUp} tabIndex={isUp ? 0 : -1} />
                 </div>
+                <PhoneField lang={lang} label={c.phone} placeholder={c.phone_ph} onChange={setPhone}
+                            disabled={!isUp} tabIndex={isUp ? 0 : -1} />
               </div>
             </div>
 

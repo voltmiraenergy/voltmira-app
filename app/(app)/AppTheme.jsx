@@ -328,6 +328,8 @@ const CSS = `
   .m-back-btn{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:6px 12px 6px 6px;border:0;border-radius:10px;
     background:transparent;color:var(--ink);font:600 15px/1 inherit;cursor:pointer}
   .m-back-btn:hover,.m-back-btn:focus-visible{background:var(--paper-2)}
+  .side-admin{display:block;margin-top:8px;padding:7px 10px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--amber);text-decoration:none;border:1px dashed color-mix(in srgb,var(--amber) 45%,transparent)}
+  .side-admin:hover{background:color-mix(in srgb,var(--amber) 12%,transparent)}
   .demo-bar{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:18px;
     padding:10px 14px;border-radius:12px;background:var(--amber-tint);
     border:1px solid color-mix(in srgb,var(--amber) 38%,transparent)}
