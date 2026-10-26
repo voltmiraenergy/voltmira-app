@@ -20,6 +20,7 @@ import { et } from "../../lib/energyText.js";
 import { currentUser, currentCompany } from "../../lib/session.js";
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { isDemoEmail } from "../../lib/demo.js";
+import { isPlatformAdmin } from "../../lib/platformAdmin.js";
 import { holdFor } from "../../lib/feeHold.js";
 import { monthName } from "../../lib/feeText.js";
 import FeeHoldBanner from "../../components/FeeHoldBanner.jsx";
@@ -110,6 +111,10 @@ export default async function AppLayout({ children }) {
               </span>
               <ChevronRight className="sp-go" size={15} strokeWidth={2} aria-hidden="true" />
             </Link>
+            {/* VoltMira's own team (PLATFORM_ADMIN_EMAILS): the admin screens, starting with who signs up */}
+            {isPlatformAdmin(user.email) && (
+              <Link className="side-admin" href="/admin/signups">{t("side_admin", lang)}</Link>
+            )}
           </div>
           {/* theme and sign-out on one line, so a short screen still shows both */}
           <div className="side-acts">
