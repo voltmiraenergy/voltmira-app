@@ -12,8 +12,13 @@ export default function manifest() {
     display: "standalone",
     background_color: "#F6F5F0",
     theme_color: "#142A21",
+    // Android draws its launch screen from these on background_color: the mark large, and a maskable one
+    // with the mark inside the safe circle (public/icon-*.png)
     icons: [
       { src: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }

@@ -14,7 +14,8 @@ export default function DemoChip({ badge, note, cta, closeLabel }) {
   useEffect(() => {
     let closed = false;
     try { closed = sessionStorage.getItem(KEY) === "1"; } catch { /* no storage: show it */ }
-    if (closed) return;
+    // on a phone the note stays folded (the chip is a slim line at the top there); a tap on DEMO opens it
+    if (closed || window.matchMedia?.("(max-width: 768px)").matches) return;
     // after the first paint (the server cannot know), so the page never waits on it
     const id = requestAnimationFrame(() => setOpen(true));
     return () => cancelAnimationFrame(id);

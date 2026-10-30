@@ -168,6 +168,13 @@ export default function Settings() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
+  // On a phone the tabs are one sideways row: keep the open one in view (only the row scrolls, not the page)
+  useEffect(() => {
+    const on = document.querySelector(".st-nav-i.on");
+    const row = on?.parentElement;
+    if (on && row && row.scrollWidth > row.clientWidth) row.scrollTo({ left: on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2, behavior: "smooth" });
+  }, [tab]);
+
   // The tab title in the workspace language once the company row is in.
   const coLang = co?.lang;
   useEffect(() => {

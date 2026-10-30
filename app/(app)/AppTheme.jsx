@@ -365,7 +365,12 @@ const CSS = `
   .demo-x{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:24px;height:24px;border:0;border-radius:7px;
     background:none;color:var(--ink);cursor:pointer;opacity:.7}
   .demo-x:hover{opacity:1;background:color-mix(in srgb,var(--amber) 22%,transparent)}
-  @media (max-width:768px){.demo-chip{right:12px;bottom:calc(var(--mnav-h,66px) + 12px + env(safe-area-inset-bottom,0px))}}
+  /* a phone: a slim line at the top of the page, so it never sits over buttons */
+  @media (max-width:768px){
+    .demo-chip{position:static;max-width:none;align-items:stretch;margin:0 0 10px;flex-direction:column-reverse}
+    .demo-row{justify-content:space-between;box-shadow:none;padding:5px 10px 5px 5px}
+    .demo-pop{box-shadow:none}
+  }
   @media print{.demo-chip{display:none!important}}
 
   .card{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}

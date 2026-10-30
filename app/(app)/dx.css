@@ -227,3 +227,12 @@ html[data-theme="dark"] .app .dx {
   padding: 13px 16px; border-radius: 14px; border: 1px dashed var(--line); background: var(--paper-2); font-size: 13.5px; color: var(--muted); }
 .app .dx-base-none a { font-weight: 700; color: var(--green); text-decoration: none; white-space: nowrap; }
 .app .dx-base-none a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* a page's tabs and its main button (Jobs, Service): on a phone the tabs take a full row, the button the next */
+@media (max-width: 768px) {
+  .app .dx-head-tools:has(> .dx-tabs) { flex-wrap: wrap; }
+  .app .dx-head-tools > .dx-tabs { flex: 1 1 100%; margin-bottom: 0; }
+  .app .dx-head-tools > .dx-tabs > * { flex: 1 0 auto; justify-content: center; }
+  .app .dx-head-tools:has(> .dx-tabs) > .btn { flex: 1 1 100%; justify-content: center; }
+}
+@media (max-width: 420px) { .app .dx-head-tools > .dx-tabs svg { display: none; } }

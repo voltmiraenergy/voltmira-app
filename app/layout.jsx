@@ -2,6 +2,10 @@ import { Analytics } from "@vercel/analytics/next";
 import { connection } from "next/server";
 import ThemeScript from "../components/ThemeScript.jsx";
 import AppNavBar from "../components/AppNavBar.jsx";
+import BootSplash from "../components/BootSplash.jsx";
+
+// iPhone portrait screens (css width, css height, pixel ratio) with a launch picture in public/splash
+const SPLASH = [[430, 932, 3], [393, 852, 3], [428, 926, 3], [390, 844, 3], [375, 812, 3], [414, 896, 3], [414, 896, 2], [375, 667, 2], [414, 736, 3], [360, 780, 3]];
 
 export const metadata = {
   // Resolves every relative canonical and og:image to the public site, so the
@@ -10,7 +14,15 @@ export const metadata = {
   metadataBase: new URL("https://voltmira.com"),
   title: "VoltMira: Solar quoting your clients can fact-check",
   description: "Honest three-band payback estimates, tracked proposals, and real PVGIS data for solar installers.",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "VoltMira" },
+  appleWebApp: {
+    capable: true, statusBarStyle: "default", title: "VoltMira",
+    // the iPhone's own launch picture while the installed app starts: the same screen components/BootSplash.jsx
+    // then animates, so the launch flows straight into it (public/splash, one per iPhone screen size)
+    startupImage: SPLASH.map(([w, h, r]) => ({
+      url: `/splash/iphone-${w * r}x${h * r}.png`,
+      media: `(device-width: ${w}px) and (device-height: ${h}px) and (-webkit-device-pixel-ratio: ${r}) and (orientation: portrait)`,
+    })),
+  },
 };
 
 // viewportFit:"cover" is the actual fix for the bottom-tab-bar/safe-area
@@ -134,6 +146,8 @@ export default async function RootLayout({ children }) {
         {/* the theme before paint, written into the server's HTML only (components/ThemeScript.jsx); allowed by its
             hash (lib/inlineScripts.js, lib/csp.js) */}
         <ThemeScript />
+        {/* the installed app's opening screen, on a full load only */}
+        <BootSplash />
         {/* back, forward, reload and the PDF viewer: only in the installed (home-screen) app */}
         <AppNavBar />
         {children}{process.env.NODE_ENV === "production" && <Analytics />}

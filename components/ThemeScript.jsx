@@ -24,7 +24,9 @@ export default function ThemeScript() {
     if (el.getAttribute("data-theme")) return;
     let t = null;
     try { t = localStorage.getItem("voltmira_theme"); } catch { /* storage blocked */ }
-    if (t !== "dark" && t !== "light") t = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    // the installed app opens light unless dark was picked; a browser tab follows the phone (lib/inlineScripts.js)
+    const app = window.navigator.standalone === true || window.matchMedia?.("(display-mode: standalone)").matches;
+    if (t !== "dark" && t !== "light") t = !app && window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     el.setAttribute("data-theme", t);
   }, []);
   return null;
