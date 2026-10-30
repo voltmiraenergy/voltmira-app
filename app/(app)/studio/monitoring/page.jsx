@@ -26,6 +26,7 @@ import {
 import { compareUrgency, fleetRatio, THRESH } from "../../../../lib/fleetHealth.js";
 import { hydrate } from "../studio-sync.js";
 import InverterPortals from "./InverterPortals.jsx";
+import { clientUpdate } from "../../../../lib/clientUpdate.js";
 
 const MONTHS = {
   en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
@@ -266,71 +267,17 @@ function explainRaw(row, lang) {
 }
 
 /* ------------------------------------------------------ client message ---- */
-function ruLei(n) {
-  const f = new Intl.PluralRules("ru").select(n);
-  return f === "one" ? "лей" : f === "few" ? "лея" : "леев";
-}
-function ukLei(n) {
-  const f = new Intl.PluralRules("uk").select(n);
-  return f === "one" ? "лей" : f === "few" ? "леї" : "леїв";
-}
 
+// the monthly note to the client, from the same source as /service (lib/clientUpdate.js): this month against
+// a usual one, with the sun at the address named when it explains a lower month, and the savings
 function clientMessage(row, msgLang) {
   const { job, a, asOf } = row;
-  const loc = { ru: "ru-RU", uk: "uk-UA", en: "en-IE" }[msgLang] || "ro-RO";
-  const n = (v) => Math.round(v).toLocaleString(loc);
-  const month = (MONTHS_LONG[msgLang] || MONTHS_LONG.ro)[asOf];
-  const kw = (+job.kw || 0).toLocaleString(loc, { maximumFractionDigits: 1 });
   const kwh = row.monthActual(asOf);
-  const ytdLei = Math.round(localLei(row.savedYtdEur, job.market));
-  // lei with Russian and Ukrainian plurals, or hryvnia for a Ukrainian job
-  const lei = (v) => (job.market === "UA" ? localUnit("UA", msgLang) : msgLang === "ru" ? ruLei(v) : msgLang === "uk" ? ukLei(v) : "lei");
-
-  if (a.status === "pending") {
-    return {
-      ro: `Bună ziua! Sistemul dvs. solar de ${kw} kW funcționează. Primul raport lunar vi-l trimitem după prima lună întreagă de producție.`,
-      ru: `Здравствуйте! Ваша солнечная станция ${kw} кВт работает. Первый ежемесячный отчёт пришлём после первого полного месяца выработки.`,
-      uk: `Добрий день! Ваша сонячна станція ${kw} кВт працює. Перший щомісячний звіт надішлемо після першого повного місяця генерації.`,
-      en: `Hi! Your ${kw} kW solar system is up and running. We'll send your first monthly report after its first full month of production.`,
-    }[msgLang];
-  }
-  if (kwh == null) {
-    return {
-      ro: `Bună ziua! Nu am primit datele de producție pentru ${month} de la sistemul dvs. solar de ${kw} kW. Ne puteți trimite o captură de ecran din aplicația invertorului? Durează un minut și ne ajută să verificăm că totul funcționează corect.`,
-      ru: `Здравствуйте! Мы не получили данные о выработке вашей солнечной станции ${kw} кВт за ${month}. Пришлите, пожалуйста, скриншот из приложения инвертора: это займёт минуту и поможет нам убедиться, что всё работает правильно.`,
-      uk: `Добрий день! Ми не отримали даних про генерацію вашої сонячної станції ${kw} кВт за ${month}. Надішліть, будь ласка, скриншот із застосунку інвертора: це займе хвилину й допоможе нам переконатися, що все працює правильно.`,
-      en: `Hi! We haven't received the production figures for ${month} from your ${kw} kW solar system. Could you send us a screenshot from the inverter app? It takes a minute and lets us check everything is working properly.`,
-    }[msgLang];
-  }
-
-  const ratio = kwh / (row.p50[asOf] || 1);
-  const pc = Math.round(ratio * 100);
-  const monthLei = Math.round(localLei(kwh * row.eurPerKwh, job.market));
-  const low = a.status === "warn" || a.status === "critical";
-
-  if (msgLang === "ru") {
-    const head = `Здравствуйте! Ежемесячный отчёт по вашей солнечной станции ${kw} кВт.\n\nЗа ${month} она выработала ${n(kwh)} кВт·ч, это ${pc}% от расчёта в нашем предложении.`;
-    return low
-      ? `${head} Это меньше, чем должно быть, поэтому в ближайшие дни мы свяжемся с вами, чтобы проверить систему.\n\nПримерная экономия с начала года: ~${n(ytdLei)} ${lei(ytdLei)}.`
-      : `${head}\nПримерная экономия: ~${n(monthLei)} ${lei(monthLei)} за ${month} и ~${n(ytdLei)} ${lei(ytdLei)} с начала года.\n\nСистема работает нормально. Если есть вопросы, пишите в любое время.`;
-  }
-  if (msgLang === "uk") {
-    const head = `Добрий день! Щомісячний звіт щодо вашої сонячної станції ${kw} кВт.\n\nЗа ${month} вона згенерувала ${n(kwh)} кВт·год, це ${pc}% від розрахунку в нашій пропозиції.`;
-    return low
-      ? `${head} Це менше, ніж має бути, тому найближчими днями ми зв’яжемося з вами, щоб перевірити систему.\n\nОрієнтовна економія з початку року: ~${n(ytdLei)} ${lei(ytdLei)}.`
-      : `${head}\nОрієнтовна економія: ~${n(monthLei)} ${lei(monthLei)} за ${month} і ~${n(ytdLei)} ${lei(ytdLei)} з початку року.\n\nСистема працює нормально. Якщо є запитання, пишіть будь-коли.`;
-  }
-  if (msgLang === "en") {
-    const M = month;
-    const head = `Hi! Here's the monthly report for your ${kw} kW solar system.\n\nIn ${M} it produced ${n(kwh)} kWh, ${pc}% of what we estimated in your quote.`;
-    return low
-      ? `${head} That's less than it should be, so we'll be in touch in the next few days to check the system.\n\nEstimated savings so far this year: ~${n(ytdLei)} ${lei(ytdLei)}.`
-      : `${head}\nEstimated savings: ~${n(monthLei)} ${lei(monthLei)} in ${M} and ~${n(ytdLei)} ${lei(ytdLei)} so far this year.\n\nEverything is working normally. Any questions, just message us.`;
-  }
-  const head = `Bună ziua! Raportul lunar al sistemului dvs. solar de ${kw} kW.\n\nÎn ${month} a produs ${n(kwh)} kWh, adică ${pc}% din cât am estimat în ofertă.`;
-  return low
-    ? `${head} Este mai puțin decât ar trebui, așa că vă contactăm în zilele următoare pentru o verificare.\n\nEconomie estimată de la începutul anului: ~${n(ytdLei)} ${lei(ytdLei)}.`
-    : `${head}\nEconomie estimată: ~${n(monthLei)} ${lei(monthLei)} în ${month} și ~${n(ytdLei)} ${lei(ytdLei)} de la începutul anului.\n\nSistemul funcționează normal. Dacă aveți întrebări, scrieți-ne oricând.`;
+  return clientUpdate({
+    lang: msgLang, kw: job.kw, pending: a.status === "pending", month: asOf, kwh, expected: row.p50[asOf] || 0,
+    sun: a.sun?.[asOf] ?? null, market: job.market,
+    saved: kwh != null ? { month: Math.round(localLei(kwh * row.eurPerKwh, job.market)), ytd: Math.round(localLei(row.savedYtdEur, job.market)) } : null,
+  });
 }
 
 /* ----------------------------------------------------------------- viz ---- */

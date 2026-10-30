@@ -40,14 +40,15 @@ import { wt, describe, stageName } from "../../../lib/workflowText.js";
 import NextMoves from "./NextMoves.jsx";
 import Phases from "./Phases.jsx";
 import Numbers from "./Numbers.jsx";
-import CommandPalette from "./CommandPalette.jsx";
+import SearchButton from "../../../components/SearchButton.jsx";
+import SearchTip from "../../../components/SearchTip.jsx";
 import InstallBoard from "./InstallBoard.jsx";
 import DashTabs from "./DashTabs.jsx";
 import AutoRefresh from "./AutoRefresh.jsx";
 import LeadActions from "../leads/LeadActions.jsx";
 import Avatar from "../../../lib/Avatar.jsx";
 import LoanApps from "./LoanApps.jsx";
-import { moneyFormatter } from "../../../lib/money.js";
+import { moneyFormatter, rateFor } from "../../../lib/money.js";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dashboard | VoltMira" };
@@ -104,6 +105,7 @@ export default async function Dashboard() {
   const sb = await supabaseServer();
   const since24h = new Date(Date.now() - 864e5).toISOString();
   const since48h = new Date(Date.now() - 2 * 864e5).toISOString();
+  const since7d = new Date(Date.parse(since48h) - 5 * 864e5).toISOString();
   const demoUser = isDemoEmail((await currentUser())?.email);
   const [co, actor, { data: projects }, { data: leads }, { data: acts }, stats, { data: events }, readingsRes,
     linkedRes, portfoliosRes, opensRes] = await Promise.all([
@@ -128,10 +130,10 @@ export default async function Dashboard() {
     sb.from("leads").select("*").not("project_id", "is", null).limit(1000),
     // Which quotes already sit in a lender portfolio; absent table = none.
     sb.from("portfolios").select("id, name, market, project_ids"),
-    // Opens only (heartbeats would crowd them out of the 24 h feed above):
-    // "opened 4 times in the last 2 days" is a call to make now.
-    sb.from("proposal_events").select("code, created_at").eq("kind", "open")
-      .gte("created_at", since48h).limit(1000),
+    // What clients did on their offers this week, without the heartbeats (they would crowd the rest out):
+    // the opens of the last 2 days say "call now", and the week's are the pulse panel's figures and feed.
+    sb.from("proposal_events").select("code, kind, created_at").in("kind", ["open", "toggle_batt", "option", "request", "accept"])
+      .gte("created_at", since7d).order("created_at", { ascending: false }).limit(1500),
   ]);
 
   const E = await companyEngine(co);
@@ -201,6 +203,24 @@ export default async function Dashboard() {
     .sort((a, b) => (b.live - a.live) || (new Date(b.last) - new Date(a.last)))
     .slice(0, 5);
   const opened24h = [...stats.values()].filter((st) => st.lastOpen && now - new Date(st.lastOpen).getTime() <= 864e5).length;
+  // the week across every client: how often offers were opened, how many different ones, how long an offer
+  // is read on average (offers opened in the last 30 days), and the latest things clients did
+  const weekEvents = opensRes?.error ? [] : (opensRes?.data || []);
+  const weekOpens = weekEvents.filter((e) => e.kind === "open");
+  // an offer's last open is also kept on the offer itself, so one opened this week counts even when its
+  // events have been trimmed (or, in a demo, were never written)
+  const openedThisWeek = [...stats.entries()].filter(([, st]) => st.lastOpen && now - new Date(st.lastOpen).getTime() <= 7 * 864e5);
+  const weekOffers = new Set([...weekOpens.map((e) => codeToProject.get(e.code)).filter(Boolean), ...openedThisWeek.map(([pid]) => pid)]).size;
+  const weekViews = Math.max(weekOpens.length, weekOffers);
+  const readStats = [...stats.values()].filter((st) => st.seconds > 0 && st.lastOpen && now - new Date(st.lastOpen).getTime() <= 30 * 864e5);
+  const avgReadMin = readStats.length ? Math.max(1, Math.round(readStats.reduce((s, st) => s + st.seconds, 0) / readStats.length / 60)) : null;
+  const feedSeen = new Set();
+  const feed = [...weekEvents.map((e) => ({ ...e, pid: codeToProject.get(e.code) })),
+    ...openedThisWeek.map(([pid, st]) => ({ pid, kind: "open", created_at: st.lastOpen }))]
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+    .filter((e) => e.pid && byId.has(e.pid) && !feedSeen.has(e.pid + e.kind) && feedSeen.add(e.pid + e.kind))
+    .slice(0, 5)
+    .map((e) => ({ id: e.pid + e.kind + e.created_at, r: byId.get(e.pid), kind: e.kind, at: e.created_at }));
 
   // ---------- installed base + system health ----------
   const readings = readingsRes?.error ? [] : (readingsRes?.data || []);
@@ -231,7 +251,8 @@ export default async function Dashboard() {
 
   // ---------- the planned line: every quote and open lead on it ----------
   const recentOpens = new Map();
-  for (const e of opensRes?.error ? [] : (opensRes?.data || [])) {
+  for (const e of weekEvents) {
+    if (e.kind !== "open" || e.created_at < since48h) continue;
     const pid = codeToProject.get(e.code);
     if (pid) recentOpens.set(pid, (recentOpens.get(pid) || 0) + 1);
   }
@@ -278,7 +299,10 @@ export default async function Dashboard() {
   const lenderLine = pipe.lender.packable.n > 0
     ? { line: wt("pp_lender_line", lang, { n: pipe.lender.packable.n, v: fmt.compact(pipe.lender.packable.value) }), cta: wt("pp_lender_cta", lang) }
     : null;
-  const actLabels = { copied: wt("rl_copied", lang), failed: wt("rl_failed", lang), invPick: wt("rl_inv_pick", lang), invFull: wt("rl_inv_full", lang) };
+  const actLabels = {
+    copied: wt("rl_copied", lang), failed: wt("rl_failed", lang), invPick: wt("rl_inv_pick", lang), invFull: wt("rl_inv_full", lang),
+    gcal: t("dx_gcal", lang), wonQ: t("dx_won_q", lang), wonP: t("dx_won_p", lang), wonYes: t("dx_won_yes", lang), wonNo: t("dx_won_no", lang),
+  };
 
   // ---------- next moves ----------
   const when = (iso) => relTime(iso, locale, now);
@@ -304,7 +328,13 @@ export default async function Dashboard() {
         return fmtDate(iso, locale, { weekday: "long", day: "numeric", month: "long" }) + ", " + tm;
       },
     },
-  }).map((m) => ({ ...m, ago: m.at ? ago(m.at, lang) : "" }));
+  }).map((m) => ({
+    ...m, ago: m.at ? ago(m.at, lang) : "",
+    // for the list's filter: urgent is the top of the ranking (a client reading now, a hot offer, today's
+    // visit, a follow-up due); today is what is dated today or due by today
+    urgent: m.score >= 80,
+    today: m.kind === "live" || m.kind === "followup" || (!!m.at && mdDayKey(m.at) === todayKey),
+  }));
 
   // ---------- open rate (the stage counts now come from the planned line) ----------
   const { openRate } = flowStages({ projects: list, stats, leads: leadList, gross });
@@ -323,11 +353,25 @@ export default async function Dashboard() {
   const activeJobs = list.filter((r) => r.status === "won" && !isLive(r));
   const activeValue = activeJobs.reduce((sum, r) => sum + (gross.get(r.id) || 0), 0);
   const unbilled = pipe.money.unbilled;
+  // Nothing waiting for an invoice: the fourth number shows what came in this month instead (client payments
+  // recorded on the jobs, add-integrations.sql), so the tile is never a standing zero.
+  let collected = null;
+  if (!unbilled.value) {
+    const monthStart = todayKey.slice(0, 7) + "-01";
+    const ids = new Set(list.map((r) => r.id));
+    const { data: pays, error: payErr } = await sb.from("payments").select("amount_minor, currency, project_id").gte("paid_at", monthStart).limit(2000);
+    if (!payErr) {
+      const mine = (pays || []).filter((x) => ids.has(x.project_id));
+      collected = { n: mine.length, eur: mine.reduce((s, x) => s + (Number(x.amount_minor) || 0) / 100 / rateFor(x.currency || fmt.currency, E?.fx), 0) };
+    }
+  }
   const kpis = [
     { id: "out", label: t("dx_k_out", lang), value: fmt(pipeline), sub: t("dx_v_out", lang, { n: sentN }), href: "/projects?status=sent" },
     { id: "win", label: t("kpi_winrate", lang), value: winRate, sub: t("dx_v_record", lang, { w: won, l: lost }), href: "/projects?status=won" },
     { id: "jobs", label: wt("k_active", lang), value: fmt(activeValue), sub: wt("k_active_s", lang, { n: activeJobs.length }), href: "/projects?status=won" },
-    { id: "bill", label: wt("k_unbilled", lang), value: fmt(unbilled.value), sub: unbilled.n ? wt("k_unbilled_s", lang, { n: unbilled.n }) : wt("k_unbilled_0", lang), href: "/projects?view=unbilled" },
+    collected
+      ? { id: "bill", label: t("dx_k_collected", lang), value: fmt(collected.eur), sub: collected.n ? t("dx_k_collected_s", lang, { n: collected.n }) : t("dx_k_collected_0", lang), href: "/jobs?view=cash" }
+      : { id: "bill", label: wt("k_unbilled", lang), value: fmt(unbilled.value), sub: unbilled.n ? wt("k_unbilled_s", lang, { n: unbilled.n }) : wt("k_unbilled_0", lang), href: "/projects?view=unbilled" },
   ];
   const vitals = [
     { label: t("dx_k_out", lang), sub: t("dx_v_out", lang, { n: sentN }), value: fmt(pipeline) },
@@ -369,11 +413,6 @@ export default async function Dashboard() {
     return { r, ...paperworkFor(r, st ? { code: st.code, created_at: st.sentAt, accepted_at: st.acceptedAt } : null) };
   }).filter((x) => x.missing.length);
   const stepLabels = Object.fromEntries(INSTALL_STEPS.map((s) => [s, t("inst_" + s, lang)]));
-  const statusLabels = Object.fromEntries(["draft", "sent", "won", "lost"].map((s) => [s, t("st_" + s, lang)]));
-  const pages = [
-    ["/leads", "nav_leads"], ["/projects", "nav_projects"], ["/activity", "nav_activity"], ["/studio", "nav_studio"],
-    ["/team", "nav_team"], ["/settings", "nav_settings"], ["/profile", "pf_title"], ["/guide", "nav_guide"],
-  ].map(([href, k]) => ({ href, label: t(k, lang) }));
   let lastDay = null;
 
   return (
@@ -387,17 +426,8 @@ export default async function Dashboard() {
           {!emptyWorkspace && <p className="dx-summary">{t("dx_summary", lang, { moves: moves.length, n: sentN, pipe: fmt(pipeline) })}</p>}
         </div>
         <div className="dx-head-tools">
-          <CommandPalette
-            quotes={list.map((r) => ({ id: r.id, title: r.title || t("untitled", lang), client: r.client_name || "", status: r.status }))}
-            leads={openLeads.map((l) => ({ id: l.id, name: l.name, phone: l.phone || "", email: l.email || "" }))}
-            pages={pages}
-            statusLabels={statusLabels}
-            newQuoteAction={newQuote}
-            labels={{
-              trigger: t("dx_search", lang), placeholder: t("dx_pal_ph", lang), actions: t("dx_pal_actions", lang),
-              quotes: t("nav_projects", lang), leads: t("nav_leads", lang), pages: t("dx_pal_pages", lang),
-              none: t("dx_pal_none", lang), hint: t("dx_pal_hint", lang), newQuote: t("btn_new_quote", lang),
-            }} />
+          {/* the search itself is on every page (components/CommandPalette.jsx, in the app layout) */}
+          <SearchButton label={t("dx_search", lang)} />
           {/* with no signal it starts a draft on the device instead */}
           <NewQuoteOffline action={newQuote} lang={lang} className="dx-new">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
@@ -417,6 +447,9 @@ export default async function Dashboard() {
       {/* A new account lands on this same page: every card below has its own
           empty state (the first-run overlay was retired on purpose). */}
       {/* ---------------- four numbers, each a link to its list ---------------- */}
+      {/* the search, shown to new users once (components/SearchTip.jsx) */}
+      <SearchTip desk={t("dx_tip_search", lang)} touch={t("dx_tip_search_touch", lang)} closeLabel={t("close", lang)} />
+
       <section className="dx-kpis" aria-label={t("dx_vitals", lang)}>
         {kpis.map((k) => (
           <Link key={k.id} href={k.href} className={"dx-kpi k-" + k.id}>
@@ -435,6 +468,7 @@ export default async function Dashboard() {
           stuck={{ n: pipe.stuck.n, label: wt("at_stuck", lang, { n: pipe.stuck.n }) }}
           labels={{
             title: wt("at_title", lang), sub: wt("at_sub", lang),
+            filters: { all: t("dx_f_all", lang), today: t("dx_f_today", lang), urgent: t("dx_f_urgent", lang), none: t("dx_f_none", lang) },
             kinds: {
               ...Object.fromEntries(["live", "hot", "followup", "lead", "visit", "visit_done", "won_start", "install", "invoice", "grid", "unopened", "quiet", "draft", "health", "nodata"].map((k) => [k, t("dx_kind_" + k, lang)])),
               unmonitored: wt("mv_kind_unmonitored", lang), gap: wt("mv_kind_gap", lang),
@@ -460,20 +494,28 @@ export default async function Dashboard() {
                 <p>{t("dx_pulse_sub", lang)}{opened24h ? `. ${t("dx_pulse_24h", lang, { n: opened24h })}` : ""}</p>
               </div>
             </header>
-            {pulse.length ? (
+            {/* the week in three numbers, then the latest things clients did, across every offer */}
+            <dl className="dx-pulse-nums">
+              <div><dt>{t("dx_pulse_views", lang)}</dt><dd>{weekViews}</dd></div>
+              <div><dt>{t("dx_pulse_offers", lang)}</dt><dd>{weekOffers}</dd></div>
+              <div><dt>{t("dx_pulse_read", lang)}</dt><dd>{avgReadMin == null ? NONE : t("dx_pulse_min", lang, { n: avgReadMin })}</dd></div>
+            </dl>
+            {feed.length ? (
               <ul className="dx-pulse-list">
-                {pulse.map(({ r, st, last, live }) => (
-                  <li key={r.id} className={live ? "live" : ""}>
-                    <Link href={`/projects/${r.id}`}>
-                      <Avatar name={r.title || r.client_name} size={34} title={r.title || ""} />
-                      <span className="dx-pulse-tx">
-                        <b>{r.title || t("untitled", lang)}</b>
-                        <small>{live ? t("dx_pulse_now", lang) : t("dx_pulse_when", lang, { when: when(last) })}</small>
-                      </span>
-                      <span className="dx-pulse-n" title={t("pf_opened", lang)}>{st.opens}×</span>
-                    </Link>
-                  </li>
-                ))}
+                {feed.map(({ id, r, kind, at }) => {
+                  const live = kind === "open" && pulse.some((p) => p.r.id === r.id && p.live);
+                  return (
+                    <li key={id} className={live ? "live" : ""}>
+                      <Link href={`/projects/${r.id}`}>
+                        <Avatar name={r.title || r.client_name} size={30} title={r.title || ""} />
+                        <span className="dx-pulse-tx">
+                          <b>{r.title || t("untitled", lang)}</b>
+                          <small>{live ? t("dx_pulse_now", lang) : t("dx_pe_" + kind, lang, { when: when(at) })}</small>
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="dx-muted-note">{t("dx_pulse_empty", lang)}</p>
@@ -621,13 +663,19 @@ export default async function Dashboard() {
         },
       ]} />
 
+      {/* no system handed over yet: one line instead of a big band of zeros */}
+      {base.n === 0 ? (
+        <p className="dx-base-none">
+          <span>{t("dx_base_none", lang)}</span>
+          <Link href="/jobs">{t("dx_base_jobs", lang)}</Link>
+        </p>
+      ) : (
       <section className="dx-base" aria-labelledby="dx-base-h">
         <div className="dx-base-in">
           <div className="dx-base-copy">
             <h2 id="dx-base-h">{t("dx_base_title", lang)}</h2>
             <p>
-              {base.n === 0 ? t("dx_base_empty", lang)
-                : base.ratio != null ? t("dx_base_ratio", lang, { p: base.ratio }).split("**").map((s, i) => (i % 2 ? <b key={i}>{s}</b> : s))
+              {base.ratio != null ? t("dx_base_ratio", lang, { p: base.ratio }).split("**").map((s, i) => (i % 2 ? <b key={i}>{s}</b> : s))
                 : t("dx_base_noread", lang)}
             </p>
           </div>
@@ -644,6 +692,7 @@ export default async function Dashboard() {
           <path d="M170 208 L222 34" stroke="#3FAE6A" strokeWidth="17" strokeLinecap="round" />
         </svg>
       </section>
+      )}
     </div>
   );
 }

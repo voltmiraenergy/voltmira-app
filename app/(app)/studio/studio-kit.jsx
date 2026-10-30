@@ -871,7 +871,7 @@ html[data-theme="dark"] .pv-code{background:#080B09}
      control panel, the pill nav, sidebar and buttons — is app chrome, not part
      of the client-facing document, so it's all dropped. The document already
      restates the client + system figures the control bar holds. */
-  .sidebar,.skip-link,.demo-bar,.pv-topbar,.pv-tabs,.pv-head,.cl-bar,.pv-mocknote,
+  .sidebar,.skip-link,.demo-bar,.demo-chip,.pv-topbar,.pv-tabs,.pv-head,.cl-bar,.pv-mocknote,
   .pv-head-right,.pv-noprint,.pv-toast,.doc-reveal-btn{display:none!important}
   .app .main{margin:0!important;padding:0!important;background:#fff!important}
   .pv-wrap{max-width:none;margin:0;padding:0}

@@ -20,6 +20,7 @@
 // A booked site visit shows under the contact line, with one tap to put it in
 // the phone's calendar and one to confirm it to the client on Viber/WhatsApp.
 import { useState, useRef, useEffect, useTransition } from "react";
+import Link from "next/link";
 import { updateLead, setLeadChannel } from "../../../lib/actions.js";
 import { t } from "../../../lib/i18n.js";
 import { CHANNEL_ORDER, CHANNEL_DOT, leadChannel } from "../../../lib/leadChannels.js";
@@ -27,6 +28,7 @@ import { relTime, LOCALE } from "../../../lib/relTime.js";
 import Avatar from "../../../lib/Avatar.jsx";
 import { fmtDate, fmtTime } from "../../../lib/tz.js";
 import { visitIcs } from "../../../lib/ics.js";
+import { waNumber } from "../../../lib/contactLinks.js";
 import LeadActions from "./LeadActions.jsx";
 import { qft } from "../../../lib/quoteFastText.js";
 import { scoreBand } from "../../../lib/leadScore.js";
@@ -52,14 +54,6 @@ const Svg = ({ children, size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>
 );
 
-// wa.me needs the full international number, digits only. A local "069…"
-// number can't be turned into one without guessing the country, so those get
-// the call button only.
-function waNumber(phone) {
-  const p = String(phone || "").trim();
-  const digits = p.replace(/\D/g, "");
-  return (p.startsWith("+") || p.startsWith("00")) && digits.length >= 10 ? digits.replace(/^00/, "") : "";
-}
 
 // "2 days" / "5 hours" for the waiting badge, in the workspace language.
 function waitedFor(iso, locale) {
@@ -78,8 +72,9 @@ function toLocalInput(iso) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-export default function LeadCard({ lead, lang, company = "", score = null, market = "MD" }) {
+export default function LeadCard({ lead, lang, company = "", score = null, why = null, market = "MD" }) {
   const [editing, setEditing] = useState(false);
+  const [whyOpen, setWhyOpen] = useState(false);
   const [name, setName] = useState(lead.name || "");
   const [phone, setPhone] = useState(lead.phone || "");
   const [email, setEmail] = useState(lead.email || "");
@@ -158,7 +153,13 @@ export default function LeadCard({ lead, lang, company = "", score = null, marke
           <div className="ld-name-row">
             <h3 className="ld-name">{lead.name || "—"}</h3>
             {lead.hot && <span className="dx-hot ld-hot" title={t("lead_hot", lang)}><Svg size={11}>{I.flame}</Svg>{t("hot", lang)}</span>}
-            {score != null && <span className={"ld-score " + scoreBand(score)} title={qft("badge_title", lang, { n: score })}>{qft("badge", lang, { n: score })}</span>}
+            {/* a button, so the breakdown opens with a tap on a phone too (there is no hover there) */}
+            {score != null && (
+              <button type="button" className={"ld-score " + scoreBand(score)} title={qft("badge_title", lang, { n: score })}
+                aria-expanded={whyOpen} aria-controls={"ld-why-" + lead.id} onClick={() => setWhyOpen((v) => !v)}>
+                {qft("badge", lang, { n: score })}
+              </button>
+            )}
             <span className={"ld-status s-" + status}>{t("lead_" + status, lang)}</span>
             <time className="ld-time" dateTime={lead.created_at} suppressHydrationWarning>{mounted ? relTime(lead.created_at, locale) : ""}</time>
           </div>
@@ -166,9 +167,10 @@ export default function LeadCard({ lead, lang, company = "", score = null, marke
           <div className="ld-meta">
             {/* A website-form lead starts on the "website form" channel: the same two words twice in a row is
                 noise, so the read-only source badge only shows when it tells something the channel does not. */}
+            {/* where it came from: the glyph only, the words in its tooltip (and for a screen reader) */}
             {!(src === "widget" && ch === "website") && (
-              <span className="lead-src" title={t("lead_source", lang)}>
-                <Svg size={13}>{SOURCE_ICON[src]}</Svg>{t(SOURCE_KEY[src], lang)}
+              <span className="lead-src is-icon" title={`${t("lead_source", lang)}: ${t(SOURCE_KEY[src], lang)}`}>
+                <Svg size={13}>{SOURCE_ICON[src]}</Svg><span className="sr">{t(SOURCE_KEY[src], lang)}</span>
               </span>
             )}
             <span className="lead-chan" title={t("lead_set_channel", lang)}>
@@ -182,6 +184,20 @@ export default function LeadCard({ lead, lang, company = "", score = null, marke
             </span>
             {wait && <span className={"ld-wait" + waitTier}><Svg size={12}>{I.clock}</Svg>{t("lead_waiting", lang, { dur: wait.text })}</span>}
           </div>
+          {/* what made the score: each sign's points of the 100 (lib/leadScore.js scorePoints) */}
+          {whyOpen && why?.length > 0 && (
+            <div className="ld-why" id={"ld-why-" + lead.id}>
+              <p>{qft("why_h", lang, { n: score })}</p>
+              <ul>
+                {why.map((w) => (
+                  <li key={w.key} className={w.got > 0 ? "" : "zero"}>
+                    <span>{qft("sig_" + w.key, lang)}</span><b>{qft("why_pts", lang, { a: w.got, b: w.of })}</b>
+                  </li>
+                ))}
+              </ul>
+              <Link href="/settings?tab=estimate">{qft("why_set", lang)}</Link>
+            </div>
+          )}
         </div>
       </div>
 

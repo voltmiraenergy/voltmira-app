@@ -1,0 +1,107 @@
+/* app/(app)/admin/overview.css — the admin Overview (page.jsx). The app's tokens (AppTheme.jsx), the `.app` prefix
+ * so these rules sit above its reset. The hero repeats the brand's dark head and three-stroke band. */
+.app .ov { max-width: 1180px; }
+.app .ov .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* the greeting */
+.app .ov-hero { border-radius: 20px; overflow: hidden; margin: 0 0 18px; background: #142A21;
+  background-image: linear-gradient(135deg, #142A21 0%, #1B3A2C 55%, #24503A 100%); color: #fff; box-shadow: var(--shadow); }
+.app .ov-band { display: flex; height: 5px; }
+.app .ov-band i { flex: 1; }
+.app .ov-band i:nth-child(1) { background: #C4543B; } .app .ov-band i:nth-child(2) { background: #E89B2D; } .app .ov-band i:nth-child(3) { background: #3FAE6A; }
+.app .ov-hero-in { padding: 24px 28px 26px; }
+.app .ov-kicker { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #E89B2D; }
+.app .ov-hero h1 { margin: 8px 0 6px; font-family: var(--font-d); font-size: clamp(24px, 3.4vw, 32px); font-weight: 800; letter-spacing: -.02em; color: #fff; }
+.app .ov-hero p { margin: 0; max-width: 70ch; font-size: 15px; line-height: 1.55; color: #C9D6CE; }
+
+/* the six numbers */
+.app .ov-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; }
+.app .ov-kpi { display: flex; flex-direction: column; gap: 4px; padding: 15px 16px; border-radius: 16px; background: var(--paper-2);
+  border: 1px solid var(--line); color: var(--ink); text-decoration: none; min-width: 0; }
+.app .ov-kpi.is-link { transition: border-color .15s, transform .15s; }
+.app .ov-kpi.is-link:hover { border-color: var(--amber); transform: translateY(-1px); }
+.app .ov-k-label { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.app .ov-k-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 8px; min-width: 0; }
+.app .ov-k-val { min-width: 0; font-family: var(--font-d); font-size: 30px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .ov-k-sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .ov-delta { flex: none; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 99px; font-variant-numeric: tabular-nums; }
+.app .ov-delta.up { background: var(--green-tint); color: var(--green); }
+.app .ov-delta.down { background: var(--red-tint); color: var(--red); }
+.app .ov-delta.flat { background: var(--paper); color: var(--muted); }
+
+/* cards */
+.app .ov-grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin: 0 0 16px; }
+.app .ov-card { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border-radius: 18px; background: var(--paper-2); border: 1px solid var(--line); min-width: 0; }
+.app .ov-card-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.app .ov-card-h h2 { margin: 0; font-family: var(--font-d); font-size: 17px; font-weight: 700; color: var(--ink); }
+.app .ov-card-h span { font-size: 12px; color: var(--muted); }
+.app .ov-h3 { margin: 6px 0 0; font-size: 13px; font-weight: 700; color: var(--ink); }
+.app .ov-empty { margin: 0; font-size: 13.5px; color: var(--muted); }
+.app .ov-more { align-self: flex-start; margin-top: auto; font-size: 13px; font-weight: 600; color: var(--green); text-decoration: none; }
+.app .ov-more:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* bars: as tall as the card lets them be */
+.app .ov-chart { flex: 1; display: flex; flex-direction: column; min-height: 170px; margin: 0; }
+.app .ov-cols { flex: 1; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; border-bottom: 1px solid var(--line); }
+.app .ov-col { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; min-width: 0; cursor: default; }
+.app .ov-col i { display: block; width: 100%; border-radius: 4px 4px 0 0; background: var(--green); transition: opacity .15s; }
+.app .ov-col:hover i { opacity: .8; }
+.app .ov-val { font-size: 12px; font-weight: 700; line-height: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.app .ov-ticks { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; margin-top: 6px; }
+.app .ov-ticks span { font-size: 11px; color: var(--muted); text-align: center; white-space: nowrap; overflow: visible; }
+.app .ov-nofees { padding: 18px 0; }
+
+/* the funnel */
+.app .ov-funnel { list-style: none; margin: 0; padding: 0; display: grid; gap: 11px; }
+.app .ov-f-top { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; color: var(--ink); }
+.app .ov-f-top b { font-variant-numeric: tabular-nums; }
+.app .ov-f-track { height: 8px; border-radius: 99px; background: var(--paper); margin-top: 5px; overflow: hidden; }
+.app .ov-f-track i { display: block; height: 100%; border-radius: 99px; background: var(--green); }
+.app .ov-funnel li:last-child .ov-f-track i { background: var(--amber); }
+.app .ov-funnel small { display: block; margin-top: 3px; font-size: 11.5px; color: var(--muted); }
+
+/* who to call */
+.app .ov-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.app .ov-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.app .ov-list li:last-child { border-bottom: 0; }
+.app .ov-l-main { display: flex; flex-direction: column; min-width: 0; }
+.app .ov-l-main b { font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app .ov-l-main span { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app .ov-l-side { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex: none; }
+.app .ov-l-side small { font-size: 11.5px; color: var(--muted); }
+.app .ov-pill { font-size: 12.5px; font-weight: 700; padding: 5px 11px; border-radius: 99px; text-decoration: none; border: 1px solid var(--line); color: var(--ink); font-variant-numeric: tabular-nums; }
+.app .ov-pill.is-call { background: var(--amber); border-color: var(--amber); color: var(--on-amber); }
+
+/* top installers */
+.app .ov-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.app .ov-table th { text-align: right; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 0 6px 6px; border-bottom: 1px solid var(--line); }
+.app .ov-table td { text-align: right; padding: 8px 6px; border-bottom: 1px solid var(--line); color: var(--ink); }
+.app .ov-table th:first-child, .app .ov-table td:first-child { text-align: left; padding-left: 0; }
+.app .ov-table td small { display: block; font-size: 11.5px; color: var(--muted); }
+.app .ov-table td.is-won { color: var(--green); font-weight: 800; }
+
+/* money and quality */
+.app .ov-money { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.app .ov-money div { padding: 10px 12px; border-radius: 12px; background: var(--paper); min-width: 0; }
+.app .ov-money dt { font-size: 11.5px; color: var(--muted); }
+.app .ov-money dd { margin: 3px 0 0; font-size: 15px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.app .ov-money .is-late dd { color: var(--red); }
+
+/* countries */
+.app .ov-hbars { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.app .ov-hbars li { display: grid; grid-template-columns: 120px minmax(0, 1fr) 40px; align-items: center; gap: 10px; font-size: 13px; color: var(--ink); }
+.app .ov-hbars li > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app .ov-hbars i { display: block; height: 8px; border-radius: 99px; background: var(--green); min-width: 4px; }
+.app .ov-hbars b { text-align: right; font-variant-numeric: tabular-nums; }
+.app .ov-split { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+@media (max-width: 860px) {
+  .app .ov-grid2 { grid-template-columns: minmax(0, 1fr); }
+  .app .ov-money { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .app .ov-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app .ov-k-val { font-size: 24px; }
+  .app .ov-hero-in { padding: 20px 18px 22px; }
+  .app .ov-hbars li { grid-template-columns: 90px minmax(0, 1fr) 32px; }
+}

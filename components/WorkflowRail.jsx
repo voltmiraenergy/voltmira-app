@@ -34,8 +34,6 @@
 //                 { type: "step", projectId, step, done? }      install checklist key (done: false = untick)
 //                 { type: "grid", projectId, stage, operator?, clear? }  grid-file stage (clear = remove its date)
 //                 { type: "link", href } and { type: "tel", phone } are plain links
-//   tabs        node, optional; the page's own tabs (the quote's Oferta / Lucrarea), drawn as the card's
-//               bottom edge so the card and the tabs read as one header
 //   onChange    ({ installProgress?, gridFile?, proposalCode? }) => void
 //               optional; called after the rail itself changed the quote, with
 //               what the server returned, so the editor can refresh its own
@@ -65,7 +63,7 @@ const today = () => mdDayKey(Date.now());
 /** Two actions that do the same thing are shown once. */
 const sig = (a) => (a ? [a.type, a.step || a.stage || a.phone || a.href || "", a.done === false || a.clear ? "undo" : ""].join(":") : "");
 
-export default function WorkflowRail({ projectId, lang = "en", status, refreshKey, onAction, onChange, tabs = null }) {
+export default function WorkflowRail({ projectId, lang = "en", status, refreshKey, onAction, onChange }) {
   const router = useRouter();
   const [data, setData] = useState(null);
   const [failed, setFailed] = useState(false);
@@ -168,7 +166,7 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
 
   if (!w) {
     return (
-      <section id="workflow" className={"card wfr" + (tabs ? " has-tabs" : "")} aria-busy={!failed}>
+      <section id="workflow" className="card wfr" aria-busy={!failed}>
         <div className="wfr-head"><h3>{wt("rl_title", lang)}</h3></div>
         <ol className="wfr-phases" aria-hidden="true">
           {[0, 1, 2, 3].map((i) => <li key={i}><span className="wfr-phase wfr-phase-skel" /></li>)}
@@ -181,7 +179,6 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
         ) : (
           <div className="wfr-skel"><span className="sr">{wt("rl_loading", lang)}</span></div>
         )}
-        {tabs && <div className="wfr-tabs">{tabs}</div>}
       </section>
     );
   }
@@ -241,7 +238,7 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
   }
 
   return (
-    <section id="workflow" className={"card wfr" + (tabs ? " has-tabs" : "")} aria-labelledby="wfr-h" aria-busy={busy}>
+    <section id="workflow" className="card wfr" aria-labelledby="wfr-h" aria-busy={busy}>
       <div className="wfr-head">
         <h3 id="wfr-h">{wt("rl_title", lang)}</h3>
         <span className="wfr-badges">
@@ -351,7 +348,6 @@ export default function WorkflowRail({ projectId, lang = "en", status, refreshKe
         </div>
       )}
       {msg && <p className={"wfr-msg " + (msg.ok ? "ok" : "bad")} role="status">{msg.text}</p>}
-      {tabs && <div className="wfr-tabs">{tabs}</div>}
     </section>
   );
 }

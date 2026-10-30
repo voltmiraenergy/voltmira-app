@@ -4,10 +4,10 @@
 import { notFound } from "next/navigation";
 import { currentUser, currentCompany } from "../../../../lib/session.js";
 import { isPlatformAdmin } from "../../../../lib/platformAdmin.js";
-import { supabaseAdmin } from "../../../../lib/supabase.js";
 import { normLang } from "../../../../lib/i18n.js";
 import { at } from "../../../../lib/adminText.js";
-import { buildSignups, deviceOf } from "../../../../lib/signupsAdmin.js";
+import { deviceOf } from "../../../../lib/signupsAdmin.js";
+import { loadSignups } from "../../../../lib/signupsLoad.js";
 import { fmtDate, fmtTime } from "../../../../lib/tz.js";
 import { relTime } from "../../../../lib/relTime.js";
 import AdminNav, { ADMIN_CSS } from "../AdminNav.jsx";
@@ -22,18 +22,8 @@ export default async function SignupsPage() {
   if (!isPlatformAdmin(user?.email)) notFound();
   const co = await currentCompany().catch(() => null);
   const lang = normLang(co?.lang);
-  const db = supabaseAdmin();
-  const { data: log, error } = await db.from("signup_log").select("*").order("signed_up_at", { ascending: false }).limit(2000);
-  const needsDb = !!error;
-  const ids = (log || []).map((r) => r.user_id);
-  const [{ data: profs }, { data: cos }, { data: projs }] = needsDb || !ids.length ? [{ data: [] }, { data: [] }, { data: [] }] : await Promise.all([
-    db.from("profiles").select("id, name, role, phone, company_id").in("id", ids.slice(0, 1000)),
-    db.from("companies").select("id, name, lang"),
-    db.from("projects").select("company_id").eq("sample", false).limit(20000),
-  ]);
-  const quotes = new Map();
-  for (const p of projs || []) quotes.set(p.company_id, (quotes.get(p.company_id) || 0) + 1);
-  const s = buildSignups(log || [], new Map((profs || []).map((p) => [p.id, p])), new Map((cos || []).map((c) => [c.id, c])), quotes);
+  const s = await loadSignups();
+  const needsDb = s.needsDb;
   const T = s.totals;
   const tile = (n, label) => <div className="adm-card" style={{ margin: 0 }}><h2 style={{ fontSize: 26 }}>{n}</h2><p style={{ margin: 0 }}>{label}</p></div>;
 

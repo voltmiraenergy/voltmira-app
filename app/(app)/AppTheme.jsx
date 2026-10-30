@@ -68,9 +68,10 @@ const CSS = `
     background:var(--ink);color:#fff;
     display:flex;flex-direction:column;padding:0 14px 16px;
     position:sticky;top:0;height:100vh;z-index:40;
-    /* a short screen still reaches the sign-out at the bottom */
-    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent;
+    /* sized to fit (below); a very short window can still scroll, without a visible bar */
+    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;
   }
+  .sidebar::-webkit-scrollbar{display:none}
   /* Desktop and laptop: the whole app a step smaller, so a normal screen shows
      more of each page and the sidebar down to its sign-out. vh is zoomed too,
      so the sidebar asks for 100vh / zoom to stay the screen's full height. */
@@ -78,15 +79,31 @@ const CSS = `
     .app{--app-zoom:.9;zoom:var(--app-zoom);min-height:calc(100vh / var(--app-zoom))}
     .sidebar{height:calc(100vh / var(--app-zoom))}
   }
-  /* a short laptop screen: the sidebar's spacing tightens */
-  @media (min-width: 1024px) and (max-height: 820px){
-    .sidebar{padding-bottom:10px}
-    .logo{height:54px;margin-bottom:10px}
-    .sidebar .side-card .profile,.sidebar .side-credits,.sidebar .side-plan{padding-top:7px;padding-bottom:7px}
+  /* a shorter screen: the sidebar's spacing tightens step by step, so every tab and the sign-out fit */
+  @media (min-width: 1024px) and (max-height: 980px){
+    .logo{height:58px;margin-bottom:10px}
+    .app .sidebar .side-search-desk{margin:0 0 8px;padding-top:8px;padding-bottom:8px}
+    .nav{gap:1px}
+    .nav a{padding-top:7.5px;padding-bottom:7.5px}
     .sidebar .side-acts{margin-top:8px}
-    .sidebar .side-acts .side-theme{padding-top:8px;padding-bottom:8px}
-    .nav{gap:2px}
-    .nav a{padding-top:7px;padding-bottom:7px}
+  }
+  @media (min-width: 1024px) and (max-height: 860px){
+    .sidebar{padding-bottom:10px}
+    .logo{height:52px;margin-bottom:8px}
+    .sidebar .side-card .profile,.sidebar .side-credits,.sidebar .side-plan{padding-top:6px;padding-bottom:6px}
+    .sidebar .side-acts .side-theme{padding-top:7px;padding-bottom:7px}
+    .nav a{padding-top:5.5px;padding-bottom:5.5px;font-size:13.5px}
+    .nav a svg{width:17px;height:17px}
+  }
+  @media (min-width: 1024px) and (max-height: 740px){
+    .app .sidebar .side-search-desk{padding-top:6px;padding-bottom:6px}
+    .nav a{padding-top:4px;padding-bottom:4px}
+  }
+  @media (min-width: 1024px) and (max-height: 680px){
+    .logo{height:44px;margin-bottom:6px}
+    .app .sidebar .side-search-desk{margin-bottom:4px}
+    .nav a{padding-top:2.5px;padding-bottom:2.5px;font-size:13px}
+    .sidebar .side-plan small{display:none}
   }
   /* the logo exactly as on the homepage, on a light green band across the top
      of the sidebar: the app's own green tint (selected tabs, icon tiles), so it
@@ -97,7 +114,7 @@ const CSS = `
   .nav{display:flex;flex-direction:column;gap:3px}
   .nav a{
     display:flex;align-items:center;gap:11px;text-decoration:none;
-    color:var(--white-dim);padding:10.5px 12px;border-radius:10px;
+    color:var(--white-dim);padding:9px 12px;border-radius:10px;
     font-size:14px;font-weight:500;transition:background .18s,color .18s;
   }
   .nav a svg{flex:none;opacity:.85}
@@ -323,6 +340,9 @@ const CSS = `
   @media (max-width: 900px){.m-back{display:flex}}
   .m-back.is-app{display:flex}
   .main:has(.back-link) .m-back{display:none}
+  /* documents with their own close button (the bankability report), and never on paper */
+  .main:has(.rp-close) .m-back{display:none}
+  @media print{.m-back{display:none!important}}
   .m-back{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;margin:-6px 0 10px;padding:4px 0;
     background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(6px)}
   .m-back-btn{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:6px 12px 6px 6px;border:0;border-radius:10px;
@@ -330,16 +350,23 @@ const CSS = `
   .m-back-btn:hover,.m-back-btn:focus-visible{background:var(--paper-2)}
   .side-admin{display:block;margin-top:8px;padding:7px 10px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--amber);text-decoration:none;border:1px dashed color-mix(in srgb,var(--amber) 45%,transparent)}
   .side-admin:hover{background:color-mix(in srgb,var(--amber) 12%,transparent)}
-  .demo-bar{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:18px;
-    padding:10px 14px;border-radius:12px;background:var(--amber-tint);
-    border:1px solid color-mix(in srgb,var(--amber) 38%,transparent)}
-  .demo-badge{font-family:var(--font-d);font-size:10.5px;font-weight:700;letter-spacing:.09em;
-    text-transform:uppercase;color:var(--on-amber);background:var(--amber);border-radius:99px;padding:3px 9px;flex:none}
-  .demo-note{font-size:13px;color:var(--ink);opacity:.85;flex:1;min-width:0;line-height:1.45}
+  /* the demo notice (components/DemoChip.jsx): a small chip in the bottom-right corner, its note above it */
+  .demo-chip{position:fixed;right:16px;bottom:16px;z-index:55;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:min(340px,calc(100vw - 32px))}
+  .demo-row{display:flex;align-items:center;gap:10px;padding:6px 8px 6px 6px;border-radius:99px;background:var(--paper-2);
+    border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);box-shadow:var(--shadow)}
+  .demo-chip .demo-badge{font-family:var(--font-d);font-size:10.5px;font-weight:700;letter-spacing:.09em;border:0;cursor:pointer;
+    text-transform:uppercase;color:var(--on-amber);background:var(--amber);border-radius:99px;padding:4px 10px;flex:none}
   .demo-cta{flex:none;font-size:12.5px;font-weight:600;color:var(--ink);text-decoration:none;
-    border-bottom:1.5px solid color-mix(in srgb,var(--ink) 40%,transparent);padding-bottom:1px}
+    border-bottom:1.5px solid color-mix(in srgb,var(--ink) 40%,transparent);padding-bottom:1px;margin-right:4px}
   .demo-cta:hover{border-bottom-color:var(--ink)}
-  @media (max-width:560px){.demo-note{flex-basis:100%;order:3}}
+  .demo-pop{position:relative;padding:11px 34px 11px 13px;border-radius:12px;background:var(--amber-tint);
+    border:1px solid color-mix(in srgb,var(--amber) 38%,transparent);box-shadow:var(--shadow)}
+  .demo-pop p{margin:0;font-size:13px;line-height:1.45;color:var(--ink)}
+  .demo-x{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:24px;height:24px;border:0;border-radius:7px;
+    background:none;color:var(--ink);cursor:pointer;opacity:.7}
+  .demo-x:hover{opacity:1;background:color-mix(in srgb,var(--amber) 22%,transparent)}
+  @media (max-width:768px){.demo-chip{right:12px;bottom:calc(var(--mnav-h,66px) + 12px + env(safe-area-inset-bottom,0px))}}
+  @media print{.demo-chip{display:none!important}}
 
   .card{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
   .card h3{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:15px}
@@ -865,7 +892,10 @@ const CSS = `
       transform:translateY(110%);transition:transform .34s cubic-bezier(.22,.9,.28,1);
       box-shadow:0 -14px 40px -12px rgba(0,0,0,.5)}
     .more-sheet.open{transform:translateY(0)}
-    .more-grip{width:40px;height:4px;border-radius:99px;background:rgba(255,255,255,.28);margin:4px auto 8px}
+    .more-grab{display:flex;justify-content:center;align-items:center;height:30px;margin:-6px -10px 2px;touch-action:none;cursor:grab}
+    .more-grip{width:44px;height:5px;border-radius:99px;background:rgba(255,255,255,.34)}
+    .more-sheet{max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px));overflow-y:auto;overscroll-behavior:contain}
+    @media (prefers-reduced-motion: reduce){.more-sheet,.more-backdrop{transition:none}}
     .more-sheet a{display:flex;align-items:center;gap:14px;padding:14px 14px;border-radius:11px;
       color:var(--white-dim);font-size:15px;font-weight:500;text-decoration:none}
     .more-sheet a svg{width:20px;height:20px;flex:none;opacity:.9}

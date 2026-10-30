@@ -12,7 +12,9 @@ import "../dx.css";
 import "./settings.css";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Receipt, Calculator, Bot, Bell, CreditCard, Upload, Trash2, RotateCcw, Download, Lock, PencilLine, Globe } from "lucide-react";
+import { Building2, Receipt, Calculator, Bot, Bell, CreditCard, Upload, Trash2, RotateCcw, Download, Lock, PencilLine, Globe, Leaf } from "lucide-react";
+import Link from "next/link";
+import { et } from "../../../lib/energyText.js";
 import { supabaseBrowser } from "../../../lib/supabase-browser.js";
 import { saveCompany, seedSampleData, clearSampleData, getMyRole } from "../../../lib/actions.js";
 import { sendTestEmail, testWebhook } from "../../../lib/notifyTest.js";
@@ -40,6 +42,8 @@ const TABS = [
   { id: "estimate", Icon: Globe, label: "st_tab_estimate", hint: "st_tab_estimate_h" },
   { id: "notifications", Icon: Bell, label: "st_tab_alerts", hint: "st_tab_alerts_h" },
   { id: "fees", Icon: CreditCard, label: "st_tab_fees", hint: "st_tab_fees_h" },
+  // reference material, out of the daily sidebar: the market data for sales talks (app/(app)/energy)
+  { id: "resources", Icon: Leaf, label: "st_tab_res", hint: "st_tab_res_h" },
 ];
 const TAB_IDS = TABS.map((x) => x.id);
 // the old address of the account tab (links, emails, bookmarks) opens its successor
@@ -698,6 +702,14 @@ export default function Settings() {
           </Card>
         )}
       </>
+    ),
+
+    resources: (
+      <Card title={et("pg_h1", lang)} desc={t("st_res_energy_p", lang)}>
+        <div className="st-plan-acts">
+          <Link className="dx-btn primary" href="/energy">{t("st_res_open", lang)}</Link>
+        </div>
+      </Card>
     ),
 
     fees: (

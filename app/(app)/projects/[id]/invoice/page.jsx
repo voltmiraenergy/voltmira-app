@@ -90,7 +90,7 @@ export default async function InvoicePage(props) {
     <div className="invoice-doc">
       <style>{`
         @media print {
-          .sidebar, .skip-link, .demo-bar, .offline-bar { display: none !important; }
+          .sidebar, .skip-link, .demo-bar, .demo-chip, .offline-bar { display: none !important; }
           /* the app shell is a 236px + 1fr grid: with the sidebar hidden the
              invoice would fall into the narrow first column */
           .app { display: block !important; }
