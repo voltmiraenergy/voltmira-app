@@ -113,7 +113,7 @@ export default async function AppLayout({ children }) {
             </Link>
             {/* VoltMira's own team (PLATFORM_ADMIN_EMAILS): the admin screens, starting with who signs up */}
             {isPlatformAdmin(user.email) && (
-              <Link className="side-admin" href="/admin/signups">{t("side_admin", lang)}</Link>
+              <Link className="side-admin" href="/admin">{t("side_admin", lang)}</Link>
             )}
           </div>
           {/* theme and sign-out on one line, so a short screen still shows both */}
