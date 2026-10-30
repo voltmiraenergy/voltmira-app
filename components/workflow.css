@@ -99,25 +99,11 @@ html[data-theme="dark"] .app .wfr, html[data-theme="dark"] .app .wfp { --wf-ambe
 .app .wfr-msg.bad { color: var(--red); }
 .app .wfr-skel { height: 34px; border-radius: 10px; background: var(--paper); border: 1px solid var(--line); }
 
-/* the page's own tabs (the quote's Oferta / Lucrarea) as the card's bottom edge */
-.app .wfr.has-tabs { padding-bottom: 0; }
-.app .wfr-tabs { display: flex; margin-top: 2px; border-top: 1px solid var(--line); }
-.app .wfr-tabs [role="tablist"] { display: flex; gap: 22px; }
-.app .wfr-tabs [role="tab"] {
-  padding: 12px 2px 11px; border: 0; border-bottom: 2.5px solid transparent; background: none; font: inherit;
-  font-size: 14px; font-weight: 650; color: var(--muted); cursor: pointer; margin-bottom: -1px;
-}
-.app .wfr-tabs [role="tab"]:hover { color: var(--ink); }
-.app .wfr-tabs [role="tab"][aria-selected="true"] { color: var(--ink); border-bottom-color: var(--amber); }
-.app .wfr-tabs [role="tab"]:focus-visible { outline: 2px solid var(--green); outline-offset: -2px; border-radius: 6px; }
-
 @media (max-width: 760px) {
   .app .wfr-phases { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .app .wfr-why { white-space: normal; flex-basis: 100%; }
   .app .wfr-acts { width: 100%; }
   .app .wfr-acts .btn { flex: 1 1 auto; justify-content: center; }
-  .app .wfr-tabs [role="tablist"] { flex: 1; }
-  .app .wfr-tabs [role="tab"] { flex: 1; padding-top: 13px; }
 }
 
 /* ---------------------------------------------------------------- add to a portfolio */

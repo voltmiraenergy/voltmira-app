@@ -52,9 +52,25 @@ html[data-theme="dark"] .app .qb-actions .qb-send-wa { color: #5FD592; border-co
 .app .qb-tpl { display: inline-flex; align-items: center; gap: 6px; }
 .app .qb-tpl .input { width: 170px; padding: 8px 11px; }
 
-/* ---------------------------------------------------------------- pinned summary bar */
+/* ---------------------------------------------------------------- pinned switch and summary bar */
+/* The Quote / Job switch (a signed job only) and the summary bar stay on screen together. */
+.app .qb-pin { position: sticky; top: 8px; z-index: 20; margin: 0 0 18px; display: grid; gap: 8px; }
+.app .qb-switch {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px;
+  background: var(--paper-2); border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgba(20, 42, 33, .05), 0 10px 30px -18px rgba(20, 42, 33, .28);
+}
+.app .qb-switch [role="tab"] {
+  height: 42px; border: 0; border-radius: 10px; background: none; font: inherit; font-size: 15px; font-weight: 700;
+  color: var(--ink-2); cursor: pointer; transition: background .15s, color .15s;
+}
+.app .qb-switch [role="tab"]:hover { background: var(--paper); color: var(--ink); }
+.app .qb-switch [role="tab"][aria-selected="true"] { background: var(--green); color: var(--on-green); box-shadow: 0 3px 12px rgba(30, 107, 78, .25); }
+.app .qb-switch [role="tab"]:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+/* a switched-to tab starts below the pinned block */
+.app .qb #workflow { scroll-margin-top: 150px; }
 .app .qb-bar {
-  position: sticky; top: 8px; z-index: 20; margin: 0 0 18px;
+  margin: 0;
   display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px;
   background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
   box-shadow: 0 1px 2px rgba(20, 42, 33, .05), 0 10px 30px -14px rgba(20, 42, 33, .28);
@@ -136,10 +152,12 @@ html[data-theme="dark"] .app .qb-actions .qb-send-wa { color: #5FD592; border-co
   .app .qb-actions .qb-sendgrp { flex: 1 1 100%; order: -1; flex-wrap: wrap; }
   .app .qb-actions .qb-sendgrp .qb-send { flex: 1 1 0; height: 46px; }
   /* On a phone the bar becomes one swipeable row, so it stays one line tall. */
+  .app .qb-pin { top: 6px; gap: 6px; }
   .app .qb-bar {
     display: flex; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
-    top: 6px; margin-left: -4px; margin-right: -4px;
+    margin-left: -4px; margin-right: -4px;
   }
+  .app .qb #workflow { scroll-margin-top: 130px; }
   .app .qb-bar::-webkit-scrollbar { display: none; }
   .app .qb-bar > div { flex: 0 0 auto; min-width: 128px; scroll-snap-align: start; padding: 9px 13px; }
   .app .qb-bar dd { font-size: 18px; }

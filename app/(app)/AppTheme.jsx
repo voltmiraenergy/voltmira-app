@@ -323,6 +323,9 @@ const CSS = `
   @media (max-width: 900px){.m-back{display:flex}}
   .m-back.is-app{display:flex}
   .main:has(.back-link) .m-back{display:none}
+  /* documents with their own close button (the bankability report), and never on paper */
+  .main:has(.rp-close) .m-back{display:none}
+  @media print{.m-back{display:none!important}}
   .m-back{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;margin:-6px 0 10px;padding:4px 0;
     background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(6px)}
   .m-back-btn{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:6px 12px 6px 6px;border:0;border-radius:10px;
@@ -865,7 +868,10 @@ const CSS = `
       transform:translateY(110%);transition:transform .34s cubic-bezier(.22,.9,.28,1);
       box-shadow:0 -14px 40px -12px rgba(0,0,0,.5)}
     .more-sheet.open{transform:translateY(0)}
-    .more-grip{width:40px;height:4px;border-radius:99px;background:rgba(255,255,255,.28);margin:4px auto 8px}
+    .more-grab{display:flex;justify-content:center;align-items:center;height:30px;margin:-6px -10px 2px;touch-action:none;cursor:grab}
+    .more-grip{width:44px;height:5px;border-radius:99px;background:rgba(255,255,255,.34)}
+    .more-sheet{max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px));overflow-y:auto;overscroll-behavior:contain}
+    @media (prefers-reduced-motion: reduce){.more-sheet,.more-backdrop{transition:none}}
     .more-sheet a{display:flex;align-items:center;gap:14px;padding:14px 14px;border-radius:11px;
       color:var(--white-dim);font-size:15px;font-weight:500;text-decoration:none}
     .more-sheet a svg{width:20px;height:20px;flex:none;opacity:.9}

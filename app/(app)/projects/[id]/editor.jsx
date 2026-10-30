@@ -287,9 +287,9 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   const pickView = (v) => {
     setView(v);
     try { sessionStorage.setItem(viewKey, v); } catch { /* not remembered, still switches */ }
-    // switched from far down the page: back to the tabs, the top of the new tab
-    const bar = document.querySelector("#workflow .wfr-tabs");
-    if (bar && bar.getBoundingClientRect().top < 0) bar.scrollIntoView({ block: "start" });
+    // switched from far down the page: back to the top of the new tab (the switch itself stays pinned)
+    const panel = document.getElementById("workflow");
+    if (panel && panel.getBoundingClientRect().top < 0) panel.scrollIntoView({ block: "start" });
   };
   useEffect(() => {
     // after the first paint: the tab this browser had open on this quote, then a link's card
@@ -924,9 +924,9 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   ].filter(Boolean);
   // the left column ends after the grid file: papers and fee there, the work on site and the rest on the right
   // A signed job (or one whose grid file is under way) has two pages: the quote, and the job itself, each in two
-  // columns of about the same height. The tabs are the progress card's bottom edge (components/WorkflowRail.jsx).
+  // columns of about the same height. The switch between them is pinned at the top with the summary bar.
   const viewTabs = jobTab ? (
-    <div role="tablist" aria-label={tr("q_views_label")}>
+    <div className="qb-switch" role="tablist" aria-label={tr("q_views_label")}>
       {[["offer", tr("q_view_offer")], ["job", tr("q_view_job")]].map(([id, label]) => (
         <button key={id} type="button" role="tab" id={"q-tab-" + id} aria-selected={view === id} aria-controls={"q-" + id}
           onClick={() => pickView(id)}>{label}</button>
@@ -1000,7 +1000,9 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
         </div>
       </header>
 
-      {/* What the client will see, and what it leaves you, pinned while you edit. */}
+      {/* The Quote / Job switch, and what the client will see and what it leaves you, pinned while you edit. */}
+      <div className={"qb-pin" + (viewTabs ? " has-switch" : "")}>
+      {viewTabs}
       <dl className="qb-bar" aria-live="polite">
         <div><dt>{tr("qb_pays")}</dt><dd>{fmt(q.e.cost)}</dd>
           <dd className="qb-bar-sub">{grants > 0 ? tr("qb_pays_grant", { v: fmt(grants) }) : costPerW > 0 ? perW(costPerW) : ""}</dd></div>
@@ -1018,10 +1020,11 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             ? tr("qb_margin_sub", { p: q.e.grossCost > 0 ? Math.round((margin / q.e.grossCost) * 100) : 0, v: fmt(q.e.grossCost) })
             : tr("qb_margin_none")}</dd></div>
       </dl>
+      </div>
 
       {/* Where this job is in the workflow, and the one next thing to do
           (lib/workflow.js). The dashboard and the quotes list link here (#workflow). */}
-      <WorkflowRail projectId={initial.id} lang={lang} status={p.status} tabs={viewTabs}
+      <WorkflowRail projectId={initial.id} lang={lang} status={p.status}
         onAction={async (a) => {
           if (a.type === "send" || a.type === "copy_link") { makeProposal(); return true; }
           if (a.type === "invoice") { openInvoice(); return true; }

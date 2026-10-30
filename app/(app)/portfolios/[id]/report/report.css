@@ -207,7 +207,9 @@
   .app .rp-kv, .app .rp-two, .app .rp-two > *, .app .rp-kpis, .app .rp-toc, .app .rp-msgs li,
   .app .rp p, .app .rp-cmp { break-inside: avoid; page-break-inside: avoid; }
   .app .rp p { orphans: 3; widows: 3; }
-  .app .rp-cover { min-height: 250mm; }
+  /* the printable height is 263mm; the draft ribbon above the cover takes about 12, so the cover's last line
+     (the sample note) stays on the first sheet instead of alone on the second */
+  .app .rp-cover { min-height: 232mm; }
   /* the map and its list stay together, on the page where they fit */
   .app .rp-mappage { break-inside: avoid; page-break-inside: avoid; }
   /* a plant's section runs a page or more: it starts on its own page so its heading never sits alone */
