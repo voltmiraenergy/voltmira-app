@@ -42,7 +42,8 @@ export default function StructuralLoads({ lang, roofPitchDeg }) {
   if (!open) {
     return (
       <button type="button" className="btn ghost sm qb-expand" onClick={() => setOpen(true)}>
-        {t3(lang, "Sarcini structurale (NCM)", "Structural loads (NCM)", "Нагрузки (НКМ)", "Навантаження (NCM)")}
+        {/* engineering, for whoever needs it: closed by default and marked optional */}
+        {t3(lang, "Avansat: sarcini structurale (NCM, opțional)", "Advanced: structural loads (NCM, optional)", "Дополнительно: нагрузки (НКМ, по желанию)", "Додатково: навантаження (NCM, за бажанням)")}
       </button>
     );
   }

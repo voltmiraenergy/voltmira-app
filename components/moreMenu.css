@@ -1,0 +1,17 @@
+/* components/moreMenu.css — the three-dots menu (components/MoreMenu.jsx), on the app's tokens */
+.app .mm { position: relative; display: inline-flex; }
+.app .mm-list {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 200px; padding: 5px;
+  display: flex; flex-direction: column; gap: 1px; border-radius: 12px; background: var(--paper-2);
+  border: 1px solid var(--line); box-shadow: var(--shadow-lg, 0 18px 40px -16px rgba(20, 42, 33, .35));
+}
+.app .mm-list.up { top: auto; bottom: calc(100% + 6px); }
+.app .mm-item {
+  display: block; width: 100%; padding: 10px 12px; border: 0; border-radius: 8px; background: none; text-align: left;
+  font: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink); cursor: pointer; white-space: nowrap;
+}
+.app .mm-item:hover, .app .mm-item:focus-visible { background: var(--paper); outline: none; }
+.app .mm-item.danger { color: var(--red); }
+.app .mm-item.danger:hover, .app .mm-item.danger:focus-visible { background: var(--red-tint); }
+.app .mm-item:disabled { opacity: .5; cursor: default; }
+@media (max-width: 768px) { .app .mm-item { padding: 13px 14px; font-size: 15px; } }

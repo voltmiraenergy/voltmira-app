@@ -260,3 +260,9 @@ html[data-theme="dark"] .app .dx {
 @media (prefers-reduced-motion: reduce) {
   .app .dx > *, .app .dx-pal, .app .dx-pal-wrap { animation: none !important; }
 }
+
+/* the installed base before any handover: one quiet line */
+.app .dx-base-none { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0;
+  padding: 13px 16px; border-radius: 14px; border: 1px dashed var(--line); background: var(--paper-2); font-size: 13.5px; color: var(--muted); }
+.app .dx-base-none a { font-weight: 700; color: var(--green); text-decoration: none; white-space: nowrap; }
+.app .dx-base-none a:hover { text-decoration: underline; text-underline-offset: 3px; }

@@ -621,13 +621,19 @@ export default async function Dashboard() {
         },
       ]} />
 
+      {/* no system handed over yet: one line instead of a big band of zeros */}
+      {base.n === 0 ? (
+        <p className="dx-base-none">
+          <span>{t("dx_base_none", lang)}</span>
+          <Link href="/jobs">{t("dx_base_jobs", lang)}</Link>
+        </p>
+      ) : (
       <section className="dx-base" aria-labelledby="dx-base-h">
         <div className="dx-base-in">
           <div className="dx-base-copy">
             <h2 id="dx-base-h">{t("dx_base_title", lang)}</h2>
             <p>
-              {base.n === 0 ? t("dx_base_empty", lang)
-                : base.ratio != null ? t("dx_base_ratio", lang, { p: base.ratio }).split("**").map((s, i) => (i % 2 ? <b key={i}>{s}</b> : s))
+              {base.ratio != null ? t("dx_base_ratio", lang, { p: base.ratio }).split("**").map((s, i) => (i % 2 ? <b key={i}>{s}</b> : s))
                 : t("dx_base_noread", lang)}
             </p>
           </div>
@@ -644,6 +650,7 @@ export default async function Dashboard() {
           <path d="M170 208 L222 34" stroke="#3FAE6A" strokeWidth="17" strokeLinecap="round" />
         </svg>
       </section>
+      )}
     </div>
   );
 }

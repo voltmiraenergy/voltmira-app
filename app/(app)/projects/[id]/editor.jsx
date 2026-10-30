@@ -67,7 +67,7 @@ import { moneyFormatter, numFor } from "../../../../lib/money.js";
 import { effectiveOfferCurrency, currencyOnMarketChange, betterCurrencyFor, normCurrency } from "../../../../lib/offerCurrency.js";
 import { saveOutbox, readOutbox, clearOutbox, isNetworkError } from "../../../../lib/offline.js";
 import LinkLabels from "../../../../components/LinkLabels.jsx";
-import { isPlaceholderTitle } from "../../../../lib/quoteTitle.js";
+import { isPlaceholderTitle, nextAutoTitle } from "../../../../lib/quoteTitle.js";
 
 // System-size slider range — raised to 500 kW: Site Designer's own real,
 // drawn-roof panel counts can land well past a "residential" size for a large
@@ -527,7 +527,10 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial.id]);
   function update(patch) {
-    const next = { ...pRef.current, ...patch };
+    const prev = pRef.current;
+    const next = { ...prev, ...patch };
+    // a quote the app named follows its client and size ("Ion Popescu, 6 kW"); a typed title stays (lib/quoteTitle.js)
+    if (!("title" in patch)) { const auto = nextAutoTitle(prev, next, lang); if (auto) next.title = auto; }
     pRef.current = next;
     setP(next); setSaved("saving");
     clearTimeout(timer.current);
@@ -895,6 +898,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
   // The margin behind the price, from the same bill-of-materials total BomCard shows.
   const materials = bomTotal(p.bom);
   const margin = q.e.grossCost - materials;
+  const marginPct = q.e.grossCost > 0 ? Math.round((margin / q.e.grossCost) * 100) : 0;
   const clientLine = [p.client, String(p.address || "").split(",").slice(0, 2).join(",").trim()].filter(Boolean).join(", ");
 
   // The job's own cards (lib/jobFees.js fee, the install steps, on site, the grid file, the portfolio). In their
@@ -1014,11 +1018,20 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
           <dd className="qb-bar-sub">{p.yieldOverride ? tr("qb_prod_pvgis") : tr("qb_prod_default")}</dd></div>
         <div><dt>{tr("qb_self")}</dt><dd>{Math.round(q.e.self * 100)}%</dd>
           <dd className="qb-bar-sub">{consEff > 0 ? tr("qb_cover", { n: Math.round(coverage * 100) }) : ""}</dd></div>
-        <div className={materials > 0 ? (margin < 0 ? "neg" : "pos") : ""}><dt>{materials > 0 ? tr("qb_margin") : tr("qb_price")}</dt>
-          <dd>{materials > 0 ? fmt(margin) : fmt(q.e.grossCost)}</dd>
-          <dd className="qb-bar-sub">{materials > 0
-            ? tr("qb_margin_sub", { p: q.e.grossCost > 0 ? Math.round((margin / q.e.grossCost) * 100) : 0, v: fmt(q.e.grossCost) })
-            : tr("qb_margin_none")}</dd></div>
+        {/* the margin is always here: on the equipment's cost once it has one, else one tap to add the costs */}
+        <div className={"qb-margin " + (materials > 0 ? (margin < 0 ? "neg" : "pos") : "")}><dt>{tr("qb_margin")}</dt>
+          {materials > 0 ? (
+            <>
+              <dd>{fmt(margin)}</dd>
+              <dd className="qb-bar-sub">{tr("qb_margin_sub", { p: marginPct, v: fmt(q.e.grossCost) })}</dd>
+              <dd className="qb-margin-bar" aria-hidden="true"><i style={{ width: `${Math.max(0, Math.min(100, marginPct))}%` }} /></dd>
+            </>
+          ) : (
+            <>
+              <dd><a className="qb-margin-add" href="#bom" onClick={(e) => { e.preventDefault(); document.getElementById("bom")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{tr("qb_margin_add")}</a></dd>
+              <dd className="qb-bar-sub">{tr("qb_margin_price", { v: fmt(q.e.grossCost) })}</dd>
+            </>
+          )}</div>
       </dl>
       </div>
 

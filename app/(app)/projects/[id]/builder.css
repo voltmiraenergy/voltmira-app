@@ -89,6 +89,11 @@ html[data-theme="dark"] .app .qb-actions .qb-send-wa { color: #5FD592; border-co
 .app .qb-bar .hi dd:not(.qb-bar-sub) { color: var(--amber-ink); }
 .app .qb-bar .pos dd:not(.qb-bar-sub) { color: var(--green); }
 .app .qb-bar .neg dd:not(.qb-bar-sub) { color: var(--red); }
+/* the margin tile: a thin bar of the margin's share of the price, or a link to add the costs */
+.app .qb-bar .qb-margin-bar { height: 4px; margin-top: 6px; border-radius: 99px; background: var(--paper); overflow: hidden; }
+.app .qb-bar .qb-margin-bar i { display: block; height: 100%; border-radius: 99px; background: var(--green); }
+.app .qb-bar .neg .qb-margin-bar i { background: var(--red); }
+.app .qb-bar .qb-margin-add { font-family: var(--font-b); font-size: 15px; font-weight: 700; color: var(--amber-ink); text-decoration: underline; text-underline-offset: 3px; }
 
 /* ---------------------------------------------------------------- cards */
 .app .qb .editor { gap: 18px; }

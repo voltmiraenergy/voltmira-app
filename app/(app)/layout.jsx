@@ -24,6 +24,7 @@ import { isPlatformAdmin } from "../../lib/platformAdmin.js";
 import { holdFor } from "../../lib/feeHold.js";
 import { monthName } from "../../lib/feeText.js";
 import FeeHoldBanner from "../../components/FeeHoldBanner.jsx";
+import DemoChip from "../../components/DemoChip.jsx";
 
 
 // Initials for the profile avatar — first letters of the first two words, or the
@@ -135,11 +136,7 @@ export default async function AppLayout({ children }) {
         {/* the first visit puts the person's country on their sign-up (app/api/signup-seen) */}
         {!isDemoEmail(user.email) && <SignupSeen />}
         {isDemoEmail(user.email) && (
-          <div className="demo-bar">
-            <span className="demo-badge">{t("demo_badge", lang)}</span>
-            <span className="demo-note">{t("demo_note", lang)}</span>
-            <Link className="demo-cta" href="/login">{t("demo_cta", lang)}</Link>
-          </div>
+          <DemoChip badge={t("demo_badge", lang)} note={t("demo_note", lang)} cta={t("demo_cta", lang)} closeLabel={t("close", lang)} />
         )}
         <FeeHoldBanner lang={lang} level={hold.level} daysLate={hold.daysLate || 0} month={monthName(hold.month, lang)}
           href={hold.invoiceId ? `/fees/invoice/${hold.invoiceId}` : "/settings?tab=fees"} />

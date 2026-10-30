@@ -16,7 +16,7 @@ import LeadCard from "./LeadCard.jsx";
 import LeadAttribution from "./LeadAttribution.jsx";
 import AddLead from "./AddLead.jsx";
 import { appTitle } from "../../../lib/pageTitle.js";
-import { leadScore } from "../../../lib/leadScore.js";
+import { leadScore, scorePoints } from "../../../lib/leadScore.js";
 import { qft } from "../../../lib/quoteFastText.js";
 import { FX } from "@voltmira/engine";
 
@@ -37,7 +37,10 @@ export default async function LeadsPage(props) {
   const { data: allLeads } = await sb.from("leads").select("*").order("created_at", { ascending: false });
   // the score each lead earns with this workspace's weights (lib/leadScore.js), worked out now, never stored
   const scoreOpts = { fx: FX[{ MD: "MDL", RO: "RON", UA: "UAH" }[co?.default_market || "MD"]] || 1, serviceDistricts: co?.service_districts || [] };
-  const leads = (allLeads || []).map(l => ({ ...l, status: l.status || "new", score: leadScore(l, scoreOpts, co?.lead_score_weights).score }));
+  const leads = (allLeads || []).map((l) => {
+    const r = leadScore(l, scoreOpts, co?.lead_score_weights);
+    return { ...l, status: l.status || "new", score: r.score, why: scorePoints(r.parts, co?.lead_score_weights) };
+  });
   const sort = searchParams?.sort === "score" ? "score" : "new";
   const min = searchParams?.min === "70" ? 70 : 0;
 
@@ -134,7 +137,7 @@ export default async function LeadsPage(props) {
                   <h2 className={"ld-group-h t-" + g.s}>{t("lead_" + g.s, lang)}<span>{g.items.length}</span></h2>
                 )}
                 <div className="ld-list">
-                  {g.items.map(l => <LeadCard key={l.id} lead={l} lang={lang} company={co?.name || ""} score={l.score} market={co?.default_market || "MD"} />)}
+                  {g.items.map(l => <LeadCard key={l.id} lead={l} lang={lang} company={co?.name || ""} score={l.score} why={l.why} market={co?.default_market || "MD"} />)}
                 </div>
               </section>
             ))

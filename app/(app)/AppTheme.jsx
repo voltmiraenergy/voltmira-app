@@ -333,16 +333,23 @@ const CSS = `
   .m-back-btn:hover,.m-back-btn:focus-visible{background:var(--paper-2)}
   .side-admin{display:block;margin-top:8px;padding:7px 10px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--amber);text-decoration:none;border:1px dashed color-mix(in srgb,var(--amber) 45%,transparent)}
   .side-admin:hover{background:color-mix(in srgb,var(--amber) 12%,transparent)}
-  .demo-bar{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:18px;
-    padding:10px 14px;border-radius:12px;background:var(--amber-tint);
-    border:1px solid color-mix(in srgb,var(--amber) 38%,transparent)}
-  .demo-badge{font-family:var(--font-d);font-size:10.5px;font-weight:700;letter-spacing:.09em;
-    text-transform:uppercase;color:var(--on-amber);background:var(--amber);border-radius:99px;padding:3px 9px;flex:none}
-  .demo-note{font-size:13px;color:var(--ink);opacity:.85;flex:1;min-width:0;line-height:1.45}
+  /* the demo notice (components/DemoChip.jsx): a small chip in the bottom-right corner, its note above it */
+  .demo-chip{position:fixed;right:16px;bottom:16px;z-index:55;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:min(340px,calc(100vw - 32px))}
+  .demo-row{display:flex;align-items:center;gap:10px;padding:6px 8px 6px 6px;border-radius:99px;background:var(--paper-2);
+    border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);box-shadow:var(--shadow)}
+  .demo-chip .demo-badge{font-family:var(--font-d);font-size:10.5px;font-weight:700;letter-spacing:.09em;border:0;cursor:pointer;
+    text-transform:uppercase;color:var(--on-amber);background:var(--amber);border-radius:99px;padding:4px 10px;flex:none}
   .demo-cta{flex:none;font-size:12.5px;font-weight:600;color:var(--ink);text-decoration:none;
-    border-bottom:1.5px solid color-mix(in srgb,var(--ink) 40%,transparent);padding-bottom:1px}
+    border-bottom:1.5px solid color-mix(in srgb,var(--ink) 40%,transparent);padding-bottom:1px;margin-right:4px}
   .demo-cta:hover{border-bottom-color:var(--ink)}
-  @media (max-width:560px){.demo-note{flex-basis:100%;order:3}}
+  .demo-pop{position:relative;padding:11px 34px 11px 13px;border-radius:12px;background:var(--amber-tint);
+    border:1px solid color-mix(in srgb,var(--amber) 38%,transparent);box-shadow:var(--shadow)}
+  .demo-pop p{margin:0;font-size:13px;line-height:1.45;color:var(--ink)}
+  .demo-x{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:24px;height:24px;border:0;border-radius:7px;
+    background:none;color:var(--ink);cursor:pointer;opacity:.7}
+  .demo-x:hover{opacity:1;background:color-mix(in srgb,var(--amber) 22%,transparent)}
+  @media (max-width:900px){.demo-chip{right:12px;bottom:calc(var(--mnav-h,66px) + 12px + env(safe-area-inset-bottom,0px))}}
+  @media print{.demo-chip{display:none!important}}
 
   .card{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
   .card h3{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:15px}

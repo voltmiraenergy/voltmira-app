@@ -90,7 +90,7 @@ export default function BomCard({
   };
 
   return (
-    <section className={className}>
+    <section id="bom" className={className}>
       <div className="bom-head">
         <h3 style={{ margin: 0, flex: 1 }}>{t3(lang, "Echipament & deviz", "Equipment & bill of materials", "Оборудование и смета", "Обладнання та специфікація")}</h3>
         {bom.length > 0 && (
