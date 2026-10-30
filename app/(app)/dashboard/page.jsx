@@ -40,7 +40,7 @@ import { wt, describe, stageName } from "../../../lib/workflowText.js";
 import NextMoves from "./NextMoves.jsx";
 import Phases from "./Phases.jsx";
 import Numbers from "./Numbers.jsx";
-import CommandPalette from "./CommandPalette.jsx";
+import SearchButton from "../../../components/SearchButton.jsx";
 import InstallBoard from "./InstallBoard.jsx";
 import DashTabs from "./DashTabs.jsx";
 import AutoRefresh from "./AutoRefresh.jsx";
@@ -369,11 +369,6 @@ export default async function Dashboard() {
     return { r, ...paperworkFor(r, st ? { code: st.code, created_at: st.sentAt, accepted_at: st.acceptedAt } : null) };
   }).filter((x) => x.missing.length);
   const stepLabels = Object.fromEntries(INSTALL_STEPS.map((s) => [s, t("inst_" + s, lang)]));
-  const statusLabels = Object.fromEntries(["draft", "sent", "won", "lost"].map((s) => [s, t("st_" + s, lang)]));
-  const pages = [
-    ["/leads", "nav_leads"], ["/projects", "nav_projects"], ["/activity", "nav_activity"], ["/studio", "nav_studio"],
-    ["/team", "nav_team"], ["/settings", "nav_settings"], ["/profile", "pf_title"], ["/guide", "nav_guide"],
-  ].map(([href, k]) => ({ href, label: t(k, lang) }));
   let lastDay = null;
 
   return (
@@ -387,17 +382,8 @@ export default async function Dashboard() {
           {!emptyWorkspace && <p className="dx-summary">{t("dx_summary", lang, { moves: moves.length, n: sentN, pipe: fmt(pipeline) })}</p>}
         </div>
         <div className="dx-head-tools">
-          <CommandPalette
-            quotes={list.map((r) => ({ id: r.id, title: r.title || t("untitled", lang), client: r.client_name || "", status: r.status }))}
-            leads={openLeads.map((l) => ({ id: l.id, name: l.name, phone: l.phone || "", email: l.email || "" }))}
-            pages={pages}
-            statusLabels={statusLabels}
-            newQuoteAction={newQuote}
-            labels={{
-              trigger: t("dx_search", lang), placeholder: t("dx_pal_ph", lang), actions: t("dx_pal_actions", lang),
-              quotes: t("nav_projects", lang), leads: t("nav_leads", lang), pages: t("dx_pal_pages", lang),
-              none: t("dx_pal_none", lang), hint: t("dx_pal_hint", lang), newQuote: t("btn_new_quote", lang),
-            }} />
+          {/* the search itself is on every page (components/CommandPalette.jsx, in the app layout) */}
+          <SearchButton label={t("dx_search", lang)} />
           {/* with no signal it starts a draft on the device instead */}
           <NewQuoteOffline action={newQuote} lang={lang} className="dx-new">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>

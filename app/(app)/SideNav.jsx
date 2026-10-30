@@ -37,7 +37,7 @@ const ICONS = {
   more: <Ellipsis {...ICON} />,
 };
 
-export default function SideNav({ items, moreLabel = "More", sheetFooter = null }) {
+export default function SideNav({ items, moreLabel = "More", sheetFooter = null, sheetSearch = null }) {
   const path = usePathname() || "";
   const [moreOpen, setMoreOpen] = useState(false);
   const isActive = (href) => href === "/dashboard" ? path === "/dashboard" : path.startsWith(href);
@@ -129,6 +129,7 @@ export default function SideNav({ items, moreLabel = "More", sheetFooter = null 
       <div ref={backRef} className={"more-backdrop" + (moreOpen ? " open" : "")} onClick={close} aria-hidden="true" />
       <div ref={sheetRef} className={"more-sheet" + (moreOpen ? " open" : "")} role="menu" aria-label={moreLabel}>
         <div className="more-grab" aria-hidden="true"><div className="more-grip" /></div>
+        {sheetSearch && <div className="more-search" onClick={close}>{sheetSearch}</div>}
         {secondary.map(({ href, label }) => {
           const active = isActive(href);
           return (

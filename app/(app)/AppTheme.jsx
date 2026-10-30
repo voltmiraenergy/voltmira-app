@@ -348,7 +348,7 @@ const CSS = `
   .demo-x{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:24px;height:24px;border:0;border-radius:7px;
     background:none;color:var(--ink);cursor:pointer;opacity:.7}
   .demo-x:hover{opacity:1;background:color-mix(in srgb,var(--amber) 22%,transparent)}
-  @media (max-width:900px){.demo-chip{right:12px;bottom:calc(var(--mnav-h,66px) + 12px + env(safe-area-inset-bottom,0px))}}
+  @media (max-width:768px){.demo-chip{right:12px;bottom:calc(var(--mnav-h,66px) + 12px + env(safe-area-inset-bottom,0px))}}
   @media print{.demo-chip{display:none!important}}
 
   .card{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}

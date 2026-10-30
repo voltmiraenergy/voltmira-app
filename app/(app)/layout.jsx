@@ -25,6 +25,9 @@ import { holdFor } from "../../lib/feeHold.js";
 import { monthName } from "../../lib/feeText.js";
 import FeeHoldBanner from "../../components/FeeHoldBanner.jsx";
 import DemoChip from "../../components/DemoChip.jsx";
+import CommandPalette from "../../components/CommandPalette.jsx";
+import SearchButton from "../../components/SearchButton.jsx";
+import { createProject } from "../../lib/actions.js";
 
 
 // Initials for the profile avatar — first letters of the first two words, or the
@@ -35,6 +38,13 @@ function initialsOf(name) {
   if (s.includes("@")) return s.slice(0, 2).toUpperCase();
   const parts = s.split(/\s+/).filter(Boolean);
   return ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase() || s.slice(0, 2).toUpperCase();
+}
+
+// "New quote" from the Ctrl+K search, on any page
+async function newQuoteFromSearch() {
+  "use server";
+  const id = await createProject();
+  redirect(`/projects/${id}`);
 }
 
 export default async function AppLayout({ children }) {
@@ -74,15 +84,29 @@ export default async function AppLayout({ children }) {
     { href: "/guide", label: t("nav_guide", lang) },
   ];
 
+  // the Ctrl+K search on every page (components/CommandPalette.jsx): every page, including the ones
+  // that live only in Settings or the profile, and the labels it needs
+  const searchPages = [...items, { href: "/energy", label: et("nav", lang) }, { href: "/profile", label: t("pf_title", lang) },
+    { href: "/catalog", label: t("nav_catalog", lang) }].filter((p, i, a) => a.findIndex((x) => x.href === p.href) === i);
+  const searchLabels = {
+    trigger: t("dx_search", lang), placeholder: t("dx_pal_ph", lang), actions: t("dx_pal_actions", lang),
+    quotes: t("nav_projects", lang), jobs: t("nav_jobs", lang), leads: t("nav_leads", lang), pages: t("dx_pal_pages", lang),
+    none: t("dx_pal_none", lang), hint: t("dx_pal_hint", lang), newQuote: t("btn_new_quote", lang), untitled: t("untitled", lang),
+  };
+  const statusLabels = Object.fromEntries(["draft", "sent", "won", "lost"].map((s) => [s, t("st_" + s, lang)]));
+
   return (
     <div className="app">
       <AppTheme />
+      <CommandPalette pages={searchPages} labels={searchLabels} statusLabels={statusLabels} newQuoteAction={newQuoteFromSearch} />
       {/* also keeps the workspace language on the device, for the error page and /login (lib/HtmlLang.jsx) */}
       <HtmlLang lang={lang} persist />
       <a className="skip-link" href="#main">{lang === "ro" ? "Sari la conținut" : lang === "ru" ? "К содержимому" : lang === "uk" ? "До вмісту" : "Skip to content"}</a>
       <aside className="sidebar">
         <Link className="logo" href="/dashboard" aria-label="VoltMira"><Logo size={32} /></Link>
+        <SearchButton className="side-search side-search-desk" label={t("dx_search_short", lang)} />
         <SideNav items={items} moreLabel={t("nav_more", lang)}
+          sheetSearch={<SearchButton className="side-search" label={t("dx_search_short", lang)} kbd={false} />}
           sheetFooter={
             <>
               <Link className="more-foot-profile" href="/profile">
