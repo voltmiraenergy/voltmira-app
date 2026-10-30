@@ -132,8 +132,8 @@ export default function Terms() {
       <p>
         Using VoltMira is free: there is no subscription and no limit on offers, people or features.
         We charge one thing, a fee for each job your client signs, that is, when your client accepts an
-        offer online or you mark a quote as signed. The fee is 59 lei for each kW of the signed system,
-        rounded to the lei, and at most 1,990 lei a job, as shown in Settings and on our website. A fee
+        offer online or you mark a quote as signed. The fee is 99 lei for each kW of the signed system,
+        rounded to the lei, and at most 2,990 lei a job, as shown in Settings and on our website. A fee
         is recorded at the price in force when the job is signed and keeps that amount; a price change
         applies only to jobs signed after it, and jobs signed before we start billing are never billed. Any VAT
         due is added on our invoice. Your company&rsquo;s first 2 signed jobs, counted by its IDNO across
