@@ -75,3 +75,12 @@
 .app .sv-serials{font-family:ui-monospace,Consolas,monospace;font-size:11.5px}
 @media (max-width:900px){.app .sv-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){.app .sv-two,.app .sv-three{grid-template-columns:1fr}.app .sv-photos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* the crew button stands out on a system that needs a look; the client's monthly note */
+.app .sv-icon.is-key { color: var(--amber-ink, #955F0B); border-color: color-mix(in srgb, var(--amber) 55%, var(--line)); background: var(--amber-tint); }
+.app .sv-upd { display: grid; gap: 10px; }
+.app .sv-upd-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.app .sv-upd-sun { margin: 0; font-size: 13px; color: var(--muted); min-height: 1.2em; }
+.app .sv-upd-text { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; resize: vertical; }
+.app .sv-upd-hint { margin: -4px 0 0; font-size: 12px; }
+.app .sv-upd .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

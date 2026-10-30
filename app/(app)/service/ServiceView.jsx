@@ -6,7 +6,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Activity, MessageSquareWarning, CalendarCheck, ShieldCheck, Plus, Link2, CalendarPlus, Check, X } from "lucide-react";
+import { Activity, MessageSquareWarning, CalendarCheck, ShieldCheck, Plus, Link2, CalendarPlus, Check, X, Truck, MessageCircle } from "lucide-react";
+import { clientUpdate, MONTHS_LONG } from "../../../lib/clientUpdate.js";
 import { svt } from "../../../lib/serviceText.js";
 import { nextStatuses, REQUEST_KINDS, OPEN_STATUSES } from "../../../lib/service.js";
 import { openRequest, moveRequestTo, requestDetail, bookCheck, markCheckDone, setChecksOff, saveWarranty, saveServiceSettings, serviceLink } from "../../../lib/serviceActions.js";
@@ -30,6 +31,7 @@ export default function ServiceView({ data, tab: tab0, openId = null }) {
   const [req, setReq] = useState(() => (openId ? (data?.requests || []).find((x) => x.id === openId) || null : null));
   const [visit, setVisit] = useState(null);       // the visit dialog: { kind, projectId, then }
   const [done, setDone] = useState(null);         // the "check done" dialog
+  const [upd, setUpd] = useState(null);           // the client's monthly note: the system
   const [filter, setFilter] = useState({ systems: "attention", requests: "open", checks: "due" });
   const flash = (s) => { setNote(s); setTimeout(() => setNote(""), 2400); };
   const pick = (t) => { setTab(t); window.history.replaceState(null, "", t === "systems" ? "/service" : `/service?tab=${t}`); };
@@ -89,6 +91,13 @@ export default function ServiceView({ data, tab: tab0, openId = null }) {
                         <td className="sv-acts">
                           <button type="button" className="sv-icon" title={S("a_request")} aria-label={S("a_request")} disabled={data?.needsDb} onClick={() => setNewReq({ projectId: s.id, kind: s.health.cause === "no_reading" || s.health.status === "critical" ? "no_production" : "other", description: s.attention && s.health.cause ? S("c_" + s.health.cause) : "", contact_name: s.client, contact_phone: "" })}><MessageSquareWarning size={15} /></button>
                           <button type="button" className="sv-icon" title={S("a_link")} aria-label={S("a_link")} disabled={data?.needsDb} onClick={() => copyLink(s.id)}><Link2 size={15} /></button>
+                          {/* the month in words for the client: weather or a real fault (lib/clientUpdate.js) */}
+                          <button type="button" className="sv-icon" title={S("a_update")} aria-label={S("a_update")} onClick={() => setUpd(s)}><MessageCircle size={15} /></button>
+                          {/* a system that needs a look: a crew on a date, straight from here */}
+                          {s.attention && (
+                            <button type="button" className="sv-icon is-key" title={S("a_crew")} aria-label={S("a_crew")} disabled={data?.needsDb}
+                              onClick={() => setVisit({ kind: "service", projectId: s.id, note: s.health.cause ? S("c_" + s.health.cause) : "" })}><Truck size={15} /></button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -203,6 +212,8 @@ export default function ServiceView({ data, tab: tab0, openId = null }) {
           if (visit.kind === "maintenance") await bookCheck(visit.projectId, { visitId: v.id, dueOn: visit.dueOn }).catch(() => null);
           setVisit(null); setReq(null); router.refresh();
         }} />}
+
+      {upd && <UpdateDialog sys={upd} lang={lang} S={S} onClose={() => setUpd(null)} />}
 
       {done && (
         <Modal title={S("ch_done_h")} onClose={() => setDone(null)} S={S}>
@@ -409,5 +420,54 @@ function Warranties({ data, S, day, flash, onSaved }) {
         </Modal>
       )}
     </>
+  );
+}
+
+/** The client's monthly note, in their language, with this month's sun at the address looked up first. */
+function UpdateDialog({ sys, lang, S, onClose }) {
+  const h = sys.health || {};
+  const m = h.month || null;
+  const [msgLang, setMsgLang] = useState(["ro", "ru", "uk", "en"].includes(sys.clientLang) ? sys.clientLang : lang);
+  const canSun = m && h.status !== "pending" && sys.lat != null && sys.lon != null;
+  const [sun, setSun] = useState(canSun ? undefined : null);   // undefined while looking it up
+  const [text, setText] = useState(null);                        // the installer's own edit, once they type
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!canSun) return;
+    let live = true;
+    fetch("/api/weather/sun", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ year: h.year, points: [{ id: sys.id, lat: sys.lat, lon: sys.lon }] }) })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (live) setSun(d?.factors?.[sys.id]?.[m.index] ?? null); })
+      .catch(() => { if (live) setSun(null); });
+    return () => { live = false; };
+  }, [canSun, h.year, sys.id, sys.lat, sys.lon, m]);
+  const auto = clientUpdate({ lang: msgLang, kw: sys.kw, pending: h.status === "pending" || !m, month: m?.index ?? 0,
+    kwh: m?.kwh ?? null, expected: m?.expected || 0, sun: sun ?? null });
+  const msg = text ?? auto;
+  const monthName = m ? (MONTHS_LONG[lang] || MONTHS_LONG.ro)[m.index] : "";
+  async function copy() {
+    try { await navigator.clipboard.writeText(msg); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { /* the text stays selectable */ }
+  }
+  return (
+    <Modal title={S("u_h", { client: sys.client || sys.title })} onClose={onClose} S={S} wide>
+      <div className="sv-upd">
+        <div className="sv-upd-top">
+          <span className="sv-muted">{S("u_lang")}</span>
+          <Pills value={msgLang} options={[["ro", "RO"], ["ru", "RU"], ["uk", "UK"], ["en", "EN"]]} onChange={(v) => { setMsgLang(v); setText(null); }} />
+        </div>
+        <p className="sv-upd-sun" role="status">
+          {sun === undefined ? S("u_sun_wait") : sun == null ? (h.status === "pending" ? "" : S("u_sun_none")) : S("u_sun_tx", { m: monthName, p: Math.round(sun * 100) })}
+        </p>
+        <label htmlFor="svUpdText" className="sr">{S("a_update")}</label>
+        <textarea id="svUpdText" className="input sv-upd-text" rows={9} value={msg} onChange={(e) => setText(e.target.value)} />
+        <p className="sv-muted sv-upd-hint">{S("u_edit")}</p>
+        <div className="modal-acts">
+          <button type="button" className="btn ghost" onClick={copy}>{copied ? S("u_copied") : S("u_copy")}</button>
+          <a className="btn ghost" href={`viber://forward?text=${encodeURIComponent(msg)}`}>Viber</a>
+          <a className="btn amber" href={`https://wa.me/?text=${encodeURIComponent(msg)}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        </div>
+      </div>
+    </Modal>
   );
 }
