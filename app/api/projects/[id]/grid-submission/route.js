@@ -18,7 +18,7 @@ import { buildGridPackage, gridNotifier } from "../../../../../lib/gridServer.js
 import { sendEmail, emailConfigured } from "../../../../../lib/email.js";
 import { isDemoEmail } from "../../../../../lib/demo.js";
 import { mdDayKey } from "../../../../../lib/tz.js";
-import { jobGate } from "../../../../../lib/jobFeeServer.js";
+import { jobGate, gateStatus } from "../../../../../lib/jobFeeServer.js";
 import { gridRulesFor } from "../../../../../lib/gridRulesStore.js";
 import { canOverrideGrid } from "../../../../../lib/rbac.js";
 
@@ -66,7 +66,7 @@ export async function POST(req, props) {
   if (body.action !== "client_lang" && body.action !== "status" && isDemoEmail(user.email)) return answer({ ok: false, error: "demo_only" });
   if (body.action === "resend" || body.action === "submit") {
     const gate = await jobGate(db, { project, co, user, produce: "grid_submit" });
-    if (gate.locked) return NextResponse.json({ ok: false, error: gate.error, fee: gate.fee ? { status: gate.fee.status, amount_minor: gate.fee.amount_minor } : null }, { status: 402 });
+    if (gate.locked) return NextResponse.json({ ok: false, error: gate.error, fee: gate.fee ? { status: gate.fee.status, amount_minor: gate.fee.amount_minor } : null }, { status: gateStatus(gate.error) });
   }
 
   const savedOp = project.install_progress?.gridFile?.operator;

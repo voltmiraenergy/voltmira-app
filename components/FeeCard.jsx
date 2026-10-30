@@ -23,7 +23,9 @@ import { clientGaveUp, askFeeWaiver } from "../lib/feeActions.js";
 export default function FeeCard({ projectId, lang, status, state, open = null, onGaveUp }) {
   const router = useRouter();
   const F = (k, v) => ft(k, lang, v);
-  const [gate, setGate] = useState(open === "locked" || open === "idno");
+  const [gate, setGate] = useState(open === "locked" || open === "idno" || open === "retry");
+  // billing could not be checked or recorded just now (the gate fails closed): a "try again", not "you owe"
+  const retry = open === "retry" || state?.error === "fee_unavailable" || state?.error === "paperwork_not_recorded";
   const [ask, setAsk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState("");
@@ -81,7 +83,7 @@ export default function FeeCard({ projectId, lang, status, state, open = null, o
     : fee.status === "waived" ? F("waived_p")
     : due && st ? F("on_statement", { no: st.number, d: feeDay(Date.parse(st.due_at) - 1, lang) })
     : due ? F("in_statement", { m: monthName(month, lang) }) : "";
-  const note = state?.sample ? F("sample_p") : !state?.on ? F("off_p") : state?.error === "needs_idno" ? F("needs_idno") : locked ? F("locked_p", { m: monthName(st?.month || month, lang) }) : "";
+  const note = state?.sample ? F("sample_p") : !state?.on ? F("off_p") : retry ? F("retry_p") : state?.error === "needs_idno" ? F("needs_idno") : locked ? F("locked_p", { m: monthName(st?.month || month, lang) }) : "";
 
   // paperwork was made for the job: cancelling no longer voids the fee (lib/jobFees.js feeOnLost), so the client
   // giving up goes with a request to VoltMira to waive it, and its reason
@@ -149,8 +151,8 @@ export default function FeeCard({ projectId, lang, status, state, open = null, o
           <div className="modal fee-gate" role="dialog" aria-modal="true" aria-labelledby="fee-gate-h" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="fee-x" aria-label={F("close")} onClick={() => setGate(false)}><X size={18} /></button>
             <span className="fee-gate-i" aria-hidden="true"><Lock size={20} /></span>
-            <h3 id="fee-gate-h">{F("gate_h")}</h3>
-            <p>{state?.error === "needs_idno" ? F("needs_idno") : F("gate_p")}</p>
+            <h3 id="fee-gate-h">{retry ? F("retry_h") : F("gate_h")}</h3>
+            <p>{retry ? F("retry_p") : state?.error === "needs_idno" ? F("needs_idno") : F("gate_p")}</p>
             {st && <p className="fee-gate-fee">{st.number}, {amount}</p>}
             <div className="fee-acts">
               {state?.error === "needs_idno"

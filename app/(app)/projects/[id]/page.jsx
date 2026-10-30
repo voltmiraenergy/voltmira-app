@@ -183,7 +183,7 @@ export default async function ProjectPage(props) {
     }
   }
   const sp = await props.searchParams;
-  const feeOpen = ["locked", "idno", "sign"].includes(sp?.fee) ? sp.fee : null;
+  const feeOpen = ["locked", "idno", "sign", "retry"].includes(sp?.fee) ? sp.fee : null;
 
   return <Editor initial={p} engineSettings={E} jobFee={jobFee} feeOpen={feeOpen} meName={me?.name || user?.email || ""} team={team || []} catalog={catalog || []}
     canEditTechnical={canEditTech}

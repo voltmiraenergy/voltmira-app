@@ -14,7 +14,7 @@ import { renderHtmlPdf } from "../../../../lib/renderProposalPdf.js";
 import { isRateLimited, clientIp } from "../../../../lib/ratelimit.js";
 import { supabaseServer } from "../../../../lib/supabase.js";
 import { JOBS_KEY } from "../../../../lib/studioKeys.js";
-import { jobGate } from "../../../../lib/jobFeeServer.js";
+import { jobGate, gateStatus } from "../../../../lib/jobFeeServer.js";
 import { supabaseAdmin } from "../../../../lib/supabase.js";
 import { isDemoEmail } from "../../../../lib/demo.js";
 
@@ -65,7 +65,7 @@ export async function POST(req) {
       const { data: co } = project ? await sb.from("companies").select("id, idno").eq("id", project.company_id).maybeSingle() : { data: null };
       if (project) {
         const gate = await jobGate(supabaseAdmin(), { project, co, user, produce: kind });
-        if (gate.locked) return NextResponse.json({ error: gate.error, project: project.id }, { status: 402 });
+        if (gate.locked) return NextResponse.json({ error: gate.error, project: project.id }, { status: gateStatus(gate.error) });
       }
     }
   }

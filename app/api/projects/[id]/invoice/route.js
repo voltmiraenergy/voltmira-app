@@ -27,7 +27,7 @@ import { projectVisibility } from "../../../../../lib/projectAccess.js";
 import { projectInvoice } from "../../../../../lib/invoiceServer.js";
 import { issueInvoiceFor } from "../../../../../lib/invoiceIssue.js";
 import { sendCrmWebhook } from "../../../../../lib/crmWebhook.js";
-import { jobGate, feeParam } from "../../../../../lib/jobFeeServer.js";
+import { jobGate, feeParam, gateStatus } from "../../../../../lib/jobFeeServer.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -115,7 +115,7 @@ export async function POST(req, props) {
   if (auth instanceof NextResponse) return auth;
   // a won job's paperwork waits on its fee once the 14 days to pay are over (lib/jobFees.js)
   const gate = await jobGate(supabaseAdmin(), { project: auth.project, co: auth.co, user: auth.user, produce: "invoice" });
-  if (gate.locked) return NextResponse.json({ error: gate.error }, { status: 402 });
+  if (gate.locked) return NextResponse.json({ error: gate.error }, { status: gateStatus(gate.error) });
   // a demo workspace is for looking: its invoices are not emailed to anyone (lib/demoServer.js)
   if (isDemoEmail(auth.user?.email)) return NextResponse.json({ error: "demo_only" }, { status: 403 });
 
