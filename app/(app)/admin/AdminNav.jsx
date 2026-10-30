@@ -43,4 +43,22 @@ export const ADMIN_CSS = `
 .adm-diff td.b{color:var(--muted);text-decoration:line-through}
 .adm-doc{display:grid;grid-template-columns:140px repeat(4,minmax(0,1fr)) auto;gap:6px;align-items:end;margin-bottom:6px}
 @media (max-width:760px){.adm-doc{grid-template-columns:1fr 1fr}}
+/* a phone: the admin tabs are one sideways row, the number tiles two a row, a sign-up a card */
+.su-cards{display:none}
+@media (max-width:640px){
+  .adm-nav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-left:-2px;margin-right:-16px;padding:2px 16px 4px 2px}
+  .adm-nav::-webkit-scrollbar{display:none}
+  .adm-nav > *{flex:none}
+  .adm-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .su-scroll{display:none}
+  .su-cards{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;list-style:none;margin:0;padding:0;min-width:0}
+  .su-cards li{display:grid;grid-template-columns:minmax(0,1fr);min-width:0;gap:6px;padding:12px 14px;border-radius:14px;background:var(--paper);border:1px solid var(--line)}
+  .su-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  .su-top b{font-size:15px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .su-top time{font-size:12px;color:var(--muted);flex:none}
+  .su-mail{font-size:13px;overflow-wrap:anywhere}
+  .su-meta{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--muted)}
+  .su-meta span{padding:3px 8px;border-radius:99px;background:var(--paper-2);border:1px solid var(--line)}
+  .su-call{justify-self:start;font-size:13px;font-weight:700;padding:6px 12px;border-radius:99px;background:var(--amber);color:var(--on-amber);text-decoration:none}
+}
 `;

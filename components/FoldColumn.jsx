@@ -6,6 +6,7 @@
 // (#workflow, say) opens it. On a wider screen nothing changes: the children
 // render exactly as before, with no wrapper. Used by the quote page
 // (app/(app)/projects/[id]/editor.jsx), whose 18 sections ran to 10,000 px.
+// The sections an installer reads every time stay open: a child marked data-keep, or one `keep(child)` picks.
 import { Children, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { t } from "../lib/i18n.js";
@@ -68,12 +69,12 @@ function Fold({ lang, children }) {
   );
 }
 
-export default function FoldColumn({ className, lang = "en", children }) {
+export default function FoldColumn({ className, lang = "en", keep = null, children }) {
   const phone = useSyncExternalStore(subscribe, isPhone, () => false);
   if (!phone) return <div className={className}>{children}</div>;
   return (
     <div className={className}>
-      {Children.map(children, (c) => (c ? <Fold lang={lang}>{c}</Fold> : c))}
+      {Children.map(children, (c) => (!c || c.props?.["data-keep"] || keep?.(c) ? c : <Fold lang={lang}>{c}</Fold>))}
     </div>
   );
 }
