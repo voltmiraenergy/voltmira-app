@@ -68,9 +68,10 @@ const CSS = `
     background:var(--ink);color:#fff;
     display:flex;flex-direction:column;padding:0 14px 16px;
     position:sticky;top:0;height:100vh;z-index:40;
-    /* a short screen still reaches the sign-out at the bottom */
-    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent;
+    /* sized to fit (below); a very short window can still scroll, without a visible bar */
+    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;
   }
+  .sidebar::-webkit-scrollbar{display:none}
   /* Desktop and laptop: the whole app a step smaller, so a normal screen shows
      more of each page and the sidebar down to its sign-out. vh is zoomed too,
      so the sidebar asks for 100vh / zoom to stay the screen's full height. */
@@ -78,15 +79,31 @@ const CSS = `
     .app{--app-zoom:.9;zoom:var(--app-zoom);min-height:calc(100vh / var(--app-zoom))}
     .sidebar{height:calc(100vh / var(--app-zoom))}
   }
-  /* a short laptop screen: the sidebar's spacing tightens */
-  @media (min-width: 1024px) and (max-height: 820px){
-    .sidebar{padding-bottom:10px}
-    .logo{height:54px;margin-bottom:10px}
-    .sidebar .side-card .profile,.sidebar .side-credits,.sidebar .side-plan{padding-top:7px;padding-bottom:7px}
+  /* a shorter screen: the sidebar's spacing tightens step by step, so every tab and the sign-out fit */
+  @media (min-width: 1024px) and (max-height: 980px){
+    .logo{height:58px;margin-bottom:10px}
+    .app .sidebar .side-search-desk{margin:0 0 8px;padding-top:8px;padding-bottom:8px}
+    .nav{gap:1px}
+    .nav a{padding-top:7.5px;padding-bottom:7.5px}
     .sidebar .side-acts{margin-top:8px}
-    .sidebar .side-acts .side-theme{padding-top:8px;padding-bottom:8px}
-    .nav{gap:2px}
-    .nav a{padding-top:7px;padding-bottom:7px}
+  }
+  @media (min-width: 1024px) and (max-height: 860px){
+    .sidebar{padding-bottom:10px}
+    .logo{height:52px;margin-bottom:8px}
+    .sidebar .side-card .profile,.sidebar .side-credits,.sidebar .side-plan{padding-top:6px;padding-bottom:6px}
+    .sidebar .side-acts .side-theme{padding-top:7px;padding-bottom:7px}
+    .nav a{padding-top:5.5px;padding-bottom:5.5px;font-size:13.5px}
+    .nav a svg{width:17px;height:17px}
+  }
+  @media (min-width: 1024px) and (max-height: 740px){
+    .app .sidebar .side-search-desk{padding-top:6px;padding-bottom:6px}
+    .nav a{padding-top:4px;padding-bottom:4px}
+  }
+  @media (min-width: 1024px) and (max-height: 680px){
+    .logo{height:44px;margin-bottom:6px}
+    .app .sidebar .side-search-desk{margin-bottom:4px}
+    .nav a{padding-top:2.5px;padding-bottom:2.5px;font-size:13px}
+    .sidebar .side-plan small{display:none}
   }
   /* the logo exactly as on the homepage, on a light green band across the top
      of the sidebar: the app's own green tint (selected tabs, icon tiles), so it
@@ -97,7 +114,7 @@ const CSS = `
   .nav{display:flex;flex-direction:column;gap:3px}
   .nav a{
     display:flex;align-items:center;gap:11px;text-decoration:none;
-    color:var(--white-dim);padding:10.5px 12px;border-radius:10px;
+    color:var(--white-dim);padding:9px 12px;border-radius:10px;
     font-size:14px;font-weight:500;transition:background .18s,color .18s;
   }
   .nav a svg{flex:none;opacity:.85}
