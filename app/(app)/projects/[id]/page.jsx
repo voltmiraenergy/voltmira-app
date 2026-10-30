@@ -172,7 +172,7 @@ export default async function ProjectPage(props) {
       if (fee || gate.error) {
         jobFee = {
           fee: fee ? { id: fee.id, status: fee.status, tier: fee.tier, kw: Number(fee.kw) || 0, amount_minor: fee.amount_minor, won_at: fee.won_at, trigger: fee.trigger, free_slot: fee.free_slot, paid_at: fee.paid_at, payment_method: fee.payment_method, docs_at: fee.docs_at || null, waiver_requested_at: fee.waiver_requested_at || null } : null,
-          statement, locked: gate.locked, error: gate.error || null, on: feePaywallOn(), sample,
+          statement, locked: gate.locked, error: gate.error || null, on: feePaywallOn(), sample, beta: gate.access?.reason === "beta",
         };
       }
     } else if (p.status === "lost") {
@@ -183,7 +183,7 @@ export default async function ProjectPage(props) {
     }
   }
   const sp = await props.searchParams;
-  const feeOpen = ["locked", "idno", "sign", "retry"].includes(sp?.fee) ? sp.fee : null;
+  const feeOpen = ["locked", "idno", "sign", "retry", "kw"].includes(sp?.fee) ? sp.fee : null;
 
   return <Editor initial={p} engineSettings={E} jobFee={jobFee} feeOpen={feeOpen} meName={me?.name || user?.email || ""} team={team || []} catalog={catalog || []}
     canEditTechnical={canEditTech}

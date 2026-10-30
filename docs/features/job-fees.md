@@ -8,7 +8,9 @@ off, and is not advertised. Monitoring is not charged.
 
 | | |
 |---|---|
-| Fee | 200 lei for each kW of the signed system, rounded to the lei, at most 8,000 lei a job (`FEE_PER_KW_MINOR`, `FEE_CAP_MINOR`: the only place the prices live). A 10 kW job is 2,000 lei; 40 kW and above, 8,000 |
+| Fee | 59 lei for each kW of the signed system, rounded to the lei, at most 1,990 lei a job (`FEE_PER_KW_MINOR`, `FEE_CAP_MINOR`: the only place the prices live; `feeFor` is the only formula). 5 kW is 295 lei, 10 kW 590, 20 kW 1,180, 30 kW 1,770; from about 33.73 kW, 1,990. A signed job with no system size gets no fee and no paperwork until the size is set (`needs_kw`), so it never takes a free job |
+| Price changes | prospective: a fee keeps the amount recorded when the job was signed. Paid, waived, free and void fees are never touched; an unpaid fee recorded at an earlier price (200 lei a kW, at most 8,000, until 2026-10-30) is frozen at that amount (`pricedNow`), billed as recorded and never repriced; issued statements keep their totals |
+| Billing start | `JOB_FEES_FROM` (YYYY-MM-DD, midnight in Chisinau). Only jobs signed on or after it are invoiced or can lock (`feeBillable`); jobs signed before it (the free beta) stay on record, keep the free jobs they used, and are never billed and never need an IDNO. Unset: `monthlyStatements` issues nothing |
 | When it is due | the client signs online (`lib/acceptProposal.js`), or the installer marks the quote signed (`markProjectWon`, `bulkUpdateStatus`, `cycleProjectStatus`, the "mark signed" dialog before an invoice); the same fee either way |
 | Free | the company's first 2 signed jobs, counted by its IDNO across its workspaces |
 | Billing | the fees of the jobs signed in a month go on one statement (VoltMira's invoice to the company) issued on the 1st of the next month, paid by bank transfer by the 15th, with the statement's reference |

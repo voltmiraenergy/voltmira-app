@@ -162,10 +162,10 @@ const HTML = {
 
 <section>
   <div class="g-h"><span class="g-n">6</span><h2>What it costs</h2></div>
-  <p class="g-lede">VoltMira is free for every installer, with every feature and no limit on offers or people. You pay only when a client signs: 200 lei for each kW of the signed system, at most 8,000 lei a job. Your first 2 signed jobs are free, a job the client gives up costs nothing, and the month's fees come on one statement at the start of the next, paid by bank transfer by the 15th.</p>
+  <p class="g-lede">VoltMira is free for every installer, with every feature and no limit on offers or people. 0 lei a month, unlimited quotes and projects, a free CRM. You pay only when you win a job: 59 lei for each kW of the signed system, at most 1,990 lei a job. Your first 2 signed jobs are free, a job the client gives up costs nothing, and the month's fees come on one statement at the start of the next, paid by bank transfer by the 15th.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">200 lei</div><div class="pd">per kW of each signed job</div></div>
-    <div class="plan"><div class="pn">8,000 lei</div><div class="pd">the most a job costs</div></div>
+    <div class="plan hot"><div class="pn">59 lei</div><div class="pd">per kW of each won job</div></div>
+    <div class="plan"><div class="pn">1,990 lei</div><div class="pd">the most a job costs</div></div>
     <div class="plan"><div class="pn">2 jobs</div><div class="pd">your first signed jobs, free</div></div>
     <div class="plan"><div class="pn">0 lei</div><div class="pd">when the client gives up</div></div>
   </div>
@@ -273,10 +273,10 @@ const HTML = {
 
 <section>
   <div class="g-h"><span class="g-n">6</span><h2>Cât costă</h2></div>
-  <p class="g-lede">VoltMira este gratuit pentru orice instalator, cu toate funcțiile și fără limită de oferte sau oameni. Plătești doar când un client semnează: 200 lei pentru fiecare kW al sistemului semnat, maximum 8.000 lei pe lucrare. Primele 2 lucrări semnate sunt gratuite, o lucrare la care clientul renunță nu costă nimic, iar taxele lunii vin pe un singur extras la începutul lunii următoare, plătit prin transfer până pe 15.</p>
+  <p class="g-lede">VoltMira este gratuit pentru orice instalator, cu toate funcțiile și fără limită de oferte sau oameni. 0 lei pe lună, oferte și proiecte nelimitate, CRM gratuit. Plătești doar când câștigi o lucrare: 59 lei pentru fiecare kW al sistemului semnat, maximum 1.990 lei pe lucrare. Primele 2 lucrări semnate sunt gratuite, o lucrare la care clientul renunță nu costă nimic, iar taxele lunii vin pe un singur extras la începutul lunii următoare, plătit prin transfer până pe 15.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">200 lei</div><div class="pd">pe kW din fiecare lucrare semnată</div></div>
-    <div class="plan"><div class="pn">8.000 lei</div><div class="pd">maximum pe o lucrare</div></div>
+    <div class="plan hot"><div class="pn">59 lei</div><div class="pd">pe kW din fiecare lucrare câștigată</div></div>
+    <div class="plan"><div class="pn">1.990 lei</div><div class="pd">maximum pe o lucrare</div></div>
     <div class="plan"><div class="pn">2 lucrări</div><div class="pd">primele semnate, gratuite</div></div>
     <div class="plan"><div class="pn">0 lei</div><div class="pd">când clientul renunță</div></div>
   </div>
@@ -385,10 +385,10 @@ const HTML = {
 
 <section>
   <div class="g-h"><span class="g-n">6</span><h2>Сколько стоит</h2></div>
-  <p class="g-lede">VoltMira бесплатна для любого монтажника, со всеми функциями и без ограничений на предложения или людей. Вы платите, только когда клиент подписывает: 200 лей за каждый кВт подписанной системы, не больше 8 000 лей за объект. Первые 2 подписанных объекта бесплатны, объект, от которого клиент отказался, ничего не стоит, а плата за месяц приходит одной выпиской в начале следующего, оплата переводом до 15-го.</p>
+  <p class="g-lede">VoltMira бесплатна для любого монтажника, со всеми функциями и без ограничений на предложения или людей. 0 лей в месяц, неограниченные оферты и проекты, бесплатная CRM. Вы платите, только когда выигрываете объект: 59 лей за каждый кВт подписанной системы, не больше 1 990 лей за объект. Первые 2 подписанных объекта бесплатны, объект, от которого клиент отказался, ничего не стоит, а плата за месяц приходит одной выпиской в начале следующего, оплата переводом до 15-го.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">200 лей</div><div class="pd">за кВт каждого подписанного объекта</div></div>
-    <div class="plan"><div class="pn">8 000 лей</div><div class="pd">максимум за объект</div></div>
+    <div class="plan hot"><div class="pn">59 лей</div><div class="pd">за кВт каждого выигранного объекта</div></div>
+    <div class="plan"><div class="pn">1 990 лей</div><div class="pd">максимум за объект</div></div>
     <div class="plan"><div class="pn">2 объекта</div><div class="pd">первые подписанные, бесплатно</div></div>
     <div class="plan"><div class="pn">0 лей</div><div class="pd">если клиент отказался</div></div>
   </div>
@@ -496,10 +496,10 @@ const HTML = {
 
 <section>
   <div class="g-h"><span class="g-n">6</span><h2>Скільки коштує</h2></div>
-  <p class="g-lede">VoltMira безкоштовна для будь-якого монтажника, з усіма функціями й без обмежень на пропозиції чи людей. Ви платите, лише коли клієнт підписує: 200 лей за кожен кВт підписаної системи, не більше 8 000 лей за об’єкт. Перші 2 підписані об’єкти безкоштовні, об’єкт, від якого клієнт відмовився, нічого не коштує, а плата за місяць надходить однією випискою на початку наступного, оплата переказом до 15-го.</p>
+  <p class="g-lede">VoltMira безкоштовна для будь-якого монтажника, з усіма функціями й без обмежень на пропозиції чи людей. 0 лей на місяць, необмежені розрахунки й проєкти, безкоштовна CRM. Ви платите, лише коли виграєте об’єкт: 59 лей за кожен кВт підписаної системи, не більше 1 990 лей за об’єкт. Перші 2 підписані об’єкти безкоштовні, об’єкт, від якого клієнт відмовився, нічого не коштує, а плата за місяць надходить однією випискою на початку наступного, оплата переказом до 15-го.</p>
   <div class="plans">
-    <div class="plan hot"><div class="pn">200 лей</div><div class="pd">за кВт кожного підписаного об’єкта</div></div>
-    <div class="plan"><div class="pn">8 000 лей</div><div class="pd">максимум за об’єкт</div></div>
+    <div class="plan hot"><div class="pn">59 лей</div><div class="pd">за кВт кожного виграного об’єкта</div></div>
+    <div class="plan"><div class="pn">1 990 лей</div><div class="pd">максимум за об’єкт</div></div>
     <div class="plan"><div class="pn">2 об’єкти</div><div class="pd">перші підписані, безкоштовно</div></div>
     <div class="plan"><div class="pn">0 лей</div><div class="pd">якщо клієнт відмовився</div></div>
   </div>

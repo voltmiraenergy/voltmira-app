@@ -101,7 +101,7 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
   // thought was open (a statement gone overdue meanwhile, the job no longer signed)
   const [serverLock, setServerLock] = useState(null);
   const signNeeded = signAtOpen || serverLock === "not_signed";
-  const feeLocked = lockedAtOpen || signNeeded || serverLock === "job_fee_due" || serverLock === "needs_idno";
+  const feeLocked = lockedAtOpen || signNeeded || serverLock === "job_fee_due" || serverLock === "needs_idno" || serverLock === "needs_kw";
   const isMd = project.market === "MD";
   // the body is written in the language of the market's law (lib/legalDocs.js)
   const locale = docLocale(project.market);
@@ -148,7 +148,7 @@ export default function LegalDocsModal({ lang, onClose, company, project, initia
   useEffect(() => {
     if (lockedAtOpen || signAtOpen || !project.id || !["contract", "commissioning", "diagram"].includes(docType)) return;
     let live = true;
-    openPaperwork(project.id, docType).then((r) => { if (live && r && !r.ok && ["not_signed", "job_fee_due", "needs_idno"].includes(r.error)) setServerLock(r.error); }).catch(() => {});
+    openPaperwork(project.id, docType).then((r) => { if (live && r && !r.ok && ["not_signed", "job_fee_due", "needs_idno", "needs_kw"].includes(r.error)) setServerLock(r.error); }).catch(() => {});
     return () => { live = false; };
   }, [docType, project.id, lockedAtOpen, signAtOpen]);
 

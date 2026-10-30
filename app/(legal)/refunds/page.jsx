@@ -10,10 +10,10 @@ export const metadata = {
 
 export default function Refunds() {
   return (
-    <LegalShell title="Refund Policy" updated="24 October 2026">
+    <LegalShell title="Refund Policy" updated="30 October 2026">
       <p className="note">
-        VoltMira is free to use. Its one charge is a fee for each job your client signs, 200 lei a kW
-        and at most 8,000 lei a job, billed on one statement a month and paid by bank transfer. Developers&apos; bank
+        VoltMira is free to use. Its one charge is a fee for each job your client signs, 59 lei a kW
+        and at most 1,990 lei a job, billed on one statement a month and paid by bank transfer. Developers&apos; bank
         packs, where offered, are paid through <b>Paddle</b>, our merchant of record, so their receipts
         and refunds go through Paddle.
       </p>
