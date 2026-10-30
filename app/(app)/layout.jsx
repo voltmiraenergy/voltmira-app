@@ -86,7 +86,8 @@ export default async function AppLayout({ children }) {
   // the Ctrl+K search on every page (components/CommandPalette.jsx): every page, including the ones
   // that live only in Settings or the profile, and the labels it needs
   const searchPages = [...items, { href: "/energy", label: et("nav", lang) }, { href: "/profile", label: t("pf_title", lang) },
-    { href: "/catalog", label: t("nav_catalog", lang) }].filter((p, i, a) => a.findIndex((x) => x.href === p.href) === i);
+    // the catalog page only exists while CATALOG_PAGE is on
+    ...(String(process.env.CATALOG_PAGE || "").toLowerCase() === "on" ? [{ href: "/catalog", label: t("nav_catalog", lang) }] : [])].filter((p, i, a) => a.findIndex((x) => x.href === p.href) === i);
   const searchLabels = {
     trigger: t("dx_search", lang), placeholder: t("dx_pal_ph", lang), actions: t("dx_pal_actions", lang),
     quotes: t("nav_projects", lang), jobs: t("nav_jobs", lang), leads: t("nav_leads", lang), pages: t("dx_pal_pages", lang),

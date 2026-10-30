@@ -84,3 +84,20 @@
 .app .sv-upd-text { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; resize: vertical; }
 .app .sv-upd-hint { margin: -4px 0 0; font-size: 12px; }
 .app .sv-upd .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* on a phone each table row is a card: the name on top, each figure under its column's name, the buttons last
+   (the column names are copied onto the cells by ServiceView.jsx, data-l) */
+@media (max-width: 640px) {
+  .app .sv-scroll { overflow-x: visible; }
+  .app .sv-table, .app .sv-table tbody { display: block; width: 100%; min-width: 0; }
+  .app .sv-table thead { display: none; }
+  .app .sv-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 14px; padding: 13px 2px; border-bottom: 1px solid var(--app-line); }
+  .app .sv-table tr:last-child { border-bottom: 0; }
+  .app .sv-table td { display: block; padding: 0; border: 0; text-align: left !important; white-space: normal; min-width: 0; }
+  .app .sv-table td::before { content: attr(data-l); display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--app-muted); margin-bottom: 2px; }
+  .app .sv-table td:first-child { grid-column: 1 / -1; font-size: 15px; }
+  .app .sv-table td:first-child::before, .app .sv-table td.sv-acts::before, .app .sv-table td[data-l=""]::before { display: none; }
+  .app .sv-table td:empty { display: none; }
+  .app .sv-table td.sv-acts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+  .app .sv-table td.sv-acts .sv-icon { width: 42px; height: 42px; }
+}

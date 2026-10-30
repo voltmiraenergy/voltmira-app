@@ -210,3 +210,15 @@ html[data-theme="dark"] .app .qb-actions .qb-send-wa { color: #5FD592; border-co
 .app .qb .q-pane[hidden] { display: none; }
 .app .qb .q-job { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 @media (max-width: 980px) { .app .qb .q-job { grid-template-columns: minmax(0, 1fr); } }
+
+/* the phone's "more" menu beside the send buttons: hidden on a computer, where the four buttons show */
+.app .qb-more-m { display: none; }
+@media (max-width: 768px) {
+  .app .qb-actions .qb-sec { display: none; }
+  .app .qb-more-m { display: inline-flex; flex: none; }
+  .app .qb-more-m .mm-btn { width: 46px; height: 46px; }
+  .app .qb-actions .qb-sendgrp { flex-wrap: nowrap; }
+  .app .qb-actions .qb-sendgrp .dx-new { flex: 1 1 100%; }
+  .app .qb-actions .qb-sendgrp { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
+  .app .qb-actions .qb-sendgrp .dx-new { grid-column: 1 / -1; }
+}

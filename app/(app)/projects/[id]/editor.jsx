@@ -21,6 +21,7 @@ import BackLink from "../../../../components/BackLink.jsx";
 import NumInput from "../../../../components/NumInput.jsx";
 import { productionPower } from "../../../../lib/gridPower.js";
 import BomCard from "../../../../components/BomCard.jsx";
+import MoreMenu from "../../../../components/MoreMenu.jsx";
 import DesignChecks from "../../../../components/DesignChecks.jsx";
 import StructuralLoads from "../../../../components/StructuralLoads.jsx";
 import DesignSuggestions from "../../../../components/DesignSuggestions.jsx";
@@ -979,6 +980,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             )}
           </div>
           <div className="qb-actions">
+            {/* on a phone the four document buttons fold into the "more" menu next to the send buttons (builder.css) */}
             {tplOpen ? (
               <span className="qb-tpl">
                 <input autoFocus className="input" value={tplName} maxLength={40}
@@ -989,16 +991,24 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
                 <button className="btn ghost sm" onClick={() => setTplOpen(false)} aria-label={tr("tpl_cancel")}>✕</button>
               </span>
             ) : (
-              <button className="btn ghost" onClick={openTemplate}><Qi d={tplSaved ? "check" : "bookmark"} />{tplSaved ? tr("tpl_saved") : tr("tpl_save")}</button>
+              <button className="btn ghost qb-sec" onClick={openTemplate}><Qi d={tplSaved ? "check" : "bookmark"} />{tplSaved ? tr("tpl_saved") : tr("tpl_save")}</button>
             )}
-            <button className="btn ghost" onClick={downloadPdf}><Qi d="pdf" />{tr("dl_pdf")}</button>
-            <button className="btn ghost" onClick={openInvoice}><Qi d="receipt" />{tr("inv_button")}</button>
-            <button className="btn ghost" onClick={() => { setLegalTab("contract"); setLegalDocsOpen(true); }}><Qi d="scale" />{tr("ld_open")}</button>
+            <button className="btn ghost qb-sec" onClick={downloadPdf}><Qi d="pdf" />{tr("dl_pdf")}</button>
+            <button className="btn ghost qb-sec" onClick={openInvoice}><Qi d="receipt" />{tr("inv_button")}</button>
+            <button className="btn ghost qb-sec" onClick={() => { setLegalTab("contract"); setLegalDocsOpen(true); }}><Qi d="scale" />{tr("ld_open")}</button>
             {/* the three ways to send, kept together when the row wraps */}
             <span className="qb-sendgrp">
               <button className="btn ghost qb-send qb-send-viber" disabled={!!sendingVia} onClick={() => sendVia("viber")} title={tr("send_viber_t")}>{sendingVia === "viber" ? "..." : "Viber"}</button>
               <button className="btn ghost qb-send qb-send-wa" disabled={!!sendingVia} onClick={() => sendVia("wa")} title={tr("send_wa_t")}>{sendingVia === "wa" ? "..." : "WhatsApp"}</button>
               <button className="dx-new" onClick={makeProposal}><Qi d="link" w={2.2} />{tr("gen_proposal")}</button>
+              <span className="qb-more-m">
+                <MoreMenu label={tr("more_actions")} items={[
+                  { label: tplSaved ? tr("tpl_saved") : tr("tpl_save"), onClick: openTemplate },
+                  { label: tr("dl_pdf"), onClick: downloadPdf },
+                  { label: tr("inv_button"), onClick: openInvoice },
+                  { label: tr("ld_open"), onClick: () => { setLegalTab("contract"); setLegalDocsOpen(true); } },
+                ]} />
+              </span>
             </span>
           </div>
         </div>

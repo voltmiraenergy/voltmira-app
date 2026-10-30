@@ -37,6 +37,13 @@ export default function ServiceView({ data, tab: tab0, openId = null }) {
   const pick = (t) => { setTab(t); window.history.replaceState(null, "", t === "systems" ? "/service" : `/service?tab=${t}`); };
   const systems = useMemo(() => data?.systems || [], [data]);
   const sysById = useMemo(() => new Map(systems.map((s) => [s.id, s])), [systems]);
+  // a phone shows each table row as a card (service.css): every cell carries its column's name
+  useEffect(() => {
+    for (const t of document.querySelectorAll(".svx .sv-table")) {
+      const heads = [...t.querySelectorAll("thead th")].map((th) => th.textContent.trim());
+      for (const tr of t.querySelectorAll("tbody tr")) [...tr.children].forEach((td, i) => td.setAttribute("data-l", heads[i] || ""));
+    }
+  });
 
   if (data?.error) return <p className="dx-muted-note">{S("e_save")}</p>;
   const t = data?.tiles || {};
