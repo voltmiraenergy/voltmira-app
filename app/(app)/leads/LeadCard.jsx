@@ -28,6 +28,7 @@ import { relTime, LOCALE } from "../../../lib/relTime.js";
 import Avatar from "../../../lib/Avatar.jsx";
 import { fmtDate, fmtTime } from "../../../lib/tz.js";
 import { visitIcs } from "../../../lib/ics.js";
+import { waNumber } from "../../../lib/contactLinks.js";
 import LeadActions from "./LeadActions.jsx";
 import { qft } from "../../../lib/quoteFastText.js";
 import { scoreBand } from "../../../lib/leadScore.js";
@@ -53,14 +54,6 @@ const Svg = ({ children, size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>
 );
 
-// wa.me needs the full international number, digits only. A local "069…"
-// number can't be turned into one without guessing the country, so those get
-// the call button only.
-function waNumber(phone) {
-  const p = String(phone || "").trim();
-  const digits = p.replace(/\D/g, "");
-  return (p.startsWith("+") || p.startsWith("00")) && digits.length >= 10 ? digits.replace(/^00/, "") : "";
-}
 
 // "2 days" / "5 hours" for the waiting badge, in the workspace language.
 function waitedFor(iso, locale) {

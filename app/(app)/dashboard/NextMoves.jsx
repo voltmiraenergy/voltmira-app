@@ -5,7 +5,8 @@
 // button that fixes it: record the step, send or resend the link, issue the
 // deposit invoice, mark it signed, call (ActionRow.jsx). "Done for today" is a
 // personal tick kept in this browser only, not a change to the quote, so it
-// resets on its own the next morning.
+// resets on its own the next morning. Three filters on top: all, today (dated today or due by today) and
+// urgent (the top of the ranking), so a long list can be read a slice at a time.
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import ActionRow from "./ActionRow.jsx";
@@ -57,6 +58,7 @@ function readDone(todayKey) {
 export default function NextMoves({ moves, labels, todayKey, stuck }) {
   const [more, setMore] = useState(false);
   const [done, setDone] = useState({});
+  const [view, setView] = useState("all");
   useEffect(() => { setDone(readDone(todayKey)); }, [todayKey]);
 
   const saveDone = (next) => {
@@ -64,19 +66,30 @@ export default function NextMoves({ moves, labels, todayKey, stuck }) {
     try { localStorage.setItem(STORE, JSON.stringify(next)); } catch {}
   };
 
-  const active = moves.filter((m) => !done[m.key]);
-  const hiddenN = moves.length - active.length;
+  const open = moves.filter((m) => !done[m.key]);
+  const counts = { all: open.length, today: open.filter((m) => m.today).length, urgent: open.filter((m) => m.urgent).length };
+  const active = view === "all" ? open : open.filter((m) => m[view]);
+  const hiddenN = moves.length - open.length;
   const shown = more ? active : active.slice(0, VISIBLE);
 
   return (
     <section className="dx-card dx-moves" aria-labelledby="dx-moves-h">
       <header className="dx-card-head">
         <div>
-          <h2 id="dx-moves-h">{labels.title}<span className="dx-count">{active.length}</span></h2>
+          <h2 id="dx-moves-h">{labels.title}<span className="dx-count">{open.length}</span></h2>
           <p>{labels.sub}</p>
         </div>
         {stuck && stuck.n > 0 && <Link className="dx-link dx-stuck-link" href="/projects?view=stuck">{stuck.label}</Link>}
       </header>
+      {open.length > 0 && labels.filters && (
+        <div className="dx-mfilter" role="group" aria-label={labels.title}>
+          {["all", "today", "urgent"].map((k) => (
+            <button key={k} type="button" className={view === k ? "on" : ""} aria-pressed={view === k} onClick={() => { setView(k); setMore(false); }}>
+              {labels.filters[k]}<span>{counts[k]}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {shown.length ? (
         <ol className="dx-move-list">
@@ -103,6 +116,8 @@ export default function NextMoves({ moves, labels, todayKey, stuck }) {
             </li>
           ))}
         </ol>
+      ) : open.length > 0 ? (
+        <p className="dx-muted-note">{labels.filters?.none}</p>
       ) : (
         <div className="dx-empty">
           <span className="dx-empty-ic" aria-hidden="true"><Svg d="check" size={20} w={2.4} /></span>

@@ -312,3 +312,35 @@ html[data-theme="dark"] .app .dx-base { border-color: var(--line); }
   .app .dx-done { width: 40px; height: 40px; opacity: 1; }
 }
 
+
+/* "Mark it signed": a quiet button that asks first (ActionRow.jsx) */
+.app .dx-acts .dx-btn.quiet { background: none !important; border-style: dashed !important; color: var(--muted) !important; }
+.app .dx-acts .dx-btn.quiet:hover, .app .dx-acts .dx-btn.quiet[aria-expanded="true"] { color: var(--ink) !important; border-color: var(--ink) !important; }
+.app .dx-ask { padding: 10px 12px; border-radius: 12px; background: var(--amber-tint); border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent); display: grid; gap: 8px; }
+.app .dx-ask p { margin: 0; font-size: 13px; line-height: 1.45; color: var(--ink); }
+/* WhatsApp beside the call; a visit into the calendar, with Google Calendar as a small link */
+.app .dx-acts .dx-btn.wa { color: var(--green) !important; }
+.app .dx-cal { display: inline-flex; align-items: center; gap: 8px; }
+.app .dx-cal-g { font-size: 12px; font-weight: 600; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.app .dx-cal-g:hover { color: var(--ink); }
+
+/* the to-do list's filter: All, Today, Urgent */
+.app .dx-mfilter { display: flex; gap: 6px; flex-wrap: wrap; margin: -2px 0 10px; }
+.app .dx-mfilter button { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--line);
+  background: var(--paper-2); font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-2, var(--ink)); cursor: pointer; }
+.app .dx-mfilter button span { font-size: 11.5px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app .dx-mfilter button.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.app .dx-mfilter button.on span { color: inherit; opacity: .75; }
+
+/* the pulse: the week in three numbers */
+.app .dx-pulse-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 10px; }
+.app .dx-pulse-nums div { padding: 9px 10px; border-radius: 10px; background: var(--paper); min-width: 0; }
+.app .dx-pulse-nums dt { font-size: 11px; color: var(--muted); line-height: 1.3; }
+.app .dx-pulse-nums dd { margin: 3px 0 0; font-family: var(--dx-d, var(--font-d)); font-size: 19px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* the one-time search tip */
+.app .search-tip { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 10px 12px 10px 14px; border-radius: 12px;
+  background: var(--green-tint); color: var(--ink); font-size: 13px; line-height: 1.45; }
+.app .search-tip span { flex: 1; min-width: 0; }
+.app .search-tip button { display: grid; place-items: center; width: 26px; height: 26px; border: 0; border-radius: 7px; background: none; color: var(--ink); cursor: pointer; opacity: .7; flex: none; }
+.app .search-tip button:hover { opacity: 1; background: color-mix(in srgb, var(--green) 15%, transparent); }
