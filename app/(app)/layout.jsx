@@ -75,7 +75,6 @@ export default async function AppLayout({ children }) {
     // the grid connections overview: Moldova's operators only (Phase 2)
     ...((co?.default_market || "MD") === "MD" ? [{ href: "/grid", label: t("nav_grid", lang) }] : []),
     { href: "/portfolios", label: pt("nav", lang) },
-    { href: "/energy", label: et("nav", lang) },
     { href: "/documents", label: t("nav_documents", lang) },
     { href: "/activity", label: t("nav_activity", lang) },
     { href: "/studio", label: t("nav_studio", lang) },
