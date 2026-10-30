@@ -30,7 +30,7 @@ alter table companies add column if not exists rbac_enabled boolean not null def
 -- before touching `projects`) — this trigger only ever fires for a normal
 -- user session, never second-guessing this codebase's own service-role code.
 create or replace function enforce_project_rbac() returns trigger
-language plpgsql security definer as $$
+language plpgsql security definer set search_path = public as $$
 declare
   co_rbac boolean;
   actor_role text;

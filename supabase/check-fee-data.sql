@@ -11,7 +11,8 @@ free_scopes as (
   group by coalesce(idno, company_id::text) having count(*) > 2
 ),
 checks as (
-  select 'data', 'no company has more than 2 free jobs', count(*) = 0, coalesce(string_agg(scope || ' (' || n || ')', ', '), 'none')
+  select 'data' as area, 'no company has more than 2 free jobs' as "check", count(*) = 0 as ok,
+         coalesce(string_agg(scope || ' (' || n || ')', ', '), 'none') as detail
   from free_scopes
   union all
   select 'data', 'every fee on a statement points back at it',
