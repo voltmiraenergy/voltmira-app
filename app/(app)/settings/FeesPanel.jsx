@@ -4,7 +4,7 @@
 // to pay, and the company tax id. Loaded and saved through lib/feeActions.js.
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Zap, ShieldCheck, Gift, Undo2, Calculator, FileText, Landmark } from "lucide-react";
+import { Zap, ShieldCheck, Gift, Calculator, FileText, Landmark, Wallet } from "lucide-react";
 import { loadFeeOverview, setCompanyIdno } from "../../../lib/feeActions.js";
 import { feeFor, feeLei, FEE_PER_KW_MINOR, FEE_CAP_MINOR, FREE_JOBS } from "../../../lib/jobFees.js";
 import { ft, monthName, feeDay } from "../../../lib/feeText.js";
@@ -38,12 +38,14 @@ export default function FeesPanel({ lang }) {
     if (r.ok) { setMsg({ ok: true, text: F("fp_saved") }); setD({ ...d, idno: idno.replace(/\s+/g, "") }); } else err(r.error);
   }
 
+  // the whole price in four numbers, then what is included (every figure from lib/jobFees.js)
   const rules = [
+    { i: Wallet, v: feeLei(0, lang), c: F("r_month_c") },
+    { i: Gift, v: F("r_free_v", { n: FREE_JOBS }), c: F("r_free_c") },
     { i: Zap, v: feeLei(FEE_PER_KW_MINOR, lang), c: F("r_kw_c") },
     { i: ShieldCheck, v: feeLei(FEE_CAP_MINOR, lang), c: F("r_cap_c") },
-    { i: Gift, v: F("r_free_v", { n: FREE_JOBS }), c: F("r_free_c") },
-    { i: Undo2, v: feeLei(0, lang), c: F("r_cancel_c") },
   ];
+  const included = ["inc_quotes", "inc_projects", "inc_crm", "inc_lost"];
   const stateChip = (m) => {
     if (m.state === "paid") return <span className="fp-chip s-paid">{F("s_paid", { d: feeDay(m.statement.paid_at, lang) })}</span>;
     if (m.state === "late") return <span className="fp-chip s-late">{F("s_late")}</span>;
@@ -66,6 +68,9 @@ export default function FeesPanel({ lang }) {
             <li key={c}><span className="fp-rule-i" aria-hidden="true"><I size={16} /></span><b>{v}</b><span>{c}</span></li>
           ))}
         </ul>
+        <ul className="fp-inc" aria-label={F("inc_h")}>
+          {included.map((k) => <li key={k}>{F(k)}</li>)}
+        </ul>
         <div className="fp-calc">
           <span className="fp-calc-i" aria-hidden="true"><Calculator size={16} /></span>
           <label htmlFor="fpKw">{F("calc_kw")}</label>
@@ -74,7 +79,7 @@ export default function FeesPanel({ lang }) {
           <span className="fp-calc-out" aria-live="polite">
             <small>{F("calc_out", { kw: kwTxt(kw) })}</small>
             <b>{feeLei(calc.minorMdl, lang)}</b>
-            {calc.capped && <small>{F("calc_capped")}</small>}
+            <small>{calc.capped ? F("calc_capped") : F("calc_max", { c: feeLei(FEE_CAP_MINOR, lang) })}</small>
           </span>
         </div>
         {!d.on && <p className="set-note st-note-tight">{F("off_p")}</p>}
@@ -173,6 +178,8 @@ export default function FeesPanel({ lang }) {
         .app .fp-rule-i{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--green-tint);color:var(--green);margin-bottom:4px}
         .app .fp-rules b{font-family:"Inter Tight",Inter,system-ui,sans-serif;font-size:22px;font-weight:800;letter-spacing:-.01em;color:var(--ink);font-variant-numeric:tabular-nums}
         .app .fp-rules li>span:last-child{font-size:12.5px;line-height:1.4;color:var(--muted)}
+        .app .fp-inc{list-style:none;margin:0 0 4px;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+        .app .fp-inc li{padding:5px 11px;border-radius:999px;background:var(--green-tint);color:var(--green);font-size:12.5px;font-weight:650}
         .app .fp-calc{display:grid;grid-template-columns:auto auto 96px minmax(100px,1fr) auto;align-items:center;gap:10px 12px;padding:12px 14px;border-radius:14px;border:1.5px dashed color-mix(in srgb,var(--green) 40%,var(--line));background:color-mix(in srgb,var(--green-tint) 45%,transparent)}
         .app .fp-calc-i{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--paper-2);color:var(--green);border:1px solid var(--line);flex:none}
         .app .fp-calc label{font-size:13.5px;font-weight:650;color:var(--ink)}

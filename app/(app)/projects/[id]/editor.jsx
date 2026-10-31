@@ -927,6 +927,9 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
     /* the Studio job this quote belongs to, when one is linked */
     <StudioJobLine key="studio" projectId={initial.id} kw={p.kw} lang={lang} />,
   ].filter(Boolean);
+  // on a phone these job cards stay open (the fee, the install steps, the grid file, the on-site record); the
+  // contract details, the portfolio and the Studio line fold (components/FoldColumn.jsx)
+  const keepJobCard = (c) => /^(fee|steps|grid|site)/.test(String(c.key || ""));
   // the left column ends after the grid file: papers and fee there, the work on site and the rest on the right
   // A signed job (or one whose grid file is under way) has two pages: the quote, and the job itself, each in two
   // columns of about the same height. The switch between them is pinned at the top with the summary bar.
@@ -1066,7 +1069,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       <div className="editor q-pane" id="q-offer" hidden={jobTab && view !== "offer"} role={jobTab ? "tabpanel" : undefined} aria-labelledby={jobTab ? "q-tab-offer" : undefined}>
         {/* left: inputs, and whether the design is buildable */}
         <FoldColumn className="stack" lang={lang}>
-          <section className="card">
+          <section className="card" data-keep>
             <h3>{tr("client_site")}</h3>
             <div className="field"><label>{tr("client_name")}</label>
               <input ref={clientRef} className="input" value={p.client} onChange={e => update({ client: e.target.value })} /></div>
@@ -1196,7 +1199,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             {prosumerWarn && <div className="warn-card" style={{ marginTop: 15 }}>{tr("prosumer_warn", { n: prosumerLimitKw })}</div>}
           </section>
 
-          <section className="card">
+          <section className="card" data-keep>
             <h3>{tr("system")}</h3>
             <div className="field">
               <label>{tr("system_size")}<output>{dec(p.kw, 1, lang)} {kwUnit(lang)}</output></label>
@@ -1358,7 +1361,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
 
         {/* right: results */}
         <FoldColumn className="stack" lang={lang}>
-          <section className="card">
+          <section className="card" data-keep>
             <h3>{tr("sys_investment")}</h3>
             <div className="cost-line">
               <div className="k"><b>{fmt(q.e.cost)}</b>
@@ -1428,7 +1431,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             </div>
           </section>
 
-          <section className="card">
+          <section className="card" data-keep>
             <h3>{tr("payback_title")}</h3>
             <div className="bands">
               {[["pess", tr("pessimistic"), q.p], ["expc", tr("expected"), q.e], ["opti", tr("optimistic"), q.o]]
@@ -1513,7 +1516,7 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
             />
           )}
 
-          <section className="card">
+          <section className="card" data-keep>
             <h3>{tr("financing")}</h3>
             <div className="fin-split">
               {/* The repayment is typed in the offer's currency too, so it sits
@@ -1557,8 +1560,8 @@ export default function Editor({ initial, engineSettings: E, prosumerLimitKw, la
       {/* the job: the papers and the fee on the left, the work on site on the right */}
       {jobTab && (
         <div className="editor q-pane q-job" id="q-job" hidden={view !== "job"} role="tabpanel" aria-labelledby="q-tab-job">
-          <FoldColumn className="stack" lang={lang}>{jobCards.slice(0, jobSplit)}</FoldColumn>
-          <FoldColumn className="stack" lang={lang}>{jobCards.slice(jobSplit)}</FoldColumn>
+          <FoldColumn className="stack" lang={lang} keep={keepJobCard}>{jobCards.slice(0, jobSplit)}</FoldColumn>
+          <FoldColumn className="stack" lang={lang} keep={keepJobCard}>{jobCards.slice(jobSplit)}</FoldColumn>
         </div>
       )}
 

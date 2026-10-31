@@ -105,3 +105,9 @@
   .app .ov-hero-in { padding: 20px 18px 22px; }
   .app .ov-hbars li { grid-template-columns: 90px minmax(0, 1fr) 32px; }
 }
+
+/* a phone: the installers table keeps the four figures that matter, the kWp quoted goes */
+@media (max-width: 560px) {
+  .app .ov-table th:last-child, .app .ov-table td:last-child { display: none; }
+  .app .ov-hero h1 { font-size: 24px; }
+}

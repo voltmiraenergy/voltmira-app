@@ -12,8 +12,11 @@ const CSS = `
 html.is-standalone .vm-boot{display:flex}
 .vm-boot{position:fixed;inset:0;z-index:2147483000;flex-direction:column;align-items:center;justify-content:center;gap:22px;
   background:${LOGO_PAPER};pointer-events:none;animation:vm-boot-out .42s ease 1.25s forwards}
-.vm-boot-mark{width:84px;height:84px;border-radius:21px;filter:drop-shadow(0 14px 30px rgba(20,42,33,.22));
-  animation:vm-boot-pop .5s cubic-bezier(.2,.9,.3,1.2) both}
+/* the tile is a rounded box with its own shadow: a drop-shadow filter on the svg showed its square edges on iPhones */
+.vm-boot-tile{width:84px;height:84px;border-radius:20px;background:${LOGO_INK};overflow:hidden;
+  box-shadow:0 18px 36px -12px rgba(20,42,33,.45),0 4px 10px -4px rgba(20,42,33,.25);
+  -webkit-mask-image:-webkit-radial-gradient(white,black);animation:vm-boot-pop .5s cubic-bezier(.2,.9,.3,1.2) both}
+.vm-boot-mark{display:block;width:100%;height:100%}
 .vm-boot-mark path{stroke-dasharray:24;stroke-dashoffset:24;animation:vm-boot-draw .38s ease-out forwards}
 .vm-boot-mark path:nth-of-type(1){animation-delay:.18s}
 .vm-boot-mark path:nth-of-type(2){animation-delay:.32s}
@@ -44,13 +47,15 @@ export default function BootSplash() {
   return (
     <div className="vm-boot" aria-hidden="true">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <div className="vm-boot-tile">
       <svg className="vm-boot-mark" viewBox="0 0 34 34" fill="none">
-        <rect width="34" height="34" rx="8" fill={LOGO_INK} />
+        <rect width="34" height="34" fill={LOGO_INK} />
         <path d="M8 25 L14 12" stroke="#C4543B" strokeWidth="2.6" strokeLinecap="round" />
         <path d="M14.5 25 L20.5 9" stroke="#E89B2D" strokeWidth="2.6" strokeLinecap="round" />
         <path d="M21 25 L27 6.5" stroke="#3FAE6A" strokeWidth="2.6" strokeLinecap="round" />
         <circle cx="20.5" cy="9" r="2.1" fill="#E89B2D" />
       </svg>
+      </div>
       <div className="vm-boot-name">Volt<b>Mira</b></div>
       <div className="vm-boot-band"><i /><i /><i /></div>
     </div>

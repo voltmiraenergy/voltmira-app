@@ -3,7 +3,7 @@
 // via <AppTheme/>. Responsive (collapses to a bottom bar on mobile).
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight, Receipt } from "lucide-react";
+import { ChevronRight, Receipt, BarChart3 } from "lucide-react";
 import SignOut from "./signout.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import SideNav from "./SideNav.jsx";
@@ -115,6 +115,10 @@ export default async function AppLayout({ children }) {
                   : <div className="avatar">{initialsOf(who)}</div>}
                 <div className="who"><b>{who}</b><span>{co?.name}</span></div>
               </Link>
+              {/* VoltMira's own team: the CEO overview, on a phone too */}
+              {isPlatformAdmin(user.email) && (
+                <Link className="more-admin" href="/admin"><BarChart3 size={20} strokeWidth={1.85} aria-hidden="true" />{t("side_admin_short", lang)}</Link>
+              )}
               <ThemeToggle lang={lang} />
               <SignOut lang={lang} />
             </>

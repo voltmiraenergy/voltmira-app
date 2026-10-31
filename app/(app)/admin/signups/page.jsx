@@ -53,7 +53,26 @@ export default async function SignupsPage() {
 
       <section className="adm-card">
         <h2>Sign-ups</h2>
-        <div className="adm-scroll">
+        {/* on a phone: one card per person (AdminNav.jsx styles), the full table on a computer */}
+        <ul className="su-cards">
+          {s.rows.map((r) => (
+            <li key={r.id}>
+              <div className="su-top"><b>{r.name || r.company || r.email}</b><time dateTime={r.at}>{relTime(r.at, "en-GB")}</time></div>
+              <a className="su-mail" href={`mailto:${r.email}`}>{r.email}</a>
+              <div className="su-meta">
+                {r.company && r.name && <span>{r.company}</span>}
+                <span>{KIND[r.kind]}</span>
+                <span>{r.quotes} {r.quotes === 1 ? "quote" : "quotes"}</span>
+                {r.country && r.country !== "Unknown" && <span>{r.country}{r.city ? `, ${r.city}` : ""}</span>}
+                <span>{r.provider === "google" ? "Google" : "Email"}</span>
+                {deviceOf(r.userAgent) && deviceOf(r.userAgent) !== "-" && <span>{deviceOf(r.userAgent)}</span>}
+              </div>
+              {r.phone && <a className="su-call" href={`tel:${r.phone}`}>{r.phone}</a>}
+            </li>
+          ))}
+          {!s.rows.length && <li>No sign-ups yet.</li>}
+        </ul>
+        <div className="adm-scroll su-scroll">
           <table className="adm-table">
             <thead><tr><th>When</th><th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th>Country</th><th>First opened</th><th>Device</th><th>Signed up with</th><th>Status</th><th>Quotes</th><th>User id</th></tr></thead>
             <tbody>

@@ -915,6 +915,8 @@ const CSS = `
     .more-sheet .side-theme,.more-sheet .reset-link{display:flex;align-items:center;gap:14px;width:100%;justify-content:flex-start;text-align:left;padding:14px;border-radius:11px;background:none;border:none;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--white-dim)}
     .more-sheet .side-theme svg{width:20px;height:20px;flex:none;opacity:.9}
     .more-sheet .reset-link{color:#E88E7A}
+    .more-sheet a.more-admin{color:var(--amber);font-weight:600}
+    .more-sheet a.more-admin svg{opacity:1}
     .view{padding:18px 16px calc(var(--mnav-h) + env(safe-area-inset-bottom) + 20px)}
     .filters .input{width:100%}
     .proj-title{width:170px;font-size:18px}

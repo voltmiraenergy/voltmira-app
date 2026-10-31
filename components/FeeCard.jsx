@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Receipt, Lock, X, Undo2, FileText } from "lucide-react";
 import { ft, monthName, feeDay } from "../lib/feeText.js";
-import { feeLei, feeMonth, FEE_PER_KW_MINOR, FREE_JOBS } from "../lib/jobFees.js";
+import { feeLei, feeMonth, FEE_PER_KW_MINOR, FEE_CAP_MINOR, FREE_JOBS } from "../lib/jobFees.js";
 import { clientGaveUp, askFeeWaiver } from "../lib/feeActions.js";
 
 /**
@@ -23,7 +23,9 @@ import { clientGaveUp, askFeeWaiver } from "../lib/feeActions.js";
 export default function FeeCard({ projectId, lang, status, state, open = null, onGaveUp }) {
   const router = useRouter();
   const F = (k, v) => ft(k, lang, v);
-  const [gate, setGate] = useState(open === "locked" || open === "idno");
+  const [gate, setGate] = useState(open === "locked" || open === "idno" || open === "retry" || open === "kw");
+  // billing could not be checked or recorded just now (the gate fails closed): a "try again", not "you owe"
+  const retry = open === "retry" || state?.error === "fee_unavailable" || state?.error === "paperwork_not_recorded";
   const [ask, setAsk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState("");
@@ -39,14 +41,24 @@ export default function FeeCard({ projectId, lang, status, state, open = null, o
   const kwTxt = (k) => Number(k || 0).toLocaleString({ en: "en-GB", ro: "ro-RO", ru: "ru-RU", uk: "uk-UA" }[lang] || "ro-RO", { maximumFractionDigits: 1 });
   const howLink = <a className="fee-how" href="/settings?tab=fees#fee-sim">{F("how_link")}</a>;
 
-  // ---- not signed yet: what it will cost when the client signs
+  // ---- not signed yet: what it will cost if the client signs (an estimate from lib/jobFees.js feeFor, with the most
+  // any job can cost), or that it is one of the free introductory jobs
   if (status !== "won" && status !== "lost") {
     const pv = state?.preview;
     if (!pv || !(pv.kw > 0)) return null;
     return (
       <section className="card fee-card fee-mini" aria-labelledby="fee-h">
         <p className="fee-mini-h" id="fee-h"><Receipt size={15} aria-hidden="true" />{F("before_h")}: <b>{pv.free ? F("st_free") : feeLei(pv.minorMdl, lang)}</b></p>
-        <p className="fee-line">{pv.free ? F("before_free", { t: FREE_JOBS }) : pv.capped ? F("sub_cap", { kw: kwTxt(pv.kw) }) : F("sub_kw", { kw: kwTxt(pv.kw), r: feeLei(FEE_PER_KW_MINOR, lang) })}. {F("before_p")}</p>
+        <ul className="fee-est">
+          <li><span>{F("k_size")}</span><b>{kwTxt(pv.kw)} kW</b></li>
+          {pv.free
+            ? <li className="is-free"><span>{F("free_offer", { t: FREE_JOBS })}</span></li>
+            : <>
+                <li><span>{F("k_est")}</span><b>{feeLei(pv.minorMdl, lang)}</b></li>
+                <li><span>{F("k_max")}</span><b>{feeLei(FEE_CAP_MINOR, lang)}</b></li>
+              </>}
+        </ul>
+        <p className="fee-line">{pv.free ? F("before_p") : pv.capped ? F("sub_cap", { kw: kwTxt(pv.kw) }) + ". " + F("only_won") : F("sub_kw", { kw: kwTxt(pv.kw), r: feeLei(FEE_PER_KW_MINOR, lang) }) + ". " + F("only_won")}</p>
         {howLink}
         <Style />
       </section>
@@ -68,20 +80,26 @@ export default function FeeCard({ projectId, lang, status, state, open = null, o
 
   if (!fee && !state?.error) return null;
   const due = fee?.status === "due";
-  const locked = !!state?.locked && due;
+  // signed during the free beta (before JOB_FEES_FROM): on record, never billed, never locked
+  const beta = !!state?.beta && due;
+  const locked = !!state?.locked && due && !beta;
   const amount = fee ? feeLei(fee.amount_minor, lang) : "";
   const st = state?.statement || null;
   const month = fee?.won_at ? feeMonth(fee.won_at) : "";
+  // the fee as it was recorded when the job was signed, never worked out again with today's prices: its rate is read
+  // back from its own amount (a job signed under an earlier price shows that price)
+  const rate = fee && Number(fee.kw) > 0 ? Math.round(Number(fee.amount_minor) / Number(fee.kw) / 100) * 100 : 0;
   const sub = !fee ? ""
     : fee.status === "free" ? F("sub_free", { n: fee.free_slot || 1, t: FREE_JOBS })
     : Number(fee.tier) === 1 ? F("sub_cap", { kw: kwTxt(fee.kw) })
-    : F("sub_kw", { kw: kwTxt(fee.kw), r: feeLei(FEE_PER_KW_MINOR, lang) });
+    : rate > 0 ? F("sub_kw", { kw: kwTxt(fee.kw), r: feeLei(rate, lang) }) : kwTxt(fee.kw) + " kW";
   const where = !fee ? ""
     : fee.status === "paid" ? (fee.payment_method === "credit" ? F("paid_credit") : F("paid_on", { d: feeDay(fee.paid_at, lang) }))
     : fee.status === "waived" ? F("waived_p")
+    : beta ? ""
     : due && st ? F("on_statement", { no: st.number, d: feeDay(Date.parse(st.due_at) - 1, lang) })
     : due ? F("in_statement", { m: monthName(month, lang) }) : "";
-  const note = state?.sample ? F("sample_p") : !state?.on ? F("off_p") : state?.error === "needs_idno" ? F("needs_idno") : locked ? F("locked_p", { m: monthName(st?.month || month, lang) }) : "";
+  const note = state?.sample ? F("sample_p") : !state?.on ? F("off_p") : retry ? F("retry_p") : state?.error === "needs_kw" ? F("needs_kw") : state?.error === "needs_idno" ? F("needs_idno") : beta ? F("beta_p") : locked ? F("locked_p", { m: monthName(st?.month || month, lang) }) : "";
 
   // paperwork was made for the job: cancelling no longer voids the fee (lib/jobFees.js feeOnLost), so the client
   // giving up goes with a request to VoltMira to waive it, and its reason
@@ -102,7 +120,7 @@ export default function FeeCard({ projectId, lang, status, state, open = null, o
     <section className="card fee-card" aria-labelledby="fee-h">
       <div className="fee-head">
         <h3 id="fee-h"><Receipt size={16} aria-hidden="true" />{F("fee_h")}</h3>
-        {fee && <span className={"fee-chip s-" + (locked ? "locked" : fee.status)}>{locked ? <><Lock size={12} aria-hidden="true" />{F("st_locked")}</> : F("st_" + fee.status)}</span>}
+        {fee && <span className={"fee-chip s-" + (locked ? "locked" : beta ? "waived" : fee.status)}>{locked ? <><Lock size={12} aria-hidden="true" />{F("st_locked")}</> : F(beta ? "st_beta" : "st_" + fee.status)}</span>}
       </div>
       {fee && (
         <>
@@ -149,8 +167,8 @@ export default function FeeCard({ projectId, lang, status, state, open = null, o
           <div className="modal fee-gate" role="dialog" aria-modal="true" aria-labelledby="fee-gate-h" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="fee-x" aria-label={F("close")} onClick={() => setGate(false)}><X size={18} /></button>
             <span className="fee-gate-i" aria-hidden="true"><Lock size={20} /></span>
-            <h3 id="fee-gate-h">{F("gate_h")}</h3>
-            <p>{state?.error === "needs_idno" ? F("needs_idno") : F("gate_p")}</p>
+            <h3 id="fee-gate-h">{retry ? F("retry_h") : F("gate_h")}</h3>
+            <p>{retry ? F("retry_p") : state?.error === "needs_kw" ? F("needs_kw") : state?.error === "needs_idno" ? F("needs_idno") : F("gate_p")}</p>
             {st && <p className="fee-gate-fee">{st.number}, {amount}</p>}
             <div className="fee-acts">
               {state?.error === "needs_idno"
@@ -194,6 +212,10 @@ function Style() {
       .app .fee-mini-h{display:flex;align-items:center;gap:7px;margin:0;font-size:14px;font-weight:650;color:var(--ink)}
       .app .fee-mini-h b{font-variant-numeric:tabular-nums}
       .app .fee-mini .fee-line{font-size:12.5px;color:var(--muted)}
+      .app .fee-est{list-style:none;margin:2px 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px}
+      .app .fee-est li{display:flex;align-items:baseline;gap:6px;color:var(--muted)}
+      .app .fee-est b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+      .app .fee-est li.is-free span{color:var(--green);font-weight:650}
       .app .fee-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
       .app .fee-gate{position:relative;max-width:460px;display:grid;gap:10px}
       .app .fee-gate h3{margin:0;font-size:19px;padding-right:24px}

@@ -1,7 +1,7 @@
 name: CI
 
-# Runs the real test suite (lib/ + engine/, the calculation-critical layer)
-# and a production build on every push/PR — so "the tests pass" stops being
+# Runs the real test suite (lib/ + engine/, the calculation-critical layer),
+# lint, and a production build on every push/PR — so "the tests pass" stops being
 # something that only happens if someone remembers to run them by hand.
 on:
   push:
@@ -18,10 +18,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"  # package.json engines: 24.x
           cache: "npm"
       - run: npm ci
       - run: npm test
+      # lint as well: warnings are reported, errors fail the job
+      - run: npm run lint
 
   build:
     name: Build
@@ -31,7 +33,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"  # package.json engines: 24.x
           cache: "npm"
       - run: npm ci
       # Placeholder values, NOT real credentials — every server route in this

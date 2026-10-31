@@ -83,7 +83,7 @@ export default function GridSubmit({ projectId, operator, details, client, lang,
       // a won job whose fee is overdue (lib/jobFees.js): the fee card's payment opens
       if (j.error === "not_signed") { window.dispatchEvent(new Event("vm-sign-needed")); return j; }
       if (j.error === "demo_only") { setMsg(ft("demo_only", lang)); return j; }
-      if (j.error === "job_fee_due" || j.error === "needs_idno") { window.dispatchEvent(new Event("vm-fee-locked")); setMsg(ft(j.error === "needs_idno" ? "needs_idno" : "locked_short", lang)); return j; }
+      if (j.error === "job_fee_due" || j.error === "needs_idno" || j.error === "needs_kw") { window.dispatchEvent(new Event("vm-fee-locked")); setMsg(ft(j.error === "job_fee_due" ? "locked_short" : j.error, lang)); return j; }
       if (!j.ok) {
         const k = "gs_e_" + j.error;
         setMsg(G(k) !== k ? G(k) : T(k) !== k ? T(k) : j.error === "needs_db" ? T("bl_needs_db") : T("gs_e_other"));
